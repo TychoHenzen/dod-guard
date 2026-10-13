@@ -6,15 +6,6 @@
 import { renameSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command reads its process id for the partial file.
 import process from "node:process";
-import { readRequiredChecks } from "./github-client.mjs";
-import {
-  ProjectReadError,
-  contentRepository,
-  linkedProject,
-  readSlurpedPages,
-  sameRepository,
-  statusValueName,
-} from "./project-reads.mjs";
 import {
   API_ISSUE_URL,
   API_PULL_URL,
@@ -23,6 +14,15 @@ import {
   urlReference,
   urlRepository,
 } from "../../../../lib/repository-identity.mjs";
+import { readRequiredChecks } from "./github-client.mjs";
+import {
+  contentRepository,
+  linkedProject,
+  ProjectReadError,
+  readSlurpedPages,
+  sameRepository,
+  statusValueName,
+} from "./project-reads.mjs";
 
 const ENDPOINT = /^(?:repos|users|orgs)\//u;
 const HTTP_NOT_FOUND = /HTTP 404/u;
@@ -221,9 +221,7 @@ function projectFields(read, basePath, number) {
   if (!isSingleSelectStatus(status)) {
     throw readFailure(endpoint, 'the "Status" field must be single-select with options and a node_id');
   }
-  const done = status.options.filter(
-    (option) => readStatusName(option, "a Status option name", endpoint) === "Done",
-  );
+  const done = status.options.filter((option) => readStatusName(option, "a Status option name", endpoint) === "Done");
   if (done.length !== 1 || !nonBlank(done[0].id)) {
     throw readFailure(endpoint, `must include exactly one Status option named Done, found ${done.length}`);
   }
@@ -563,8 +561,7 @@ export function buildClosureSnapshot({ repository, runner }) {
   const [owner] = repo.fullName.split("/");
   const { basePath, project } = projectRead(() => linkedProject(read, owner, repo.fullName));
   const fields = projectFields(read, basePath, project.number);
-  const itemsEndpoint =
-    `${basePath}/projectsV2/${project.number}/items?per_page=100&fields=${fields.fieldIds.join(",")}`;
+  const itemsEndpoint = `${basePath}/projectsV2/${project.number}/items?per_page=100&fields=${fields.fieldIds.join(",")}`;
   const shaped = readPages(read, itemsEndpoint)
     .filter((raw) => !isArchivedItem(raw))
     .map((raw) => shapeItem(raw, fields.fieldIds, itemsEndpoint));

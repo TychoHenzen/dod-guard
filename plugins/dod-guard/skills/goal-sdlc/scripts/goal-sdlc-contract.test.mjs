@@ -21,15 +21,9 @@ const OWNERS = [
 
 test("goal-sdlc links every lifecycle owner by relative path", () => {
   for (const name of OWNERS) {
-    assert.ok(
-      skill.includes(`[dod-guard:${name}](../${name}/SKILL.md)`),
-      `missing owner link: ${name}`,
-    );
+    assert.ok(skill.includes(`[dod-guard:${name}](../${name}/SKILL.md)`), `missing owner link: ${name}`);
   }
-  assert.match(
-    skill,
-    prose("when this file and an owning skill differ, the owning skill wins"),
-  );
+  assert.match(skill, prose("when this file and an owning skill differ, the owning skill wins"));
   assert.match(
     skill,
     prose(
@@ -43,10 +37,7 @@ test("goal-sdlc cleans up through the closure helper and has no write path of it
   assert.match(skill, prose("**Clean up, then select one parent.**"));
   assert.match(
     skill,
-    prose(
-      "run `node closure.mjs plan",
-      "--snapshot=<file>`, report each close, hold, and `unverified-closed` entry",
-    ),
+    prose("run `node closure.mjs plan", "--snapshot=<file>`, report each close, hold, and `unverified-closed` entry"),
   );
   assert.match(
     skill,
@@ -95,10 +86,7 @@ test("goal-sdlc keeps its sections short and its own", () => {
     "## Reporting",
     "## Stop condition",
   ]);
-  assert.ok(
-    skill.split("\n").length <= 162,
-    "goal-sdlc grew past an orchestrator",
-  );
+  assert.ok(skill.split("\n").length <= 162, "goal-sdlc grew past an orchestrator");
   // Rules that belong to an owner must not come back here.
   for (const owned of [
     "## Acceptance matrix",
@@ -118,10 +106,7 @@ test("goal-sdlc selects through the read-only queue selector", async () => {
   assert.match(skill, prose("node scripts/select-next.mjs --snapshot=<file>"));
   assert.match(skill, prose("In Progress parents first"));
   assert.match(skill, prose("then Todo, then Backlog, each in Project order"));
-  assert.match(
-    skill,
-    prose("Process exactly one parent at a time, in the current checkout"),
-  );
+  assert.match(skill, prose("Process exactly one parent at a time, in the current checkout"));
   assert.match(skill, prose("Never create or use a Git worktree."));
   assert.match(skill, prose("Keyed by `owner/name#number`"));
   assert.match(skill, prose("cross-repository evidence"));
@@ -147,18 +132,9 @@ test("goal-sdlc delegates to subagents, not user-visible threads", () => {
 
 test("goal-sdlc keeps one daily friction log and a strict stop", () => {
   assert.match(skill, prose("titled exactly `Friction log YYYY-MM-DD`"));
-  assert.match(
-    skill,
-    prose("The queue holds today's log while it collects entries"),
-  );
+  assert.match(skill, prose("The queue holds today's log while it collects entries"));
   assert.match(skill, prose("starts", "with `[HH:MM] Blocked:`"));
-  assert.match(
-    skill,
-    prose(
-      "An empty Todo column with a non-empty Backlog is not",
-      "an empty queue",
-    ),
-  );
+  assert.match(skill, prose("An empty Todo column with a non-empty Backlog is not", "an empty queue"));
   assert.match(skill, prose("three", "evidence-backed attempts"));
   assert.match(skill, /^- Re-read the issue before appending, and read it back after writing\.$/m);
   assert.match(skill, /checkpoint\.\n\nBefore claiming a parent/);
@@ -188,23 +164,25 @@ function routingRows(text) {
     .slice(start, end)
     .split("\n")
     .slice(2)
-    .map((row) => row.split("|").slice(1, -1).map((cell) => cell.trim()));
+    .map((row) =>
+      row
+        .split("|")
+        .slice(1, -1)
+        .map((cell) => cell.trim()),
+    );
 }
 
 test("goal-sdlc routes every stage to one tier with an explicit effort", () => {
   const rows = routingRows(skill);
-  assert.deepEqual(
-    rows,
+  assert.deepEqual(rows, [
+    ...ROUTES.map(([stage, tier]) => [stage, tier, EFFORT[tier]]),
     [
-      ...ROUTES.map(([stage, tier]) => [stage, tier, EFFORT[tier]]),
-      [
-        "Merge conflict on a PBI head",
-        "per `standards/conflict-triage.md`",
-        "per `standards/conflict-triage.md`; unresolvable conflicts stop and report, " +
-          "and a verified push re-enters at `/submit-draft-pr`",
-      ],
+      "Merge conflict on a PBI head",
+      "per `standards/conflict-triage.md`",
+      "per `standards/conflict-triage.md`; unresolvable conflicts stop and report, " +
+        "and a verified push re-enters at `/submit-draft-pr`",
     ],
-  );
+  ]);
   assert.match(skill, prose("Each stage runs in one fresh subagent as one step of"));
   assert.match(skill, prose("A stage's split rows are dispatched by its owner"));
   assert.match(skill, prose("Dispatch each row as `standards/model-routing.md` says"));
@@ -223,10 +201,7 @@ const usage = await readFile(new URL("../../../USAGE.md", import.meta.url), "utf
 
 // Claude Code /goal grades only its frozen condition, so a later "stop" message
 // cannot end a run unless the condition already allows it.
-const goalStop = await readFile(
-  new URL("../../../standards/goal-stop.md", import.meta.url),
-  "utf8",
-);
+const goalStop = await readFile(new URL("../../../standards/goal-stop.md", import.meta.url), "utf8");
 const GOAL_TEMPLATE = [
   "/goal Run /dod-guard:goal-sdlc on this repository.",
   "(a) the final report says no eligible parent remains",

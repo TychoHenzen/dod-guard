@@ -1,10 +1,4 @@
-const ACCEPTANCE_MATRIX_STATUSES = Object.freeze([
-  "pass",
-  "unverified",
-  "failed",
-  "blocked",
-  "inapplicable",
-]);
+const ACCEPTANCE_MATRIX_STATUSES = Object.freeze(["pass", "unverified", "failed", "blocked", "inapplicable"]);
 
 // Refinement plans each row before any proof runs, so a planned row has no
 // observed result or head yet and is either still to prove or ruled out.
@@ -105,9 +99,7 @@ function matrixRows(matrix) {
 }
 
 function normalizeRow(row, index) {
-  const normalized = Object.fromEntries(
-    ACCEPTANCE_MATRIX_FIELDS.map((field) => [field, fieldValue(row, field)]),
-  );
+  const normalized = Object.fromEntries(ACCEPTANCE_MATRIX_FIELDS.map((field) => [field, fieldValue(row, field)]));
   normalized.index = index;
   normalized.reason = textValue(row?.reason) ?? textValue(row?.inapplicableReason);
   if (normalized.status !== null) {
@@ -273,9 +265,4 @@ function validateAcceptanceMatrix({
   };
 }
 
-export {
-  ACCEPTANCE_MATRIX_FIELDS,
-  ACCEPTANCE_MATRIX_PATHS,
-  ACCEPTANCE_MATRIX_STATUSES,
-  validateAcceptanceMatrix,
-};
+export { ACCEPTANCE_MATRIX_FIELDS, ACCEPTANCE_MATRIX_PATHS, ACCEPTANCE_MATRIX_STATUSES, validateAcceptanceMatrix };

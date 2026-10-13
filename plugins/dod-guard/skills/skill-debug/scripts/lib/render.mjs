@@ -51,10 +51,7 @@ function indexLine(row, index) {
   const session = row.session.slice(0, 8);
   const { steps, users, errors } = row.counts;
   const counts = `${steps} steps, ${users} user, ${errors} err`;
-  return [
-    `${number} ${when(row.timestamp)}  ${session}  ${row.project}`,
-    `       ${counts}`,
-  ].join("\n");
+  return [`${number} ${when(row.timestamp)}  ${session}  ${row.project}`, `       ${counts}`].join("\n");
 }
 
 export function renderRunIndex(rows) {

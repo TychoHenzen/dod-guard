@@ -32,10 +32,7 @@ function withDir(body) {
 
 function write(dir, name, value) {
   const path = join(dir, name);
-  writeFileSync(
-    path,
-    typeof value === "string" ? value : JSON.stringify(value),
-  );
+  writeFileSync(path, typeof value === "string" ? value : JSON.stringify(value));
   return path;
 }
 
@@ -60,12 +57,7 @@ function inputs(dir) {
 }
 
 function slotFlags(paths) {
-  return [
-    `--diff=${paths.diff}`,
-    `--pbi=${paths.pbi}`,
-    `--sub-issues=${paths.subs}`,
-    `--out=${paths.out}`,
-  ];
+  return [`--diff=${paths.diff}`, `--pbi=${paths.pbi}`, `--sub-issues=${paths.subs}`, `--out=${paths.out}`];
 }
 
 test("slots writes the slot list and prints counts", () => {
@@ -129,18 +121,13 @@ test("slots names the PBI when it has no criteria", () => {
     });
     const result = run(["slots", ...slotFlags(paths)]);
     assert.notEqual(result.status, 0);
-    assert.match(
-      result.stderr,
-      /PBI TychoHenzen\/dod-guard#837 has no checkbox item/,
-    );
+    assert.match(result.stderr, /PBI TychoHenzen\/dod-guard#837 has no checkbox item/);
   });
 });
 
 test("slots without a required flag prints usage", () => {
   withDir((dir) => {
-    const flags = slotFlags(inputs(dir)).filter(
-      (flag) => !flag.startsWith("--sub-issues="),
-    );
+    const flags = slotFlags(inputs(dir)).filter((flag) => !flag.startsWith("--sub-issues="));
     const result = run(["slots", ...flags]);
     assert.equal(result.status, 3);
     assert.match(result.stderr, /Usage:/);
@@ -148,12 +135,7 @@ test("slots without a required flag prints usage", () => {
 });
 
 const HEAD = "f".repeat(40);
-const LENSES = [
-  "review-pr-feature",
-  "review-pr-design",
-  "review-pr-reliability",
-  "review-pr-hygiene",
-];
+const LENSES = ["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"];
 const ASSIGNED = {
   "review-pr-feature": ["file:src/a.mjs"],
   "review-pr-design": ["file:src/a.mjs"],
@@ -179,10 +161,7 @@ const question = (id, lens) => ({
 const PLAN = [
   {
     slot: "file:src/a.mjs",
-    questions: [
-      question("F1", "review-pr-feature"),
-      question("D1", "review-pr-design"),
-    ],
+    questions: [question("F1", "review-pr-feature"), question("D1", "review-pr-design")],
   },
   { slot: "criterion:1", questions: [question("R1", "review-pr-reliability")] },
   { slot: "criterion:2", questions: [question("H1", "review-pr-hygiene")] },
@@ -220,10 +199,7 @@ test("build writes a COMMENT payload with the slot block", () => {
     assert.equal(result.status, 0, result.stderr);
     const payload = JSON.parse(readFileSync(paths.out, "utf8"));
     assert.equal(payload.event, "COMMENT");
-    assert.ok(
-      payload.body.includes("<summary>Review plan slots (3)</summary>"),
-      payload.body,
-    );
+    assert.ok(payload.body.includes("<summary>Review plan slots (3)</summary>"), payload.body);
   });
 });
 

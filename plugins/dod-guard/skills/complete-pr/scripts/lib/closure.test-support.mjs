@@ -187,16 +187,9 @@ function epicBody({ uncheckedOwn = false } = {}) {
     "- [ ] Migration proven across reports (#778)",
   ];
   if (uncheckedOwn) criteria.push("- [ ] Publish the migration note");
-  return [
-    "## Outcome",
-    "",
-    "Clean Code is the authority.",
-    "",
-    "## Acceptance criteria",
-    "",
-    ...criteria,
-    "",
-  ].join("\n");
+  return ["## Outcome", "", "Clean Code is the authority.", "", "## Acceptance criteria", "", ...criteria, ""].join(
+    "\n",
+  );
 }
 
 // options.roots limits which roots carry their supersedes record;
@@ -444,12 +437,11 @@ function snapshotAfter(snapshot, github) {
 }
 
 export {
-  DELIVERIES,
-  FOREIGN_REPOSITORY,
-  REPOSITORY,
   chainSnapshot,
   closedWithoutEvidence,
   completionComment,
+  DELIVERIES,
+  FOREIGN_REPOSITORY,
   fakeGitHub,
   foreignItem,
   holdOf,
@@ -460,6 +452,7 @@ export {
   patchesTo,
   pull,
   quotingComment,
+  REPOSITORY,
   recordedSnapshot,
   setField,
   snapshotAfter,

@@ -142,8 +142,7 @@ const TOOLS_LINES = {
   "read-strong": "Read, Grep, Glob, Bash",
 };
 
-const ALLOWLIST_TITLE =
-  "the cheap and read-only agents keep their exact tool allowlists";
+const ALLOWLIST_TITLE = "the cheap and read-only agents keep their exact tool allowlists";
 
 test(ALLOWLIST_TITLE, async () => {
   for (const [name, tools] of Object.entries(TOOLS_LINES)) {
@@ -155,10 +154,8 @@ test(ALLOWLIST_TITLE, async () => {
 // that needs a skill, a GitHub write, or MCP runs on stage-strong at the cheap
 // tier and is still verified as cheap output.
 const SKILL_CAPABLE = [
-  "A skill-capable stage runs on `dod-guard:stage-strong` at its own tier's " +
-    "model and effort, cheap or strong.",
-  "invokes a skill, writes issue, pull request, or Project state, or needs " +
-    "an MCP connector",
+  "A skill-capable stage runs on `dod-guard:stage-strong` at its own tier's " + "model and effort, cheap or strong.",
+  "invokes a skill, writes issue, pull request, or Project state, or needs " + "an MCP connector",
   "In Claude Code, pass the tier's `model` and `effort` on the Agent call.",
   "spawn a cheap-tier skill-capable stage without that file, with " +
     "`gpt-5.6-luna` and `max` at spawn time, and record it as " +
@@ -183,15 +180,13 @@ const COMMIT_OWNERSHIP = [
   "A run that owns a skill's procedure, such as `/complete-pr` or " +
     "`/fix-pr-review`, is that skill's main thread even on the cheap model, " +
     "so it commits and pushes as the skill directs",
-  "its dispatcher checks every commit and push it reports by reading them " +
-    "back.",
+  "its dispatcher checks every commit and push it reports by reading them " + "back.",
   "A failed check sends the same stage back once with the exact gap, under " +
     "the failure-recovery rule in `standards/working-defaults.md`, with no " +
     "commit or push.",
 ];
 
-const COMMIT_TITLE =
-  "the main thread commits and pushes verified cheap-tier changes";
+const COMMIT_TITLE = "the main thread commits and pushes verified cheap-tier changes";
 
 test(COMMIT_TITLE, async () => {
   assertPhrases(standard, COMMIT_OWNERSHIP, "model-routing.md");
@@ -200,10 +195,7 @@ test(COMMIT_TITLE, async () => {
   const stageCheap = await agentText("stage-cheap");
   assertPhrases(
     stageCheap,
-    [
-      "stage them only when the brief says to stage",
-      "so you never commit or push",
-    ],
+    ["stage them only when the brief says to stage", "so you never commit or push"],
     "stage-cheap.md",
   );
   assert.doesNotMatch(stageCheap, prose("Commit only when the brief asks"));
@@ -212,8 +204,7 @@ test(COMMIT_TITLE, async () => {
 // stage-cheap stops on a step it cannot do, so the standard must say where
 // that step goes instead of letting it fall under the failed-check rule.
 const MISROUTED = [
-  "A `dod-guard:stage-cheap` report that a step is misrouted is not a " +
-    "failed check.",
+  "A `dod-guard:stage-cheap` report that a step is misrouted is not a " + "failed check.",
   "The main thread redispatches that step once on `dod-guard:stage-strong` " +
     "at the same tier, as a skill-capable stage, and verifies the result as " +
     "cheap-tier output.",
@@ -226,28 +217,22 @@ test("a misrouted cheap step is redispatched on stage-strong", () => {
 // Read-only agents have no Write tool, so whoever owns the procedure persists
 // their plans, questions, and decisions.
 const READ_ONLY_RETURN = [
-  "Return your output as text in your final message, and write no file, " +
-    "Bash redirection and heredocs included.",
+  "Return your output as text in your final message, and write no file, " + "Bash redirection and heredocs included.",
   "The main thread writes any handoff file",
 ];
 
 const TRIAGE_HANDOFF = [
-  "return questions as text; the owning thread writes them to a scratch " +
-    "file outside the repository",
+  "return questions as text; the owning thread writes them to a scratch " + "file outside the repository",
   "Return one decision per path:",
   "The owning thread writes the decisions to the decisions file",
 ];
 
-const HANDOFF_TITLE =
-  "read-only agents return text and the owning thread writes handoff files";
+const HANDOFF_TITLE = "read-only agents return text and the owning thread writes handoff files";
 
 test(HANDOFF_TITLE, async () => {
   assertPhrases(
     standard,
-    [
-      "Read-only agents return their output as text.",
-      "The main thread writes any handoff file",
-    ],
+    ["Read-only agents return their output as text.", "The main thread writes any handoff file"],
     "model-routing.md",
   );
   for (const name of ["read-cheap", "read-strong"]) {
@@ -260,11 +245,9 @@ test(HANDOFF_TITLE, async () => {
 
 // Each workaround answers a tool failure a cheap worker hit in a friction log.
 const STAGE_CHEAP_WORKAROUNDS = [
-  "When the step needs a skill, a GitHub write, or an MCP connector, stop " +
-    "and report it as misrouted",
+  "When the step needs a skill, a GitHub write, or an MCP connector, stop " + "and report it as misrouted",
   "That step belongs on `dod-guard:stage-strong` at the cheap tier.",
-  "Write file content with the Write tool instead of heredocs or echo " +
-    "redirection",
+  "Write file content with the Write tool instead of heredocs or echo " + "redirection",
   "When Edit cannot match a line that holds a non-ASCII character",
   "use Write to create a small node script that builds the character from " +
     "its number with `String.fromCodePoint`, instead of a backslash-u " +

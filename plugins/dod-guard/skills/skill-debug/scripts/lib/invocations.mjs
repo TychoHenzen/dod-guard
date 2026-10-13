@@ -55,9 +55,7 @@ function toolInvocation(record) {
   if (!Array.isArray(content)) {
     return null;
   }
-  const call = content.find(
-    (block) => block?.type === "tool_use" && block.name === "Skill",
-  );
+  const call = content.find((block) => block?.type === "tool_use" && block.name === "Skill");
   if (!call) {
     return null;
   }

@@ -9,13 +9,7 @@ export const HEAD_SHA = "head-1";
 export const PARENT_NUMBER = 660;
 export const CHILD_NUMBERS = [665, 666, 667, 668];
 export const ISSUE_NUMBERS = [PARENT_NUMBER, ...CHILD_NUMBERS];
-export const ITEM_NODE_IDS = [
-  "PVTI_child-665",
-  "PVTI_child-666",
-  "PVTI_child-667",
-  "PVTI_child-668",
-  "PVTI_parent",
-];
+export const ITEM_NODE_IDS = ["PVTI_child-665", "PVTI_child-666", "PVTI_child-667", "PVTI_child-668", "PVTI_parent"];
 export const ITEM_NUMERIC_IDS = new Map(ITEM_NODE_IDS.map((itemId, index) => [itemId, 256_202_820 + index]));
 const ITEM_NODE_BY_ISSUE = new Map([
   [665, ITEM_NODE_IDS[0]],
@@ -51,7 +45,9 @@ function exactHeadCheckRun(id, name) {
 }
 
 function formValues(args, prefix) {
-  return args.filter((value) => typeof value === "string" && value.startsWith(prefix)).map((value) => value.slice(prefix.length));
+  return args
+    .filter((value) => typeof value === "string" && value.startsWith(prefix))
+    .map((value) => value.slice(prefix.length));
 }
 
 export function createRecordingTransport({
@@ -103,9 +99,10 @@ export function createRecordingTransport({
 
   function itemStatus(item, includeContradiction) {
     const option = STATUS_OPTIONS.find((candidate) => candidate.name === item.status);
-    const name = includeContradiction && item.issueNumber === PARENT_NUMBER
-      ? { raw: item.status, html: item.status === "Done" ? "Todo" : "Done" }
-      : { raw: item.status };
+    const name =
+      includeContradiction && item.issueNumber === PARENT_NUMBER
+        ? { raw: item.status, html: item.status === "Done" ? "Todo" : "Done" }
+        : { raw: item.status };
     return { id: STATUS_FIELD_ID, name: "Status", data_type: "single_select", value: { id: option.id, name } };
   }
 
@@ -136,8 +133,9 @@ export function createRecordingTransport({
     if (args.some((value) => /graphql/i.test(String(value)))) {
       throw new Error("Forbidden routine GraphQL request.");
     }
-    const endpoint = args.find((value) =>
-      typeof value === "string" && (value.startsWith("repos/") || value.startsWith("users/")));
+    const endpoint = args.find(
+      (value) => typeof value === "string" && (value.startsWith("repos/") || value.startsWith("users/")),
+    );
     const methodIndex = args.indexOf("--method");
     const method = methodIndex === -1 ? "GET" : args[methodIndex + 1];
     const issuesEndpoint = `repos/${REPOSITORY}/issues`;
@@ -146,7 +144,12 @@ export function createRecordingTransport({
     const projectItemsEndpoint = `${projectEndpoint}/items`;
 
     if (endpoint === `repos/${REPOSITORY}`) {
-      return commandResult({ full_name: REPOSITORY, default_branch: "master", allow_auto_merge: true, permissions: { push: true } });
+      return commandResult({
+        full_name: REPOSITORY,
+        default_branch: "master",
+        allow_auto_merge: true,
+        permissions: { push: true },
+      });
     }
     if (endpoint === `repos/${REPOSITORY}/branches/master/protection/required_status_checks`) {
       return commandResult({
@@ -241,15 +244,17 @@ export function createRecordingTransport({
       return commandResult({ id: String(PROJECT_NUMBER), number: PROJECT_NUMBER, node_id: PROJECT_NODE_ID });
     }
     if (endpoint === `${projectEndpoint}/fields?per_page=100`) {
-      return commandResult([[
-        {
-          id: STATUS_FIELD_ID,
-          node_id: STATUS_FIELD_NODE_ID,
-          name: "Status",
-          data_type: "single_select",
-          options: STATUS_OPTIONS.map(({ id, name }) => ({ id, name: { raw: name } })),
-        },
-      ]]);
+      return commandResult([
+        [
+          {
+            id: STATUS_FIELD_ID,
+            node_id: STATUS_FIELD_NODE_ID,
+            name: "Status",
+            data_type: "single_select",
+            options: STATUS_OPTIONS.map(({ id, name }) => ({ id, name: { raw: name } })),
+          },
+        ],
+      ]);
     }
     if (endpoint === projectItemsEndpoint && method === "POST") {
       const issueId = Number(formValues(args, "content_id=")[0]);
@@ -273,7 +278,9 @@ export function createRecordingTransport({
       return {
         status: 0,
         stderr: "",
-        stdout: visibleProjectItems().map((item) => JSON.stringify(projectItem(item, contradictoryStatus))).join("\n"),
+        stdout: visibleProjectItems()
+          .map((item) => JSON.stringify(projectItem(item, contradictoryStatus)))
+          .join("\n"),
       };
     }
     if (endpoint?.startsWith(`${projectItemsEndpoint}/`) === true && method === "GET") {

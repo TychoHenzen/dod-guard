@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { planClosures } from "./closure-plan.mjs";
-import { renderClosureEvidence } from "./closure-records.mjs";
 import {
-  DELIVERIES,
-  REPOSITORY,
   completionComment,
+  DELIVERIES,
   holdOf,
   issue,
   item,
   quotingComment,
+  REPOSITORY,
   recordedSnapshot,
   setField,
 } from "./closure.test-support.mjs";
+import { planClosures } from "./closure-plan.mjs";
+import { renderClosureEvidence } from "./closure-records.mjs";
 
 function closeOf(plan, issue) {
   return plan.closes.find((close) => close.issue === issue);
@@ -134,7 +134,10 @@ test("a target issue listed twice is held as a duplicate and reported nowhere", 
   snapshot.issues.push(issue(2001), issue(2001));
   const plan = planClosures(snapshot);
   assert.deepEqual(holdOf(plan, 2001), { issue: 2001, reasons: ["duplicate issue record"] });
-  assert.equal(plan.reports.find((report) => report.issue === 2001), undefined);
+  assert.equal(
+    plan.reports.find((report) => report.issue === 2001),
+    undefined,
+  );
 });
 
 // Owner hand closes shaped like #684 (sub-issues #779-#782) and the childless #875: closed as
@@ -151,11 +154,7 @@ function handClosed(stateReason, { parentOpen = false } = {}) {
     ...children.map((child) => item(child, "Done", { parent: 684 })),
     item(875, "Done"),
   ];
-  snapshot.issues = [
-    parent,
-    ...children.map((child) => closed(issue(child, { parent: 684 }))),
-    closed(issue(875)),
-  ];
+  snapshot.issues = [parent, ...children.map((child) => closed(issue(child, { parent: 684 }))), closed(issue(875))];
   snapshot.pullRequests = [];
   return snapshot;
 }
@@ -165,7 +164,10 @@ const JSON_BLOCK = /```json[\s\S]*```/;
 
 test("an owner's not_planned hand close is not reported, and a completed one still is", () => {
   const abandoned = planClosures(handClosed("not_planned"));
-  assert.deepEqual(abandoned.reports.filter((report) => HAND_CLOSED.includes(report.issue)), []);
+  assert.deepEqual(
+    abandoned.reports.filter((report) => HAND_CLOSED.includes(report.issue)),
+    [],
+  );
   assert.deepEqual(abandoned.closes, []);
   assert.deepEqual(abandoned.statusRepairs, []);
   assert.deepEqual(abandoned.holds, []);
@@ -180,30 +182,42 @@ test("an owner's not_planned hand close is not reported, and a completed one sti
 
 test("a not_planned original named by an unverified root is still reported with the root's reasons", () => {
   const snapshot = recordedSnapshot({ roots: [840], record: { 840: null } });
-  Object.assign(snapshot.issues.find(({ number }) => number === 777), { state: "closed", state_reason: "not_planned" });
+  Object.assign(
+    snapshot.issues.find(({ number }) => number === 777),
+    { state: "closed", state_reason: "not_planned" },
+  );
   const plan = planClosures(snapshot);
-  assert.deepEqual(plan.reports.find((report) => report.issue === 777), {
-    issue: 777,
-    kind: "unverified-closed",
-    missing: ["root #840 unverified: completion evidence missing"],
-  });
+  assert.deepEqual(
+    plan.reports.find((report) => report.issue === 777),
+    {
+      issue: 777,
+      kind: "unverified-closed",
+      missing: ["root #840 unverified: completion evidence missing"],
+    },
+  );
 });
 
 test("a not_planned close with a malformed completion record is still reported", () => {
   const snapshot = handClosed("not_planned");
   const malformed = completionComment(840).body.replace(JSON_BLOCK, "```json\n{ not json\n```");
   snapshot.issues.find(({ number }) => number === 875).comments = [{ id: 87501, body: malformed }];
-  assert.deepEqual(planClosures(snapshot).reports.find((report) => report.issue === 875), {
-    issue: 875,
-    kind: "unverified-closed",
-    missing: ["completion evidence record is not valid JSON"],
-  });
+  assert.deepEqual(
+    planClosures(snapshot).reports.find((report) => report.issue === 875),
+    {
+      issue: 875,
+      kind: "unverified-closed",
+      missing: ["completion evidence record is not valid JSON"],
+    },
+  );
 });
 
 test("an open issue on Done is judged as before whatever its state_reason", () => {
   for (const stateReason of ["not_planned", null]) {
     const snapshot = handClosed("not_planned");
-    Object.assign(snapshot.issues.find(({ number }) => number === 875), { state: "open", state_reason: stateReason });
+    Object.assign(
+      snapshot.issues.find(({ number }) => number === 875),
+      { state: "open", state_reason: stateReason },
+    );
     assert.deepEqual(
       planClosures(snapshot).reports.find((report) => report.issue === 875),
       { issue: 875, kind: "unverified-closed", missing: ["completion evidence missing"] },

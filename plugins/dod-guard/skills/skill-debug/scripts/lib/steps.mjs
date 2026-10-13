@@ -89,9 +89,7 @@ export function stepsOf(record) {
   const sidechain = record?.isSidechain === true;
   return blocksOf(record)
     .map(blockToStep)
-    .map((step) =>
-      step?.kind === "text" ? finishTextStep(step, record) : step,
-    )
+    .map((step) => (step?.kind === "text" ? finishTextStep(step, record) : step))
     .filter(Boolean)
     .map((step) => ({ ...step, sidechain }));
 }

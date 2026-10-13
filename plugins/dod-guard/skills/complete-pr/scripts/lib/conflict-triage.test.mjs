@@ -31,8 +31,10 @@ import {
 } from "./conflict-triage.test-support.mjs";
 
 function mergeHead(scenario) {
-  return spawnSync("git", ["rev-parse", "-q", "--verify", "MERGE_HEAD"], { cwd: scenario.work, encoding: "utf8" })
-    .stdout.trim();
+  return spawnSync("git", ["rev-parse", "-q", "--verify", "MERGE_HEAD"], {
+    cwd: scenario.work,
+    encoding: "utf8",
+  }).stdout.trim();
 }
 
 function stopOf(action) {
@@ -320,7 +322,10 @@ test("reports markers, whitespace, unstaged edits, and decisions the resolution 
     assert.equal(result.ok, false);
     assert.ok(problems.includes("test/value.test.js: still unmerged"), problems.join("; "));
     assert.ok(problems.includes("src/value.txt: conflict markers remain"), problems.join("; "));
-    assert.ok(problems.some((entry) => entry.startsWith("null: git diff --check")), problems.join("; "));
+    assert.ok(
+      problems.some((entry) => entry.startsWith("null: git diff --check")),
+      problems.join("; "),
+    );
     assert.ok(problems.includes("test/value.test.js: decision take-branch is not visible in the resolution"));
   } finally {
     scenario.cleanup();

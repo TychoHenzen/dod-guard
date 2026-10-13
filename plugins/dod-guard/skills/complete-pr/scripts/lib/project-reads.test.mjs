@@ -4,9 +4,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { CompletionError } from "./completion-error.mjs";
 import {
-  ProjectReadError,
   contentRepository,
   linkedProject,
+  ProjectReadError,
   readIssueProjectStatuses,
   readSlurpedPages,
   sameRepository,
@@ -60,7 +60,9 @@ test("statusValueName reads one name from each REST spelling and gives null for 
 test("statusValueName keeps its rejection messages", () => {
   assert.throws(() => statusValueName({ id: "x" }), { message: "Status value is not a name." });
   assert.throws(() => statusValueName({ name: { raw: " " } }), { message: "Status value has a blank name." });
-  assert.throws(() => statusValueName({ name: { raw: "Done", html: "Todo" } }), { message: "Status value names disagree." });
+  assert.throws(() => statusValueName({ name: { raw: "Done", html: "Todo" } }), {
+    message: "Status value names disagree.",
+  });
 });
 
 const ISSUE_ITEM = { id: 1, node_id: "PVTI_1", content: { number: 24, repository: { full_name: "owner/repo" } } };
@@ -88,12 +90,15 @@ test("readIssueProjectStatuses maps each flattener rejection to its own github_r
     [[{ id: 8, name: "Status", value: "Done" }], "exactly one Status field/value"],
   ];
   for (const [fields, detail] of cases) {
-    assert.throws(() => readIssueProjectStatuses("owner/repo", 24, issueStatusRunner(fields)), (error) => {
-      assert.ok(error instanceof CompletionError);
-      assert.equal(error.code, "github_response_shape");
-      assert.equal(error.message, `GitHub response for ${ITEM_STATUS_READ} must include ${detail}.`);
-      return true;
-    });
+    assert.throws(
+      () => readIssueProjectStatuses("owner/repo", 24, issueStatusRunner(fields)),
+      (error) => {
+        assert.ok(error instanceof CompletionError);
+        assert.equal(error.code, "github_response_shape");
+        assert.equal(error.message, `GitHub response for ${ITEM_STATUS_READ} must include ${detail}.`);
+        return true;
+      },
+    );
   }
   const read = issueStatusRunner(status({ name: { raw: "Done" } }), "7");
   assert.deepEqual(readIssueProjectStatuses("owner/repo", 24, read), ["Done"]);
@@ -107,12 +112,18 @@ test("readIssueProjectStatuses stops on an item with no repository, where linked
     [LISTING]: listing,
     [membership(2)]: okResponse(rows.map((row) => JSON.stringify(row)).join("\n")),
   });
-  assert.throws(() => readIssueProjectStatuses("owner/repo", 24, issueRead.runner), (error) => {
-    assert.ok(error instanceof CompletionError, String(error));
-    assert.equal(error.code, "github_response_shape");
-    assert.equal(error.message, `GitHub response for ${membership(2)} must include Project items with repository identity.`);
-    return true;
-  });
+  assert.throws(
+    () => readIssueProjectStatuses("owner/repo", 24, issueRead.runner),
+    (error) => {
+      assert.ok(error instanceof CompletionError, String(error));
+      assert.equal(error.code, "github_response_shape");
+      assert.equal(
+        error.message,
+        `GitHub response for ${membership(2)} must include Project items with repository identity.`,
+      );
+      return true;
+    },
+  );
 
   const repositoryRead = tableRunner({ [LISTING]: listing, [membership(2)]: okResponse(JSON.stringify([rows])) });
   assert.deepEqual(linkedProject(repositoryRead.runner, "owner", "owner/repo"), {
@@ -123,8 +134,18 @@ test("readIssueProjectStatuses stops on an item with no repository, where linked
 
 test("linkedProject returns the one open Project holding an item of the repository", () => {
   const { calls, runner } = tableRunner({
-    [LISTING]: okResponse(JSON.stringify([[{ number: 2, state: "open" }, { number: 3, state: "closed" }, { number: 4, state: "Open" }]])),
-    [membership(2)]: okResponse(JSON.stringify([[{ content: {} }, repositoryItem("other/repo")], [repositoryItem("Owner/Repo")]])),
+    [LISTING]: okResponse(
+      JSON.stringify([
+        [
+          { number: 2, state: "open" },
+          { number: 3, state: "closed" },
+          { number: 4, state: "Open" },
+        ],
+      ]),
+    ),
+    [membership(2)]: okResponse(
+      JSON.stringify([[{ content: {} }, repositoryItem("other/repo")], [repositoryItem("Owner/Repo")]]),
+    ),
     [membership(4)]: okResponse(JSON.stringify([[repositoryItem("other/repo")]])),
   });
 
@@ -140,29 +161,45 @@ test("linkedProject returns the one open Project holding an item of the reposito
 });
 
 test("linkedProject names how many open Projects it found when that is not exactly one", () => {
-  const listing = okResponse(JSON.stringify([[{ number: 2, state: "open" }, { number: 4, state: "open" }]]));
+  const listing = okResponse(
+    JSON.stringify([
+      [
+        { number: 2, state: "open" },
+        { number: 4, state: "open" },
+      ],
+    ]),
+  );
   const none = tableRunner({
     [LISTING]: listing,
     [membership(2)]: okResponse(JSON.stringify([[]])),
     [membership(4)]: okResponse(JSON.stringify([[repositoryItem("other/repo")]])),
   });
-  assertProjectReadError(() => linkedProject(none.runner, "owner", "owner/repo"), "users/owner/projectsV2",
-    "expected exactly one open linked Project, found none");
+  assertProjectReadError(
+    () => linkedProject(none.runner, "owner", "owner/repo"),
+    "users/owner/projectsV2",
+    "expected exactly one open linked Project, found none",
+  );
 
   const two = tableRunner({
     [LISTING]: listing,
     [membership(2)]: okResponse(JSON.stringify([[repositoryItem("owner/repo")]])),
     [membership(4)]: okResponse(JSON.stringify([[repositoryItem("owner/repo")]])),
   });
-  assertProjectReadError(() => linkedProject(two.runner, "owner", "owner/repo"), "users/owner/projectsV2",
-    "expected exactly one open linked Project, found 2 (#2, #4)");
+  assertProjectReadError(
+    () => linkedProject(two.runner, "owner", "owner/repo"),
+    "users/owner/projectsV2",
+    "expected exactly one open linked Project, found 2 (#2, #4)",
+  );
 });
 
 test("linkedProject stops on a listed Project without a positive-integer number or a state", () => {
   for (const project of [{ number: "2", state: "open" }, { number: 0, state: "open" }, { number: 2 }]) {
     const { runner } = tableRunner({ [LISTING]: okResponse(JSON.stringify([[project]])) });
-    assertProjectReadError(() => linkedProject(runner, "owner", "owner/repo"), "users/owner/projectsV2",
-      "every Project must carry a number and a state");
+    assertProjectReadError(
+      () => linkedProject(runner, "owner", "owner/repo"),
+      "users/owner/projectsV2",
+      "every Project must carry a number and a state",
+    );
   }
 });
 
@@ -171,12 +208,15 @@ test("linkedProject restates a listing failure at the listing endpoint and keeps
   const runner = () => {
     throw failure;
   };
-  assert.throws(() => linkedProject(runner, "owner", "owner/repo"), (error) => {
-    assert.ok(error instanceof ProjectReadError);
-    assert.equal(error.message, "users/owner/projectsV2: gh: Server Error (HTTP 500)");
-    assert.equal(error.cause, failure);
-    return true;
-  });
+  assert.throws(
+    () => linkedProject(runner, "owner", "owner/repo"),
+    (error) => {
+      assert.ok(error instanceof ProjectReadError);
+      assert.equal(error.message, "users/owner/projectsV2: gh: Server Error (HTTP 500)");
+      assert.equal(error.cause, failure);
+      return true;
+    },
+  );
 });
 
 test("linkedProject lets a failure the runner throws for an item read pass through unchanged", () => {
@@ -187,15 +227,21 @@ test("linkedProject lets a failure the runner throws for an item read pass throu
     }
     throw failure;
   };
-  assert.throws(() => linkedProject(runner, "owner", "owner/repo"), (error) => error === failure);
+  assert.throws(
+    () => linkedProject(runner, "owner", "owner/repo"),
+    (error) => error === failure,
+  );
 });
 
 test("readSlurpedPages flattens every page and names a page that is not an array", () => {
   const read = (pages) => tableRunner({ x: okResponse(pages) }).runner;
   assert.deepEqual(readSlurpedPages(read(JSON.stringify([[1], [2, 3]])), "x"), [1, 2, 3]);
   assertProjectReadError(() => readSlurpedPages(read("{"), "x"), "x", "did not return JSON");
-  assertProjectReadError(() => readSlurpedPages(read(JSON.stringify([[1], {}])), "x"), "x",
-    "missing page: every page must be an array");
+  assertProjectReadError(
+    () => readSlurpedPages(read(JSON.stringify([[1], {}])), "x"),
+    "x",
+    "missing page: every page must be an array",
+  );
 });
 
 test("contentRepository reads full_name first, then repository_url, and null for neither", () => {
@@ -203,10 +249,16 @@ test("contentRepository reads full_name first, then repository_url, and null for
   assert.equal(contentRepository({ repository_url: "https://api.github.com/repos/o/r" }, "x"), "o/r");
   assert.equal(contentRepository({}, "x"), null);
   assert.equal(contentRepository(undefined, "x"), null);
-  assertProjectReadError(() => contentRepository({ repository: { full_name: "o" } }, "x"), "x",
-    "content repository full_name must name a repository");
-  assertProjectReadError(() => contentRepository({ repository_url: "https://example.test/o/r" }, "x"), "x",
-    "content repository_url must name a repository");
+  assertProjectReadError(
+    () => contentRepository({ repository: { full_name: "o" } }, "x"),
+    "x",
+    "content repository full_name must name a repository",
+  );
+  assertProjectReadError(
+    () => contentRepository({ repository_url: "https://example.test/o/r" }, "x"),
+    "x",
+    "content repository_url must name a repository",
+  );
 });
 
 test("sameRepository compares names without case and never matches a missing name", () => {
@@ -259,29 +311,38 @@ test("readIssueProjectStatuses falls back to orgs/<owner> after a users/ HTTP 40
 
 test("readIssueProjectStatuses throws the stderr text of any other listing failure and never reads orgs/", () => {
   const { calls, runner } = listingRunner([{ stderr: "gh: Server Error (HTTP 500)\n", status: 1, stdout: "" }]);
-  assert.throws(() => readIssueProjectStatuses("owner/repo", 24, runner), (error) => {
-    assert.equal(error.message, "gh: Server Error (HTTP 500)");
-    return true;
-  });
+  assert.throws(
+    () => readIssueProjectStatuses("owner/repo", 24, runner),
+    (error) => {
+      assert.equal(error.message, "gh: Server Error (HTTP 500)");
+      return true;
+    },
+  );
   assert.equal(calls.length, 1);
 
   const { runner: silentRunner } = listingRunner([{ stderr: "", status: 1, stdout: "" }]);
-  assert.throws(() => readIssueProjectStatuses("owner/repo", 24, silentRunner), (error) => {
-    assert.equal(error.message, "Failed to list user-owned Projects.");
-    return true;
-  });
+  assert.throws(
+    () => readIssueProjectStatuses("owner/repo", 24, silentRunner),
+    (error) => {
+      assert.equal(error.message, "Failed to list user-owned Projects.");
+      return true;
+    },
+  );
 });
 
 test("readIssueProjectStatuses rejects a user-owned listing that is not an array of pages", () => {
   for (const stdout of [JSON.stringify({ message: "x" }), JSON.stringify([{ number: 2 }])]) {
     const { runner } = listingRunner([okResponse(stdout)]);
-    assert.throws(() => readIssueProjectStatuses("owner/repo", 24, runner), (error) => {
-      assert.equal(error.code, "github_response_shape");
-      assert.equal(
-        error.message,
-        "GitHub response for users/owner/projectsV2?per_page=100 must include an array an array response.",
-      );
-      return true;
-    });
+    assert.throws(
+      () => readIssueProjectStatuses("owner/repo", 24, runner),
+      (error) => {
+        assert.equal(error.code, "github_response_shape");
+        assert.equal(
+          error.message,
+          "GitHub response for users/owner/projectsV2?per_page=100 must include an array an array response.",
+        );
+        return true;
+      },
+    );
   }
 });

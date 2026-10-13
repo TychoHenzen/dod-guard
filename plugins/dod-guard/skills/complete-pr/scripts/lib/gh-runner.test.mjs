@@ -47,7 +47,7 @@ test("returns a non-zero exit the caller accepts, so the caller can read it", ()
 test("throws on any non-zero exit by default, with stderr, then stdout, then the exit code", () => {
   const cases = [
     [{ status: 1, stderr: " gh: Server Error (HTTP 500)\n", stdout: "body" }, "gh: Server Error (HTTP 500)"],
-    [{ status: 1, stderr: "  ", stdout: " {\"message\":\"Bad\"} " }, "{\"message\":\"Bad\"}"],
+    [{ status: 1, stderr: "  ", stdout: ' {"message":"Bad"} ' }, '{"message":"Bad"}'],
     [{ status: 4, stderr: "", stdout: "" }, "gh exited with 4"],
     [{ status: null, stderr: "", stdout: "" }, "gh exited with null"],
   ];
@@ -61,5 +61,8 @@ test("rethrows a spawn error, such as gh missing from PATH", () => {
   const missing = new Error("spawnSync gh ENOENT");
   const { spawn } = spawnReturning({ error: missing, status: null, stderr: "", stdout: "" });
 
-  assert.throws(() => runGh(["api", "x"], [0], spawn), (error) => error === missing);
+  assert.throws(
+    () => runGh(["api", "x"], [0], spawn),
+    (error) => error === missing,
+  );
 });

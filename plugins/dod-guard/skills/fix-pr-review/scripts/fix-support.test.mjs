@@ -2,11 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import {
-  normalizeGitHubHierarchy,
-  normalizeGitHubReviewThreads,
-  redactSecrets,
-} from "./lib/fix-support.mjs";
+import { normalizeGitHubHierarchy, normalizeGitHubReviewThreads, redactSecrets } from "./lib/fix-support.mjs";
 
 const CHILD_ISSUE_NUMBER = 34;
 const MISSING_GITHUB_FINDING = /GH-99/;
@@ -97,17 +93,11 @@ test("normalizes selected findings across paginated thread responses", () => {
     ],
   };
 
-  assert.equal(
-    normalizeGitHubReviewThreads(payload, ["GH-41"])[0].threadId,
-    "PRRT_1",
-  );
+  assert.equal(normalizeGitHubReviewThreads(payload, ["GH-41"])[0].threadId, "PRRT_1");
 });
 
 test("rejects a selected GitHub finding that is absent", () => {
-  assert.throws(
-    () => normalizeGitHubReviewThreads({ reviewThreads: [] }, ["GH-99"]),
-    MISSING_GITHUB_FINDING,
-  );
+  assert.throws(() => normalizeGitHubReviewThreads({ reviewThreads: [] }, ["GH-99"]), MISSING_GITHUB_FINDING);
 });
 
 test("rejects an ambiguous selected GitHub finding", () => {
@@ -128,10 +118,7 @@ test("rejects an ambiguous selected GitHub finding", () => {
     ],
   };
 
-  assert.throws(
-    () => normalizeGitHubReviewThreads(payload, ["GH-41"]),
-    /Ambiguous GitHub finding: GH-41/,
-  );
+  assert.throws(() => normalizeGitHubReviewThreads(payload, ["GH-41"]), /Ambiguous GitHub finding: GH-41/);
 });
 
 test("keeps outdated findings open for revalidation and marks only resolved threads stale", () => {
@@ -157,14 +144,8 @@ test("keeps outdated findings open for revalidation and marks only resolved thre
     ],
   };
 
-  const [outdated, resolved] = normalizeGitHubReviewThreads(payload, [
-    "GH-42",
-    "GH-43",
-  ]);
-  assert.deepEqual(
-    [outdated.reviewState, outdated.line, outdated.isOutdated],
-    ["open", 29, true],
-  );
+  const [outdated, resolved] = normalizeGitHubReviewThreads(payload, ["GH-42", "GH-43"]);
+  assert.deepEqual([outdated.reviewState, outdated.line, outdated.isOutdated], ["open", 29, true]);
   assert.equal(resolved.reviewState, "stale");
 });
 
@@ -176,8 +157,7 @@ test("normalizes REST review comments from slurped pages and skips replies", () 
       {
         body: "**P2** Align guidance",
         commit_id: "c10d2a15",
-        html_url:
-          "https://github.com/TychoHenzen/dod-guard/pull/819#discussion_r4181308695",
+        html_url: "https://github.com/TychoHenzen/dod-guard/pull/819#discussion_r4181308695",
         id: 4_181_308_695,
         line: null,
         original_line: 29,
@@ -219,9 +199,7 @@ test("normalizes the parent PBI and linked sub-issues", () => {
     number: 33,
     state: "OPEN",
     subIssues: {
-      nodes: [
-        { body: "Details", number: 34, state: "OPEN", title: "Fix findings" },
-      ],
+      nodes: [{ body: "Details", number: 34, state: "OPEN", title: "Fix findings" }],
     },
     title: "Review pull requests",
   });

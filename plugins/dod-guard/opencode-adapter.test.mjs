@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import plugin from "./index.js";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -28,7 +28,9 @@ test("registers the shipped skills and agents without copying their bodies", asy
     },
   });
 
-  const skillDirectories = readdirSync(join(ROOT, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory());
+  const skillDirectories = readdirSync(join(ROOT, "skills"), { withFileTypes: true }).filter((entry) =>
+    entry.isDirectory(),
+  );
   const agentFiles = readdirSync(join(ROOT, "agents")).filter((file) => file.endsWith(".md"));
   assert.equal(skills.length, skillDirectories.length);
   assert.equal(agents.length, agentFiles.length);
@@ -62,7 +64,9 @@ test("does not register the same OpenCode context twice", async () => {
   await plugin.setup(context);
   await plugin.setup(context);
 
-  const skillDirectories = readdirSync(join(ROOT, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory());
+  const skillDirectories = readdirSync(join(ROOT, "skills"), { withFileTypes: true }).filter((entry) =>
+    entry.isDirectory(),
+  );
   const agentFiles = readdirSync(join(ROOT, "agents")).filter((file) => file.endsWith(".md"));
   assert.equal(skillAdds, skillDirectories.length);
   assert.equal(agentUpdates, agentFiles.length);

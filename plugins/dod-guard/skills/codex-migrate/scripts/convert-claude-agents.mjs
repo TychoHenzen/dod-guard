@@ -34,7 +34,10 @@ function parseFrontmatter(text, file) {
     }
   }
 
-  const body = `${lines.slice(end + 1).join("\n").trim()}\n`;
+  const body = `${lines
+    .slice(end + 1)
+    .join("\n")
+    .trim()}\n`;
   return { values, body };
 }
 
@@ -94,7 +97,9 @@ export async function buildAgentOutputs(sourceDirectory) {
   const entries = await readdir(sourceDirectory, { withFileTypes: true });
   const outputs = new Map();
 
-  for (const entry of entries.filter((item) => item.isFile() && item.name.endsWith(".md")).sort((a, b) => a.name.localeCompare(b.name))) {
+  for (const entry of entries
+    .filter((item) => item.isFile() && item.name.endsWith(".md"))
+    .sort((a, b) => a.name.localeCompare(b.name))) {
     const sourcePath = path.join(sourceDirectory, entry.name);
     const parsed = parseFrontmatter(await readFile(sourcePath, "utf8"), sourcePath);
     const outputName = `${codexName(parsed.values.name)}.toml`;
@@ -123,9 +128,11 @@ export async function checkAgentOutputs(sourceDirectory, outputDirectory) {
     if (error.code !== "ENOENT") throw error;
   }
 
-  const actualNames = new Set(entries
-    .filter((entry) => entry.isFile() && entry.name.startsWith("dod_guard_") && entry.name.endsWith(".toml"))
-    .map((entry) => entry.name));
+  const actualNames = new Set(
+    entries
+      .filter((entry) => entry.isFile() && entry.name.startsWith("dod_guard_") && entry.name.endsWith(".toml"))
+      .map((entry) => entry.name),
+  );
   const findings = [];
 
   for (const [name, content] of expected) {

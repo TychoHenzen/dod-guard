@@ -49,9 +49,7 @@ function byNewest(left, right) {
 }
 
 function collect(root, skill, options) {
-  const rows = listTranscripts(root, options.days).flatMap((entry) =>
-    runsInFile(entry, skill),
-  );
+  const rows = listTranscripts(root, options.days).flatMap((entry) => runsInFile(entry, skill));
   return rows.sort(byNewest).slice(0, options.limit);
 }
 

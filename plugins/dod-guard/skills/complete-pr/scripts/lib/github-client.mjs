@@ -12,7 +12,8 @@ import { readIssueProjectStatuses } from "./project-reads.mjs";
 
 const HTTP_NOT_FOUND = /HTTP 404/;
 const HTTP_TRANSIENT_SERVER_ERROR = /HTTP 5\d{2}/;
-const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
+const CLOSING_REFERENCE =
+  /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
 const PULL_REQUEST_REF_KINDS = new Set(["head", "merge"]);
 const READY_MUTATION = [
   "mutation($pullRequestId: ID!) {",
@@ -60,9 +61,7 @@ function reviewThreadConnection(data) {
   }
   const reviewThreads = data?.data?.repository?.pullRequest?.reviewThreads;
   const hasConnection =
-    isPlainObject(reviewThreads) &&
-    Array.isArray(reviewThreads.nodes) &&
-    isPlainObject(reviewThreads.pageInfo);
+    isPlainObject(reviewThreads) && Array.isArray(reviewThreads.nodes) && isPlainObject(reviewThreads.pageInfo);
   if (!hasConnection) {
     throw new Error("GraphQL response has no reviewThreads object with nodes and pageInfo");
   }
@@ -287,11 +286,8 @@ export function readRequiredChecks(repository, pullRequest, commandRunner) {
   }
   if (protectionResponse.result.status !== 0) {
     const { result } = protectionResponse;
-    const detail =
-      result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`;
-    throw new Error(
-      `Failed to read branch protection at ${protectionEndpoint}: ${detail}`,
-    );
+    const detail = result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`;
+    throw new Error(`Failed to read branch protection at ${protectionEndpoint}: ${detail}`);
   }
   const protection = protectionResponse.data ?? {};
   const checkRuns = readExactHeadCheckRuns(
@@ -348,11 +344,7 @@ export class GitHubClient {
     if (result.status !== 0) {
       throw new Error(result.stderr.trim() || "Failed to read pull-request refs.");
     }
-    return normalizePullRequestRefs(
-      data,
-      pullNumber,
-      pullRequestRefsEndpoint(this.repository, pullNumber),
-    );
+    return normalizePullRequestRefs(data, pullNumber, pullRequestRefsEndpoint(this.repository, pullNumber));
   }
 
   markReady(pullNumber) {
@@ -362,14 +354,11 @@ export class GitHubClient {
       throw githubResponseContractError(pullEndpoint, "a pull request node ID");
     }
 
-    const { data } = ghJson([
-      "api",
-      "graphql",
-      "-f",
-      `query=${READY_MUTATION}`,
-      "-F",
-      `pullRequestId=${pullRequest.node_id}`,
-    ], [0], this.#commandRunner);
+    const { data } = ghJson(
+      ["api", "graphql", "-f", `query=${READY_MUTATION}`, "-F", `pullRequestId=${pullRequest.node_id}`],
+      [0],
+      this.#commandRunner,
+    );
     if (data?.data?.markPullRequestReadyForReview?.pullRequest?.isDraft !== false) {
       throw new CompletionError(
         "ready_transition_failed",
@@ -400,16 +389,20 @@ export class GitHubClient {
   mergePullRequest(pullNumber, expectedHead) {
     let data;
     try {
-      ({ data } = ghJson([
-        "api",
-        "--method",
-        "PUT",
-        `repos/${this.repository}/pulls/${pullNumber}/merge`,
-        "-f",
-        `sha=${expectedHead}`,
-        "-f",
-        "merge_method=merge",
-      ], [0], this.#commandRunner));
+      ({ data } = ghJson(
+        [
+          "api",
+          "--method",
+          "PUT",
+          `repos/${this.repository}/pulls/${pullNumber}/merge`,
+          "-f",
+          `sha=${expectedHead}`,
+          "-f",
+          "merge_method=merge",
+        ],
+        [0],
+        this.#commandRunner,
+      ));
     } catch (error) {
       return readMergeAfterFailure(this, pullNumber, expectedHead, error);
     }
@@ -426,14 +419,9 @@ export class GitHubClient {
   }
 
   getCiWorkflowRuns(headSha) {
-    const workflowRunsPath =
-      `repos/${this.repository}/actions/` + "workflows/ci.yml/runs";
+    const workflowRunsPath = `repos/${this.repository}/actions/` + "workflows/ci.yml/runs";
     const query = `?head_sha=${encodeURIComponent(headSha)}&per_page=100`;
-    return ghJsonPages(
-      `${workflowRunsPath}${query}`,
-      "workflow_runs",
-      this.#commandRunner,
-    );
+    return ghJsonPages(`${workflowRunsPath}${query}`, "workflow_runs", this.#commandRunner);
   }
 
   dispatchCiWorkflow(branchName) {
@@ -469,7 +457,11 @@ export class GitHubClient {
     const references = closingIssueReferences(pull?.body, this.repository);
     for (const commit of ghJsonArrayPages(`${pullEndpoint}/commits?per_page=100`, this.#commandRunner)) {
       for (const reference of closingIssueReferences(commit?.commit?.message, this.repository)) {
-        if (!references.some((candidate) => candidate.repository === reference.repository && candidate.number === reference.number)) {
+        if (
+          !references.some(
+            (candidate) => candidate.repository === reference.repository && candidate.number === reference.number,
+          )
+        ) {
           references.push(reference);
         }
       }

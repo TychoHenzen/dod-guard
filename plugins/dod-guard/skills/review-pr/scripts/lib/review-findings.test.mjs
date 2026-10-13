@@ -2,19 +2,11 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import {
-  buildReview,
-  existingReview,
-  postedFindings,
-} from "./review-findings.mjs";
-import {
-  judgment as sharedJudgment,
-  QUOTED_PATH_HUNK,
-} from "./review-pr.test-support.mjs";
+import { buildReview, existingReview, postedFindings } from "./review-findings.mjs";
+import { QUOTED_PATH_HUNK, judgment as sharedJudgment } from "./review-pr.test-support.mjs";
 
 const HEAD = "f522da2baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-const FIX =
-  "plugins/dod-guard/skills/fix-pr-review/scripts/lib/fix-support.mjs";
+const FIX = "plugins/dod-guard/skills/fix-pr-review/scripts/lib/fix-support.mjs";
 const OTHER = "packages/unrelated/src/index.ts";
 const UNICODE = "docs/\u00fc.md";
 
@@ -79,20 +71,13 @@ function judgment(overrides) {
   });
 }
 
-const REVIEWERS = [
-  "review-pr-feature",
-  "review-pr-design",
-  "review-pr-reliability",
-  "review-pr-hygiene",
-];
+const REVIEWERS = ["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"];
 const PBI = {
   repository: "TychoHenzen/dod-guard",
   number: 837,
   body: "## Acceptance criteria\n\n- [ ] AC-01 The review posts once\n",
 };
-const SUB_ISSUES = [
-  { repository: "TychoHenzen/dod-guard", number: 900, title: "Child" },
-];
+const SUB_ISSUES = [{ repository: "TychoHenzen/dod-guard", number: 900, title: "Child" }];
 const SUB_SLOT = "sub-issue:TychoHenzen/dod-guard#900";
 const question = (id, lens) => ({
   id,
@@ -104,10 +89,7 @@ const question = (id, lens) => ({
 const PLAN = [
   {
     slot: `file:${FIX}`,
-    questions: [
-      question("F1", "review-pr-feature"),
-      question("D1", "review-pr-design"),
-    ],
+    questions: [question("F1", "review-pr-feature"), question("D1", "review-pr-design")],
   },
   {
     slot: `file:${UNICODE}`,
@@ -155,10 +137,7 @@ function review(results, scanInput = { violations: [] }) {
 test("structural rules cover the whole touched file and line rules only the changed lines", () => {
   const { payload } = review([], scan);
   const fix = payload.comments.find((comment) => comment.path === FIX);
-  assert.match(
-    fix.body,
-    /^\*\*MAJOR\*\* quality-guard structural findings \(2\)/,
-  );
+  assert.match(fix.body, /^\*\*MAJOR\*\* quality-guard structural findings \(2\)/);
   assert.match(fix.body, /`complexity` line 58[\s\S]*`line-length` line 72/);
   assert.doesNotMatch(fix.body, /line 5:/);
   assert.equal(fix.line, 71);
@@ -168,10 +147,7 @@ test("structural rules cover the whole touched file and line rules only the chan
 test("a changed file Git quotes in the diff still gets its scanner findings", () => {
   const { payload } = review([], scan);
   const unicode = payload.comments.find((comment) => comment.path === UNICODE);
-  assert.deepEqual(
-    [unicode.line, unicode.body.split("\n")[0]],
-    [1, "**MINOR** quality-guard structural findings (1)"],
-  );
+  assert.deepEqual([unicode.line, unicode.body.split("\n")[0]], [1, "**MINOR** quality-guard structural findings (1)"]);
 });
 
 test("a scanner group whose findings are all low is MINOR", () => {
@@ -188,10 +164,7 @@ test("a scanner group whose findings are all low is MINOR", () => {
   };
   const { payload } = review([], lowOnly);
   const unicode = payload.comments.find((comment) => comment.path === UNICODE);
-  assert.equal(
-    unicode.body.split("\n")[0],
-    "**MINOR** quality-guard structural findings (1)",
-  );
+  assert.equal(unicode.body.split("\n")[0], "**MINOR** quality-guard structural findings (1)");
 });
 
 test("a scanner severity outside high/medium/low fails the review build", () => {
@@ -206,10 +179,7 @@ test("a scanner severity outside high/medium/low fails the review build", () => 
       },
     ],
   };
-  assert.throws(
-    () => review([], legacy),
-    /unknown severity "error".*update the installed quality-guard plugin/,
-  );
+  assert.throws(() => review([], legacy), /unknown severity "error".*update the installed quality-guard plugin/);
 });
 
 test("the same root cause dedupes within a file but stays separate across files", () => {
@@ -246,10 +216,7 @@ test("every finding stays an inline comment so it gets a GH id", () => {
   const results = [
     {
       reviewer: "review-pr-design",
-      findings: [
-        judgment({ line: 5 }),
-        judgment({ file: "README.md", line: 92, rootCause: "stale readme" }),
-      ],
+      findings: [judgment({ line: 5 }), judgment({ file: "README.md", line: 92, rootCause: "stale readme" })],
     },
   ];
   const { payload } = review(results);
@@ -271,20 +238,14 @@ test("every finding stays an inline comment so it gets a GH id", () => {
 test("a clean review approves and carries the marker", () => {
   const { payload, recommendation } = review([]);
   assert.equal(recommendation, "APPROVE");
-  assert.deepEqual(
-    [payload.event, payload.commit_id, payload.comments],
-    ["COMMENT", HEAD, []],
-  );
-  assert.deepEqual(
-    existingReview([{ id: 9, body: payload.body, html_url: "u" }]),
-    {
-      found: true,
-      reviewId: 9,
-      headSha: HEAD,
-      recommendation: "APPROVE",
-      url: "u",
-    },
-  );
+  assert.deepEqual([payload.event, payload.commit_id, payload.comments], ["COMMENT", HEAD, []]);
+  assert.deepEqual(existingReview([{ id: 9, body: payload.body, html_url: "u" }]), {
+    found: true,
+    reviewId: 9,
+    headSha: HEAD,
+    recommendation: "APPROVE",
+    url: "u",
+  });
   assert.deepEqual(existingReview([{ id: 1, body: "LGTM" }]), { found: false });
 });
 
@@ -342,10 +303,7 @@ test("posted comments read back as GH ids with their severity", () => {
     },
   ];
   assert.deepEqual(
-    postedFindings(7, comments).map((finding) => [
-      finding.id,
-      finding.severity,
-    ]),
+    postedFindings(7, comments).map((finding) => [finding.id, finding.severity]),
     [
       ["GH-41", "MAJOR"],
       ["GH-42", "BLOCKER"],
@@ -371,20 +329,9 @@ test("the review body keeps the marker first and lists every slot in a collapsed
   assert.ok(lines.includes("**file:docs/\u00fc.md**"));
   assert.ok(lines.includes("**criterion:1**: AC-01 The review posts once"));
   assert.ok(lines.includes(`**${SUB_SLOT}**: Child`));
-  assert.ok(
-    lines.includes(
-      "- F1 review-pr-feature (verified): Does review-pr-feature hold at the reviewed head?",
-    ),
-  );
-  assert.ok(
-    lines.includes(
-      "- excluded for review-pr-hygiene: Same work as criterion:1",
-    ),
-  );
-  assert.ok(
-    lines.indexOf("<details>") >
-      lines.findIndex((line) => line.startsWith("Findings:")),
-  );
+  assert.ok(lines.includes("- F1 review-pr-feature (verified): Does review-pr-feature hold at the reviewed head?"));
+  assert.ok(lines.includes("- excluded for review-pr-hygiene: Same work as criterion:1"));
+  assert.ok(lines.indexOf("<details>") > lines.findIndex((line) => line.startsWith("Findings:")));
 });
 
 test("the build regenerates the slots and refuses a plan that misses one", () => {
@@ -446,9 +393,7 @@ test("the build refuses a judge result missing a ruling for an assigned slot", (
       review([
         {
           reviewer: "review-pr-feature",
-          rulings: [
-            { slot: `file:${FIX}`, status: "VERIFIED", evidence: "checked" },
-          ],
+          rulings: [{ slot: `file:${FIX}`, status: "VERIFIED", evidence: "checked" }],
         },
       ]),
     /review-pr-feature: missing ruling for slot criterion:1/,

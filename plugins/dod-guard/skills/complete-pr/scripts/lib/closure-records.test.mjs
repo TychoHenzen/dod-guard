@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { completionComment, DELIVERIES, quotingComment, REPOSITORY, supersedesBody } from "./closure.test-support.mjs";
 import {
   isRecord,
   parseCompletionRecord,
@@ -9,7 +10,6 @@ import {
   renderClosureEvidence,
   renderCompletionRecord,
 } from "./closure-records.mjs";
-import { DELIVERIES, REPOSITORY, completionComment, quotingComment, supersedesBody } from "./closure.test-support.mjs";
 
 test("parses the supersedes record under Implementation notes", () => {
   assert.deepEqual(parseSupersedes(supersedesBody([777]), REPOSITORY), { numbers: [777] });

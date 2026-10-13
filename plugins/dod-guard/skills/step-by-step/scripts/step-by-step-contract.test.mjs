@@ -33,6 +33,9 @@ test("step-by-step keeps ordered orchestration in the main thread", () => {
 test("step-by-step accepts a calling skill's plan and owns the per-step commit", () => {
   assert.match(skill, /an ordered plan that a calling skill passes/);
   assert.match(skill, /proof for each step and whether each verified step is committed/);
-  assert.match(skill, /the main thread commits the verified changes and reads the commit\s+back before the next step starts/);
+  assert.match(
+    skill,
+    /the main thread commits the verified changes and reads the commit\s+back before the next step starts/,
+  );
   assert.match(skill, /A step that changes no tracked file\s+records its evidence instead of a commit/);
 });

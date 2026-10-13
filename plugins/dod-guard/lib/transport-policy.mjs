@@ -56,7 +56,10 @@ function errorMessage(error) {
 
 function redactedText(value) {
   return String(value ?? "")
-    .replace(/(authorization|credential|password|secret|token|api[\s_-]?key|pat)(\s*[:=]\s*)([^\s,;]+)/gi, "$1$2[redacted]")
+    .replace(
+      /(authorization|credential|password|secret|token|api[\s_-]?key|pat)(\s*[:=]\s*)([^\s,;]+)/gi,
+      "$1$2[redacted]",
+    )
     .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
 }
 
@@ -124,8 +127,12 @@ function codeValue(error) {
 }
 
 function explicitCategory(error) {
-  const category = error?.category ?? error?.failureCategory ?? error?.details?.category ??
-    error?.structuredContent?.status ?? error?.structured_content?.status;
+  const category =
+    error?.category ??
+    error?.failureCategory ??
+    error?.details?.category ??
+    error?.structuredContent?.status ??
+    error?.structured_content?.status;
   return typeof category === "string" ? category.toLowerCase().replace(/[\s-]+/g, "_") : null;
 }
 
@@ -143,7 +150,8 @@ function categoryFromExplicitValue(category, transport) {
     return transport === "mcp" ? FAILURE_CATEGORIES.MCP_RATE_LIMIT : FAILURE_CATEGORIES.REST_RATE_LIMIT;
   }
   if (["auth", "authentication", "unauthorized"].includes(category)) return FAILURE_CATEGORIES.AUTHENTICATION;
-  if (["permission", "forbidden", "entitlement", "authorization"].includes(category)) return FAILURE_CATEGORIES.PERMISSION;
+  if (["permission", "forbidden", "entitlement", "authorization"].includes(category))
+    return FAILURE_CATEGORIES.PERMISSION;
   if (["invalid", "malformed", "validation", "response_shape"].includes(category)) return FAILURE_CATEGORIES.MALFORMED;
   if (["timeout", "timed_out"].includes(category)) return FAILURE_CATEGORIES.TIMEOUT;
   if (["transient", "temporary", "temporarily_unavailable"].includes(category)) return FAILURE_CATEGORIES.TRANSIENT;
@@ -164,18 +172,29 @@ export function classifyTransportFailure(error, source = "mcp") {
   const message = errorMessage(error);
   const retryAfter = retryAfterMs(error);
   const resetAt = rateLimitResetAt(error);
-  const rateLimitHeader = (status === null || status === 403 || status === 429) && (
-    headerValue(error, "x-ratelimit-reset") !== null ||
-    headerValue(error, "x-ratelimit-remaining") === "0" || retryAfter !== null || resetAt !== null
-  );
+  const rateLimitHeader =
+    (status === null || status === 403 || status === 429) &&
+    (headerValue(error, "x-ratelimit-reset") !== null ||
+      headerValue(error, "x-ratelimit-remaining") === "0" ||
+      retryAfter !== null ||
+      resetAt !== null);
   const explicit = categoryFromExplicitValue(explicitCategory(error), transport);
   const explicitRateLimit = [FAILURE_CATEGORIES.MCP_RATE_LIMIT, FAILURE_CATEGORIES.REST_RATE_LIMIT].includes(explicit);
-  const rateLimitEvidence = explicitRateLimit || status === 429 || RATE_LIMIT_MARKER.test(message) ||
-    code === "rate_limit" || code === "secondary_rate_limit" || rateLimitHeader;
+  const rateLimitEvidence =
+    explicitRateLimit ||
+    status === 429 ||
+    RATE_LIMIT_MARKER.test(message) ||
+    code === "rate_limit" ||
+    code === "secondary_rate_limit" ||
+    rateLimitHeader;
   let category = explicit;
 
   if (rateLimitEvidence) {
-    category = explicitRateLimit ? explicit : transport === "mcp" ? FAILURE_CATEGORIES.MCP_RATE_LIMIT : FAILURE_CATEGORIES.REST_RATE_LIMIT;
+    category = explicitRateLimit
+      ? explicit
+      : transport === "mcp"
+        ? FAILURE_CATEGORIES.MCP_RATE_LIMIT
+        : FAILURE_CATEGORIES.REST_RATE_LIMIT;
   } else if (status === 401 || AUTHENTICATION_MARKER.test(message) || code === "unauthorized") {
     category = FAILURE_CATEGORIES.AUTHENTICATION;
   } else if (status === 403 || /forbidden|permission|entitlement/i.test(message)) {
@@ -228,7 +247,10 @@ function evidenceEntry(operation, request, endpoint, failure) {
 
 export class TransportStopError extends Error {
   constructor(details, cause) {
-    super(`GitHub ${details.operation} stopped after ${details.category}.`, cause === undefined ? undefined : { cause });
+    super(
+      `GitHub ${details.operation} stopped after ${details.category}.`,
+      cause === undefined ? undefined : { cause },
+    );
     this.name = "TransportStopError";
     this.code = "transport_stop";
     this.details = details;
@@ -257,21 +279,31 @@ export async function runTransport({
     const primaryFailure = classifyTransportFailure(error, "mcp");
     const primaryEvidence = evidenceEntry(operation, request, endpoint, primaryFailure);
     if (Array.isArray(evidence)) evidence.push(primaryEvidence);
-    const canRateLimitFallback = primaryFailure.transport === "mcp" &&
+    const canRateLimitFallback =
+      primaryFailure.transport === "mcp" &&
       [FAILURE_CATEGORIES.MCP_RATE_LIMIT, FAILURE_CATEGORIES.TRANSPORT_UNAVAILABLE].includes(primaryFailure.category) &&
-      typeof rest === "function" && typeof endpoint === "string" && endpoint.length > 0;
-    const canInteractiveFallback = primaryFailure.transport === "mcp" &&
-      primaryFailure.category === FAILURE_CATEGORIES.INTERACTIVE_FORM && mutation === true &&
-      typeof rest === "function" && typeof readback === "function" &&
-      typeof endpoint === "string" && endpoint.length > 0;
+      typeof rest === "function" &&
+      typeof endpoint === "string" &&
+      endpoint.length > 0;
+    const canInteractiveFallback =
+      primaryFailure.transport === "mcp" &&
+      primaryFailure.category === FAILURE_CATEGORIES.INTERACTIVE_FORM &&
+      mutation === true &&
+      typeof rest === "function" &&
+      typeof readback === "function" &&
+      typeof endpoint === "string" &&
+      endpoint.length > 0;
     if (!canRateLimitFallback && !canInteractiveFallback) {
-      throw new TransportStopError({
-        operation,
-        category: primaryFailure.category,
-        endpoint,
-        request: safeRequest(request),
-        primaryFailure,
-      }, error);
+      throw new TransportStopError(
+        {
+          operation,
+          category: primaryFailure.category,
+          endpoint,
+          request: safeRequest(request),
+          primaryFailure,
+        },
+        error,
+      );
     }
 
     try {
@@ -311,14 +343,17 @@ export async function runTransport({
     } catch (restError) {
       const restFailure = classifyTransportFailure(restError, "rest");
       if (Array.isArray(evidence)) evidence.push(evidenceEntry(operation, request, endpoint, restFailure));
-      throw new TransportStopError({
-        operation,
-        category: restFailure.category,
-        endpoint,
-        request: safeRequest(request),
-        primaryFailure,
-        restFailure,
-      }, restError);
+      throw new TransportStopError(
+        {
+          operation,
+          category: restFailure.category,
+          endpoint,
+          request: safeRequest(request),
+          primaryFailure,
+          restFailure,
+        },
+        restError,
+      );
     }
   }
 }

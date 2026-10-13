@@ -234,7 +234,10 @@ function isAtImport(line) {
 }
 
 function checkNoAtImports(body) {
-  const hits = body.split(/\r?\n/).filter(isAtImport).map((l) => l.trim());
+  const hits = body
+    .split(/\r?\n/)
+    .filter(isAtImport)
+    .map((l) => l.trim());
   return {
     id: "no-at-imports",
     label: "No @-imports in SKILL.md",
@@ -624,7 +627,11 @@ function checkEmphasisDensity(body) {
 // --- Redundant repetition ---
 
 function normalizeForComparison(line) {
-  return line.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+  return line
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function trigramSet(text) {
@@ -785,12 +792,7 @@ const ALL_WEIGHTS = {
   ...Object.assign({}, ...Object.values(KIND_EXTRA_WEIGHTS)),
 };
 
-const FRONTMATTER_CHECK_IDS = [
-  "name-format",
-  "description-present",
-  "description-person",
-  "description-triggers",
-];
+const FRONTMATTER_CHECK_IDS = ["name-format", "description-present", "description-person", "description-triggers"];
 
 function checkIdsExcluding(...excluded) {
   const drop = new Set(excluded);
@@ -808,10 +810,7 @@ const KIND_CHECK_IDS = {
   skill: CHECK_IDS,
   agent: [...checkIdsExcluding("delegation-cap"), ...Object.keys(KIND_EXTRA_WEIGHTS.agent)],
   "claude-md": checkIdsExcluding(...FRONTMATTER_CHECK_IDS, "delegation-cap"),
-  memory: [
-    ...checkIdsExcluding("description-triggers", "delegation-cap"),
-    ...Object.keys(KIND_EXTRA_WEIGHTS.memory),
-  ],
+  memory: [...checkIdsExcluding("description-triggers", "delegation-cap"), ...Object.keys(KIND_EXTRA_WEIGHTS.memory)],
   instinct: [
     ...checkIdsExcluding(...FRONTMATTER_CHECK_IDS, "delegation-cap"),
     ...Object.keys(KIND_EXTRA_WEIGHTS.instinct),
@@ -819,10 +818,7 @@ const KIND_CHECK_IDS = {
 };
 
 const KINDS = Object.fromEntries(
-  Object.entries(KIND_CHECK_IDS).map(([kind, ids]) => [
-    kind,
-    { checkIds: ids, weights: renormalizedWeights(ids) },
-  ]),
+  Object.entries(KIND_CHECK_IDS).map(([kind, ids]) => [kind, { checkIds: ids, weights: renormalizedWeights(ids) }]),
 );
 
 // --- Run all checks ---
@@ -879,8 +875,7 @@ function compare(before, after) {
   const beforeById = Object.fromEntries(before.map((c) => [c.id, c]));
   for (const a of after) {
     const b = beforeById[a.id] ?? { pass: false, value: "n/a", detail: "n/a" };
-    const status =
-      a.pass && !b.pass ? "FIXED" : !a.pass && b.pass ? "REGRESSED" : a.pass ? "PASS" : "FAIL";
+    const status = a.pass && !b.pass ? "FIXED" : !a.pass && b.pass ? "REGRESSED" : a.pass ? "PASS" : "FAIL";
     rows.push({
       id: a.id,
       label: a.label,
@@ -922,9 +917,7 @@ function printComparison(rows, scores) {
   const regressed = rows.filter((r) => r.status === "REGRESSED").length;
   const passing = rows.filter((r) => r.status === "PASS" || r.status === "FIXED").length;
   const delta = scores.after - scores.before;
-  process.stdout.write(
-    `\n  ${passing}/${rows.length} passing, ${fixed} fixed, ${regressed} regressed\n`,
-  );
+  process.stdout.write(`\n  ${passing}/${rows.length} passing, ${fixed} fixed, ${regressed} regressed\n`);
   process.stdout.write(
     `  5.0-readiness: ${scores.before}/100 -> ${scores.after}/100 (${delta >= 0 ? "+" : ""}${delta})\n`,
   );

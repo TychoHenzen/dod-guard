@@ -1,9 +1,9 @@
 #!/usr/bin/env node
+// biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
+import process from "node:process";
 import { completePullRequest, recoverMergedPullRequest } from "./lib/complete-pr.mjs";
 import { GitHubClient } from "./lib/github-client.mjs";
 import { LocalGit } from "./lib/local-git.mjs";
-// biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
-import process from "node:process";
 
 const [repository, pullNumberText, ...flags] = process.argv.slice(2);
 const pullNumber = Number.parseInt(pullNumberText, 10);

@@ -1,7 +1,13 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
   "assist": {
-    "includes": ["packages/*/src/**/*.ts", "packages/*/tests/**/*.ts", "scripts/ci/**/*.mjs"],
+    "includes": [
+      "packages/*/src/**/*.ts",
+      "packages/*/tests/**/*.ts",
+      "scripts/ci/**/*.mjs",
+      "plugins/**/*.mjs",
+      "plugins/**/*.js"
+    ],
     "actions": {
       "source": {
         "organizeImports": "on"
@@ -44,7 +50,9 @@
       "packages/*/tests/**/*.ts",
       "packages/quality-guard/scripts/**/*.mjs",
       "packages/quality-guard/tests/**/*.mjs",
-      "scripts/ci/**/*.mjs"
+      "scripts/ci/**/*.mjs",
+      "plugins/**/*.mjs",
+      "plugins/**/*.js"
     ],
     "indentStyle": "space",
     "indentWidth": 2,

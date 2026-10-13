@@ -7,7 +7,10 @@ const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 test("wiring-audit is discoverable for planning, implementation, and review", () => {
   assert.match(skill, /^---\nname: wiring-audit\ndescription: .*planning, implementation, or review.*\n---/s);
   assert.match(skill, /Read and apply `standards\/working-defaults\.md`/);
-  assert.match(skill, /explicitly or as a contextual check during planning, before\s+implementation, and before review or handoff/s);
+  assert.match(
+    skill,
+    /explicitly or as a contextual check during planning, before\s+implementation, and before review or handoff/s,
+  );
 });
 
 test("wiring-audit traces the user path without inventing surfaces", () => {

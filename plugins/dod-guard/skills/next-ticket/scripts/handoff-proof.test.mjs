@@ -118,7 +118,10 @@ test("exits 2 on a file that is not UTF-8 and reads UTF-8 with a byte-order mark
     });
   }
   await withTempFile("body.md", Buffer.concat([bom, Buffer.from(body, "utf8")]), (file) => {
-    assert.deepEqual(run("refinement", `--body-file=${file}`), { status: 0, json: { outcome: "verified", remainder: [] } });
+    assert.deepEqual(run("refinement", `--body-file=${file}`), {
+      status: 0,
+      json: { outcome: "verified", remainder: [] },
+    });
   });
   const children = Buffer.concat([bom, Buffer.from('[{"id": "orphan-slice", "evidence": "slice-proof"}]')]);
   await withTempFile("children.json", children, (file) => {
@@ -150,9 +153,10 @@ test("exits 2 on a usage error and names the argument", async () => {
 
   assert.deepEqual(run("refinement"), usage(["--body-file=<path> is required"]));
   assert.deepEqual(run(), usage(["the first argument must be the refinement subcommand"]));
-  assert.deepEqual(run("finalization", `--body-file=${CORRECTED}`), usage([
-    "the first argument must be the refinement subcommand",
-  ]));
+  assert.deepEqual(
+    run("finalization", `--body-file=${CORRECTED}`),
+    usage(["the first argument must be the refinement subcommand"]),
+  );
   assert.deepEqual(run("refinement", CORRECTED), usage([`unexpected argument ${CORRECTED}`]));
   assert.deepEqual(run("refinement", `--body-file=${CORRECTED}`, "--head=abc"), usage(["unknown option --head"]));
   assert.deepEqual(run("refinement", `--body-file=${missing}`), usage([`cannot read --body-file ${missing}`]));

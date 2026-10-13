@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 import { assessGitHubSnapshot, inspectRepository, summarizeRepository } from "./inspect-repository.mjs";
 import {
-  PUBLIC_VISIBILITY,
   assertPublicRepositoryReadback,
   buildPublicRepositoryPayload,
   createPublicRepository,
+  PUBLIC_VISIBILITY,
 } from "./repository-visibility.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -46,7 +46,7 @@ const HTTP_FORBIDDEN = 403;
 
 function visibilityRepository({ visibility = PUBLIC_VISIBILITY, isPrivate = false } = {}) {
   return {
-    "full_name": "owner/target",
+    full_name: "owner/target",
     name: "target",
     private: isPrivate,
     visibility,
@@ -119,11 +119,7 @@ test("keeps ignore rules, workflows, instructions, and tool configuration visibl
   const report = await inspectRepository(root);
 
   assert.deepEqual(report.instructions, ["AGENTS.md"]);
-  assert.deepEqual(report.configurations, [
-    ".github/workflows/ci.yml",
-    ".gitignore",
-    "biome.json",
-  ]);
+  assert.deepEqual(report.configurations, [".github/workflows/ci.yml", ".gitignore", "biome.json"]);
 });
 
 test("reports unclassified source extensions so unsupported checks need an explicit reason", async (t) => {
@@ -239,10 +235,13 @@ test("summary CLI stays bounded while the default and snapshot modes remain deta
   ]);
 
   const snapshotPath = path.join(root, "snapshot.json");
-  await writeFile(snapshotPath, JSON.stringify({
-    projects: [{ closed: false, statusOptions: ["Backlog", "Todo", "In Progress", "Done"] }],
-    checks: [{ name: "test", conclusion: "SUCCESS" }],
-  }));
+  await writeFile(
+    snapshotPath,
+    JSON.stringify({
+      projects: [{ closed: false, statusOptions: ["Backlog", "Todo", "In Progress", "Done"] }],
+      checks: [{ name: "test", conclusion: "SUCCESS" }],
+    }),
+  );
   const snapshot = JSON.parse((await runInspector("--github-snapshot", snapshotPath)).stdout);
   assert.equal(snapshot.readyForProtection, true);
   assert.deepEqual(snapshot.requiredChecks, ["test"]);
@@ -250,8 +249,9 @@ test("summary CLI stays bounded while the default and snapshot modes remain deta
 
 test("keeps summary output bounded as the inventory grows", async (t) => {
   const root = await fixture(t, "summary-bound");
-  await Promise.all(Array.from({ length: 400 }, (_, index) =>
-    writeFile(path.join(root, `file-${index}.ts`), "export {}\n")));
+  await Promise.all(
+    Array.from({ length: 400 }, (_, index) => writeFile(path.join(root, `file-${index}.ts`), "export {}\n")),
+  );
 
   const output = await runInspector("--summary", root);
   const summary = JSON.parse(output.stdout);
@@ -401,17 +401,20 @@ test("builds strict protection from successful observed check names", () => {
 });
 
 test("builds an explicit public create payload without initializing remote content", () => {
-  assert.deepEqual(buildPublicRepositoryPayload({
-    name: "target",
-    organization: "owner",
-    description: "fixture",
-  }), {
-    name: "target",
-    organization: "owner",
-    description: "fixture",
-    private: false,
-    autoInit: false,
-  });
+  assert.deepEqual(
+    buildPublicRepositoryPayload({
+      name: "target",
+      organization: "owner",
+      description: "fixture",
+    }),
+    {
+      name: "target",
+      organization: "owner",
+      description: "fixture",
+      private: false,
+      autoInit: false,
+    },
+  );
 });
 
 test("creates only an absent target and verifies public visibility after the mutation", async () => {
@@ -440,12 +443,14 @@ test("creates only an absent target and verifies public visibility after the mut
   ]);
   assert.equal(result.repository.visibility, PUBLIC_VISIBILITY);
   assert.equal(result.repository.private, false);
-  assert.deepEqual(ledger, [{
-    operation: "create_repository",
-    target: "owner/target",
-    requestedVisibility: PUBLIC_VISIBILITY,
-    status: "verified",
-  }]);
+  assert.deepEqual(ledger, [
+    {
+      operation: "create_repository",
+      target: "owner/target",
+      requestedVisibility: PUBLIC_VISIBILITY,
+      status: "verified",
+    },
+  ]);
 });
 
 test("refuses to mutate an existing private repository", async () => {
@@ -457,10 +462,13 @@ test("refuses to mutate an existing private repository", async () => {
       owner: "owner",
       name: "target",
       readRepository: () => visibilityRepository({ visibility: "private", isPrivate: true }),
-      createRepository: () => { createCalls += 1; },
+      createRepository: () => {
+        createCalls += 1;
+      },
       mutationLedger: ledger,
     }),
-    (error) => error.name === "RepositoryVisibilityStopError" &&
+    (error) =>
+      error.name === "RepositoryVisibilityStopError" &&
       error.details.stage === "pre-create read" &&
       error.details.mutationAttempted === false,
   );
@@ -478,7 +486,8 @@ test("fails closed when creation readback is missing", async () => {
       createRepository: () => undefined,
       mutationLedger: ledger,
     }),
-    (error) => error.name === "RepositoryVisibilityStopError" &&
+    (error) =>
+      error.name === "RepositoryVisibilityStopError" &&
       error.details.stage === "post-create readback" &&
       error.details.mutationAttempted === true,
   );
@@ -497,15 +506,19 @@ test("does not expose provider error text in failure diagnostics", async () => {
       owner: "owner",
       name: "target",
       readRepository: () => null,
-      createRepository: () => { throw providerError; },
+      createRepository: () => {
+        throw providerError;
+      },
     }),
     (error) => {
       observedError = error;
-      return error.details.provider.status === HTTP_FORBIDDEN &&
+      return (
+        error.details.provider.status === HTTP_FORBIDDEN &&
         error.details.provider.category === "permission" &&
         error.cause === undefined &&
         !Object.hasOwn(error, "cause") &&
-        !JSON.stringify(error, Object.getOwnPropertyNames(error)).includes("secret-value");
+        !JSON.stringify(error, Object.getOwnPropertyNames(error)).includes("secret-value")
+      );
     },
   );
   assert.equal(observedError.cause, undefined);
@@ -536,7 +549,8 @@ test("rejects a create destination that differs from the resolved owner", async 
       },
       mutationLedger: ledger,
     }),
-    (error) => error.name === "RepositoryVisibilityStopError" &&
+    (error) =>
+      error.name === "RepositoryVisibilityStopError" &&
       error.details.stage === "destination validation" &&
       error.details.mutationAttempted === false,
   );
@@ -548,11 +562,11 @@ test("rejects a create destination that differs from the resolved owner", async 
 
 test("rejects a contradictory repository readback", () => {
   assert.throws(
-    () => assertPublicRepositoryReadback(visibilityRepository({ visibility: "private", isPrivate: true }), {
-      owner: "owner",
-      name: "target",
-    }),
-    (error) => error.name === "RepositoryVisibilityStopError" &&
-      error.details.stage === "repository readback",
+    () =>
+      assertPublicRepositoryReadback(visibilityRepository({ visibility: "private", isPrivate: true }), {
+        owner: "owner",
+        name: "target",
+      }),
+    (error) => error.name === "RepositoryVisibilityStopError" && error.details.stage === "repository readback",
   );
 });

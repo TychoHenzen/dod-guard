@@ -1,9 +1,9 @@
 // biome-ignore lint/correctness/noNodejsModules: This shipped command resolves its direct entrypoint.
 import { resolve } from "node:path";
-// biome-ignore lint/correctness/noNodejsModules: This shipped command resolves its direct entrypoint.
-import { fileURLToPath } from "node:url";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command exposes a direct CLI.
 import process from "node:process";
+// biome-ignore lint/correctness/noNodejsModules: This shipped command resolves its direct entrypoint.
+import { fileURLToPath } from "node:url";
 import { runTransport } from "../../../lib/transport-policy.mjs";
 import { runGh } from "./lib/gh-runner.mjs";
 import { statusValueName } from "./lib/project-reads.mjs";
@@ -86,8 +86,8 @@ function parseArrayResponse(result, operation) {
 }
 
 function resolveStatusField(fields, statusFieldId) {
-  const matches = fields.filter((field) =>
-    String(field?.node_id ?? "") === statusFieldId || String(field?.id ?? "") === statusFieldId,
+  const matches = fields.filter(
+    (field) => String(field?.node_id ?? "") === statusFieldId || String(field?.id ?? "") === statusFieldId,
   );
   if (matches.length !== 1) {
     throw new Error(`Status field ${statusFieldId} must resolve to exactly one REST field.`);
@@ -117,9 +117,7 @@ function resolveStatusOption(statusField, statusOptionId, expectedStatus) {
 }
 
 function findProjectItem(items, itemId) {
-  const matches = items.filter((item) =>
-    String(item?.node_id ?? "") === itemId || String(item?.id ?? "") === itemId,
-  );
+  const matches = items.filter((item) => String(item?.node_id ?? "") === itemId || String(item?.id ?? "") === itemId);
   if (matches.length !== 1) {
     return null;
   }
@@ -129,8 +127,14 @@ function findProjectItem(items, itemId) {
 function projectItemIdentity(item) {
   const id = item?.id;
   const nodeId = item?.node_id ?? item?.nodeId;
-  if (id === undefined || id === null || String(id).trim().length === 0 ||
-      nodeId === undefined || nodeId === null || String(nodeId).trim().length === 0) {
+  if (
+    id === undefined ||
+    id === null ||
+    String(id).trim().length === 0 ||
+    nodeId === undefined ||
+    nodeId === null ||
+    String(nodeId).trim().length === 0
+  ) {
     throw new Error("Project item readback must include stable numeric and global IDs.");
   }
   return { id: String(id), nodeId: String(nodeId) };
@@ -161,8 +165,8 @@ function validateProjectItems(items) {
 }
 
 function readProjectItemStatus(item, itemId, statusFieldId) {
-  const statusFields = (Array.isArray(item?.fields) ? item.fields : []).filter((field) =>
-    String(field?.id ?? "") === String(statusFieldId) || field?.name === "Status",
+  const statusFields = (Array.isArray(item?.fields) ? item.fields : []).filter(
+    (field) => String(field?.id ?? "") === String(statusFieldId) || field?.name === "Status",
   );
   if (statusFields.length !== 1) {
     throw new Error(`Project item ${itemId} readback did not include exactly one Status field/value.`);
@@ -185,7 +189,9 @@ function readProjectItems({ owner, projectNumber, statusFieldId, targetItemIds, 
 function runStatusMutation(commandRunner, command) {
   const result = commandRunner(command);
   if (result?.status !== undefined && result.status !== 0) {
-    throw new Error(result.stderr?.trim() || result.stdout?.trim() || `Project status mutation exited with ${result.status}.`);
+    throw new Error(
+      result.stderr?.trim() || result.stdout?.trim() || `Project status mutation exited with ${result.status}.`,
+    );
   }
   return result;
 }
@@ -202,9 +208,7 @@ function resolveProjectItemInputs(items, itemIds, statusFieldId) {
     const identity = projectItemIdentity(item);
     const firstInput = inputByNodeId.get(identity.nodeId);
     if (firstInput !== undefined) {
-      throw new Error(
-        `Project item ${firstInput} and ${itemId} resolve to the same Project item ${identity.nodeId}.`,
-      );
+      throw new Error(`Project item ${firstInput} and ${itemId} resolve to the same Project item ${identity.nodeId}.`);
     }
     inputByNodeId.set(identity.nodeId, itemId);
     resolved.set(itemId, { identity, status: readProjectItemStatus(item, itemId, statusFieldId) });
@@ -246,23 +250,21 @@ function writeProjectStatuses({
   requireText(statusFieldId, "statusFieldId");
   requireText(statusOptionId, "statusOptionId");
   requireText(expectedStatus, "expectedStatus");
-  if (!Array.isArray(itemIds) || itemIds.length === 0 || itemIds.some((itemId) => typeof itemId !== "string" || itemId.length === 0)) {
+  if (
+    !Array.isArray(itemIds) ||
+    itemIds.length === 0 ||
+    itemIds.some((itemId) => typeof itemId !== "string" || itemId.length === 0)
+  ) {
     throw new Error("itemIds must contain at least one non-empty item ID.");
   }
   if (new Set(itemIds).size !== itemIds.length) {
     throw new Error("itemIds must contain unique item IDs.");
   }
 
-  const project = parseJson(
-    commandRunner(buildProjectViewCommand(owner, projectNumber)),
-    "Project view",
-  );
+  const project = parseJson(commandRunner(buildProjectViewCommand(owner, projectNumber)), "Project view");
   const projectId = resolveProjectNodeId(project);
   const statusField = resolveStatusField(
-    parseArrayResponse(
-      commandRunner(buildProjectFieldsCommand(owner, projectNumber)),
-      "Project fields",
-    ),
+    parseArrayResponse(commandRunner(buildProjectFieldsCommand(owner, projectNumber)), "Project fields"),
     statusFieldId,
   );
   resolveStatusOption(statusField, statusOptionId, expectedStatus);
@@ -365,14 +367,20 @@ if (entrypoint === modulePath) {
     process.exitCode = 2;
   } else {
     try {
-      process.stdout.write(`${JSON.stringify(writeProjectStatuses({
-        owner,
-        projectNumber,
-        statusFieldId,
-        statusOptionId,
-        expectedStatus,
-        itemIds,
-      }), null, 2)}\n`);
+      process.stdout.write(
+        `${JSON.stringify(
+          writeProjectStatuses({
+            owner,
+            projectNumber,
+            statusFieldId,
+            statusOptionId,
+            expectedStatus,
+            itemIds,
+          }),
+          null,
+          2,
+        )}\n`,
+      );
     } catch (error) {
       process.stderr.write(`project-status failed: ${error.message}\n`);
       process.exitCode = 1;
@@ -381,8 +389,8 @@ if (entrypoint === modulePath) {
 }
 
 export {
-  buildProjectItemEditCommand,
   buildProjectFieldsCommand,
+  buildProjectItemEditCommand,
   buildProjectItemListCommand,
   buildProjectViewCommand,
   resolveProjectNodeId,

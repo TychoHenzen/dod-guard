@@ -3,11 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  buildCodexExecArgs,
-  buildCodexPreflightArgs,
-  resolveCodexExecutable,
-} from "./codex-launch-contract.mjs";
+import { buildCodexExecArgs, buildCodexPreflightArgs, resolveCodexExecutable } from "./codex-launch-contract.mjs";
 
 const defaultSchemaPath = fileURLToPath(new URL("../response-schema.json", import.meta.url));
 const MAX_OUTPUT_BYTES = 8 * 1024 * 1024;
@@ -144,7 +140,8 @@ function failure(message, processResult, executable, args, stage, prefixArgs = [
     error: details ? `${message}: ${details}` : message,
     stderr: processResult?.stderr ?? "",
     stdout: processResult?.stdout ?? "",
-    execution: executable && args && stage ? executionEvidence(executable, args, processResult, stage, prefixArgs) : undefined,
+    execution:
+      executable && args && stage ? executionEvidence(executable, args, processResult, stage, prefixArgs) : undefined,
   };
 }
 
@@ -303,16 +300,44 @@ export async function runAdvisor({
         spawnImpl,
       );
       if (result.outputLimitExceeded) {
-        return failure(`Codex advisor ${stage} capability probe exceeded ${MAX_OUTPUT_BYTES} bytes`, result, executable, preflight, stage, prefixArgs);
+        return failure(
+          `Codex advisor ${stage} capability probe exceeded ${MAX_OUTPUT_BYTES} bytes`,
+          result,
+          executable,
+          preflight,
+          stage,
+          prefixArgs,
+        );
       }
       if (result.startError) {
-        return failure(`Codex advisor executable is missing or cannot start (${result.startError.message})`, result, executable, preflight, stage, prefixArgs);
+        return failure(
+          `Codex advisor executable is missing or cannot start (${result.startError.message})`,
+          result,
+          executable,
+          preflight,
+          stage,
+          prefixArgs,
+        );
       }
       if (result.cancelled) {
-        return failure("Codex advisor capability probe cancelled by operator", result, executable, preflight, stage, prefixArgs);
+        return failure(
+          "Codex advisor capability probe cancelled by operator",
+          result,
+          executable,
+          preflight,
+          stage,
+          prefixArgs,
+        );
       }
       if (result.code !== 0) {
-        return failure(`Codex advisor ${stage} capability probe exits non-zero with code ${result.code}`, result, executable, preflight, stage, prefixArgs);
+        return failure(
+          `Codex advisor ${stage} capability probe exits non-zero with code ${result.code}`,
+          result,
+          executable,
+          preflight,
+          stage,
+          prefixArgs,
+        );
       }
       capability[stage] = processEvidence(executable, preflight, result);
     }
@@ -334,13 +359,34 @@ export async function runAdvisor({
       spawnImpl,
     );
     if (result.outputLimitExceeded) {
-      return failure(`Codex advisor output exceeded ${MAX_OUTPUT_BYTES} bytes`, result, executable, args, "reviewer-process", prefixArgs);
+      return failure(
+        `Codex advisor output exceeded ${MAX_OUTPUT_BYTES} bytes`,
+        result,
+        executable,
+        args,
+        "reviewer-process",
+        prefixArgs,
+      );
     }
     if (result.startError) {
-      return failure(`Codex advisor executable is missing or cannot start (${result.startError.message})`, result, executable, args, "reviewer-launch", prefixArgs);
+      return failure(
+        `Codex advisor executable is missing or cannot start (${result.startError.message})`,
+        result,
+        executable,
+        args,
+        "reviewer-launch",
+        prefixArgs,
+      );
     }
     if (result.stdinError) {
-      return failure(`Codex advisor prompt could not be written (${result.stdinError.message})`, result, executable, args, "reviewer-launch", prefixArgs);
+      return failure(
+        `Codex advisor prompt could not be written (${result.stdinError.message})`,
+        result,
+        executable,
+        args,
+        "reviewer-launch",
+        prefixArgs,
+      );
     }
     if (result.cancelled) {
       return failure("Codex advisor cancelled by operator", result, executable, args, "reviewer-process", prefixArgs);
@@ -353,7 +399,14 @@ export async function runAdvisor({
       return failed;
     }
     if (result.code !== 0) {
-      return failure(`Codex advisor exits non-zero with code ${result.code}`, result, executable, args, "reviewer-process", prefixArgs);
+      return failure(
+        `Codex advisor exits non-zero with code ${result.code}`,
+        result,
+        executable,
+        args,
+        "reviewer-process",
+        prefixArgs,
+      );
     }
     const violation = oneTurnViolation(events);
     if (violation) {
@@ -364,7 +417,14 @@ export async function runAdvisor({
     try {
       raw = await readFile(outputPath, "utf8");
     } catch {
-      return failure("Codex advisor output file is missing or unreadable", result, executable, args, "reviewer-report", prefixArgs);
+      return failure(
+        "Codex advisor output file is missing or unreadable",
+        result,
+        executable,
+        args,
+        "reviewer-report",
+        prefixArgs,
+      );
     }
     if (!raw.trim()) {
       return failure("Codex advisor output file is empty", result, executable, args, "reviewer-report", prefixArgs);
@@ -373,7 +433,14 @@ export async function runAdvisor({
     try {
       parsed = parseResponse(raw);
     } catch (error) {
-      return failure(`Codex advisor output could not be parsed (${error.message})`, result, executable, args, "reviewer-report", prefixArgs);
+      return failure(
+        `Codex advisor output could not be parsed (${error.message})`,
+        result,
+        executable,
+        args,
+        "reviewer-report",
+        prefixArgs,
+      );
     }
     if (parsed.error) {
       return failure(parsed.error, result, executable, args, "reviewer-report", prefixArgs);
@@ -414,9 +481,7 @@ async function readStdin() {
 }
 
 async function main() {
-  const prefixArgs = process.env.CODEX_ADVISOR_PREFIX_ARGS
-    ? JSON.parse(process.env.CODEX_ADVISOR_PREFIX_ARGS)
-    : [];
+  const prefixArgs = process.env.CODEX_ADVISOR_PREFIX_ARGS ? JSON.parse(process.env.CODEX_ADVISOR_PREFIX_ARGS) : [];
   const result = await runAdvisor({
     prefixArgs,
     prompt: await readStdin(),

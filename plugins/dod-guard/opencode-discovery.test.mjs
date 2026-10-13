@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { existsSync, rmSync } from "node:fs";
 import test from "node:test";
 import {
-  ROOT,
   assertSupportedOpenCode,
   createFixture,
+  ROOT,
   request,
   startServer,
   stop,

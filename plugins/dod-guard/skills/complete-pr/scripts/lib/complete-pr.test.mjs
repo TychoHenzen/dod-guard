@@ -31,11 +31,13 @@ function linkedProjectItem(id, number = 24, repository = "owner/repo") {
 function projectStatusResponse(status, id = 1701, number = 24, repository = "owner/repo") {
   return {
     ...linkedProjectItem(id, number, repository),
-    fields: [{
-      id: PROJECT_STATUS_FIELD_ID,
-      name: "Status",
-      value: { name: { raw: status } },
-    }],
+    fields: [
+      {
+        id: PROJECT_STATUS_FIELD_ID,
+        name: "Status",
+        value: { name: { raw: status } },
+      },
+    ],
   };
 }
 
@@ -265,9 +267,7 @@ class FixtureClient {
 
   getSourceBranchRef(branchName) {
     this.calls.push(["getSourceBranchRef", branchName]);
-    return this.sourceRefs
-      ? nextValue(this.sourceRefs)
-      : { sha: this.lastPullHeadSha };
+    return this.sourceRefs ? nextValue(this.sourceRefs) : { sha: this.lastPullHeadSha };
   }
 
   getPullRequestRefs(number) {
@@ -376,19 +376,22 @@ test("waits for stale PR and temporary head refs to converge", async () => {
     sourceRefs: [{ sha: "head-2" }, { sha: "head-2" }],
   });
 
-  const result = await waitForHeadConvergence(
-    client,
-    {
-      expectedHead: "head-2",
-      initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
-      options: { headPollLimit: 2, pollMs: 0 },
-      repository: client.repositoryDetails,
-    },
-  );
+  const result = await waitForHeadConvergence(client, {
+    expectedHead: "head-2",
+    initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
+    options: { headPollLimit: 2, pollMs: 0 },
+    repository: client.repositoryDetails,
+  });
 
   assert.equal(result.headSha, "head-2");
-  assert.deepEqual(client.calls.filter(([name]) => name === "wait"), [["wait"]]);
-  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "wait"),
+    [["wait"]],
+  );
+  assert.equal(
+    client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)),
+    false,
+  );
 });
 
 test("uses the converged SHA for CI, merge, and cleanup", async () => {
@@ -411,9 +414,18 @@ test("uses the converged SHA for CI, merge, and cleanup", async () => {
   const result = await completePullRequest(client, { ...immediateOptions, pushedHead: "head-2" });
 
   assert.equal(result.acceptedHead, "head-2");
-  assert.equal(client.calls.filter(([name]) => name === "getCiWorkflowRuns").every(([, sha]) => sha === "head-2"), true);
-  assert.deepEqual(client.calls.filter(([name]) => name === "mergePullRequest"), [["mergePullRequest", 24, "head-2"]]);
-  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [["deleteBranchRef", "codex/24-complete-pr"]]);
+  assert.equal(
+    client.calls.filter(([name]) => name === "getCiWorkflowRuns").every(([, sha]) => sha === "head-2"),
+    true,
+  );
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "mergePullRequest"),
+    [["mergePullRequest", 24, "head-2"]],
+  );
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "deleteBranchRef"),
+    [["deleteBranchRef", "codex/24-complete-pr"]],
+  );
 });
 
 test("stops after bounded stale-head convergence without writes", async () => {
@@ -424,18 +436,18 @@ test("stops after bounded stale-head convergence without writes", async () => {
   });
 
   await assert.rejects(
-    waitForHeadConvergence(
-      client,
-      {
-        expectedHead: "head-2",
-        initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
-        options: { headPollLimit: 2, pollMs: 0 },
-        repository: client.repositoryDetails,
-      },
-    ),
+    waitForHeadConvergence(client, {
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
+      options: { headPollLimit: 2, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
     { code: "head_convergence_timeout", message: /head-2.*head-1/ },
   );
-  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+  assert.equal(
+    client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)),
+    false,
+  );
 });
 
 test("stops when the source branch moves during convergence", async () => {
@@ -445,15 +457,12 @@ test("stops when the source branch moves during convergence", async () => {
   });
 
   await assert.rejects(
-    waitForHeadConvergence(
-      client,
-      {
-        expectedHead: "head-2",
-        initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
-        options: { headPollLimit: 2, pollMs: 0 },
-        repository: client.repositoryDetails,
-      },
-    ),
+    waitForHeadConvergence(client, {
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
+      options: { headPollLimit: 2, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
     { code: "head_branch_changed", message: /head-2.*head-3/ },
   );
 });
@@ -461,23 +470,22 @@ test("stops when the source branch moves during convergence", async () => {
 test("rejects a generated merge ref that omits the synchronized source parent", async () => {
   const client = new FixtureClient({
     commits: { "merge-ref": { parents: ["base-1", "other-head"], sha: "merge-ref" } },
-    pullRefs: [[
-      { kind: "head", ref: "refs/pull/24/head", sha: "head-2" },
-      { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-ref" },
-    ]],
+    pullRefs: [
+      [
+        { kind: "head", ref: "refs/pull/24/head", sha: "head-2" },
+        { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-ref" },
+      ],
+    ],
     sourceRefs: [{ sha: "head-2" }],
   });
 
   await assert.rejects(
-    waitForHeadConvergence(
-      client,
-      {
-        expectedHead: "head-2",
-        initialPullRequest: pull({ headSha: "head-2", isDraft: false }),
-        options: { headPollLimit: 1, pollMs: 0 },
-        repository: client.repositoryDetails,
-      },
-    ),
+    waitForHeadConvergence(client, {
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-2", isDraft: false }),
+      options: { headPollLimit: 1, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
     { code: "head_merge_ref_mismatch", message: /head-2/ },
   );
 });
@@ -510,7 +518,10 @@ test("retries a stale generated merge ref until the synchronized source parent a
   });
 
   assert.equal(result.headSha, "head-2");
-  assert.deepEqual(client.calls.filter(([name]) => name === "wait"), [["wait"]]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "wait"),
+    [["wait"]],
+  );
 });
 
 test("stops on missing temporary head evidence", async () => {
@@ -528,7 +539,10 @@ test("stops on missing temporary head evidence", async () => {
     }),
     { code: "head_convergence_timeout", message: /<missing>/ },
   );
-  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+  assert.equal(
+    client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)),
+    false,
+  );
 });
 
 test("stops on a temporary-ref provider read failure", async () => {
@@ -547,18 +561,24 @@ test("stops on a temporary-ref provider read failure", async () => {
     }),
     {
       code: "head_convergence_provider_error",
-      message: /temporary pull-request refs.*expected synchronized SHA head-2.*HTTP 503: temporary ref read failed.*source branch head-2.*PR API head head-2.*refs\/pull\/24\/head <unread>/,
+      message:
+        /temporary pull-request refs.*expected synchronized SHA head-2.*HTTP 503: temporary ref read failed.*source branch head-2.*PR API head head-2.*refs\/pull\/24\/head <unread>/,
     },
   );
-  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+  assert.equal(
+    client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)),
+    false,
+  );
 });
 
 test("includes identities when a synthetic merge ref read fails", async () => {
   const client = new FixtureClient({
-    pullRefs: [[
-      { kind: "head", ref: "refs/pull/24/head", sha: "head-2" },
-      { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-ref" },
-    ]],
+    pullRefs: [
+      [
+        { kind: "head", ref: "refs/pull/24/head", sha: "head-2" },
+        { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-ref" },
+      ],
+    ],
     sourceRefs: [{ sha: "head-2" }],
   });
   const failure = new Error("HTTP 503: synthetic merge ref read failed");
@@ -575,25 +595,32 @@ test("includes identities when a synthetic merge ref read fails", async () => {
     }),
     {
       code: "head_convergence_provider_error",
-      message: /synthetic merge ref.*expected synchronized SHA head-2.*HTTP 503: synthetic merge ref read failed.*source branch head-2.*PR API head head-2.*refs\/pull\/24\/head head-2/,
+      message:
+        /synthetic merge ref.*expected synchronized SHA head-2.*HTTP 503: synthetic merge ref read failed.*source branch head-2.*PR API head head-2.*refs\/pull\/24\/head head-2/,
     },
   );
-  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+  assert.equal(
+    client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)),
+    false,
+  );
 });
 
 test("normalizes the narrow REST pull request payload used by the completion loop", () => {
   assert.deepEqual(
-    normalizePullRequest({
-      base: { ref: "master", sha: "base-1" },
-      draft: true,
-      head: { ref: "codex/24-complete-pr", sha: "head-1", repo: { full_name: "owner/repo" } },
-      html_url: "https://github.com/owner/repo/pull/24",
-      merge_commit_sha: null,
-      mergeable: true,
-      mergeable_state: "blocked",
-      number: 24,
-      state: "open",
-    }, "owner/repo"),
+    normalizePullRequest(
+      {
+        base: { ref: "master", sha: "base-1" },
+        draft: true,
+        head: { ref: "codex/24-complete-pr", sha: "head-1", repo: { full_name: "owner/repo" } },
+        html_url: "https://github.com/owner/repo/pull/24",
+        merge_commit_sha: null,
+        mergeable: true,
+        mergeable_state: "blocked",
+        number: 24,
+        state: "open",
+      },
+      "owner/repo",
+    ),
     {
       baseBranch: "master",
       baseSha: "base-1",
@@ -613,22 +640,30 @@ test("normalizes the narrow REST pull request payload used by the completion loo
 });
 
 test("normalizes closed REST pull requests only when merged_at is populated", () => {
-  assert.equal(normalizePullRequest({ state: "closed", merged_at: "2026-09-12T13:47:19Z" }, "owner/repo").state, "MERGED");
+  assert.equal(
+    normalizePullRequest({ state: "closed", merged_at: "2026-09-12T13:47:19Z" }, "owner/repo").state,
+    "MERGED",
+  );
   assert.equal(normalizePullRequest({ state: "closed", merged_at: null }, "owner/repo").state, "CLOSED");
 });
 
 test("reads linked Project statuses through REST without GraphQL", () => {
   const calls = [];
   const responses = new Map([
-    ["users/owner/projectsV2?per_page=100", "[[{\"number\":2,\"state\":\"open\"}]]"],
+    ["users/owner/projectsV2?per_page=100", '[[{"number":2,"state":"open"}]]'],
     ["users/owner/projectsV2/2/items?per_page=100", JSON.stringify(projectItemIdentity(linkedProjectItem(1701)))],
-    ["users/owner/projectsV2/2/fields?per_page=100", "[[{\"id\":407,\"name\":\"Status\",\"data_type\":\"single_select\"}]]"],
-    ["users/owner/projectsV2/2/items/1701?fields=407", "{\"id\":1701,\"node_id\":\"PVTI_item-1701\",\"content\":{\"number\":24,\"repository\":{\"full_name\":\"owner/repo\"},\"repository_url\":\"https://api.github.com/repos/owner/repo\"},\"fields\":[{\"id\":407,\"name\":\"Status\",\"value\":{\"id\":\"done\",\"name\":{\"raw\":\"Done\"}}}]}"],
+    ["users/owner/projectsV2/2/fields?per_page=100", '[[{"id":407,"name":"Status","data_type":"single_select"}]]'],
+    [
+      "users/owner/projectsV2/2/items/1701?fields=407",
+      '{"id":1701,"node_id":"PVTI_item-1701","content":{"number":24,"repository":{"full_name":"owner/repo"},"repository_url":"https://api.github.com/repos/owner/repo"},"fields":[{"id":407,"name":"Status","value":{"id":"done","name":{"raw":"Done"}}}]}',
+    ],
   ]);
   const client = new GitHubClient("owner/repo", 24, (args) => {
     calls.push(args);
     assert.equal(args[0], "api");
-    const endpoint = args.find((value) => typeof value === "string" && (value.startsWith("users/") || value.startsWith("orgs/")));
+    const endpoint = args.find(
+      (value) => typeof value === "string" && (value.startsWith("users/") || value.startsWith("orgs/")),
+    );
     const stdout = responses.get(endpoint);
     if (!stdout) {
       throw new Error(`Unexpected command: ${args.join(" ")}`);
@@ -651,12 +686,18 @@ test("reads linked Project statuses through REST without GraphQL", () => {
   }
   assert.doesNotMatch(itemCall[3], /\.content\.(body|title|user)/);
   assert.equal(itemCall.at(-1), "users/owner/projectsV2/2/items?per_page=100");
-  assert.deepEqual(calls.filter((args) => args !== itemCall), [
-    ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"],
-    ["api", "--paginate", "--slurp", "users/owner/projectsV2/2/fields?per_page=100"],
-    ["api", "users/owner/projectsV2/2/items/1701?fields=407"],
-  ]);
-  assert.equal(calls.some((args) => args.includes("graphql") || args.includes("issue")), false);
+  assert.deepEqual(
+    calls.filter((args) => args !== itemCall),
+    [
+      ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"],
+      ["api", "--paginate", "--slurp", "users/owner/projectsV2/2/fields?per_page=100"],
+      ["api", "users/owner/projectsV2/2/items/1701?fields=407"],
+    ],
+  );
+  assert.equal(
+    calls.some((args) => args.includes("graphql") || args.includes("issue")),
+    false,
+  );
 });
 
 test("follows every Link-paginated Project item page without changing live IDs", () => {
@@ -671,9 +712,18 @@ test("follows every Link-paginated Project item page without changing live IDs",
   assert.ok(itemCall.includes("--paginate"));
   assert.ok(itemCall.includes("--jq"));
   assert.equal(itemCall.includes("--slurp"), false);
-  assert.match(itemCall.find((value) => String(value).includes(".content.number")), /\.content\.repository/);
-  assert.equal(itemCall.some((value) => /[?&]page=/.test(String(value))), false);
-  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields=407"))), true);
+  assert.match(
+    itemCall.find((value) => String(value).includes(".content.number")),
+    /\.content\.repository/,
+  );
+  assert.equal(
+    itemCall.some((value) => /[?&]page=/.test(String(value))),
+    false,
+  );
+  assert.equal(
+    calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields=407"))),
+    true,
+  );
 });
 
 test("rejects contradictory membership identity and stale item readback", () => {
@@ -712,8 +762,14 @@ test("rejects malformed Project membership identity before status readback", () 
   for (const { item, error } of cases) {
     const { reader, calls } = createProjectStatusReader({ itemsByProject: new Map([["2", [item]]]) });
     assert.throws(() => reader.getIssueProjectStatuses(24), error);
-    assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
-    assert.equal(calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields="))), false);
+    assert.equal(
+      calls.some((args) => args.some((value) => String(value).includes("/fields?"))),
+      false,
+    );
+    assert.equal(
+      calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields="))),
+      false,
+    );
   }
 });
 
@@ -725,8 +781,14 @@ test("rejects contradictory repository identity casing before status readback", 
   });
 
   assert.throws(() => reader.getIssueProjectStatuses(24), /one non-contradictory repository identity/);
-  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
-  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields="))), false);
+  assert.equal(
+    calls.some((args) => args.some((value) => String(value).includes("/fields?"))),
+    false,
+  );
+  assert.equal(
+    calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields="))),
+    false,
+  );
 });
 
 test("rejects two open linked Projects even when their statuses disagree", () => {
@@ -750,7 +812,10 @@ test("rejects two open linked Projects even when their statuses disagree", () =>
   });
 
   assert.throws(() => reader.getIssueProjectStatuses(24), /exactly one open linked Project/);
-  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
+  assert.equal(
+    calls.some((args) => args.some((value) => String(value).includes("/fields?"))),
+    false,
+  );
 });
 
 test("rejects duplicate matching issue items before status readback", () => {
@@ -759,25 +824,39 @@ test("rejects duplicate matching issue items before status readback", () => {
   });
 
   assert.throws(() => reader.getIssueProjectStatuses(24), /exactly one matching issue item/);
-  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
+  assert.equal(
+    calls.some((args) => args.some((value) => String(value).includes("/fields?"))),
+    false,
+  );
 });
 
 test("rejects missing, blank, and contradictory Status values", () => {
   const responses = [
     { fields: [] },
     { fields: [{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: "   " } } }] },
-    { fields: [{
-      id: PROJECT_STATUS_FIELD_ID,
-      name: "Status",
-      value: { name: { raw: "Done", html: "In Progress" } },
-    }] },
+    {
+      fields: [
+        {
+          id: PROJECT_STATUS_FIELD_ID,
+          name: "Status",
+          value: { name: { raw: "Done", html: "In Progress" } },
+        },
+      ],
+    },
   ];
 
   for (const itemResponse of responses) {
-    const { reader } = createProjectStatusReader({ itemResponses: new Map([["2/1701", {
-      ...linkedProjectItem(1701),
-      ...itemResponse,
-    }]]) });
+    const { reader } = createProjectStatusReader({
+      itemResponses: new Map([
+        [
+          "2/1701",
+          {
+            ...linkedProjectItem(1701),
+            ...itemResponse,
+          },
+        ],
+      ]),
+    });
     assert.throws(() => reader.getIssueProjectStatuses(24), /Status field\/value/);
   }
 });
@@ -808,12 +887,25 @@ test("pins every Status field/value stop text and code on the item readback", ()
     [[{ id: PROJECT_STATUS_FIELD_ID, name: "Priority", value: { name: "Done" } }], "exactly one Status field/value"],
     [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status" }], "exactly one non-blank Status field/value"],
     [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: null }], "exactly one non-blank Status field/value"],
-    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { id: "done" } }], "exactly one non-blank Status field/value"],
-    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: " " } } }], "exactly one non-blank Status field/value"],
-    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: "Done", html: "Todo" } } }], "one non-contradictory Status field/value"],
+    [
+      [{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { id: "done" } }],
+      "exactly one non-blank Status field/value",
+    ],
+    [
+      [{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: " " } } }],
+      "exactly one non-blank Status field/value",
+    ],
+    [
+      [{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: "Done", html: "Todo" } } }],
+      "one non-contradictory Status field/value",
+    ],
   ];
   for (const [fields, detail] of cases) {
-    assertProjectShapeStop(() => statusReaderWithFields(fields).getIssueProjectStatuses(24), PROJECT_ITEM_ENDPOINT, detail);
+    assertProjectShapeStop(
+      () => statusReaderWithFields(fields).getIssueProjectStatuses(24),
+      PROJECT_ITEM_ENDPOINT,
+      detail,
+    );
   }
 });
 
@@ -835,7 +927,11 @@ test("stops with the zero-linked-Project text when no open Project holds the iss
   ];
   for (const [options, readsItems] of cases) {
     const { reader, calls } = createProjectStatusReader(options);
-    assertProjectShapeStop(() => reader.getIssueProjectStatuses(24), PROJECTS_ENDPOINT, "exactly one open linked Project");
+    assertProjectShapeStop(
+      () => reader.getIssueProjectStatuses(24),
+      PROJECTS_ENDPOINT,
+      "exactly one open linked Project",
+    );
     const requested = (fragment) => calls.some((args) => args.some((value) => String(value).includes(fragment)));
     assert.equal(requested("/fields?"), false);
     assert.equal(requested("/items?"), readsItems);
@@ -867,11 +963,24 @@ test("maps linked closing issues from paginated REST pull data without GraphQL",
   const calls = [];
   const responses = new Map([
     ["repos/owner/repo/pulls/24", JSON.stringify({ body: "Closes #24" })],
-    ["repos/owner/repo/pulls/24/commits?per_page=100", JSON.stringify([[{
-      commit: { message: "Fixes other/repo#7" },
-    }]])],
-    ["repos/owner/repo/issues/24", JSON.stringify({ state: "closed", html_url: "https://github.com/owner/repo/issues/24" })],
-    ["repos/other/repo/issues/7", JSON.stringify({ state: "closed", html_url: "https://github.com/other/repo/issues/7" })],
+    [
+      "repos/owner/repo/pulls/24/commits?per_page=100",
+      JSON.stringify([
+        [
+          {
+            commit: { message: "Fixes other/repo#7" },
+          },
+        ],
+      ]),
+    ],
+    [
+      "repos/owner/repo/issues/24",
+      JSON.stringify({ state: "closed", html_url: "https://github.com/owner/repo/issues/24" }),
+    ],
+    [
+      "repos/other/repo/issues/7",
+      JSON.stringify({ state: "closed", html_url: "https://github.com/other/repo/issues/7" }),
+    ],
   ]);
   const client = new GitHubClient("owner/repo", 24, (args) => {
     calls.push(args);
@@ -894,7 +1003,10 @@ test("maps linked closing issues from paginated REST pull data without GraphQL",
     ["api", "repos/owner/repo/issues/24"],
     ["api", "repos/other/repo/issues/7"],
   ]);
-  assert.equal(calls.some((args) => args.includes("graphql") || args.includes("pr")), false);
+  assert.equal(
+    calls.some((args) => args.includes("graphql") || args.includes("pr")),
+    false,
+  );
 });
 
 test("lists ci.yml workflow runs for the trusted head SHA", () => {
@@ -910,13 +1022,14 @@ test("lists ci.yml workflow runs for the trusted head SHA", () => {
   });
 
   assert.deepEqual(client.getCiWorkflowRuns("head-1"), [run]);
-  assert.deepEqual(calls, [[
-    "api",
-    "--paginate",
-    "--slurp",
-    "repos/owner/repo/actions/workflows/ci.yml/runs?" +
-      "head_sha=head-1&per_page=100",
-  ]]);
+  assert.deepEqual(calls, [
+    [
+      "api",
+      "--paginate",
+      "--slurp",
+      "repos/owner/repo/actions/workflows/ci.yml/runs?" + "head_sha=head-1&per_page=100",
+    ],
+  ]);
 });
 
 test("rejects malformed ci.yml workflow responses", () => {
@@ -935,9 +1048,7 @@ test("rejects malformed ci.yml workflow responses", () => {
   }
 });
 
-test(
-  "dispatches ci.yml through workflow_dispatch at the checked branch",
-  () => {
+test("dispatches ci.yml through workflow_dispatch at the checked branch", () => {
   const calls = [];
   const client = new GitHubClient("owner/repo", 24, (args) => {
     calls.push(args);
@@ -946,64 +1057,60 @@ test(
 
   client.dispatchCiWorkflow("codex/24-complete-pr");
 
-  assert.deepEqual(calls, [[
-    "api",
-    "--method",
-    "POST",
-    "repos/owner/repo/actions/workflows/ci.yml/dispatches",
-    "-f",
-    "ref=codex/24-complete-pr",
-  ]]);
-  },
-);
+  assert.deepEqual(calls, [
+    [
+      "api",
+      "--method",
+      "POST",
+      "repos/owner/repo/actions/workflows/ci.yml/dispatches",
+      "-f",
+      "ref=codex/24-complete-pr",
+    ],
+  ]);
+});
 
-test(
-  "recovers missing ci.yml and completes after exact-head checks pass",
-  async () => {
-    const client = new FixtureClient({
-      clientRepository: "owner/repo",
-      workflowRuns: [[], [workflowRun("head-1", { path: ".github/workflows/ci.yml" })]],
-      checks: [passingChecks],
-      refs: [{ sha: "head-1" }, { sha: "head-1" }, null],
-      pulls: [
-        pull(),
-        pull({ isDraft: false }),
-        pull({ isDraft: false }),
-        pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
-      ],
-    });
+test("recovers missing ci.yml and completes after exact-head checks pass", async () => {
+  const client = new FixtureClient({
+    clientRepository: "owner/repo",
+    workflowRuns: [[], [workflowRun("head-1", { path: ".github/workflows/ci.yml" })]],
+    checks: [passingChecks],
+    refs: [{ sha: "head-1" }, { sha: "head-1" }, null],
+    pulls: [
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+    ],
+  });
 
-    const result = await completePullRequest(client, immediateOptions);
+  const result = await completePullRequest(client, immediateOptions);
 
-    assert.equal(client.repository, "owner/repo");
-    assert.deepEqual(
-      client.calls.filter(([name]) => name === "dispatch"),
-      [["dispatch", "codex/24-complete-pr"]],
-    );
-    assert.deepEqual(
-      client.calls.filter(([name]) => name === "getCiWorkflowRuns"),
-      [
-        ["getCiWorkflowRuns", "head-1"],
-        ["getCiWorkflowRuns", "head-1"],
-        ["getCiWorkflowRuns", "head-1"],
-        ["getCiWorkflowRuns", "head-1"],
-      ],
-    );
-    assert.deepEqual(client.calls.filter(([name]) => name === "getRequiredChecks"), [
-      ["getRequiredChecks"],
-    ]);
-    assert.equal(result.acceptedHead, "head-1");
-    assert.equal(result.mergeCommitSha, "merge-1");
-    assert.equal(result.branch, "deleted");
-  },
-);
+  assert.equal(client.repository, "owner/repo");
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "dispatch"),
+    [["dispatch", "codex/24-complete-pr"]],
+  );
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "getCiWorkflowRuns"),
+    [
+      ["getCiWorkflowRuns", "head-1"],
+      ["getCiWorkflowRuns", "head-1"],
+      ["getCiWorkflowRuns", "head-1"],
+      ["getCiWorkflowRuns", "head-1"],
+    ],
+  );
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "getRequiredChecks"),
+    [["getRequiredChecks"]],
+  );
+  assert.equal(result.acceptedHead, "head-1");
+  assert.equal(result.mergeCommitSha, "merge-1");
+  assert.equal(result.branch, "deleted");
+});
 
 test("accepts one exact-head ci.yml run for each trigger event", async () => {
   const client = new FixtureClient({
-    workflowRuns: [[
-      workflowRun("head-1", { event: "push" }),
-      workflowRun("head-1", { event: "pull_request" }),
-    ]],
+    workflowRuns: [[workflowRun("head-1", { event: "push" }), workflowRun("head-1", { event: "pull_request" })]],
     pulls: [
       pull(),
       pull({ isDraft: false }),
@@ -1034,11 +1141,17 @@ test("recovers an already-merged pull request through guarded remote and local c
   assert.equal(result.local.branch, "deleted");
   assert.equal(result.local.currentCheckout, "switched_to_default");
   assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
-  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [["deleteBranchRef", "codex/24-complete-pr"]]);
-  assert.deepEqual(client.calls.filter(([name]) => name === "getBranchRef"), [
-    ["getBranchRef", "codex/24-complete-pr"],
-    ["getBranchRef", "codex/24-complete-pr"],
-  ]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "deleteBranchRef"),
+    [["deleteBranchRef", "codex/24-complete-pr"]],
+  );
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "getBranchRef"),
+    [
+      ["getBranchRef", "codex/24-complete-pr"],
+      ["getBranchRef", "codex/24-complete-pr"],
+    ],
+  );
 });
 
 test("recovers a merged head with two passing runs of every required check through the REST reader", async () => {
@@ -1054,8 +1167,14 @@ test("recovers a merged head with two passing runs of every required check throu
 
   const result = await recoverMergedPullRequest(client, { ...immediateOptions, localGit });
 
-  assert.deepEqual(client.calls.filter(([name]) => name === "getRequiredChecks"), [["getRequiredChecks"]]);
-  assert.deepEqual(result.linkedIssues.map((issue) => issue.number), [24]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "getRequiredChecks"),
+    [["getRequiredChecks"]],
+  );
+  assert.deepEqual(
+    result.linkedIssues.map((issue) => issue.number),
+    [24],
+  );
   assert.equal(result.branch, "deleted");
 });
 
@@ -1073,8 +1192,14 @@ test("stops recovery when the newest run of every required check failed through 
   await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), {
     code: "required_check_failed",
   });
-  assert.deepEqual(client.calls.filter(([name]) => name === "getRequiredChecks"), [["getRequiredChecks"]]);
-  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "getRequiredChecks"),
+    [["getRequiredChecks"]],
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "deleteBranchRef"),
+    false,
+  );
   assert.deepEqual(localGit.calls, []);
 });
 
@@ -1089,9 +1214,10 @@ test("recovers merged cleanup when the remote source branch is already absent", 
   const result = await recoverMergedPullRequest(client, { ...immediateOptions, localGit });
 
   assert.equal(result.branch, "already_absent");
-  assert.deepEqual(client.calls.filter(([name]) => name === "getSourceBranchRef"), [
-    ["getSourceBranchRef", "codex/24-complete-pr"],
-  ]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "getSourceBranchRef"),
+    [["getSourceBranchRef", "codex/24-complete-pr"]],
+  );
   assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
 });
 
@@ -1108,7 +1234,10 @@ test("dry-runs merged pull-request recovery without cleanup mutation", async () 
   assert.equal(result.local.branch, "would_delete");
   assert.equal(result.local.currentCheckout, "would_switch_to_default");
   assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: true }]]);
-  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "deleteBranchRef"),
+    false,
+  );
 });
 
 test("stops before local cleanup when trusted remote deletion is not confirmed", async () => {
@@ -1122,9 +1251,10 @@ test("stops before local cleanup when trusted remote deletion is not confirmed",
     code: "branch_delete_unconfirmed",
   });
 
-  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
-    ["deleteBranchRef", "codex/24-complete-pr"],
-  ]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "deleteBranchRef"),
+    [["deleteBranchRef", "codex/24-complete-pr"]],
+  );
   assert.equal(localGit.calls.length, 0);
 });
 
@@ -1139,10 +1269,13 @@ test("treats an ambiguous remote branch deletion as successful after absent read
   const result = await recoverMergedPullRequest(client, { ...immediateOptions, localGit });
 
   assert.equal(result.branch, "deleted");
-  assert.deepEqual(client.calls.filter(([name]) => name === "getBranchRef"), [
-    ["getBranchRef", "codex/24-complete-pr"],
-    ["getBranchRef", "codex/24-complete-pr"],
-  ]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "getBranchRef"),
+    [
+      ["getBranchRef", "codex/24-complete-pr"],
+      ["getBranchRef", "codex/24-complete-pr"],
+    ],
+  );
   assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
 });
 
@@ -1155,14 +1288,12 @@ test("preserves a remote branch when deletion fails and readback still finds the
     refs: [{ sha: "head-1" }, { sha: "head-1" }],
   });
 
-  await assert.rejects(
-    recoverMergedPullRequest(client, { ...immediateOptions, localGit }),
-    failure,
-  );
+  await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), failure);
   assert.equal(localGit.calls.length, 0);
-  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
-    ["deleteBranchRef", "codex/24-complete-pr"],
-  ]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "deleteBranchRef"),
+    [["deleteBranchRef", "codex/24-complete-pr"]],
+  );
 });
 
 test("refuses merged recovery when a linked issue is not Done in its Project", async () => {
@@ -1172,9 +1303,14 @@ test("refuses merged recovery when a linked issue is not Done in its Project", a
     pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
   });
 
-  await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), { code: "project_not_done" });
+  await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), {
+    code: "project_not_done",
+  });
   assert.equal(localGit.calls.length, 0);
-  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "deleteBranchRef"),
+    false,
+  );
 });
 
 test("does not authorize cleanup unless the sole Project status is Done", async () => {
@@ -1185,21 +1321,20 @@ test("does not authorize cleanup unless the sole Project status is Done", async 
       pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
     });
 
-    await assert.rejects(
-      recoverMergedPullRequest(client, { ...immediateOptions, localGit }),
-      { code: "project_not_done" },
+    await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), {
+      code: "project_not_done",
+    });
+    assert.equal(
+      client.calls.some(([name]) => name === "deleteBranchRef"),
+      false,
     );
-    assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
     assert.equal(localGit.calls.length, 0);
   }
 });
 
 test("waits for required checks, confirms merge, and deletes the trusted remote branch", async () => {
   const localGit = createFixtureLocalGit();
-  const mergedState = normalizePullRequest(
-    { state: "closed", merged_at: "2026-09-12T13:47:19Z" },
-    "owner/repo",
-  ).state;
+  const mergedState = normalizePullRequest({ state: "closed", merged_at: "2026-09-12T13:47:19Z" }, "owner/repo").state;
   const client = new FixtureClient({
     checks: [pendingChecks, passingChecks],
     pulls: [
@@ -1218,10 +1353,14 @@ test("waits for required checks, confirms merge, and deletes the trusted remote 
   assert.equal(result.branch, "deleted");
   assert.deepEqual(result.local, { branch: "deleted", currentCheckout: "switched_to_default" });
   assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
-  assert.deepEqual(client.calls.filter(([name]) => name === "markReady"), [["markReady", 24]]);
-  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
-    ["deleteBranchRef", "codex/24-complete-pr"],
-  ]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "markReady"),
+    [["markReady", 24]],
+  );
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "deleteBranchRef"),
+    [["deleteBranchRef", "codex/24-complete-pr"]],
+  );
 });
 
 test("waits for all four repository required checks before trusted cleanup", async () => {
@@ -1242,9 +1381,10 @@ test("waits for all four repository required checks before trusted cleanup", asy
 
   assert.equal(result.mergeCommitSha, "merge-1");
   assert.equal(result.branch, "deleted");
-  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
-    ["deleteBranchRef", "codex/24-complete-pr"],
-  ]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "deleteBranchRef"),
+    [["deleteBranchRef", "codex/24-complete-pr"]],
+  );
 });
 
 test("treats skipped required checks as passing", async () => {
@@ -1266,12 +1406,14 @@ test("treats skipped required checks as passing", async () => {
 
 test("treats a skipped required check alongside passing checks as complete", async () => {
   const client = new FixtureClient({
-    checks: [[
-      { bucket: "skipping", name: "build-test", state: "SKIPPED" },
-      { bucket: "pass", name: "plugin-config", state: "SUCCESS" },
-      { bucket: "pass", name: "static-analysis", state: "SUCCESS" },
-      { bucket: "pass", name: "package-integrity", state: "SUCCESS" },
-    ]],
+    checks: [
+      [
+        { bucket: "skipping", name: "build-test", state: "SKIPPED" },
+        { bucket: "pass", name: "plugin-config", state: "SUCCESS" },
+        { bucket: "pass", name: "static-analysis", state: "SUCCESS" },
+        { bucket: "pass", name: "package-integrity", state: "SUCCESS" },
+      ],
+    ],
     pulls: [
       pull(),
       pull({ isDraft: false }),
@@ -1308,8 +1450,14 @@ test("stops on missing required-check evidence without merge or branch cleanup",
     code: "unknown_check_state",
     message: /MISSING/,
   });
-  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
-  assert.equal(client.calls.some(([name]) => name === "dispatch"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "deleteBranchRef"),
+    false,
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "dispatch"),
+    false,
+  );
 });
 
 test("stops on an HTTP 403 branch-protection read naming the endpoint and sends no merge request", async () => {
@@ -1325,7 +1473,10 @@ test("stops on an HTTP 403 branch-protection read naming the endpoint and sends 
     (error) => error.message.includes(protectionEndpoint) && error.message.includes("HTTP 403"),
   );
   assert.ok(client.calls.some(([name]) => name === "getRequiredChecks"));
-  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
 });
 
 test("stops with missing_required_checks on an unprotected base and sends no merge request", async () => {
@@ -1337,7 +1488,10 @@ test("stops with missing_required_checks on an unprotected base and sends no mer
   });
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "missing_required_checks" });
-  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
 });
 
 test("stops without merge or branch cleanup after required-check read failure", async () => {
@@ -1349,50 +1503,40 @@ test("stops without merge or branch cleanup after required-check read failure", 
   });
 
   await assert.rejects(completePullRequest(client, { ...immediateOptions, localGit }), failure);
-  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
-  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "deleteBranchRef"),
+    false,
+  );
   assert.equal(localGit.calls.length, 0);
 });
 
-test(
-  "dispatches missing ci.yml once after verifying the same-repository " +
-    "branch head",
-  async () => {
+test("dispatches missing ci.yml once after verifying the same-repository " + "branch head", async () => {
   const client = new FixtureClient({
     workflowRuns: [[], [workflowRun("head-1")]],
     checks: [[{ bucket: "unknown", name: "build-test", state: "MISSING" }]],
-    pulls: [
-      pull(),
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-    ],
+    pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
   });
 
-  await assert.rejects(
-    completePullRequest(client, { ...immediateOptions, ciRunPollLimit: 1 }),
-    { code: "unknown_check_state" },
-  );
+  await assert.rejects(completePullRequest(client, { ...immediateOptions, ciRunPollLimit: 1 }), {
+    code: "unknown_check_state",
+  });
 
   const dispatches = client.calls.filter(([name]) => name === "dispatch");
   assert.deepEqual(dispatches, [["dispatch", "codex/24-complete-pr"]]);
-  const branchRefIndex = client.calls.findIndex(
-    ([name]) => name === "getBranchRef",
-  );
+  const branchRefIndex = client.calls.findIndex(([name]) => name === "getBranchRef");
   const dispatchIndex = client.calls.findIndex(([name]) => name === "dispatch");
   assert.ok(branchRefIndex >= 0);
   assert.ok(branchRefIndex < dispatchIndex);
   const dispatchCall = client.calls.findIndex(([name]) => name === "dispatch");
-  const requiredChecksCall = client.calls.findIndex(
-    ([name]) => name === "getRequiredChecks",
-  );
+  const requiredChecksCall = client.calls.findIndex(([name]) => name === "getRequiredChecks");
   assert.ok(dispatchCall < requiredChecksCall);
-  },
-);
+});
 
-test(
-  "leaves a pending ci.yml run pending instead of accepting missing job checks",
-  async () => {
+test("leaves a pending ci.yml run pending instead of accepting missing job checks", async () => {
   const client = new FixtureClient({
     workflowRuns: [
       [workflowRun("head-1", { conclusion: null, status: "queued" })],
@@ -1410,34 +1554,25 @@ test(
     ],
   });
 
-  await assert.rejects(
-    completePullRequest(client, { ...immediateOptions, ciRunPollLimit: 4 }),
-    { code: "unknown_check_state" },
-  );
+  await assert.rejects(completePullRequest(client, { ...immediateOptions, ciRunPollLimit: 4 }), {
+    code: "unknown_check_state",
+  });
 
-  const requiredChecksCalls = client.calls.filter(
-    ([name]) => name === "getRequiredChecks",
-  );
+  const requiredChecksCalls = client.calls.filter(([name]) => name === "getRequiredChecks");
   assert.equal(requiredChecksCalls.length, 1);
   assert.equal(client.calls.filter(([name]) => name === "wait").length, 3);
-  assert.equal(client.calls.some(([name]) => name === "dispatch"), false);
-  const autoMergeIndex = client.calls.findIndex(
-    ([name]) => name === "enableRepositoryAutoMerge",
+  assert.equal(
+    client.calls.some(([name]) => name === "dispatch"),
+    false,
   );
-  const workflowReads = client.calls
-    .slice(0, autoMergeIndex)
-    .filter(([name]) => name === "getCiWorkflowRuns");
+  const autoMergeIndex = client.calls.findIndex(([name]) => name === "enableRepositoryAutoMerge");
+  const workflowReads = client.calls.slice(0, autoMergeIndex).filter(([name]) => name === "getCiWorkflowRuns");
   assert.equal(workflowReads.length, 4);
-  },
-);
+});
 
-test(
-  "does not merge when an exact-head ci.yml run stays pending",
-  async () => {
+test("does not merge when an exact-head ci.yml run stays pending", async () => {
   const client = new FixtureClient({
-    workflowRuns: [[
-      workflowRun("head-1", { conclusion: null, status: "in_progress" }),
-    ]],
+    workflowRuns: [[workflowRun("head-1", { conclusion: null, status: "in_progress" })]],
     pulls: [pull(), pull({ isDraft: false })],
   });
 
@@ -1446,9 +1581,7 @@ test(
     message: /remained pending/,
   });
 
-  const workflowReads = client.calls.filter(
-    ([name]) => name === "getCiWorkflowRuns",
-  );
+  const workflowReads = client.calls.filter(([name]) => name === "getCiWorkflowRuns");
   assert.equal(workflowReads.length, 2);
   assert.equal(client.calls.filter(([name]) => name === "wait").length, 1);
   assert.equal(
@@ -1463,13 +1596,9 @@ test(
     client.calls.some(([name]) => name === "getRequiredChecks"),
     false,
   );
-  },
-);
+});
 
-test(
-  "fails before REST merge when no exact-head ci.yml run appears " +
-    "after dispatch",
-  async () => {
+test("fails before REST merge when no exact-head ci.yml run appears " + "after dispatch", async () => {
   const client = new FixtureClient({
     workflowRuns: [[], []],
     pulls: [pull(), pull({ isDraft: false })],
@@ -1479,28 +1608,25 @@ test(
     code: "ci_workflow_run_timeout",
     message: /head-1/,
   });
-  assert.deepEqual(client.calls.filter(([name]) => name === "dispatch"), [
-    ["dispatch", "codex/24-complete-pr"],
-  ]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "dispatch"),
+    [["dispatch", "codex/24-complete-pr"]],
+  );
   assert.equal(
     client.calls.some(([name]) => name === "mergePullRequest"),
     false,
   );
-  },
-);
+});
 
-test(
-  "does not dispatch for a forked PR or a branch that moved from the " +
-    "trusted head",
-  async () => {
+test("does not dispatch for a forked PR or a branch that moved from the " + "trusted head", async () => {
   const forked = new FixtureClient({
     pulls: [pull({ headRepository: "fork/repo", isCrossRepository: true })],
   });
-  await assert.rejects(
-    completePullRequest(forked, immediateOptions),
-    { code: "cross_repository_head" },
+  await assert.rejects(completePullRequest(forked, immediateOptions), { code: "cross_repository_head" });
+  assert.equal(
+    forked.calls.some(([name]) => name === "dispatch"),
+    false,
   );
-  assert.equal(forked.calls.some(([name]) => name === "dispatch"), false);
 
   const moved = new FixtureClient({
     workflowRuns: [[]],
@@ -1511,7 +1637,10 @@ test(
     code: "ci_branch_head_mismatch",
     message: /head-1.*new-head/,
   });
-  assert.equal(moved.calls.some(([name]) => name === "dispatch"), false);
+  assert.equal(
+    moved.calls.some(([name]) => name === "dispatch"),
+    false,
+  );
   assert.equal(
     moved.calls.some(([name]) => name === "mergePullRequest"),
     false,
@@ -1522,113 +1651,84 @@ test(
     refs: [null],
     pulls: [pull(), pull({ isDraft: false })],
   });
-  await assert.rejects(
-    completePullRequest(missingBranch, immediateOptions),
-    { code: "ci_branch_not_found" },
-  );
+  await assert.rejects(completePullRequest(missingBranch, immediateOptions), { code: "ci_branch_not_found" });
   assert.equal(
     missingBranch.calls.some(([name]) => name === "dispatch"),
     false,
   );
+});
+
+test(
+  "fails closed for duplicate, stale, wrong-workflow, failed, cancelled, " + "and unsupported ci.yml runs",
+  async () => {
+    const cases = [
+      {
+        code: "duplicate_ci_workflow_run",
+        runs: [workflowRun("head-1", { event: "push" }), workflowRun("head-1", { event: "push" })],
+      },
+      { code: "stale_ci_workflow_run", runs: [workflowRun("old-head")] },
+      {
+        code: "unrelated_ci_workflow_run",
+        runs: [
+          workflowRun("head-1", {
+            path: ".github/workflows/other.yml@refs/heads/main",
+          }),
+        ],
+      },
+      {
+        code: "unrelated_ci_workflow_run",
+        runs: [workflowRun("head-1", { path: ".github/workflows/ci.yml.bak" })],
+      },
+      {
+        code: "ci_workflow_failed",
+        runs: [workflowRun("head-1", { conclusion: "failure" })],
+      },
+      {
+        code: "ci_workflow_failed",
+        runs: [workflowRun("head-1", { conclusion: "cancelled" })],
+      },
+      {
+        code: "unknown_ci_workflow_state",
+        runs: [workflowRun("head-1", { status: "unexpected" })],
+      },
+      { code: "unknown_ci_workflow_state", runs: [null] },
+    ];
+
+    for (const { code, runs } of cases) {
+      const client = new FixtureClient({
+        workflowRuns: [runs],
+        pulls: [pull(), pull({ isDraft: false })],
+      });
+
+      await assert.rejects(completePullRequest(client, immediateOptions), { code });
+      assert.equal(
+        client.calls.some(([name]) => name === "mergePullRequest"),
+        false,
+      );
+    }
   },
 );
 
-test(
-  "fails closed for duplicate, stale, wrong-workflow, failed, cancelled, " +
-    "and unsupported ci.yml runs",
-  async () => {
-  const cases = [
-    {
-      code: "duplicate_ci_workflow_run",
-      runs: [
-        workflowRun("head-1", { event: "push" }),
-        workflowRun("head-1", { event: "push" }),
-      ],
-    },
-    { code: "stale_ci_workflow_run", runs: [workflowRun("old-head")] },
-    {
-      code: "unrelated_ci_workflow_run",
-      runs: [
-        workflowRun("head-1", {
-          path: ".github/workflows/other.yml@refs/heads/main",
-        }),
-      ],
-    },
-    {
-      code: "unrelated_ci_workflow_run",
-      runs: [workflowRun("head-1", { path: ".github/workflows/ci.yml.bak" })],
-    },
-    {
-      code: "ci_workflow_failed",
-      runs: [workflowRun("head-1", { conclusion: "failure" })],
-    },
-    {
-      code: "ci_workflow_failed",
-      runs: [workflowRun("head-1", { conclusion: "cancelled" })],
-    },
-    {
-      code: "unknown_ci_workflow_state",
-      runs: [workflowRun("head-1", { status: "unexpected" })],
-    },
-    { code: "unknown_ci_workflow_state", runs: [null] },
-  ];
-
-  for (const { code, runs } of cases) {
-    const client = new FixtureClient({
-      workflowRuns: [runs],
-      pulls: [pull(), pull({ isDraft: false })],
-    });
-
-    await assert.rejects(
-      completePullRequest(client, immediateOptions),
-      { code },
-    );
-    assert.equal(
-      client.calls.some(([name]) => name === "mergePullRequest"),
-      false,
-    );
-  }
-  },
-);
-
-test(
-  "reads back after an ambiguous dispatch and never dispatches twice",
-  async () => {
+test("reads back after an ambiguous dispatch and never dispatches twice", async () => {
   const client = new FixtureClient({
-    workflowRuns: [
-      [],
-      [workflowRun("head-1", { conclusion: null, status: "in_progress" })],
-      [workflowRun("head-1")],
-    ],
+    workflowRuns: [[], [workflowRun("head-1", { conclusion: null, status: "in_progress" })], [workflowRun("head-1")]],
     workflowDispatchError: new Error("connection reset"),
     checks: [[{ bucket: "unknown", name: "build-test", state: "MISSING" }]],
-    pulls: [
-      pull(),
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-    ],
+    pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
   });
 
-  await assert.rejects(
-    completePullRequest(client, immediateOptions),
-    { code: "unknown_check_state" },
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "unknown_check_state" });
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "dispatch"),
+    [["dispatch", "codex/24-complete-pr"]],
   );
-  assert.deepEqual(client.calls.filter(([name]) => name === "dispatch"), [
-    ["dispatch", "codex/24-complete-pr"],
-  ]);
   assert.equal(client.calls.filter(([name]) => name === "wait").length, 1);
-  },
-);
+});
 
-test(
-  "stops after a rejected dispatch and exact-head readback finds no run",
-  async () => {
+test("stops after a rejected dispatch and exact-head readback finds no run", async () => {
   const client = new FixtureClient({
     workflowRuns: [[], []],
-    workflowDispatchError: new Error(
-      "HTTP 403: Actions write permission is required",
-    ),
+    workflowDispatchError: new Error("HTTP 403: Actions write permission is required"),
     pulls: [pull(), pull({ isDraft: false })],
   });
 
@@ -1641,43 +1741,53 @@ test(
     client.calls.some(([name]) => name === "mergePullRequest"),
     false,
   );
-  },
-);
+});
 
 test("rejects a pull request whose base changes before required-check verification", async () => {
   const client = new FixtureClient({
-    pulls: [
-      pull(),
-      pull({ baseBranch: "release", isDraft: false }),
-    ],
+    pulls: [pull(), pull({ baseBranch: "release", isDraft: false })],
   });
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "wrong_base_branch" });
-  assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
-  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
-  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "enableRepositoryAutoMerge"),
+    false,
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "deleteBranchRef"),
+    false,
+  );
 });
 
 test("does not run cleanup for a closed pull request without merged_at", async () => {
   const closedState = normalizePullRequest({ state: "closed", merged_at: null }, "owner/repo").state;
   const client = new FixtureClient({
-    pulls: [
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-      pull({ isDraft: false, state: closedState }),
-    ],
+    pulls: [pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false, state: closedState })],
   });
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "pull_request_closed" });
-  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "deleteBranchRef"),
+    false,
+  );
 });
 
 test("stops before REST merge when the ready transition leaves a draft", async () => {
   const client = new FixtureClient({ pulls: [pull(), pull()] });
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "ready_transition_failed" });
-  assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
-  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "enableRepositoryAutoMerge"),
+    false,
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
 });
 
 test("stops before REST merge when marking a draft ready fails", async () => {
@@ -1687,8 +1797,14 @@ test("stops before REST merge when marking a draft ready fails", async () => {
   };
 
   await assert.rejects(completePullRequest(client, immediateOptions), { message: "gh pr ready failed" });
-  assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
-  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "enableRepositoryAutoMerge"),
+    false,
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
 });
 
 test("marks a draft pull request ready through GraphQL and verifies draft state", () => {
@@ -1721,8 +1837,8 @@ test("marks a draft pull request ready through GraphQL and verifies draft state"
     stderr: "",
     stdout: args.includes("graphql")
       ? JSON.stringify({
-        data: { markPullRequestReadyForReview: { pullRequest: { isDraft: true } } },
-      })
+          data: { markPullRequestReadyForReview: { pullRequest: { isDraft: true } } },
+        })
       : JSON.stringify({ node_id: "PR_kw123" }),
   }));
   assert.throws(() => draftClient.markReady(24), { code: "ready_transition_failed" });
@@ -1756,16 +1872,9 @@ test("merges a pull request through REST with the expected head SHA", () => {
     sha: "merge-1",
     message: "Pull Request successfully merged",
   });
-  assert.deepEqual(calls, [[
-    "api",
-    "--method",
-    "PUT",
-    "repos/owner/repo/pulls/24/merge",
-    "-f",
-    "sha=head-1",
-    "-f",
-    "merge_method=merge",
-  ]]);
+  assert.deepEqual(calls, [
+    ["api", "--method", "PUT", "repos/owner/repo/pulls/24/merge", "-f", "sha=head-1", "-f", "merge_method=merge"],
+  ]);
 });
 
 test("preserves a failed REST merge after an open pull-request readback", () => {
@@ -1784,10 +1893,10 @@ test("preserves a failed REST merge after an open pull-request readback", () => 
   });
 
   assert.throws(() => client.mergePullRequest(24, "head-1"), failure);
-  assert.deepEqual(calls.map((args) => args.at(-1)), [
-    "merge_method=merge",
-    "repos/owner/repo/pulls/24",
-  ]);
+  assert.deepEqual(
+    calls.map((args) => args.at(-1)),
+    ["merge_method=merge", "repos/owner/repo/pulls/24"],
+  );
 });
 
 test("accepts an ambiguous REST merge once the exact head reads back merged", () => {
@@ -1825,7 +1934,10 @@ test("accepts an already-ready pull request without marking it ready again", asy
   const result = await completePullRequest(client, immediateOptions);
 
   assert.equal(result.mergeCommitSha, "merge-1");
-  assert.equal(client.calls.some(([name]) => name === "markReady"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "markReady"),
+    false,
+  );
 });
 
 test("accepts repeated guarded base updates and merges the final trusted head", async () => {
@@ -1852,13 +1964,17 @@ test("accepts repeated guarded base updates and merges the final trusted head", 
   const result = await completePullRequest(client, immediateOptions);
 
   assert.equal(result.trustedHead, "head-3");
-  assert.deepEqual(client.calls.filter(([name]) => name === "updateBranch"), [
-    ["updateBranch", 24, "head-1"],
-    ["updateBranch", 24, "head-2"],
-  ]);
-  assert.deepEqual(client.calls.filter(([name]) => name === "mergePullRequest"), [
-    ["mergePullRequest", 24, "head-3"],
-  ]);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "updateBranch"),
+    [
+      ["updateBranch", 24, "head-1"],
+      ["updateBranch", 24, "head-2"],
+    ],
+  );
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "mergePullRequest"),
+    [["mergePullRequest", 24, "head-3"]],
+  );
 });
 
 test("stops on a merge conflict", async () => {
@@ -1894,8 +2010,14 @@ test("stops when the head changes outside a guarded base update", async () => {
   });
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "unexpected_head_change" });
-  assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
-  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "enableRepositoryAutoMerge"),
+    false,
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
 });
 
 test("surfaces repository permission failures before enabling pull request auto-merge", async () => {
@@ -1904,11 +2026,11 @@ test("surfaces repository permission failures before enabling pull request auto-
     pulls: [pull(), pull({ isDraft: false })],
   });
 
-  await assert.rejects(
-    completePullRequest(client, immediateOptions),
-    PERMISSION_ERROR,
+  await assert.rejects(completePullRequest(client, immediateOptions), PERMISSION_ERROR);
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
   );
-  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
 });
 
 test("refuses to delete a remote branch whose ref changed after merge", async () => {
@@ -1924,7 +2046,10 @@ test("refuses to delete a remote branch whose ref changed after merge", async ()
   });
 
   await assert.rejects(completePullRequest(client, { ...immediateOptions, localGit }), { code: "branch_ref_changed" });
-  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.equal(
+    client.calls.some(([name]) => name === "deleteBranchRef"),
+    false,
+  );
   assert.equal(localGit.calls.length, 0);
 });
 
@@ -1960,9 +2085,18 @@ test("merges a draft with green checks and no unresolved thread without any Code
   const result = await completePullRequest(client, { ...immediateOptions, localGit });
 
   assert.equal(result.trustedHead, "head-1");
-  assert.deepEqual(client.calls.filter(([name]) => name === "markReady"), [["markReady", 24]]);
-  assert.deepEqual(client.calls.filter(([name]) => name === "mergePullRequest"), [["mergePullRequest", 24, "head-1"]]);
-  assert.equal(client.calls.some(([name]) => name === "wait"), false);
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "markReady"),
+    [["markReady", 24]],
+  );
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "mergePullRequest"),
+    [["mergePullRequest", 24, "head-1"]],
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "wait"),
+    false,
+  );
   const threadReads = client.calls.filter(([name]) => name === "getUnresolvedReviewThreads");
   assert.equal(threadReads.length, 2);
   assert.ok(client.calls.indexOf(threadReads[0]) < client.calls.findIndex(([name]) => name === "markReady"));
@@ -1972,7 +2106,10 @@ test("merges a draft with green checks and no unresolved thread without any Code
   );
 });
 
-for (const [label, pullRequest] of [["draft", pull()], ["ready", pull({ isDraft: false })]]) {
+for (const [label, pullRequest] of [
+  ["draft", pull()],
+  ["ready", pull({ isDraft: false })],
+]) {
   test(`stops a ${label} pull request with an unresolved review thread before any mutation`, async () => {
     const client = new FixtureClient({
       pulls: [pullRequest],
@@ -1985,39 +2122,48 @@ for (const [label, pullRequest] of [["draft", pull()], ["ready", pull({ isDraft:
     assert.equal(failure.code, "unresolved-review-threads");
     assert.match(failure.message, discussionUrlPattern);
     assert.match(failure.message, sourcePathPattern);
-    assert.deepEqual(client.calls.filter(([name]) => mutationCallNames.includes(name)), []);
+    assert.deepEqual(
+      client.calls.filter(([name]) => mutationCallNames.includes(name)),
+      [],
+    );
   });
 }
 
-test(
-  "a thread opened during the required-check wait stops before the merge, and a rerun after it is resolved merges once",
-  async () => {
-    const mergedState = "MERGED";
-    const firstRun = new FixtureClient({
-      checks: [pendingChecks, passingChecks],
-      pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
-      reviewThreads: [[], [unresolvedThread()]],
-    });
+test("a thread opened during the required-check wait stops before the merge, and a rerun after it is resolved merges once", async () => {
+  const mergedState = "MERGED";
+  const firstRun = new FixtureClient({
+    checks: [pendingChecks, passingChecks],
+    pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
+    reviewThreads: [[], [unresolvedThread()]],
+  });
 
-    await assert.rejects(completePullRequest(firstRun, immediateOptions), { code: "unresolved-review-threads" });
-    assert.equal(firstRun.calls.some(([name]) => name === "wait"), true);
-    assert.equal(firstRun.calls.some(([name]) => name === "mergePullRequest"), false);
+  await assert.rejects(completePullRequest(firstRun, immediateOptions), { code: "unresolved-review-threads" });
+  assert.equal(
+    firstRun.calls.some(([name]) => name === "wait"),
+    true,
+  );
+  assert.equal(
+    firstRun.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
 
-    const rerun = new FixtureClient({
-      pulls: [
-        pull({ isDraft: false }),
-        pull({ isDraft: false }),
-        pull({ isDraft: false }),
-        pull({ isDraft: false, mergeCommitSha: "merge-1", state: mergedState }),
-      ],
-    });
+  const rerun = new FixtureClient({
+    pulls: [
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: mergedState }),
+    ],
+  });
 
-    const result = await completePullRequest(rerun, { ...immediateOptions, localGit: createFixtureLocalGit() });
+  const result = await completePullRequest(rerun, { ...immediateOptions, localGit: createFixtureLocalGit() });
 
-    assert.deepEqual(rerun.calls.filter(([name]) => name === "mergePullRequest"), [["mergePullRequest", 24, "head-1"]]);
-    assert.equal(result.trustedHead, "head-1");
-  },
-);
+  assert.deepEqual(
+    rerun.calls.filter(([name]) => name === "mergePullRequest"),
+    [["mergePullRequest", 24, "head-1"]],
+  );
+  assert.equal(result.trustedHead, "head-1");
+});
 
 test("a review-threads-unavailable error from the reader stops before any mutation with its cause kept", async () => {
   const cause = new Error("GraphQL request timed out");
@@ -2037,5 +2183,8 @@ test("a review-threads-unavailable error from the reader stops before any mutati
   assert.equal(failure, readerError);
   assert.equal(failure.code, "review-threads-unavailable");
   assert.equal(failure.cause, cause);
-  assert.deepEqual(client.calls.filter(([name]) => mutationCallNames.includes(name)), []);
+  assert.deepEqual(
+    client.calls.filter(([name]) => mutationCallNames.includes(name)),
+    [],
+  );
 });

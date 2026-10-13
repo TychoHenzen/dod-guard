@@ -1,23 +1,12 @@
-const AUTHORIZATION_SECRET =
-  /\b(Authorization\s*:\s*(?:Bearer|Basic)\s+)[^\s"']+/gi;
+const AUTHORIZATION_SECRET = /\b(Authorization\s*:\s*(?:Bearer|Basic)\s+)[^\s"']+/gi;
 const GITHUB_SECRET = /\b(gh[pousr]_)[A-Za-z0-9_]{8,}\b/g;
-const QUERY_SECRET =
-  /([?&](?:access_token|api[_-]?key|pat|sig|token)=)[^&#\s]+/gi;
+const QUERY_SECRET = /([?&](?:access_token|api[_-]?key|pat|sig|token)=)[^&#\s]+/gi;
 const ENVIRONMENT_SECRET = /\b((?:GITHUB_TOKEN|GH_TOKEN)\s*=\s*)[^\s"']+/gi;
 const REGEX_META = /[.*+?^${}()|[\]\\]/g;
 
 function section(body, heading) {
   const escaped = heading.replace(REGEX_META, "\\$&");
-  return (
-    body
-      .match(
-        new RegExp(
-          `^##\\s+${escaped}\\s*$([\\s\\S]*?)(?=^##\\s+|(?![\\s\\S]))`,
-          "im",
-        ),
-      )?.[1]
-      .trim() ?? ""
-  );
+  return body.match(new RegExp(`^##\\s+${escaped}\\s*$([\\s\\S]*?)(?=^##\\s+|(?![\\s\\S]))`, "im"))?.[1].trim() ?? "";
 }
 
 function workItem(child) {
@@ -63,9 +52,7 @@ function redactSecrets(value) {
     return value.map(redactSecrets);
   }
   if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [key, redactSecrets(item)]),
-    );
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redactSecrets(item)]));
   }
   return value;
 }
@@ -149,13 +136,9 @@ function requireSelection(chosen, requested) {
   if (missing.length > 0) {
     throw new Error(`Selected GitHub finding not found: ${missing.join(", ")}`);
   }
-  const duplicateIds = chosen
-    .map((finding) => finding.id)
-    .filter((id, index, ids) => ids.indexOf(id) !== index);
+  const duplicateIds = chosen.map((finding) => finding.id).filter((id, index, ids) => ids.indexOf(id) !== index);
   if (duplicateIds.length > 0) {
-    throw new Error(
-      `Ambiguous GitHub finding: ${[...new Set(duplicateIds)].join(", ")}`,
-    );
+    throw new Error(`Ambiguous GitHub finding: ${[...new Set(duplicateIds)].join(", ")}`);
   }
 }
 
@@ -169,8 +152,4 @@ function normalizeGitHubReviewThreads(payload, selected = []) {
   return chosen;
 }
 
-export {
-  normalizeGitHubHierarchy,
-  normalizeGitHubReviewThreads,
-  redactSecrets,
-};
+export { normalizeGitHubHierarchy, normalizeGitHubReviewThreads, redactSecrets };

@@ -78,8 +78,14 @@ test("planned mode reports the planned-matrix errors and the lens-row checks", (
 
   assert.ok(result.remainder.includes("acceptance matrix: R1 has status pass, which is not a planned status"));
   assert.ok(result.remainder.includes("acceptance matrix: missing pending acceptance row for AC-2"));
-  assert.ok(result.remainder.includes("implementation review lens references undeclared acceptance evidence ev-ac2-unclaimed"));
-  assert.ok(result.remainder.includes("reliability review lens verification evidence references proof-ac1-archived more than once"));
+  assert.ok(
+    result.remainder.includes("implementation review lens references undeclared acceptance evidence ev-ac2-unclaimed"),
+  );
+  assert.ok(
+    result.remainder.includes(
+      "reliability review lens verification evidence references proof-ac1-archived more than once",
+    ),
+  );
 });
 
 test("a refinement call without a planned matrix keeps the master verdict", () => {
@@ -111,7 +117,11 @@ test("a seven-key scratch-helper call keeps the export names, input keys, and re
 
   const stale = evaluateStructuredFinalization({ ...sevenKeys, headSha: "119d2c3049d92993b948e8d91126848cb753351f" });
   assert.equal(stale.nextStep, "stop");
-  assert.ok(stale.remainder.includes("implementation review lens is not bound to handoff head 119d2c3049d92993b948e8d91126848cb753351f"));
+  assert.ok(
+    stale.remainder.includes(
+      "implementation review lens is not bound to handoff head 119d2c3049d92993b948e8d91126848cb753351f",
+    ),
+  );
 });
 
 test("finalization refuses a handoff with no pushed head or observed matrix", () => {
