@@ -19,9 +19,10 @@ test("every existing suite that consumes a changed fixture runs before push", ()
     "Do not rerun an unchanged full suite for reassurance. A suite that consumes a changed fixture is not unchanged.",
     "When a change adds or modifies a fixture, scene, seed, or other shared test data, search for references to it " +
       "and run every existing suite that consumes it before push.",
-    "When such a suite cannot run locally, record it in the handoff as pending exact-head CI, and carry that into " +
-      "the pull request body; that alone does not stop PR handoff.",
-    "Its exact-head CI result must pass before review, recorded with its run ID in the handoff.",
+    "When such a suite cannot run locally, name it in the handoff as pending exact-head CI, outside the acceptance " +
+      "matrix, and carry that into the pull request body; that alone does not stop PR handoff.",
+    "Its exact-head CI result must pass before review, recorded with its run ID in the Preflight checkpoint, or in " +
+      "the handoff when there is none.",
   ]);
   assert.deepEqual(missing, []);
 });
