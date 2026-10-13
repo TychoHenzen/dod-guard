@@ -96,7 +96,7 @@ test("goal-sdlc keeps its sections short and its own", () => {
     "## Stop condition",
   ]);
   assert.ok(
-    skill.split("\n").length <= 160,
+    skill.split("\n").length <= 162,
     "goal-sdlc grew past an orchestrator",
   );
   // Rules that belong to an owner must not come back here.
@@ -224,7 +224,8 @@ const usage = await readFile(new URL("../../../USAGE.md", import.meta.url), "utf
 test("goal-sdlc reports the time and parent and child completions", () => {
   assert.match(skill, prose("Start every progress message with the local `[HH:MM]` time from the clock."));
   assert.match(skill, prose("Every progress message and the final report carry `PBIs completed: P parent / C child`"));
-  assert.match(skill, prose("counting parent and child PBIs whose Project status reads Done"));
+  assert.match(skill, prose("counting only the target repository's parent and child PBIs whose Project status reads Done"));
+  assert.match(skill, prose("as select-next's `counts` report them, even when the linked Project spans several repositories"));
   assert.match(skill, prose("Otherwise update `PBIs completed: P parent / C child`"));
   assert.match(
     skill,
@@ -239,7 +240,7 @@ test("goal-sdlc reports the time and parent and child completions", () => {
     "the strong tier (Opus at medium effort, `gpt-5.6-sol` in Codex) plans, decides, and judges",
     "the cheap tier (Haiku at max effort, `gpt-5.6-luna` in Codex)",
     "starts with the local `[HH:MM]` time",
-    "`PBIs completed: P parent / C child`",
+    "`PBIs completed: P parent / C child`. That figure counts only the target repository's parent and child PBIs",
   ]) {
     assert.match(usage, prose(phrase), phrase);
   }

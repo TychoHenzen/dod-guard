@@ -143,7 +143,9 @@ source-repository fix here and continue with the workaround.
 
 Start every progress message with the local `[HH:MM]` time from the clock.
 Every progress message and the final report carry `PBIs completed: P parent /
-C child`, counting parent and child PBIs whose Project status reads Done.
+C child`, counting only the target repository's parent and child PBIs whose
+Project status reads Done, as select-next's `counts` report them, even when the
+linked Project spans several repositories.
 
 When every remaining parent is blocked, send one short message that starts
 with `[HH:MM] Blocked:` and assumes no prior context: the repository, PBI
