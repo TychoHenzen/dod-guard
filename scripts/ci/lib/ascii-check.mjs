@@ -4,7 +4,8 @@
 
 const MAX_ASCII = 0x7e;
 const HEX_RADIX = 16;
-// Unicode notation pads to four digits; astral code points keep five.
+// U+ notation pads to at least four hex digits and never truncates, so
+// astral code points print five or six (U+1F600, U+10FFFF).
 const MIN_HEX_DIGITS = 4;
 
 export function findNonAscii({ path, text }) {
