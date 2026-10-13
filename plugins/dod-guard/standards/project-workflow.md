@@ -44,7 +44,7 @@ and pull request as the source of truth.
 
 ## Structured handoff contract
 
-A structured PBI is implementation-ready when the issue contains the five named
+A structured PBI is implementation-ready when the issue contains the seven named
 records and decomposes the work into coherent, user-action-first functional
 slices. Every declared slice must have a useful independently implementable,
 testable, and verifiable user-facing boundary. Parent-level tasks may own
@@ -124,6 +124,30 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
   review-lens id, owner, observable evidence, accepted head, and any acceptance
   or verification evidence; the executable handoff proof compares this record
   with the review-lens input instead of treating record presence as proof.
+- `acceptance-evidence`: a JSON array with one `{id, evidence}` entry per
+  `## Acceptance criteria` checkbox, keyed by the id that opens the checkbox,
+  such as `AC-1`. A missing or extra id is an actionable remainder.
+- `planned-acceptance-matrix`: a JSON array of the acceptance-matrix rows that
+  refinement plans before any proof runs. Each row has every matrix field except
+  `observed` and `headSha`, and a status of `pending`, or `inapplicable` with a
+  `reason`. The rows cover every mandatory user path and give each criterion a
+  `pending` row. `next-ticket` fills them into the `## Acceptance matrix` with
+  the observed result, status, and pushed head.
+
+Each record is a `### <name>` subsection. The `task-list`, `lens-ownership`,
+`acceptance-evidence`, and `planned-acceptance-matrix` records each carry one
+fenced `json` block holding an array; the other three are prose. This command
+reads all seven from a saved issue body and runs the pre-push proof on the
+planned matrix, including the lens-row rules that complete-pr's finalization
+gate applies after the merge:
+
+```text
+node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]
+```
+
+It exits 0 on `verified`, 1 on an actionable remainder, and 2 on a usage or
+parse error. `refine-backlog-item` runs it before `Todo`, and `next-ticket`
+runs it before the branch exists.
 
 `refine-backlog-item` owns these records. It keeps a material unresolved
 requirement in `Backlog` and moves a coherent PBI to `Todo`. `next-ticket`
