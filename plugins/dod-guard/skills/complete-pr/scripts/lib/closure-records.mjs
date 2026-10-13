@@ -2,7 +2,7 @@
 // defines: a replacement root's `supersedes` record and the
 // `## Completion evidence` comment, plus the evidence comment a close posts.
 // Every function is pure; reading and writing GitHub belongs to the callers.
-import { markdownSection } from "../../../../lib/acceptance-criteria.mjs";
+import { lines, markdownSection } from "../../../../lib/acceptance-criteria.mjs";
 import { jsonBlock, subsections } from "../../../../lib/issue-body-records.mjs";
 
 const COMPLETION_HEADING = "## Completion evidence";
@@ -28,10 +28,6 @@ const ISSUE_REFERENCE = /^([\w.-]+\/[\w.-]+)#\d+$/;
 // The acceptance matrix has no "pending" status, so a row still needs proof
 // after the merge unless it passed or was ruled inapplicable.
 const SETTLED_ROW_STATUSES = new Set(["pass", "inapplicable"]);
-
-function lines(text) {
-  return String(text ?? "").replace(/\r\n/g, "\n");
-}
 
 function supersedesEntryError(entry, repository) {
   if (Number.isInteger(entry) && entry > 0) return null;

@@ -3,23 +3,21 @@
 // that the next-ticket convergence proof evaluates. complete-pr's closure
 // records use the same subsection and JSON-block readers. Every function is
 // pure; reading the issue from GitHub belongs to the callers.
-import { acceptanceCriteria, markdownSection } from "./acceptance-criteria.mjs";
+import { acceptanceCriteria, lines, markdownSection, markedLines } from "./acceptance-criteria.mjs";
 
-function lines(text) {
-  return String(text ?? "").replace(/\r\n/g, "\n");
-}
-
-// Returns the text of every `### <name>` subsection, in document order.
+// Returns the text of every `### <name>` subsection, in document order. A
+// heading inside a fenced code block is an example, not a record, so it stays
+// in the text of the record around it.
 function subsections(notes, name) {
   const found = [];
   let current = null;
-  for (const line of notes.split("\n")) {
-    const heading = /^### (.+?)\s*$/.exec(line);
+  for (const line of markedLines(notes)) {
+    const heading = line.fenced ? null : /^### (.+?)\s*$/.exec(line.text);
     if (heading) {
       current = heading[1] === name ? [] : null;
       if (current) found.push(current);
     } else if (current) {
-      current.push(line);
+      current.push(line.text);
     }
   }
   return found.map((section) => section.join("\n"));

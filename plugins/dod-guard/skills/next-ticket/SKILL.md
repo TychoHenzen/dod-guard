@@ -66,7 +66,7 @@ slice, and has an owning task. Before implementation, verify the named
 `lens-ownership` record maps each required lens to an existing task or slice and
 observable acceptance or verification evidence; stop on any actionable
 remainder from the structural phase of the executable convergence proof. Before
-the branch exists, save the issue body read back from GitHub to a local file and
+the branch exists, save the issue body read back from GitHub to a local UTF-8 file and
 run that phase as one command:
 
 ```text
@@ -80,7 +80,9 @@ checks records, slice ownership, lens ownership, evidence shape, the planned
 matrix, and the lens-row rules that complete-pr's finalization gate applies,
 without an exact head. It prints `{outcome, remainder}` and exits 0 only on
 `verified`. Stop on exit 1 (an actionable remainder) or exit 2 (a usage or
-parse error that names the argument or record). After the handoff is
+parse error that names the argument or record). The command refuses a file
+that is not UTF-8, such as the UTF-16 that a Windows PowerShell 5.1 `>`
+redirect writes, with exit 2; a UTF-8 byte-order mark is accepted. After the handoff is
 pushed, rerun the proof with the exact head and matrix and require their
 freshness. Require pushed implementation evidence before a
 commit or PR handoff, not before execution. Do not require a fixed child count

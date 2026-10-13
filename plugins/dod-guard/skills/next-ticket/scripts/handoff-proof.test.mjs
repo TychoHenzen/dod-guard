@@ -87,13 +87,44 @@ test("exits 2 and names the record on a body it cannot parse", async () => {
   });
   const withoutEvidence = body.replace("### acceptance-evidence\n", "### evidence\n");
   await withTempFile("body.md", withoutEvidence, (file) => {
-    assert.deepEqual(run("refinement", `--body-file=${file}`).json.remainder, ["missing acceptance-evidence record"]);
+    assert.deepEqual(run("refinement", `--body-file=${file}`), {
+      status: 2,
+      json: { outcome: "parse error", remainder: ["missing acceptance-evidence record"] },
+    });
   });
   const invalidTasks = body.replace('[\n  {"id":"T1"', '[\n  {"id":"T1",,');
   await withTempFile("body.md", invalidTasks, (file) => {
     assert.deepEqual(run("refinement", `--body-file=${file}`), {
       status: 2,
       json: { outcome: "parse error", remainder: ["task-list record is not valid JSON"] },
+    });
+  });
+});
+
+test("exits 2 on a file that is not UTF-8 and reads UTF-8 with a byte-order mark", async () => {
+  const body = await readFile(CORRECTED, "utf8");
+  const bom = Buffer.from([0xef, 0xbb, 0xbf]);
+  const notUtf8 = [
+    Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(body, "utf16le")]),
+    Buffer.from(body, "utf16le"),
+    Buffer.from([0x41, 0xe9, 0x0a]),
+  ];
+  for (const bytes of notUtf8) {
+    await withTempFile("body.md", bytes, (file) => {
+      assert.deepEqual(run("refinement", `--body-file=${file}`), {
+        status: 2,
+        json: { outcome: "usage error", remainder: [`--body-file ${file} is not UTF-8 text; save it as UTF-8`] },
+      });
+    });
+  }
+  await withTempFile("body.md", Buffer.concat([bom, Buffer.from(body, "utf8")]), (file) => {
+    assert.deepEqual(run("refinement", `--body-file=${file}`), { status: 0, json: { outcome: "verified", remainder: [] } });
+  });
+  const children = Buffer.concat([bom, Buffer.from('[{"id": "orphan-slice", "evidence": "slice-proof"}]')]);
+  await withTempFile("children.json", children, (file) => {
+    assert.deepEqual(run("refinement", `--body-file=${CORRECTED}`, `--children=${file}`), {
+      status: 1,
+      json: { outcome: "actionable remainder", remainder: ["orphan-slice slice needs an owning task"] },
     });
   });
 });

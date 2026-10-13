@@ -83,3 +83,14 @@ test("subsections and jsonBlock read the first JSON block under each named headi
   assert.deepEqual(jsonBlock(subsections(notes, "b")[0]), { error: "is not valid JSON" });
   assert.deepEqual(jsonBlock("no block"), { error: "has no JSON block" });
 });
+
+test("a heading inside a fenced example stays in the record around it", () => {
+  const example = "```md\n### task-list\n```\n\nThe plan continues after the example.\n\n";
+  const { input, errors, remainder } = parseIssueBodyRecords(replaceOnce(body904, "### task-list\n", `${example}### task-list\n`));
+
+  assert.deepEqual(errors, []);
+  assert.deepEqual(remainder, []);
+  assert.deepEqual(input.tasks, records904.tasks);
+  assert.match(input.records["implementation-plan"], /```md\n### task-list\n```\n\nThe plan continues after the example\./);
+  assert.deepEqual(subsections("### a\n```md\n### a\n```\nafter\n", "a"), ["```md\n### a\n```\nafter\n"]);
+});

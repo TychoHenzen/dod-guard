@@ -1,5 +1,6 @@
 // Reads the `## Acceptance criteria` checklist of an issue body. complete-pr
 // closure and review-pr slots both read criteria, so one parser owns the rule.
+// issue-body-records and closure-records share its line and fence readers.
 // Every function is pure.
 
 function lines(text) {
@@ -73,4 +74,4 @@ function acceptanceCriteria(body) {
     .map(([, mark, text]) => ({ text: text.trim(), checked: mark !== " " }));
 }
 
-export { acceptanceCriteria, markdownSection };
+export { acceptanceCriteria, lines, markdownSection, markedLines };

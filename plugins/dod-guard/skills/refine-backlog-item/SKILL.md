@@ -339,7 +339,7 @@ in the task list, is actionable, and is `Todo`; and the four review lenses each 
 an owning child or parent-level task plus mapped observable acceptance or
 verification evidence. Pass the complete task, slice, owner, and evidence mapping
 through the same executable convergence proof used by `next-ticket` before moving
-the parent to `Todo`. Save the issue body read back above to a local file and run:
+the parent to `Todo`. Save the issue body read back above to a local UTF-8 file and run:
 
 ```text
 node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]
@@ -349,7 +349,9 @@ Pass `--children` a JSON array of the linked functional-slice children, each
 with its slice id and evidence, when any exist. Move the parent to `Todo` only
 when the command exits 0 with `outcome: "verified"`. Exit 1 names an actionable
 remainder, such as a lens that does not own its required path rows; exit 2
-names the missing or invalid record or argument. Correct the records and rerun.
+names the missing or invalid record or argument, including a file that is not
+UTF-8, such as the UTF-16 that a Windows PowerShell 5.1 `>` redirect writes.
+Correct the records and rerun.
 `submit-draft-pr` and `complete-pr` consume or revalidate the
 resulting handoff after implementation and PR creation. Stop on any actionable
 remainder. Do not require a fixed

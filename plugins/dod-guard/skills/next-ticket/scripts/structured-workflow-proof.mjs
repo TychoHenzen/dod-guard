@@ -294,6 +294,12 @@ function sameRows(left, right) {
   return left.length === rightIndexes.size && left.every((row) => rightIndexes.has(row.index));
 }
 
+// A lens row must name its required path exactly, ignoring case, as the
+// finalization gate did on master. The matrix coverage check in
+// acceptance-matrix.mjs also accepts substrings and aliases, so a row such as
+// "Recovery after restart" covers the matrix's recovery path but not the
+// reliability lens's. Planned and observed mode apply the same two rules, so
+// refinement and finalization still agree.
 function lensPathErrors(id, rows) {
   const missing = (REQUIRED_LENS_PATHS[id] ?? []).filter(
     (requiredPath) => !rows.some((row) => row.path?.toLowerCase() === requiredPath),

@@ -55,6 +55,18 @@ test("post-push convergence applies the same lens-path rule as finalization", ()
   assert.deepEqual(result.remainder, [RECOVERY_REMAINDER]);
 });
 
+test("a lens row must name its path exactly while matrix coverage accepts an alias, in both modes", () => {
+  const input = issue855Shape({ corrected: true });
+  input.plannedAcceptanceMatrix = input.plannedAcceptanceMatrix.map((row) =>
+    row.path === "recovery" ? { ...row, path: "Recovery after restart" } : row,
+  );
+  const observed = observedFromPlanned(input, PUSHED_HEAD);
+
+  assert.deepEqual(proof.evaluateConvergence(input).remainder, [RECOVERY_REMAINDER]);
+  assert.deepEqual(proof.evaluateConvergence(observed).remainder, [RECOVERY_REMAINDER]);
+  assert.deepEqual(evaluateStructuredFinalization(observed).remainder, [RECOVERY_REMAINDER]);
+});
+
 test("planned mode reports the planned-matrix errors and the lens-row checks", () => {
   const input = issue855Shape({ corrected: true });
   input.plannedAcceptanceMatrix = input.plannedAcceptanceMatrix

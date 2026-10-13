@@ -124,6 +124,11 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
   review-lens id, owner, observable evidence, accepted head, and any acceptance
   or verification evidence; the executable handoff proof compares this record
   with the review-lens input instead of treating record presence as proof.
+  A lens's own rows must name each path it requires exactly, ignoring case:
+  `interactive-control` and `browser/e2e` for wiring/usability, `data/error`
+  and `recovery` for reliability. The matrix coverage check also accepts
+  aliases such as `retry` for `recovery`, so a row it accepts can still fail
+  the lens rule.
 - `acceptance-evidence`: a JSON array with one `{id, evidence}` entry per
   `## Acceptance criteria` checkbox, keyed by the id that opens the checkbox,
   such as `AC-1`. A missing or extra id is an actionable remainder.
@@ -146,8 +151,10 @@ node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --bod
 ```
 
 It exits 0 on `verified`, 1 on an actionable remainder, and 2 on a usage or
-parse error. `refine-backlog-item` runs it before `Todo`, and `next-ticket`
-runs it before the branch exists.
+parse error. Save both files as UTF-8; a UTF-8 byte-order mark is accepted,
+and UTF-16, which a Windows PowerShell 5.1 `>` redirect writes, exits 2.
+`refine-backlog-item` runs it before `Todo`, and `next-ticket` runs it before
+the branch exists.
 
 `refine-backlog-item` owns these records. It keeps a material unresolved
 requirement in `Backlog` and moves a coherent PBI to `Todo`. `next-ticket`

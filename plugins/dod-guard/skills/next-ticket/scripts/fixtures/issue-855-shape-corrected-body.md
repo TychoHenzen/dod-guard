@@ -1,6 +1,6 @@
 ## Outcome
 
-A minimal fixture with the record shape of TychoHenzen/dod-guard#855 before its hand correction. It is test data for `handoff-proof.mjs refinement`, not a real PBI.
+A minimal fixture with the record shape of TychoHenzen/dod-guard#855 after its hand correction. It is test data for `handoff-proof.mjs refinement`, not a real PBI.
 
 This is the corrected form: T1 declares the recovery row R9, and the reliability lens cites it.
 

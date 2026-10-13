@@ -48,11 +48,25 @@ function optionsFrom(argv) {
   return options;
 }
 
+// Windows PowerShell 5.1 `>` writes UTF-16, which would read as text full of
+// NUL characters and report records that are present as missing, so a file
+// that is not UTF-8 is refused by name. The decoder drops a UTF-8 byte-order
+// mark, which `Out-File -Encoding utf8` writes.
+const UTF8 = new TextDecoder("utf-8", { fatal: true });
+
 function readText(file, option) {
+  let bytes;
   try {
-    return readFileSync(file, "utf8");
+    bytes = readFileSync(file);
   } catch {
     throw new UsageError(`cannot read --${option} ${file}`);
+  }
+  const notUtf8 = new UsageError(`--${option} ${file} is not UTF-8 text; save it as UTF-8`);
+  if (bytes.includes(0)) throw notUtf8;
+  try {
+    return UTF8.decode(bytes);
+  } catch {
+    throw notUtf8;
   }
 }
 
