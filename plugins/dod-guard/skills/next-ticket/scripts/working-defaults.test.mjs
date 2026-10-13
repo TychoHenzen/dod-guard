@@ -3,6 +3,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { prose } from "../../../lib/skill-text.mjs";
 
 const skillsRoot = fileURLToPath(new URL("../../", import.meta.url));
 const pluginRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -89,6 +90,27 @@ test("policy fixtures cover decisive choices, dirty state, stale tests, and safe
     /otherwise Codex with\s+`gpt-5\.6-sol` at `max` effort/,
   ]) {
     assert.match(defaults, signal);
+  }
+});
+
+// A goal run once called a capability its own PBI was meant to add a blocker,
+// on a branch that was stale against the default (#821, #859).
+test("failure recovery classifies a missing capability against the PBI before calling it a blocker", () => {
+  const recovery = defaults.split("\n- ").find((bullet) => bullet.startsWith("For an ordinary failure"));
+  assert.ok(recovery, "the failure-recovery bullet exists");
+  for (const sentence of [
+    "Before classifying a missing provider, fixture, or tool capability as a blocker, compare it with the PBI's " +
+      "requested observable behavior: a capability the PBI itself adds or changes is implementation work, not an " +
+      "external blocker.",
+    "A genuinely unavailable capability stays a blocker, recorded with the exact call, error, and what was checked.",
+    "On a branch behind the fetched default, reclassify a failure only after the branch is current.",
+    "Before a pull request exists, merge the fetched default into the branch, and stop with the conflicted paths " +
+      "on a merge conflict.",
+    "Once one exists, use complete-pr's bounded branch synchronization, with merge conflicts going to " +
+      "`standards/conflict-triage.md`.",
+    "Never rebase or force-push.",
+  ]) {
+    assert.match(recovery, prose(sentence), sentence);
   }
 });
 
