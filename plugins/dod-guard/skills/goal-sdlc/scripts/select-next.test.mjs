@@ -96,6 +96,17 @@ test("selects the Todo parent and its child ahead of Backlog", async () => {
     [517, "eligible"],
   ]);
   assert.equal(result.counts.balanced, true);
+  assert.equal(result.queueState, "ready");
+});
+
+test("an empty selection distinguishes held work from an exhausted queue", async () => {
+  const empty = { ...snapshot(), items: [], issues: [] };
+  assert.equal((await selectNext(empty)).queueState, "exhausted");
+  const held = snapshot();
+  held.issues = [];
+  const result = await selectNext(held);
+  assert.equal(result.selected, null);
+  assert.equal(result.queueState, "held");
 });
 
 test("holds a group whose issue was not supplied", async () => {

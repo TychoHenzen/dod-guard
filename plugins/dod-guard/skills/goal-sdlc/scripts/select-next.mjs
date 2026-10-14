@@ -37,7 +37,16 @@ owner/name#N.
 A record with no repository, a record with no number, a duplicated record, an
 item whose issue is missing, or a linked pull request that is missing selects
 nothing and is named in missingEvidence.
-today defaults to the local date.`;
+today defaults to the local date.
+
+A Backlog ancestor with no delivery PR or active checkpoint and refined
+Todo/In Progress children is a hierarchy. Its children are independent
+delivery roots; their own nested checklist children stay together. Completed
+siblings do not block unfinished roots, and unsafe ancestor relations hold
+the descendant roots. Honor the issue's declared dependency order before
+implementation; Project order is only the selector's default ranking.
+queueState is ready, held, or exhausted. A null selection with held work is
+not an exhausted queue.`;
 
 const EMPTY_SNAPSHOT = { items: [], issues: [], pullRequests: [] };
 
@@ -48,7 +57,9 @@ function groupSummary({ rootIssueNumber, decision }) {
 function selectNext(input, today) {
   const snapshot = { ...EMPTY_SNAPSHOT, ...input };
   const { groups, selected, counts, missingEvidence } = classifyQueue(snapshot, { today });
+  const held = missingEvidence.length > 0 || groups.some(({ decision }) => decision.kind === "hold");
   return {
+    queueState: selected ? "ready" : held ? "held" : "exhausted",
     selected: selected && {
       rootIssueNumber: selected.rootIssueNumber,
       status: selected.decision.status,

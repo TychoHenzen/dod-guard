@@ -365,7 +365,7 @@ test("a linked pull request absent from pullRequests is missing evidence on its 
   assert.ok(group.decision.reasons.includes(missing));
 });
 
-test("classifyDelivery judges a parented root as its own delivery while its queue group sits under the parent", () => {
+test("classifyDelivery and the queue judge an independently delivered root below Backlog separately", () => {
   const input = snapshot({
     items: [item(683, "Backlog"), item(840, "Done", { parent: ref(683), linked: [ref(901)] })],
     issues: [
@@ -388,7 +388,100 @@ test("classifyDelivery judges a parented root as its own delivery while its queu
   );
   assert.deepEqual(
     queueGroup.records.map(({ issueNumber }) => issueNumber),
-    [683, 840],
+    [683],
+  );
+  assert.equal(queueGroup.decision.kind, "hold");
+  assert.equal(groupOf(classify(input), 840).decision.kind, "complete");
+});
+
+test("completed independent siblings leave Todo roots and their nested children selectable", () => {
+  const input = snapshot({
+    items: [
+      item(239, "Backlog"),
+      item(255, "Done", { parent: ref(239), linked: [ref(302)] }),
+      item(262, "Todo", { parent: ref(239) }),
+      item(263, "Todo", { parent: ref(262) }),
+    ],
+    issues: [
+      issue(239, { children: [ref(255), ref(262)] }),
+      issue(255, { parent: ref(239), state: "closed", activeCheckpoint: false }),
+      issue(262, { parent: ref(239), children: [ref(263)] }),
+      issue(263, { parent: ref(262) }),
+    ],
+    pullRequests: [pull(302, { trustedHeadSha: "head-302" })],
+  });
+  const result = classify(input);
+  assert.equal(result.selected.rootIssueNumber, 262);
+  assert.deepEqual(
+    result.selected.records.map(({ issueNumber }) => issueNumber),
+    [262, 263],
+  );
+  assert.equal(groupOf(result, 255).decision.kind, "complete");
+  const context = { repository: REPOSITORY, defaultBranch: "master" };
+  assert.equal(classifyDelivery(buildQueueRecords(indexSnapshot(input)), 239, context).decision.kind, "hold");
+  input.items[0].fields = input.items[0].fields.filter(({ name }) => name !== "Parent issue");
+  assert.equal(classify(input).selected, null);
+  assert.ok(groupOf(classify(input), 262).decision.reasons.includes("Project item #239 Parent issue"));
+});
+
+test("nested checklist children stay with their top delivery root", () => {
+  const input = snapshot({
+    items: [item(1, "Todo"), item(2, "Todo", { parent: ref(1) }), item(3, "Todo", { parent: ref(2) })],
+    issues: [
+      issue(1, { children: [ref(2)] }),
+      issue(2, { parent: ref(1), children: [ref(3)] }),
+      issue(3, { parent: ref(2) }),
+    ],
+  });
+  assert.deepEqual(
+    classify(input).selected.records.map(({ issueNumber }) => issueNumber),
+    [1, 2, 3],
+  );
+});
+
+test("cyclic ancestry cannot select independent children", () => {
+  const input = snapshot({
+    items: [item(1, "Backlog", { parent: ref(2) }), item(2, "Todo", { parent: ref(1) })],
+    issues: [issue(1, { parent: ref(2), children: [ref(2)] }), issue(2, { parent: ref(1), children: [ref(1)] })],
+  });
+  const result = classify(input);
+  assert.equal(result.selected, null);
+  assert.ok(result.groups.every(({ decision }) => decision.reasons.includes("cyclic parent/child relationship")));
+});
+
+test("independent delivery roots cannot escape unsafe ancestor relationships", () => {
+  const input = snapshot({
+    items: [item(1, "Backlog"), item(2, "Todo", { parent: ref(1) })],
+    issues: [issue(1, { children: [ref(2), ref(9, FOREIGN_REPOSITORY)] }), issue(2, { parent: ref(1) })],
+  });
+  assert.equal(classify(input).selected, null);
+  assert.ok(groupOf(classify(input), 2).decision.reasons.some((reason) => reason.includes(FOREIGN_REPOSITORY)));
+  input.issues[0].children = [ref(2)];
+  input.issues[0].parent = ref(9);
+  assert.equal(classify(input).selected, null);
+  assert.ok(groupOf(classify(input), 2).decision.reasons.includes("contradictory parent for issue #1"));
+  input.issues[0].parent = null;
+  input.items.shift();
+  assert.equal(classify(input).selected, null);
+});
+
+test("a Backlog parent's own delivery checkpoint or pull request prevents a child split", () => {
+  const input = snapshot({
+    items: [item(1, "Backlog"), item(2, "Todo", { parent: ref(1) })],
+    issues: [issue(1, { children: [ref(2)], activeCheckpoint: true }), issue(2, { parent: ref(1) })],
+  });
+  assert.equal(classify(input).selected, null);
+  assert.deepEqual(
+    groupOf(classify(input), 1).records.map(({ issueNumber }) => issueNumber),
+    [1, 2],
+  );
+  input.issues[0].activeCheckpoint = false;
+  input.items[0] = item(1, "Backlog", { linked: [ref(9)] });
+  input.pullRequests = [pull(9, { state: "open", mergedAt: null })];
+  assert.equal(classify(input).selected, null);
+  assert.deepEqual(
+    groupOf(classify(input), 1).records.map(({ issueNumber }) => issueNumber),
+    [1, 2],
   );
 });
 
