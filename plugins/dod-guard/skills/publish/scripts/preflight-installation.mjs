@@ -117,7 +117,8 @@ async function readRegistry(client, requested) {
   try {
     const chunks = [];
     for await (const chunk of process.stdin) chunks.push(chunk);
-    registry = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    const input = Buffer.concat(chunks).toString("utf8");
+    registry = JSON.parse(input.startsWith("\uFEFF") ? input.slice(1) : input);
   } catch (error) {
     return failure(client, requested, `Registry input is missing or malformed: ${error.message}`, {
       registry: "unavailable",
@@ -132,7 +133,19 @@ async function readRegistry(client, requested) {
   return entries;
 }
 
-function selectRegistration(client, requested, entries) {
+function expectedIdentity(client) {
+  if (client === "codex") {
+    return {
+      pluginId: "dod-guard@dod-guard-monorepo",
+      name: "dod-guard",
+      marketplaceName: "dod-guard-monorepo",
+      marketplaceSource: { sourceType: "git", source: repository },
+    };
+  }
+  return { id: "dod-guard@dod-guard" };
+}
+
+function selectActiveRegistration(client, requested, entries) {
   const candidates = entries.filter((entry) => isDodGuardEntry(client, entry));
   const active = candidates.filter(
     (entry) => entry?.enabled === true && (client !== "codex" || entry?.installed === true),
@@ -148,19 +161,12 @@ function selectRegistration(client, requested, entries) {
       },
     );
   }
+  return { entry: active[0] };
+}
 
-  const [entry] = active;
+function validateRegistrationIdentity(client, requested, entry) {
   const identity = summary(client, entry);
   if (!identityIsExpected(client, entry)) {
-    let expected = { id: "dod-guard@dod-guard" };
-    if (client === "codex") {
-      expected = {
-        pluginId: "dod-guard@dod-guard-monorepo",
-        name: "dod-guard",
-        marketplaceName: "dod-guard-monorepo",
-        marketplaceSource: { sourceType: "git", source: repository },
-      };
-    }
     return failure(
       client,
       requested,
@@ -169,11 +175,14 @@ function selectRegistration(client, requested, entries) {
         registry: "parsed",
         pluginIdentity: identity,
         version: entry.version ?? "unavailable",
-        expectedIdentity: expected,
+        expectedIdentity: expectedIdentity(client),
       },
     );
   }
+  return identity;
+}
 
+function validateRegistrationMetadata(client, requested, entry, identity) {
   const pluginRoot = client === "codex" ? entry.source?.path : entry.installPath;
   if (typeof entry.version !== "string" || !entry.version || !absoluteInstallPath(pluginRoot)) {
     return failure(client, requested, "The enabled registration is missing an absolute install path or version.", {
@@ -186,10 +195,18 @@ function selectRegistration(client, requested, entries) {
   return { identity, version: entry.version, registeredRoot: pluginRoot };
 }
 
-async function resolvePluginRoot(client, requested, installation) {
-  let loadedRoot;
+function selectRegistration(client, requested, entries) {
+  const selected = selectActiveRegistration(client, requested, entries);
+  if (selected.ok === false) return selected;
+  const { entry } = selected;
+  const identity = validateRegistrationIdentity(client, requested, entry);
+  if (identity?.ok === false) return identity;
+  return validateRegistrationMetadata(client, requested, entry, identity);
+}
+
+async function resolveLoadedRoot(client, requested, installation) {
   try {
-    loadedRoot = await realpath(pluginRootFromScript);
+    return normalize(await realpath(pluginRootFromScript));
   } catch (error) {
     return failure(client, requested, `The loaded plugin path is unavailable: ${error.message}`, {
       pluginIdentity: installation.identity,
@@ -198,33 +215,42 @@ async function resolvePluginRoot(client, requested, installation) {
       registeredRoot: installation.registeredRoot,
     });
   }
+}
 
-  if (client === "codex") return normalize(loadedRoot);
-
-  let registeredRoot;
+async function resolveRegisteredRoot(client, requested, installation, loadedRoot) {
   try {
-    registeredRoot = await realpath(installation.registeredRoot);
+    return normalize(await realpath(installation.registeredRoot));
   } catch (error) {
     return failure(client, requested, `The registered plugin path is unavailable: ${error.message}`, {
       pluginIdentity: installation.identity,
       version: installation.version,
-      pluginRoot: normalize(loadedRoot),
+      pluginRoot: loadedRoot,
       registeredRoot: installation.registeredRoot,
     });
   }
+}
+
+async function resolvePluginRoot(client, requested, installation) {
+  const loadedRoot = await resolveLoadedRoot(client, requested, installation);
+  if (typeof loadedRoot !== "string") return loadedRoot;
+
+  if (client === "codex") return loadedRoot;
+
+  const registeredRoot = await resolveRegisteredRoot(client, requested, installation, loadedRoot);
+  if (typeof registeredRoot !== "string") return registeredRoot;
 
   if (normalizedPath(loadedRoot) !== normalizedPath(registeredRoot)) {
     return failure(client, requested, "The loaded publish skill is not from the registered dod-guard installation.", {
       pluginIdentity: installation.identity,
       version: installation.version,
-      pluginRoot: normalize(loadedRoot),
-      registeredRoot: normalize(registeredRoot),
+      pluginRoot: loadedRoot,
+      registeredRoot,
     });
   }
-  return normalize(loadedRoot);
+  return loadedRoot;
 }
 
-async function readManifest(client, requested, installation, pluginRoot) {
+async function loadManifest(client, requested, installation, pluginRoot) {
   const manifestPath = resolve(
     pluginRoot,
     client === "codex" ? ".codex-plugin/plugin.json" : ".claude-plugin/plugin.json",
@@ -250,6 +276,11 @@ async function readManifest(client, requested, installation, pluginRoot) {
       manifestPath: resolvedManifestPath ?? manifestPath,
     });
   }
+  return { manifest, resolvedManifestPath };
+}
+
+function validateManifest(client, requested, installation, loadedManifest) {
+  const { manifest, resolvedManifestPath } = loadedManifest;
   if (manifest?.name !== "dod-guard" || manifest?.version !== installation.version) {
     return failure(
       client,
@@ -267,11 +298,16 @@ async function readManifest(client, requested, installation, pluginRoot) {
   return { manifest };
 }
 
-async function resolveSkillPath(client, requested, installation, manifest) {
+async function readManifest(client, requested, installation, pluginRoot) {
+  const loadedManifest = await loadManifest(client, requested, installation, pluginRoot);
+  if (loadedManifest.ok === false) return loadedManifest;
+  return validateManifest(client, requested, installation, loadedManifest);
+}
+
+async function findSkillPath(client, requested, installation) {
   const expectedPath = resolve(installation.pluginRoot, "skills/publish/SKILL.md");
-  let skillPath;
   try {
-    skillPath = normalize(await realpath(expectedPath));
+    return normalize(await realpath(expectedPath));
   } catch (error) {
     return failure(client, requested, `The registered installation is missing its publish skill: ${error.message}`, {
       pluginIdentity: installation.identity,
@@ -280,6 +316,9 @@ async function resolveSkillPath(client, requested, installation, manifest) {
       skillPath: expectedPath,
     });
   }
+}
+
+async function validateSkillFile(client, requested, installation, skillPath) {
   if (!isInside(installation.pluginRoot, skillPath)) {
     return failure(client, requested, "The publish skill path resolves outside the registered plugin root.", {
       pluginIdentity: installation.identity,
@@ -303,6 +342,9 @@ async function resolveSkillPath(client, requested, installation, manifest) {
       },
     );
   }
+}
+
+function validateRequestedPins(client, requested, installation, manifest, skillPath) {
   if (requested.version !== undefined && requested.version !== installation.version) {
     return failure(
       client,
@@ -333,6 +375,15 @@ async function resolveSkillPath(client, requested, installation, manifest) {
       },
     );
   }
+}
+
+async function resolveSkillPath(client, requested, installation, manifest) {
+  const skillPath = await findSkillPath(client, requested, installation);
+  if (typeof skillPath !== "string") return skillPath;
+  const skillFailure = await validateSkillFile(client, requested, installation, skillPath);
+  if (skillFailure) return skillFailure;
+  const pinFailure = validateRequestedPins(client, requested, installation, manifest, skillPath);
+  if (pinFailure) return pinFailure;
   return { skillPath };
 }
 

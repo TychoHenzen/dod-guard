@@ -107,6 +107,18 @@ test("resolves and pins the exact Codex and Claude installations", async (t) => 
   }
 });
 
+test("accepts one leading BOM for Codex and Claude registry JSON", async (t) => {
+  for (const client of ["codex", "claude"]) {
+    const fixture = await createInstall(t, client);
+    const registry = registryFor(client, fixture.pluginRoot);
+    const plain = runPreflight(fixture, client, registry);
+    const prefixed = runPreflight(fixture, client, registry, [], `\uFEFF${JSON.stringify(registry)}`);
+
+    assert.equal(prefixed.status, 0, prefixed.stderr);
+    assert.deepEqual(prefixed.response, plain.response);
+  }
+});
+
 test("rejects absent, ambiguous, disabled, wrong-marketplace, and wrong-path registrations", async (t) => {
   for (const client of ["codex", "claude"]) {
     const fixture = await createInstall(t, client);
@@ -265,6 +277,7 @@ test("reports stale pins and malformed inventories without changing the installa
     assertRejected(malformed, /Registry input is missing or malformed/);
     assert.equal(malformed.response.observed.registry, "unavailable");
     assert.equal(malformed.response.observed.pluginIdentity, "unavailable");
+    assertRejected(runPreflight(fixture, client, null, [], "\uFEFF{"), /Registry input is missing or malformed/);
     assertRejected(runPreflight(fixture, client, null, [], "{}"), /expected .* plugin list/);
     assert.equal(await readFile(fixture.manifestPath, "utf8"), manifestBefore);
     assert.equal(await readFile(fixture.skillFile, "utf8"), skillBefore);
