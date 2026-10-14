@@ -218,6 +218,11 @@ function decideGroup(records, context) {
     return mergedDecision(reasons);
   }
 
+  const closedIssueReasons = records
+    .filter((record) => issueState(record.issue) === "CLOSED")
+    .map((record) => `issue #${record.issueNumber} is closed without a verified merged delivery`);
+  if (closedIssueReasons.length > 0) return hold([...reasons, ...closedIssueReasons]);
+
   const resumable = resumableDecision(reasons, records);
   if (resumable) return resumable;
   if (reasons.length > 0) return hold(reasons);

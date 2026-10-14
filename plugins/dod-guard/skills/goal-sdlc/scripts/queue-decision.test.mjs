@@ -113,6 +113,18 @@ test("Todo and Backlog parents without a delivery are eligible", () => {
   assert.equal(decisionOf(backlog, 31).status, "Backlog");
 });
 
+test("closed unmerged issues are diagnostic holds instead of selected or resumed work", () => {
+  for (const status of ["Todo", "Backlog", "In Progress"]) {
+    const input = snapshot({ items: [item(866, status)], issues: [issue(866)] });
+    assert.equal(classifyQueue(input, { today: TODAY }).selected, null);
+    assert.deepEqual(decisionOf(input, 866), {
+      kind: "hold",
+      eligible: false,
+      reasons: ["issue #866 is closed without a verified merged delivery"],
+    });
+  }
+});
+
 test("an evidence gap holds even a complete delivery", () => {
   const input = completeDelivery();
   // #444 lists #535 as a sub-issue, but #535 has no Project item to carry its evidence.
