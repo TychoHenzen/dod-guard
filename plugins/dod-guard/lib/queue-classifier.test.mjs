@@ -78,6 +78,21 @@ function groupOf(result, root) {
   return result.groups.find(({ rootIssueNumber }) => rootIssueNumber === root);
 }
 
+function completedGroup(parentPulls, childPulls = []) {
+  const pullNumbers = [...new Set([...parentPulls, ...childPulls])];
+  return snapshot({
+    items: [
+      item(444, "Done", { linked: parentPulls.map((number) => ref(number)) }),
+      item(445, "Done", { parent: ref(444), linked: childPulls.map((number) => ref(number)) }),
+    ],
+    issues: [
+      issue(444, { state: "closed", children: [ref(445)], activeCheckpoint: false }),
+      issue(445, { state: "closed", parent: ref(444), activeCheckpoint: false }),
+    ],
+    pullRequests: pullNumbers.map((number) => pull(number, { trustedHeadSha: `head-${number}` })),
+  });
+}
+
 test("AC-01: every record is keyed by owner/name and a foreign record never supplies target data", () => {
   const input = healthy();
   input.items.push(item(517, "Done", { id: "PVTI_foreign_517", repository: FOREIGN_REPOSITORY }));
@@ -363,6 +378,47 @@ test("a linked pull request absent from pullRequests is missing evidence on its 
   const group = classifyDelivery(records, backlogRoot, { repository: REPOSITORY, defaultBranch: "master" });
   assert.equal(group.decision.kind, "hold");
   assert.ok(group.decision.reasons.includes(missing));
+});
+
+test("one pull request linked from a parent and child counts once", () => {
+  const group = groupOf(classify(completedGroup([540], [540])), 444);
+  assert.equal(group.decision.kind, "complete");
+  assert.equal(group.decision.reasons.includes("merged delivery relationship is missing or duplicated"), false);
+});
+
+test("two distinct merged pull requests still hold the delivery", () => {
+  const group = groupOf(classify(completedGroup([540], [541])), 444);
+  assert.equal(group.decision.kind, "hold");
+  assert.ok(group.decision.reasons.includes("merged delivery relationship is missing or duplicated"));
+});
+
+test("an open or closed-unmerged pull request still holds beside the merged delivery", () => {
+  for (const [state, reason] of [
+    ["open", "open implementation pull request remains active"],
+    ["closed", "closed pull request is not a verified merge"],
+  ]) {
+    const input = completedGroup([540], [541]);
+    input.pullRequests[1] = pull(541, { state, mergedAt: null });
+    const group = groupOf(classify(input), 444);
+    assert.equal(group.decision.kind, "hold");
+    assert.ok(group.decision.reasons.includes(reason), group.decision.reasons.join("; "));
+  }
+});
+
+test("a foreign same-numbered pull request is not collapsed into the target relationship", () => {
+  const input = completedGroup([540]);
+  input.items[1] = item(445, "Done", { parent: ref(444), linked: [ref(540, FOREIGN_REPOSITORY)] });
+  const group = groupOf(classify(input), 444);
+  assert.equal(group.decision.kind, "hold");
+  assert.ok(group.decision.reasons.includes("cross-repository linked pull request other/repo#540"));
+});
+
+test("ambiguous duplicate pull request records still hold the delivery", () => {
+  const input = completedGroup([540]);
+  input.pullRequests.push(pull(540, { trustedHeadSha: "head-540" }));
+  const result = classify(input);
+  assert.equal(result.selected, null);
+  assert.ok(result.missingEvidence.some((reason) => reason.startsWith("duplicate pull request record")));
 });
 
 test("classifyDelivery and the queue judge an independently delivered root below Backlog separately", () => {

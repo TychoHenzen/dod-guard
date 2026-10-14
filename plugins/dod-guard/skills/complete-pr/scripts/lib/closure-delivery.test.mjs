@@ -35,6 +35,7 @@ function claimsFinished(snapshot) {
 // #831 is the root, #832 its child, and pull request 836 is the delivery. Both issues record it.
 function recordedBothWays() {
   const snapshot = claimsFinished(closedWithoutEvidence());
+  setField(snapshot, 832, "Linked pull requests", [{ repository: REPOSITORY, number: 836 }]);
   issueOf(snapshot, 831).comments = [completionComment(831)];
   issueOf(snapshot, 832).comments = [completionComment(831)];
   return snapshot;
@@ -106,6 +107,7 @@ test("a root whose item links no pull request is held for that, not for a date",
   const root = 831;
   assert.equal(judgeDelivery(indexSnapshot(snapshot), root).status, "verified");
   setField(snapshot, root, "Linked pull requests", []);
+  setField(snapshot, 832, "Linked pull requests", []);
   const judged = judgeDelivery(indexSnapshot(snapshot), root);
   assert.equal(judged.status, "unverified");
   assert.ok(judged.reasons.includes("no merged pull request linked to the delivery"), judged.reasons.join("; "));
