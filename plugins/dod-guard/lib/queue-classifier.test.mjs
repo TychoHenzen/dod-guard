@@ -246,6 +246,17 @@ test("closed issues without a verified merge hold every unmerged queue state", (
   }
 });
 
+test("a closed current friction log keeps both hold reasons", () => {
+  const input = snapshot({
+    items: [item(866, "Backlog")],
+    issues: [issue(866, { state: "closed", title: `Friction log ${TODAY}` })],
+  });
+  assert.deepEqual(groupOf(classify(input), 866).decision.reasons, [
+    "friction log still collecting entries",
+    "issue #866 is closed without a verified merged delivery",
+  ]);
+});
+
 test("the classifier reads no clock and no network while it classifies", () => {
   const originalDate = globalThis.Date;
   const originalFetch = globalThis.fetch;

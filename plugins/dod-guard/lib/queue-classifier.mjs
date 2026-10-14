@@ -221,7 +221,12 @@ function decideGroup(records, context) {
   const closedIssueReasons = records
     .filter((record) => issueState(record.issue) === "CLOSED")
     .map((record) => `issue #${record.issueNumber} is closed without a verified merged delivery`);
-  if (closedIssueReasons.length > 0) return hold([...reasons, ...closedIssueReasons]);
+  if (closedIssueReasons.length > 0) {
+    if (typeof context.today === "string" && collectingFrictionLog(records, context.today)) {
+      reasons.push("friction log still collecting entries");
+    }
+    return hold([...reasons, ...closedIssueReasons]);
+  }
 
   const resumable = resumableDecision(reasons, records);
   if (resumable) return resumable;
