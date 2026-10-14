@@ -77,7 +77,9 @@ test("review-pr posts the slot block without changing its boundaries", () => {
   assert.match(skill, prose("never post a second review"));
   assert.match(skill, prose("Never edit files, approve, mark ready, merge, or close anything."));
   assert.doesNotMatch(skill, /questions\.json/);
-  assert.match(skill, prose("the findings are listed in the review body without a `GH-<id>`"));
+  assert.match(skill, prose("blocking findings are listed in the review body without a `GH-<id>`"));
+  assert.match(skill, prose('`MINOR` findings go in a "Minor notes" list in the review body'));
+  assert.match(skill, prose("only `MINOR` findings or none is `APPROVE`"));
   assert.doesNotMatch(skill, /so each gets a `GH-<id>`/);
 });
 
@@ -120,5 +122,10 @@ test("USAGE describes the planner, investigators, and judges", () => {
   assert.match(usage, prose("the four reviewer agents judge them on the strong tier"));
   assert.match(usage, prose("with every slot and its questions in a collapsed block"));
   assert.match(usage, prose("ruling on every slot assigned to their lens"));
-  assert.match(usage, prose("the findings are listed in the review body without a `GH-<id>`"));
+  assert.match(usage, prose("blocking findings are listed in the review body without a `GH-<id>`"));
+  assert.match(usage, prose('`MINOR` findings are listed under "Minor notes" in the review body'));
+  assert.match(
+    usage,
+    prose("`REQUEST_CHANGES` for any `MAJOR`, and `APPROVE` when only `MINOR` findings or none remain"),
+  );
 });

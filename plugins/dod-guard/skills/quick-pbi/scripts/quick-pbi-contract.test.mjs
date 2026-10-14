@@ -52,7 +52,10 @@ test("quick-pbi covers the full delivery lifecycle without extra prompts", () =>
 });
 
 test("consumes review-pr's recommendation without a local ledger", () => {
-  assert.match(reviewSkill, /any `BLOCKER` is `BLOCK`, any\s+other finding is `REQUEST_CHANGES`, none is `APPROVE`/);
+  assert.match(
+    reviewSkill,
+    /any `BLOCKER` is `BLOCK`, any\s+`MAJOR` is `REQUEST_CHANGES`, and only `MINOR` findings or none is `APPROVE`/,
+  );
   assert.match(reviewSkill, /never post a second review/);
   assert.match(reviewSkill, /Never edit files, approve, mark ready, merge,\s+or close anything/);
   assert.match(
