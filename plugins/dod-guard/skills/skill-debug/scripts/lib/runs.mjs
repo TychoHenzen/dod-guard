@@ -8,11 +8,7 @@
 // The boundary is reported with the run. A reader who disagrees with it can
 // see what was used.
 
-import {
-  findInvocations,
-  normalizeSkill,
-  skillMatches,
-} from "./invocations.mjs";
+import { findInvocations, normalizeSkill, skillMatches } from "./invocations.mjs";
 
 const RESET = "clear";
 

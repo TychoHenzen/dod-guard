@@ -1,35 +1,38 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applyClosures } from "./closure-apply.mjs";
-import { planClosures } from "./closure-plan.mjs";
-import { renderClosureEvidence } from "./closure-records.mjs";
 import {
-  DELIVERIES,
-  FOREIGN_REPOSITORY,
-  REPOSITORY,
   chainSnapshot,
   closedWithoutEvidence,
   completionComment,
+  DELIVERIES,
+  FOREIGN_REPOSITORY,
   fakeGitHub,
   holdOf,
   issue,
   item,
   mutating,
   pull,
+  REPOSITORY,
   recordedSnapshot,
   snapshotAfter,
   supersedesBody,
 } from "./closure.test-support.mjs";
+import { applyClosures } from "./closure-apply.mjs";
+import { planClosures } from "./closure-plan.mjs";
+import { renderClosureEvidence } from "./closure-records.mjs";
 
 test("closes #683 once every sub-issue is superseded by a verified root", () => {
   const plan = planClosures(recordedSnapshot());
-  assert.deepEqual(plan.closes.map(({ issue, rule }) => [issue, rule]), [
-    [775, "replaced-original"],
-    [776, "replaced-original"],
-    [777, "replaced-original"],
-    [778, "replaced-original"],
-    [683, "parent"],
-  ]);
+  assert.deepEqual(
+    plan.closes.map(({ issue, rule }) => [issue, rule]),
+    [
+      [775, "replaced-original"],
+      [776, "replaced-original"],
+      [777, "replaced-original"],
+      [778, "replaced-original"],
+      [683, "parent"],
+    ],
+  );
   const parent = plan.closes.at(-1);
   assert.equal(parent.stateReason, "completed");
   assert.deepEqual(parent.children, [775, 776, 777, 778]);
@@ -56,7 +59,10 @@ test("keeps #683 open with the reason when a sub-issue is not settled", () => {
 
 test("the parent walk stops after five levels", () => {
   const plan = planClosures(chainSnapshot(7));
-  assert.deepEqual(plan.closes.map(({ issue }) => issue), [777, 2001, 2002, 2003, 2004, 2005]);
+  assert.deepEqual(
+    plan.closes.map(({ issue }) => issue),
+    [777, 2001, 2002, 2003, 2004, 2005],
+  );
   assert.deepEqual(holdOf(plan, 2006).reasons, ["parent walk stopped after 5 levels"]);
   assert.equal(holdOf(plan, 2007), undefined);
 });
@@ -81,7 +87,10 @@ function nestedChain() {
   open(2005, 2006, [2004]);
   open(2006, null, [2005, 2099]);
   open(2099, 2006);
-  for (const [root, original] of [[840, 777], [841, 2099]]) {
+  for (const [root, original] of [
+    [840, 777],
+    [841, 2099],
+  ]) {
     const body = supersedesBody([original]);
     snapshot.issues.push(issue(root, { state: "closed", body, comments: [completionComment(root)] }));
     snapshot.items.push(item(root, "Done", { linked: [DELIVERIES[root].pull] }));
@@ -98,7 +107,10 @@ test("a walk past the level limit does not block a shallower walk", () => {
     assert.equal(plan.closes.find(({ issue }) => issue === 2006)?.rule, "parent");
     assert.equal(holdOf(plan, 2006), undefined);
     const closed = new Set(plan.closes.map(({ issue }) => issue));
-    assert.deepEqual(plan.holds.filter(({ issue }) => closed.has(issue)), []);
+    assert.deepEqual(
+      plan.holds.filter(({ issue }) => closed.has(issue)),
+      [],
+    );
   }
 });
 
@@ -140,10 +152,13 @@ test("the parent closes when its last root merges after the siblings closed", ()
   const later = snapshotAfter(first, github);
   later.issues.find(({ number }) => number === 841).comments.push(completionComment(841));
   const plan = planClosures(later);
-  assert.deepEqual(plan.closes.map(({ issue, rule }) => [issue, rule]), [
-    [778, "replaced-original"],
-    [683, "parent"],
-  ]);
+  assert.deepEqual(
+    plan.closes.map(({ issue, rule }) => [issue, rule]),
+    [
+      [778, "replaced-original"],
+      [683, "parent"],
+    ],
+  );
   assert.deepEqual(plan.holds, []);
   assert.deepEqual(plan.reports, []);
 });
@@ -153,12 +168,15 @@ test("holds a parent whose sub-issue list was not read", () => {
   const parent = snapshot.issues.find(({ number }) => number === 683);
   delete parent.children;
   const plan = planClosures(snapshot);
-  assert.deepEqual(plan.closes.map(({ issue, rule }) => [issue, rule]), [
-    [775, "replaced-original"],
-    [776, "replaced-original"],
-    [777, "replaced-original"],
-    [778, "replaced-original"],
-  ]);
+  assert.deepEqual(
+    plan.closes.map(({ issue, rule }) => [issue, rule]),
+    [
+      [775, "replaced-original"],
+      [776, "replaced-original"],
+      [777, "replaced-original"],
+      [778, "replaced-original"],
+    ],
+  );
   assert.deepEqual(holdOf(plan, 683).reasons, ["sub-issue list missing"]);
 });
 
@@ -202,10 +220,13 @@ test("an open parent above a not_planned hierarchy record waits for the moved de
   assert.ok(!waiting.reports.some(({ issue }) => issue === 901), "#901 refinement close was reported");
 
   const delivered = planClosures(hierarchyChain());
-  assert.deepEqual(delivered.closes.map(({ issue, rule, stateReason }) => [issue, rule, stateReason]), [
-    [775, "replaced-original", "completed"],
-    [900, "parent", "completed"],
-  ]);
+  assert.deepEqual(
+    delivered.closes.map(({ issue, rule, stateReason }) => [issue, rule, stateReason]),
+    [
+      [775, "replaced-original", "completed"],
+      [900, "parent", "completed"],
+    ],
+  );
   assert.equal(holdOf(delivered, 900), undefined);
 });
 
@@ -255,13 +276,19 @@ test("an issue held before the walk is not closed as a parent", () => {
   snapshot.items.push(item(841, "Done", { linked: [DELIVERIES[841].pull] }));
   snapshot.pullRequests.push(pull(841));
   const plan = planClosures(snapshot);
-  assert.deepEqual(plan.closes.map(({ issue, rule }) => [issue, rule]), [[777, "replaced-original"]]);
+  assert.deepEqual(
+    plan.closes.map(({ issue, rule }) => [issue, rule]),
+    [[777, "replaced-original"]],
+  );
   assert.deepEqual(holdOf(plan, 2001).reasons, [
     "superseded by more than one root: #840, #841",
     "parent close refused: issue is held",
   ]);
   const closed = new Set(plan.closes.map(({ issue }) => issue));
-  assert.deepEqual(plan.holds.filter(({ issue }) => closed.has(issue)), []);
+  assert.deepEqual(
+    plan.holds.filter(({ issue }) => closed.has(issue)),
+    [],
+  );
 });
 
 // A cross-repository sub-issue holds #683 before any rule runs. Asking for the hierarchy close of
@@ -271,12 +298,19 @@ test("a hierarchy close is refused on an issue held for a cross-repository sub-i
   const epic = snapshot.issues.find(({ number }) => number === 683);
   epic.children.push({ repository: FOREIGN_REPOSITORY, number: 12 });
   const plan = planClosures(snapshot, { hierarchy: 683 });
-  assert.equal(plan.closes.some(({ issue }) => issue === 683), false, JSON.stringify(plan.closes));
+  assert.equal(
+    plan.closes.some(({ issue }) => issue === 683),
+    false,
+    JSON.stringify(plan.closes),
+  );
   const { reasons } = holdOf(plan, 683);
   assert.ok(reasons.includes("cross-repository sub-issue TychoHenzen/DeepSeekCustom#12"), JSON.stringify(plan.holds));
   assert.ok(reasons.includes("hierarchy close refused: issue is held"), JSON.stringify(plan.holds));
   const closed = new Set(plan.closes.map(({ issue }) => issue));
-  assert.deepEqual(plan.holds.filter(({ issue }) => closed.has(issue)), []);
+  assert.deepEqual(
+    plan.holds.filter(({ issue }) => closed.has(issue)),
+    [],
+  );
 });
 
 // A held #683 under an open parent #2001. Each variant asks for the hierarchy close of #683 or does
@@ -303,8 +337,16 @@ for (const { options, refusal } of VARIANTS) {
   test(`an open parent above a held #683 stays open with options ${JSON.stringify(options)}`, () => {
     const snapshot = heldUnderOpenParent();
     const plan = planClosures(snapshot, options);
-    assert.equal(plan.closes.some(({ issue }) => issue === 2001), false, JSON.stringify(plan.closes));
-    assert.equal(plan.closes.some(({ issue }) => issue === 683), false, JSON.stringify(plan.closes));
+    assert.equal(
+      plan.closes.some(({ issue }) => issue === 2001),
+      false,
+      JSON.stringify(plan.closes),
+    );
+    assert.equal(
+      plan.closes.some(({ issue }) => issue === 683),
+      false,
+      JSON.stringify(plan.closes),
+    );
     const reasons = holdOf(plan, 683)?.reasons ?? [];
     assert.ok(reasons.includes("cross-repository sub-issue TychoHenzen/DeepSeekCustom#12"), JSON.stringify(plan.holds));
     assert.ok(reasons.includes(refusal), JSON.stringify(plan.holds));
@@ -325,9 +367,12 @@ for (const { options, refusal } of VARIANTS) {
 test("a helper-made not_planned close is still judged as a hierarchy record", () => {
   const snapshot = hierarchyChain();
   snapshot.issues.find(({ number }) => number === 901).body = "## Acceptance criteria\n\n- [ ] Own scope\n";
-  assert.deepEqual(planClosures(snapshot).reports.find((report) => report.issue === 901), {
-    issue: 901,
-    kind: "unverified-closed",
-    missing: ["unchecked acceptance criterion not mapped to a sub-issue: Own scope"],
-  });
+  assert.deepEqual(
+    planClosures(snapshot).reports.find((report) => report.issue === 901),
+    {
+      issue: 901,
+      kind: "unverified-closed",
+      missing: ["unchecked acceptance criterion not mapped to a sub-issue: Own scope"],
+    },
+  );
 });

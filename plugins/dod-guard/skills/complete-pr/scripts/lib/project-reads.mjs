@@ -5,22 +5,14 @@
 // wants the open Project holding any item of a repository and passes over an item with no repository.
 // Each keeps its own request form and stop texts, and every read goes through an injected runner in
 // gh-runner's convention.
-import {
-  API_REPOSITORY_URL,
-  isRepositoryName,
-  urlRepository,
-} from "../../../../lib/repository-identity.mjs";
-import {
-  ghJson,
-  ghJsonArrayPages,
-  githubResponseContractError,
-  githubResponseError,
-} from "./gh-runner.mjs";
+import { API_REPOSITORY_URL, isRepositoryName, urlRepository } from "../../../../lib/repository-identity.mjs";
+import { ghJson, ghJsonArrayPages, githubResponseContractError, githubResponseError } from "./gh-runner.mjs";
 
 const HTTP_NOT_FOUND = /HTTP 404/;
 const JSON_LINE_SEPARATOR = /\r?\n/u;
 const PROJECT_REPOSITORY_IDENTITY_KEYS = ["full_name", "fullName"];
-const PROJECT_ITEM_IDENTITY_JQ = ".[] | {id: .id, node_id: .node_id, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
+const PROJECT_ITEM_IDENTITY_JQ =
+  ".[] | {id: .id, node_id: .node_id, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
 
 // A failed read that names the endpoint it came from. A caller with its own error convention restates
 // it from endpoint and detail.
@@ -99,8 +91,11 @@ function projectStatusName(item, statusFieldId, endpoint) {
     throw githubResponseContractError(endpoint, "exactly one Status field/value");
   }
   const [statusField] = item.fields;
-  if (String(statusField?.id ?? "") !== String(statusFieldId) ||
-      typeof statusField?.name !== "string" || statusField.name.toLowerCase() !== "status") {
+  if (
+    String(statusField?.id ?? "") !== String(statusFieldId) ||
+    typeof statusField?.name !== "string" ||
+    statusField.name.toLowerCase() !== "status"
+  ) {
     throw githubResponseContractError(endpoint, "exactly one Status field/value");
   }
 
@@ -122,11 +117,7 @@ function projectStatusName(item, statusFieldId, endpoint) {
 
 function listOwnedProjects(owner, commandRunner) {
   const userEndpoint = `users/${owner}/projectsV2?per_page=100`;
-  const userResponse = ghJson(
-    ["api", "--paginate", "--slurp", userEndpoint],
-    [0, 1],
-    commandRunner,
-  );
+  const userResponse = ghJson(["api", "--paginate", "--slurp", userEndpoint], [0, 1], commandRunner);
   if (userResponse.result.status === 0) {
     const pages = userResponse.data;
     if (!Array.isArray(pages) || pages.some((page) => !Array.isArray(page))) {
@@ -252,7 +243,10 @@ function projectItemsForRead(endpoint, commandRunner) {
     const number = projectItemIssueNumber(item, endpoint);
     const membership = `${itemRepository}#${number}`;
     if (seenMembership.has(membership)) {
-      throw githubResponseContractError(endpoint, "unique repository issue membership; exactly one matching issue item");
+      throw githubResponseContractError(
+        endpoint,
+        "unique repository issue membership; exactly one matching issue item",
+      );
     }
     seenMembership.add(membership);
   }
@@ -270,7 +264,12 @@ function validateProjectItemReadback(item, expectedItem, repository, issueNumber
   const actualId = projectItemId(item, endpoint);
   const expectedNodeId = String(expectedItem.node_id ?? expectedItem.nodeId ?? "");
   const actualNodeId = String(item?.node_id ?? item?.nodeId ?? "");
-  if (expectedNodeId.length === 0 || actualNodeId.length === 0 || expectedId !== actualId || expectedNodeId !== actualNodeId) {
+  if (
+    expectedNodeId.length === 0 ||
+    actualNodeId.length === 0 ||
+    expectedId !== actualId ||
+    expectedNodeId !== actualNodeId
+  ) {
     throw githubResponseContractError(endpoint, "the same Project item IDs as the membership read");
   }
   if (!projectItemMatchesRepository(item, repository, issueNumber, endpoint)) {
@@ -298,19 +297,24 @@ export function readIssueProjectStatuses(repository, issueNumber, commandRunner)
   const { basePath, projects } = listOwnedProjects(owner, commandRunner);
   const linkedProjects = [];
 
-  forEachOpenProject(projects, (project) => checkListedIssueProject(project, basePath), (project) => {
-    const projectPath = `${basePath}/projectsV2/${project.number}`;
-    const itemsEndpoint = `${projectPath}/items?per_page=100`;
-    const matchingItems = projectItemsForRead(itemsEndpoint, commandRunner)
-      .filter((item) => projectItemMatchesRepository(item, repository, issueNumber, itemsEndpoint));
-    if (matchingItems.length === 0) {
-      return;
-    }
-    if (matchingItems.length !== 1) {
-      throw githubResponseContractError(itemsEndpoint, "exactly one matching issue item");
-    }
-    linkedProjects.push({ project, item: matchingItems[0] });
-  });
+  forEachOpenProject(
+    projects,
+    (project) => checkListedIssueProject(project, basePath),
+    (project) => {
+      const projectPath = `${basePath}/projectsV2/${project.number}`;
+      const itemsEndpoint = `${projectPath}/items?per_page=100`;
+      const matchingItems = projectItemsForRead(itemsEndpoint, commandRunner).filter((item) =>
+        projectItemMatchesRepository(item, repository, issueNumber, itemsEndpoint),
+      );
+      if (matchingItems.length === 0) {
+        return;
+      }
+      if (matchingItems.length !== 1) {
+        throw githubResponseContractError(itemsEndpoint, "exactly one matching issue item");
+      }
+      linkedProjects.push({ project, item: matchingItems[0] });
+    },
+  );
 
   if (linkedProjects.length !== 1) {
     throw githubResponseContractError(`${basePath}/projectsV2`, "exactly one open linked Project");
@@ -319,8 +323,9 @@ export function readIssueProjectStatuses(repository, issueNumber, commandRunner)
   const { project, item } = linkedProjects[0];
   const projectPath = `${basePath}/projectsV2/${project.number}`;
   const fieldsEndpoint = `${projectPath}/fields?per_page=100`;
-  const statusFields = ghJsonArrayPages(fieldsEndpoint, commandRunner)
-    .filter((field) => typeof field?.name === "string" && field.name.toLowerCase() === "status");
+  const statusFields = ghJsonArrayPages(fieldsEndpoint, commandRunner).filter(
+    (field) => typeof field?.name === "string" && field.name.toLowerCase() === "status",
+  );
   if (statusFields.length !== 1 || statusFields[0].id === undefined || statusFields[0].id === null) {
     throw githubResponseError(fieldsEndpoint, "exactly one Status field");
   }

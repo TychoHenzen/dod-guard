@@ -4,12 +4,12 @@ import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
-  OPENCODE,
-  ROOT,
   assertNoDodGuardRegistration,
   assertSupportedOpenCode,
   createFixture,
   installLocalPackage,
+  OPENCODE,
+  ROOT,
   request,
   startServer,
   stop,

@@ -47,15 +47,30 @@ test("reads a CRLF body the same as an LF body", () => {
 
 test("names a missing, duplicated, empty, block-less, invalid, or non-array record", () => {
   const cases = [
-    [replaceOnce(body904, "### planned-acceptance-matrix\n", "### planned-matrix\n"), "missing planned-acceptance-matrix record"],
-    [`${body904.replace("## Acceptance criteria", "### task-list\n\n```json\n[]\n```\n\n## Acceptance criteria")}`, "duplicate task-list record"],
-    [replaceOnce(body904, "```json\n[\n  {\"id\": \"AC-1\"", "```text\n[\n  {\"id\": \"AC-1\""), "acceptance-evidence record has no JSON block"],
-    [replaceOnce(body904, "```json\n[\n  {\"id\": \"AC-1\"", "```json\n[\n  {\"id\": \"AC-1\",,"), "acceptance-evidence record is not valid JSON"],
+    [
+      replaceOnce(body904, "### planned-acceptance-matrix\n", "### planned-matrix\n"),
+      "missing planned-acceptance-matrix record",
+    ],
+    [
+      `${body904.replace("## Acceptance criteria", "### task-list\n\n```json\n[]\n```\n\n## Acceptance criteria")}`,
+      "duplicate task-list record",
+    ],
+    [
+      replaceOnce(body904, '```json\n[\n  {"id": "AC-1"', '```text\n[\n  {"id": "AC-1"'),
+      "acceptance-evidence record has no JSON block",
+    ],
+    [
+      replaceOnce(body904, '```json\n[\n  {"id": "AC-1"', '```json\n[\n  {"id": "AC-1",,'),
+      "acceptance-evidence record is not valid JSON",
+    ],
   ];
   for (const [body, error] of cases) {
     assert.ok(parseIssueBodyRecords(body).errors.includes(error), error);
   }
-  const notArray = body904.replace(/### lens-ownership\n[\s\S]*?```json\n[\s\S]*?\n```/, "### lens-ownership\n\n```json\n{}\n```");
+  const notArray = body904.replace(
+    /### lens-ownership\n[\s\S]*?```json\n[\s\S]*?\n```/,
+    "### lens-ownership\n\n```json\n{}\n```",
+  );
   assert.deepEqual(parseIssueBodyRecords(notArray).errors, ["lens-ownership record is not a JSON array"]);
   const empty = body904.replace(/### requirements\n[\s\S]*?(?=### clarifications)/, "### requirements\n\n");
   assert.deepEqual(parseIssueBodyRecords(empty).errors, ["requirements record is empty"]);
@@ -79,18 +94,26 @@ test("cross-checks acceptance-evidence ids against the Acceptance criteria check
 test("subsections and jsonBlock read the first JSON block under each named heading", () => {
   const notes = "### a\nx\n```json\n[1]\n```\n### b\n```json\n{\n```\n### a\n```json\n[2]\n```\n";
 
-  assert.deepEqual(subsections(notes, "a").map((section) => jsonBlock(section).value), [[1], [2]]);
+  assert.deepEqual(
+    subsections(notes, "a").map((section) => jsonBlock(section).value),
+    [[1], [2]],
+  );
   assert.deepEqual(jsonBlock(subsections(notes, "b")[0]), { error: "is not valid JSON" });
   assert.deepEqual(jsonBlock("no block"), { error: "has no JSON block" });
 });
 
 test("a heading inside a fenced example stays in the record around it", () => {
   const example = "```md\n### task-list\n```\n\nThe plan continues after the example.\n\n";
-  const { input, errors, remainder } = parseIssueBodyRecords(replaceOnce(body904, "### task-list\n", `${example}### task-list\n`));
+  const { input, errors, remainder } = parseIssueBodyRecords(
+    replaceOnce(body904, "### task-list\n", `${example}### task-list\n`),
+  );
 
   assert.deepEqual(errors, []);
   assert.deepEqual(remainder, []);
   assert.deepEqual(input.tasks, records904.tasks);
-  assert.match(input.records["implementation-plan"], /```md\n### task-list\n```\n\nThe plan continues after the example\./);
+  assert.match(
+    input.records["implementation-plan"],
+    /```md\n### task-list\n```\n\nThe plan continues after the example\./,
+  );
   assert.deepEqual(subsections("### a\n```md\n### a\n```\nafter\n", "a"), ["```md\n### a\n```\nafter\n"]);
 });

@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  ACCEPTANCE_MATRIX_PATHS,
-  ACCEPTANCE_MATRIX_STATUSES,
-  validateAcceptanceMatrix,
-} from "./acceptance-matrix.mjs";
+import { ACCEPTANCE_MATRIX_PATHS, ACCEPTANCE_MATRIX_STATUSES, validateAcceptanceMatrix } from "./acceptance-matrix.mjs";
 
 const HEAD_SHA = "abc1234";
 
@@ -96,9 +92,7 @@ test("requires distinct rows for mandatory path categories", () => {
 
 test("requires a passing row for every acceptance contract", () => {
   const matrix = completeRows().map((entry, index) =>
-    index === 0
-      ? { ...entry, status: "inapplicable", reason: "No separate identity surface exists." }
-      : entry,
+    index === 0 ? { ...entry, status: "inapplicable", reason: "No separate identity surface exists." } : entry,
   );
   const result = validateAcceptanceMatrix({
     matrix,
@@ -113,9 +107,7 @@ test("requires a passing row for every acceptance contract", () => {
 test("failed and blocked statuses cannot masquerade as acceptance", () => {
   for (const status of ["failed", "blocked"]) {
     const result = validateAcceptanceMatrix({
-      matrix: completeRows().map((entry) =>
-        entry.path === "recovery" ? { ...entry, status } : entry,
-      ),
+      matrix: completeRows().map((entry) => (entry.path === "recovery" ? { ...entry, status } : entry)),
       headSha: HEAD_SHA,
     });
 
@@ -193,13 +185,7 @@ test("observed mode still rejects a pending row and stays the default", () => {
 });
 
 test("matrix statuses stay behavior-oriented rather than numeric quality gates", () => {
-  assert.deepEqual(ACCEPTANCE_MATRIX_STATUSES, [
-    "pass",
-    "unverified",
-    "failed",
-    "blocked",
-    "inapplicable",
-  ]);
+  assert.deepEqual(ACCEPTANCE_MATRIX_STATUSES, ["pass", "unverified", "failed", "blocked", "inapplicable"]);
   const result = validateAcceptanceMatrix({
     matrix: completeRows().map((entry) => ({ ...entry, coverage: 100 })),
     headSha: HEAD_SHA,

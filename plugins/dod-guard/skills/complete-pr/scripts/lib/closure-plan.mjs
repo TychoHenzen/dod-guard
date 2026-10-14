@@ -1,7 +1,8 @@
 // Plans which issues to close from a queue snapshot the caller already read.
 // Pure: it reads no provider and writes nothing. The close rules (originals, parents,
 // hierarchy records, walk, reports, repairs) apply the verdicts from closure-delivery.mjs.
-import { isOpen, judgeDelivery } from "./closure-delivery.mjs";
+
+import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
 import {
   childNumbers,
   indexSnapshot,
@@ -14,13 +15,8 @@ import {
   pullFor,
   statusUnreadable,
 } from "../../../../lib/closure-index.mjs";
-import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
-import {
-  parseCompletionRecord,
-  parseSupersedes,
-  recordComments,
-  renderClosureEvidence,
-} from "./closure-records.mjs";
+import { isOpen, judgeDelivery } from "./closure-delivery.mjs";
+import { parseCompletionRecord, parseSupersedes, recordComments, renderClosureEvidence } from "./closure-records.mjs";
 
 // One hold per issue, so the reasons found for an issue read as one entry. A hold that names no
 // issue stays on its own, because it names no target issue to merge into.
@@ -151,9 +147,7 @@ function unmappedCriteria(issue, children) {
   return acceptanceCriteria(issue?.body)
     .filter((item) => !item.checked)
     .map((item) => item.text)
-    .filter((text) =>
-      !children.some((child) => new RegExp(`#${child}\\b`).test(text))
-    );
+    .filter((text) => !children.some((child) => new RegExp(`#${child}\\b`).test(text)));
 }
 
 function planned(context, number) {
@@ -168,8 +162,7 @@ function prefixed(judged) {
 // when the parent recorded the same pull request, otherwise its own.
 function recordGroup(context, number, record) {
   const parent = parentNumberOf(context.index, number);
-  const parentRecord =
-    parent === null ? null : parseCompletionRecord(issueFor(context.index, parent)?.comments).record;
+  const parentRecord = parent === null ? null : parseCompletionRecord(issueFor(context.index, parent)?.comments).record;
   return parentRecord?.pullRequest === record.pullRequest ? parent : number;
 }
 
@@ -244,9 +237,7 @@ function parentReasons(context, number, seen = new Set([number])) {
   const reasons = base.children.map((child) => childReason(context, child, new Set(seen))).filter(Boolean);
   const pulls = itemPullNumbers(context.index, itemFor(context.index, number));
   reasons.push(
-    ...pulls
-      .filter((pull) => isOpen(pullFor(context.index, pull)))
-      .map((pull) => `open linked pull request #${pull}`),
+    ...pulls.filter((pull) => isOpen(pullFor(context.index, pull))).map((pull) => `open linked pull request #${pull}`),
   );
   reasons.push(...base.reasons);
   return reasons;

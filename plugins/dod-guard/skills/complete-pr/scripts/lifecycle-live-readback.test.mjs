@@ -69,20 +69,22 @@ test("passes the shared runner's text for a failed gh call through unchanged", (
 test("verifies issue and Project state with five read-only REST requests", () => {
   const calls = [];
   const issue = { id: 505, number: 505, state: "open" };
-  const items = [[
-    {
-      id: 251_837_746,
-      node_id: "PVTI_target",
-      content: { number: 505, repository: { full_name: "owner/repo" } },
-      fields: [{ name: "Status", value: { name: { raw: "Backlog" } } }],
-    },
-    {
-      id: 251_837_747,
-      node_id: "PVTI_unrelated",
-      content: { number: 999, repository: { full_name: "owner/repo" } },
-      fields: [{ name: "Status", value: { name: { raw: "Todo" } } }],
-    },
-  ]];
+  const items = [
+    [
+      {
+        id: 251_837_746,
+        node_id: "PVTI_target",
+        content: { number: 505, repository: { full_name: "owner/repo" } },
+        fields: [{ name: "Status", value: { name: { raw: "Backlog" } } }],
+      },
+      {
+        id: 251_837_747,
+        node_id: "PVTI_unrelated",
+        content: { number: 999, repository: { full_name: "owner/repo" } },
+        fields: [{ name: "Status", value: { name: { raw: "Todo" } } }],
+      },
+    ],
+  ];
   const commandRunner = (args) => {
     calls.push(args);
     const endpoint = args.at(-1);
@@ -90,7 +92,14 @@ test("verifies issue and Project state with five read-only REST requests", () =>
       return { status: 0, stderr: "", stdout: JSON.stringify([[{ id: 407_767_889, name: "Status" }]]) };
     }
     if (endpoint.includes("/items?")) {
-      return { status: 0, stderr: "", stdout: items.flat().map((item) => JSON.stringify(item)).join("\n") };
+      return {
+        status: 0,
+        stderr: "",
+        stdout: items
+          .flat()
+          .map((item) => JSON.stringify(item))
+          .join("\n"),
+      };
     }
     return { status: 0, stderr: "", stdout: JSON.stringify(issue) };
   };
@@ -107,12 +116,21 @@ test("verifies issue and Project state with five read-only REST requests", () =>
 
   assert.deepEqual(result, {
     issue,
-    projectItem: { id: 251_837_746, nodeId: "PVTI_target", issueNumber: 505, repository: "owner/repo", status: "Backlog" },
+    projectItem: {
+      id: 251_837_746,
+      nodeId: "PVTI_target",
+      issueNumber: 505,
+      repository: "owner/repo",
+      status: "Backlog",
+    },
     unrelatedItemsUnchanged: true,
     requests: 5,
   });
   assert.equal(calls.length, 5);
-  assert.equal(calls.every((args) => args[0] === "api" && !args.includes("--method") && !args.includes("graphql")), true);
+  assert.equal(
+    calls.every((args) => args[0] === "api" && !args.includes("--method") && !args.includes("graphql")),
+    true,
+  );
 });
 
 test("fails when an unrelated Project item changes between snapshots", () => {
@@ -132,13 +150,27 @@ test("fails when an unrelated Project item changes between snapshots", () => {
       stderr: "",
       stdout: [
         { id: 1, node_id: "target", content: { number: 505, repository: { full_name: "owner/repo" } }, fields: [] },
-        { id: 2, node_id: "other", content: { number: 9, repository: { full_name: "owner/repo" } }, fields: [{ name: "Status", value: { name: status } }] },
-      ].map((item) => JSON.stringify(item)).join("\n"),
+        {
+          id: 2,
+          node_id: "other",
+          content: { number: 9, repository: { full_name: "owner/repo" } },
+          fields: [{ name: "Status", value: { name: status } }],
+        },
+      ]
+        .map((item) => JSON.stringify(item))
+        .join("\n"),
     };
   };
 
   assert.throws(
-    () => verifyLiveLifecycleReadback({ repository: "owner/repo", issueNumber: 505, owner: "owner", projectNumber: 2, commandRunner }),
+    () =>
+      verifyLiveLifecycleReadback({
+        repository: "owner/repo",
+        issueNumber: 505,
+        owner: "owner",
+        projectNumber: 2,
+        commandRunner,
+      }),
     /unrelated Project item changed/,
   );
 });

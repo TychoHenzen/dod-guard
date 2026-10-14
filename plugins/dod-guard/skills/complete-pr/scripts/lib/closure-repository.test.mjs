@@ -1,19 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applyClosures } from "./closure-apply.mjs";
-import { planClosures } from "./closure-plan.mjs";
-import { renderClosureEvidence } from "./closure-records.mjs";
 import {
   DELIVERIES,
   FOREIGN_REPOSITORY,
-  REPOSITORY,
   fakeGitHub,
   foreignItem,
   holdOf,
   mutating,
+  REPOSITORY,
   recordedSnapshot,
   setField,
 } from "./closure.test-support.mjs";
+import { applyClosures } from "./closure-apply.mjs";
+import { planClosures } from "./closure-plan.mjs";
+import { renderClosureEvidence } from "./closure-records.mjs";
 
 function closeOf(plan, number) {
   return plan.closes.find((close) => close.issue === number);
@@ -46,11 +46,14 @@ test("AC-01: records without repository identity are held and never used by a de
     unattributed.map(({ reasons }) => reasons),
     [["repository identity missing"], ["repository identity missing"], ["repository identity missing"]],
   );
-  assert.deepEqual(unattributed.map(({ record }) => record), [
-    { kind: "item", number: 777, itemId: "PVTI_777" },
-    { kind: "issue", number: 775, itemId: null },
-    { kind: "pullRequest", number: DELIVERIES[820].pull, itemId: null },
-  ]);
+  assert.deepEqual(
+    unattributed.map(({ record }) => record),
+    [
+      { kind: "item", number: 777, itemId: "PVTI_777" },
+      { kind: "issue", number: 775, itemId: null },
+      { kind: "pullRequest", number: DELIVERIES[820].pull, itemId: null },
+    ],
+  );
   assert.deepEqual(holdOf(plan, 777).reasons, ["Project item #777 missing"]);
   assert.equal(closeOf(plan, 777), undefined);
   assert.deepEqual(holdOf(plan, 775).reasons, ["issue #775 readback missing"]);
@@ -86,7 +89,10 @@ test("AC-02: a foreign Project item sharing a target number takes part in no dec
       .map((args) => args.find((value) => String(value).startsWith("users/")))
       .filter(Boolean);
     const targetId = github.state.items.get("PVTI_777").numericId;
-    assert.deepEqual(endpoints.map((endpoint) => endpoint.split("/").pop()), [String(targetId)]);
+    assert.deepEqual(
+      endpoints.map((endpoint) => endpoint.split("/").pop()),
+      [String(targetId)],
+    );
     assert.equal(github.state.statuses.get("PVTI_foreign_777"), foreignStatus);
     assert.equal(github.state.statuses.get("PVTI_777"), "Done");
   }
@@ -98,12 +104,15 @@ test("AC-03: cross-repository relations hold their issue and leave a delivery un
   const snapshot = recordedSnapshot();
   issueOf(snapshot, 683).children.push({ repository: FOREIGN_REPOSITORY, number: 12 });
   issueOf(snapshot, 777).parent = { repository: "TychoHenzen/BeeHAIve", number: 5 };
-  itemOf(snapshot, 841).fields
-    .find(({ name }) => name === "Linked pull requests")
+  itemOf(snapshot, 841)
+    .fields.find(({ name }) => name === "Linked pull requests")
     .value.push({ number: 77, repository: FOREIGN_REPOSITORY });
   const plan = planClosures(snapshot);
 
-  assert.deepEqual(plan.closes.map(({ issue }) => issue), [775, 776]);
+  assert.deepEqual(
+    plan.closes.map(({ issue }) => issue),
+    [775, 776],
+  );
   assert.deepEqual(holdOf(plan, 683).reasons, [
     "cross-repository sub-issue TychoHenzen/DeepSeekCustom#12",
     "child #777 held: cross-repository parent TychoHenzen/BeeHAIve#5; replaced-original close refused: issue is held",

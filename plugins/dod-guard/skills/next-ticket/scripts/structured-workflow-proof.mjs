@@ -1,9 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  ACCEPTANCE_MATRIX_PATHS,
-  validateAcceptanceMatrix,
-} from "../../../lib/acceptance-matrix.mjs";
+import { ACCEPTANCE_MATRIX_PATHS, validateAcceptanceMatrix } from "../../../lib/acceptance-matrix.mjs";
 
 export const REQUIRED_RECORDS = [
   "requirements",
@@ -13,12 +10,7 @@ export const REQUIRED_RECORDS = [
   "lens-ownership",
 ];
 
-export const REQUIRED_REVIEW_LENSES = [
-  "implementation",
-  "wiring/usability",
-  "quality",
-  "reliability",
-];
+export const REQUIRED_REVIEW_LENSES = ["implementation", "wiring/usability", "quality", "reliability"];
 
 export const PROOF_SCENARIOS = ["passing", "incomplete", "ordinary"];
 
@@ -118,7 +110,10 @@ function validateTaskMapping({ task, taskId, childIds, addRemainder }) {
   } else if (task.parentLevel !== undefined && task.parentLevel !== "convergence") {
     addRemainder("Functional decomposition", `${taskId ?? "task"} uses an unknown parent-level marker`);
   } else if (slice && task.parentLevel === "convergence") {
-    addRemainder("Functional decomposition", `${taskId ?? "task"} cannot combine a functional slice with the parent-level convergence marker`);
+    addRemainder(
+      "Functional decomposition",
+      `${taskId ?? "task"} cannot combine a functional slice with the parent-level convergence marker`,
+    );
   } else if (slice && !childIds.has(slice)) {
     addRemainder("Functional decomposition", `${taskId ?? "task"} references missing functional slice ${slice}`);
   } else if (!slice && task.parentLevel !== "convergence") {
@@ -439,8 +434,7 @@ export function evaluateConvergence({
     remainder.push(message);
   };
   const expectedHeadSha = normalizedIdentifier(headSha);
-  const postPushValidation =
-    expectedHeadSha !== null || (acceptanceMatrix !== null && acceptanceMatrix !== undefined);
+  const postPushValidation = expectedHeadSha !== null || (acceptanceMatrix !== null && acceptanceMatrix !== undefined);
   if (postPushValidation && !expectedHeadSha) {
     addRemainder("Acceptance and verification", "structured convergence needs an exact pushed head");
   }
@@ -456,7 +450,12 @@ export function evaluateConvergence({
     "Functional decomposition",
     addRemainder,
   );
-  const acceptanceList = normalizeEntries(acceptance, "acceptance criterion", "Acceptance and verification", addRemainder);
+  const acceptanceList = normalizeEntries(
+    acceptance,
+    "acceptance criterion",
+    "Acceptance and verification",
+    addRemainder,
+  );
 
   for (const record of REQUIRED_RECORDS) {
     if (!recordMap[record]) {
@@ -586,9 +585,9 @@ export function evaluateConvergence({
   const missingTask = taskList.find((task) => evidenceValues(task.evidence).length === 0);
   const nextAction = missingTask
     ? {
-      task: normalizedTaskIds.get(missingTask) ?? missingTask.id,
-      owner: normalizedIdentifier(missingTask.child) ?? "implementation",
-    }
+        task: normalizedTaskIds.get(missingTask) ?? missingTask.id,
+        owner: normalizedIdentifier(missingTask.child) ?? "implementation",
+      }
     : remainder.length > 0
       ? { task: remainder[0], owner: "delivery owner" }
       : null;
@@ -620,9 +619,7 @@ export function renderConvergence(result, handoff) {
     return issues.length === 0 ? "verified" : `actionable (${issues.join("; ")})`;
   };
   const remainder = result.remainder.length === 0 ? "none" : result.remainder.join("; ");
-  const nextAction = result.nextAction
-    ? `${result.nextAction.task}; owner: ${result.nextAction.owner}`
-    : "none";
+  const nextAction = result.nextAction ? `${result.nextAction.task}; owner: ${result.nextAction.owner}` : "none";
   return [
     "## Convergence",
     `- Outcome: ${result.outcome}`,
@@ -653,30 +650,36 @@ export function scenarioResult(scenario = "passing") {
       owner: "task-1",
       evidence: `lens-${id}`,
       headSha: PROOF_HANDOFF.headSha,
-      acceptanceEvidence: id === "wiring/usability"
-        ? ["evidence-2", "evidence-3"]
-        : id === "reliability" ? ["evidence-4", "evidence-5"] : id === "quality"
-          ? "evidence-6" : `evidence-${index + 1}`,
-      verificationEvidence: id === "wiring/usability"
-        ? ["proof-2", "proof-3"]
-        : id === "reliability" ? ["proof-4", "proof-5"] : id === "quality"
-          ? "proof-6" : `proof-${index + 1}`,
+      acceptanceEvidence:
+        id === "wiring/usability"
+          ? ["evidence-2", "evidence-3"]
+          : id === "reliability"
+            ? ["evidence-4", "evidence-5"]
+            : id === "quality"
+              ? "evidence-6"
+              : `evidence-${index + 1}`,
+      verificationEvidence:
+        id === "wiring/usability"
+          ? ["proof-2", "proof-3"]
+          : id === "reliability"
+            ? ["proof-4", "proof-5"]
+            : id === "quality"
+              ? "proof-6"
+              : `proof-${index + 1}`,
     }));
     return evaluateConvergence({
-      records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [
-        record,
-        record === "lens-ownership" ? reviewLenses : true,
-      ])),
-      tasks: [{
-        id: "task-1",
-        child: "search-flow",
-        evidence: [
-          "commit abc123",
-          ...REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
-        ],
-        acceptanceEvidence: PROOF_ACCEPTANCE_MATRIX.map((row) => row.evidence),
-        verificationEvidence: PROOF_ACCEPTANCE_MATRIX.map((row) => row.proof),
-      }],
+      records: Object.fromEntries(
+        REQUIRED_RECORDS.map((record) => [record, record === "lens-ownership" ? reviewLenses : true]),
+      ),
+      tasks: [
+        {
+          id: "task-1",
+          child: "search-flow",
+          evidence: ["commit abc123", ...REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+          acceptanceEvidence: PROOF_ACCEPTANCE_MATRIX.map((row) => row.evidence),
+          verificationEvidence: PROOF_ACCEPTANCE_MATRIX.map((row) => row.proof),
+        },
+      ],
       children: [{ id: "search-flow", evidence: "mapped" }],
       reviewLenses,
       acceptance: [{ id: "AC-1", evidence: "proof" }],

@@ -35,9 +35,7 @@ function decodeQuotedPath(value) {
     return value;
   }
   const body = value.slice(1, -1);
-  return Buffer.concat(
-    [...body.matchAll(QUOTED_TOKEN)].map(quotedTokenBytes),
-  ).toString("utf8");
+  return Buffer.concat([...body.matchAll(QUOTED_TOKEN)].map(quotedTokenBytes)).toString("utf8");
 }
 
 // Returns the repository path for one side of a diff, or null for /dev/null.

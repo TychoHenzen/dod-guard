@@ -4,28 +4,28 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { runCli } from "../closure.mjs";
-import { statusValueName } from "./project-reads.mjs";
 import { planClosures } from "./closure-plan.mjs";
 import { buildClosureSnapshot } from "./closure-snapshot.mjs";
 import {
   BASE_SHA,
-  ENDPOINT,
-  FOREIGN,
-  MERGED_AT,
-  NOT_FOUND,
-  OWNER,
-  REPO,
-  REPO_URL,
-  SERVER_ERROR,
   checkRunsReply,
   commitStatusReply,
+  ENDPOINT,
+  FOREIGN,
   fakeRest,
   fieldPages,
   issueContent,
+  MERGED_AT,
+  NOT_FOUND,
+  OWNER,
   ok,
   projectItem,
   pull,
+  REPO,
+  REPO_URL,
+  SERVER_ERROR,
 } from "./closure-snapshot.test-support.mjs";
+import { statusValueName } from "./project-reads.mjs";
 
 const HEAD = { 21: "a1".repeat(20), 22: "a2".repeat(20), 23: "a3".repeat(20) };
 const MERGE = { 21: "b1".repeat(20), 22: "b2".repeat(20), 23: "b3".repeat(20) };
@@ -76,7 +76,13 @@ function valuePages() {
 
 // Project 3 is closed and holds a target item, so it must never be read. Project 4 is open and holds
 // only a foreign item, so it is read for membership and never linked.
-const PROJECTS = [[{ number: 2, state: "open" }, { number: 3, state: "closed" }, { number: 4, state: "open" }]];
+const PROJECTS = [
+  [
+    { number: 2, state: "open" },
+    { number: 3, state: "closed" },
+    { number: 4, state: "open" },
+  ],
+];
 
 function setStatus(pages, nodeId, value) {
   const entry = pages.flat().find((item) => item.node_id === nodeId);
@@ -670,7 +676,10 @@ test("the linked-Project read names the listing endpoint once for a listing that
 test("the linked-Project read falls back to orgs/<owner> after a users/ HTTP 404 and reads its items there", () => {
   const orgProjects = `orgs/${OWNER}/projectsV2?per_page=100`;
   const orgItems = `orgs/${OWNER}/projectsV2/2/items?per_page=100`;
-  const error = buildFailureWith({ [ENDPOINT.projects]: NOT_FOUND, [orgProjects]: ok([[{ number: 2, state: "open" }]]) });
+  const error = buildFailureWith({
+    [ENDPOINT.projects]: NOT_FOUND,
+    [orgProjects]: ok([[{ number: 2, state: "open" }]]),
+  });
   assert.equal(error?.message, `closure snapshot read failed: ${orgItems}: no fixture for ${orgItems}`);
 });
 
@@ -679,8 +688,14 @@ test("the linked-Project read stops on a malformed membership page and names the
   const cases = [
     [{ status: 0, stdout: "not json", stderr: "" }, "did not return JSON"],
     [ok([[], { message: "Not Found" }]), "missing page: every page must be an array"],
-    [ok([[{ content: { repository_url: "https://example.test/repos/x/y" } }]]), "content repository_url must name a repository"],
-    [ok([[{ content: { repository: { full_name: "not a name" } } }]]), "content repository full_name must name a repository"],
+    [
+      ok([[{ content: { repository_url: "https://example.test/repos/x/y" } }]]),
+      "content repository_url must name a repository",
+    ],
+    [
+      ok([[{ content: { repository: { full_name: "not a name" } } }]]),
+      "content repository full_name must name a repository",
+    ],
   ];
   for (const [reply, detail] of cases) {
     const error = buildFailureWith({ [membership]: reply });
@@ -703,10 +718,7 @@ const FAULTS = [
   ["missing-page", [failedAt(ENDPOINT.values(2)), "missing page"]],
   ["no-parent-field", [failedAt(ENDPOINT.fields(2)), 'must include exactly one "Parent issue" field, found 0']],
   ["no-linked-project", [failedAt(PROJECTS_LIST), "expected exactly one open linked Project, found none"]],
-  [
-    "two-linked-projects",
-    [failedAt(PROJECTS_LIST), "expected exactly one open linked Project, found 2 (#2, #4)"],
-  ],
+  ["two-linked-projects", [failedAt(PROJECTS_LIST), "expected exactly one open linked Project, found 2 (#2, #4)"]],
   [
     "protection-failure",
     [failedAt(ENDPOINT.protection)],

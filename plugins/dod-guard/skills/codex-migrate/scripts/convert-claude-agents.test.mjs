@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -13,7 +13,9 @@ test("converts read-only and writing Claude agents", async (t) => {
   const output = path.join(root, ".codex", "agents");
   await mkdir(source, { recursive: true });
 
-  await writeFile(path.join(source, "reader.md"), `---
+  await writeFile(
+    path.join(source, "reader.md"),
+    `---
 name: evidence-reader
 description: Read evidence.
 model: haiku
@@ -25,8 +27,11 @@ effort: low
 # Evidence reader
 
 Return facts.
-`);
-  await writeFile(path.join(source, "writer.md"), `---
+`,
+  );
+  await writeFile(
+    path.join(source, "writer.md"),
+    `---
 name: patch-writer
 description: >-
   Apply one bounded
@@ -38,7 +43,8 @@ tools: Read, Write, Edit
 # Patch writer
 
 Change one file.
-`);
+`,
+  );
 
   assert.equal(await writeAgentOutputs(source, output), 2);
   const reader = await readFile(path.join(output, "dod_guard_evidence_reader.toml"), "utf8");
@@ -64,7 +70,9 @@ test("codex_effort overrides effort for Codex only", async (t) => {
   const source = path.join(root, "agents");
   const output = path.join(root, ".codex", "agents");
   await mkdir(source, { recursive: true });
-  await writeFile(path.join(source, "cheap.md"), `---
+  await writeFile(
+    path.join(source, "cheap.md"),
+    `---
 name: cheap-reader
 description: Read cheaply.
 model: haiku
@@ -76,7 +84,8 @@ codex_effort: max
 # Cheap reader
 
 Read.
-`);
+`,
+  );
 
   assert.equal(await writeAgentOutputs(source, output), 1);
   const cheap = await readFile(path.join(output, "dod_guard_cheap_reader.toml"), "utf8");
@@ -90,7 +99,9 @@ test("an agent without a tools line inherits every tool and writes", async (t) =
   const source = path.join(root, "agents");
   const output = path.join(root, ".codex", "agents");
   await mkdir(source, { recursive: true });
-  await writeFile(path.join(source, "owner.md"), `---
+  await writeFile(
+    path.join(source, "owner.md"),
+    `---
 name: stage-owner
 description: Own one stage.
 model: opus
@@ -99,7 +110,8 @@ model: opus
 # Stage owner
 
 Own the stage.
-`);
+`,
+  );
 
   assert.equal(await writeAgentOutputs(source, output), 1);
   const owner = await readFile(path.join(output, "dod_guard_stage_owner.toml"), "utf8");

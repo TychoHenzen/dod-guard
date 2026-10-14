@@ -24,16 +24,13 @@ const NON_ALPHANUMERIC = /[^a-z0-9]+/g;
 
 function requireJudgment(finding, reviewer) {
   const missing = JUDGMENT_FIELDS.filter(
-    (field) =>
-      typeof finding?.[field] !== "string" || finding[field].trim() === "",
+    (field) => typeof finding?.[field] !== "string" || finding[field].trim() === "",
   );
   if (!(Number.isInteger(finding?.line) && finding.line > 0)) {
     missing.push("line");
   }
   if (missing.length > 0 || !SEVERITY_RANK[finding.severity]) {
-    throw new Error(
-      `${reviewer} returned a finding without ${missing.join(", ") || "a valid severity"}`,
-    );
+    throw new Error(`${reviewer} returned a finding without ${missing.join(", ") || "a valid severity"}`);
   }
 }
 
@@ -81,10 +78,7 @@ function strayProblems(results) {
   return results.flatMap((result, index) =>
     REVIEWERS.includes(result?.reviewer)
       ? []
-      : [
-          `result ${index + 1}: unknown reviewer ` +
-            `${JSON.stringify(result?.reviewer ?? null)}`,
-        ],
+      : [`result ${index + 1}: unknown reviewer ` + `${JSON.stringify(result?.reviewer ?? null)}`],
   );
 }
 
@@ -96,10 +90,7 @@ function unbackedFindingProblems(name, result) {
   }
   return result.rulings
     .filter((ruling) => ruling?.status === "FINDING")
-    .map(
-      (ruling) =>
-        `${name}: FINDING ruling for slot ${ruling.slot} has no entry in findings`,
-    );
+    .map((ruling) => `${name}: FINDING ruling for slot ${ruling.slot} has no entry in findings`);
 }
 
 function resultProblems(name, results, assigned) {
@@ -123,14 +114,9 @@ function requireResults(results, assigned) {
   if (!Array.isArray(results)) {
     throw new Error("The reviewer results must be a JSON array");
   }
-  const problems = [
-    ...strayProblems(results),
-    ...REVIEWERS.flatMap((name) => resultProblems(name, results, assigned)),
-  ];
+  const problems = [...strayProblems(results), ...REVIEWERS.flatMap((name) => resultProblems(name, results, assigned))];
   if (problems.length > 0) {
-    throw new Error(
-      `Incomplete reviewer results; do not post: ${problems.join("; ")}`,
-    );
+    throw new Error(`Incomplete reviewer results; do not post: ${problems.join("; ")}`);
   }
 }
 

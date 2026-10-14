@@ -10,12 +10,12 @@ import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
+import { REPOSITORY_NAME } from "../../../lib/repository-identity.mjs";
 import { applyClosures, recordCompletion } from "./lib/closure-apply.mjs";
 import { annotateSnapshot } from "./lib/closure-delivery.mjs";
 import { planClosures } from "./lib/closure-plan.mjs";
 import { buildClosureSnapshot, writeClosureSnapshot } from "./lib/closure-snapshot.mjs";
 import { runGh } from "./lib/gh-runner.mjs";
-import { REPOSITORY_NAME } from "../../../lib/repository-identity.mjs";
 
 const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs apply --snapshot=<file.json> [--hierarchy=<issue>]
@@ -103,14 +103,18 @@ const COMMANDS = {
   record: (args, runner = runGh) => {
     const children = childList(args.children);
     if (children === false) return false;
-    return given(args.repository) && given(args.result) && given(args.matrix) &&
+    return (
+      given(args.repository) &&
+      given(args.result) &&
+      given(args.matrix) &&
       recordCompletion({
         repository: args.repository,
         result: readJson(args.result),
         matrix: readJson(args.matrix),
         children,
         runner,
-      });
+      })
+    );
   },
 };
 

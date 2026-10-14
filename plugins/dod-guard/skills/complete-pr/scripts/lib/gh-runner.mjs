@@ -28,10 +28,7 @@ export function githubResponseError(endpoint, field) {
 }
 
 export function githubResponseContractError(endpoint, detail) {
-  return new CompletionError(
-    "github_response_shape",
-    `GitHub response for ${endpoint} must include ${detail}.`,
-  );
+  return new CompletionError("github_response_shape", `GitHub response for ${endpoint} must include ${detail}.`);
 }
 
 // An injected runner may return a non-zero exit without throwing, so the exit is checked again here.

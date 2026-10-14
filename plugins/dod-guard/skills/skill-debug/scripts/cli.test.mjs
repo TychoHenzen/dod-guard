@@ -36,11 +36,7 @@ function run(script, args) {
   return spawnSync(process.execPath, [script, ...args], { encoding: "utf8" });
 }
 
-const SESSION = [
-  call("tighten", "2026-08-01T19:03:00.000Z"),
-  bash("node pick-target.mjs"),
-  bash("git status"),
-];
+const SESSION = [call("tighten", "2026-08-01T19:03:00.000Z"), bash("node pick-target.mjs"), bash("git status")];
 
 describe("find-runs CLI", () => {
   it("exits 3 and prints usage without a skill", () => {
@@ -70,11 +66,7 @@ describe("find-runs CLI", () => {
 describe("extract-run CLI", () => {
   it("prints a numbered trace for a session id prefix", () => {
     const root = projects(SESSION);
-    const result = run(EXTRACT, [
-      "--session=abcd",
-      "--skill=tighten",
-      `--projects=${root}`,
-    ]);
+    const result = run(EXTRACT, ["--session=abcd", "--skill=tighten", `--projects=${root}`]);
     assert.equal(result.status, 0);
     assert.match(result.stdout, /boundary: run ends at end of transcript/);
     assert.match(result.stdout, /tool\s+Bash node pick-target\.mjs/);
@@ -88,12 +80,7 @@ describe("extract-run CLI", () => {
 
   it("exits 4 when that run number is past the end", () => {
     const root = projects(SESSION);
-    const result = run(EXTRACT, [
-      "--session=abcd",
-      "--skill=tighten",
-      "--run=2",
-      `--projects=${root}`,
-    ]);
+    const result = run(EXTRACT, ["--session=abcd", "--skill=tighten", "--run=2", `--projects=${root}`]);
     assert.equal(result.status, 4);
     assert.match(result.stderr, /1 runs of tighten/);
   });

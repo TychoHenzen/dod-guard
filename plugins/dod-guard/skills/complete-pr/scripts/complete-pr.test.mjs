@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { spawnSync } from "node:child_process";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
-import test from "node:test";
-// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import process from "node:process";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
+import test from "node:test";
 
 const RECOVERY_FLAG = /--recover-merged/;
 

@@ -1,6 +1,6 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lineHistory, classifyCommit, effectiveDate } from "./line-history.mjs";
+import { test } from "node:test";
+import { classifyCommit, effectiveDate, lineHistory } from "./line-history.mjs";
 
 // Captured verbatim from this repository. Command used:
 //   git log -L 92,92:packages/dod-guard/skills/clean-house/SKILL.md \
@@ -151,10 +151,7 @@ test("effectiveDate returns cosmetic-only with the oldest commit when every comm
     removed: "search for markers.",
     added: "Search for markers.",
   };
-  const result = effectiveDate(
-    { file: "doc.md", startLine: 1, endLine: 1 },
-    makeDeps({ commits: [first, second] }),
-  );
+  const result = effectiveDate({ file: "doc.md", startLine: 1, endLine: 1 }, makeDeps({ commits: [first, second] }));
   assert.equal(result.verdict, "cosmetic-only");
   assert.equal(result.sha, "sha2");
   assert.equal(result.date.toISOString(), second.authorTime.toISOString());
@@ -169,7 +166,10 @@ test("effectiveDate returns unknown on empty history", () => {
 test("effectiveDate returns uncommitted for a dirty file", () => {
   const result = effectiveDate(
     { file: "doc.md", startLine: 1, endLine: 1 },
-    makeDeps({ commits: [{ sha: "x", authorTime: new Date(), summary: "s", removed: "a", added: "b" }], diffOutput: "doc.md\n" }),
+    makeDeps({
+      commits: [{ sha: "x", authorTime: new Date(), summary: "s", removed: "a", added: "b" }],
+      diffOutput: "doc.md\n",
+    }),
   );
   assert.deepEqual(result, { date: null, sha: null, summary: null, skipped: [], verdict: "uncommitted" });
 });

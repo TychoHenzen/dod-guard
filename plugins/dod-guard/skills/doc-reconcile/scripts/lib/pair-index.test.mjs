@@ -67,9 +67,7 @@ describe("buildPairs", () => {
     const pathPair = pairs.find((p) => p.a === claim1 && p.b === claim2);
     assert.ok(pathPair, "expected the path-sharing pair to survive");
     assert.equal(pathPair.score, 0.375);
-    const prosePair = pairs.find(
-      (p) => (p.a === claim3 && p.b === claim4) || (p.a === claim4 && p.b === claim3),
-    );
+    const prosePair = pairs.find((p) => (p.a === claim3 && p.b === claim4) || (p.a === claim4 && p.b === claim3));
     assert.equal(prosePair, undefined);
   });
 

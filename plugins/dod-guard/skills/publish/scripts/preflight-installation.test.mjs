@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { chmod, copyFile, mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { chmod, copyFile, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 const sourceHelper = fileURLToPath(new URL("./preflight-installation.mjs", import.meta.url));
 const skillPath = new URL("../SKILL.md", import.meta.url);
@@ -17,11 +17,7 @@ async function createInstall(t, client) {
   const pluginRoot = join(temporaryRoot, "plugin");
   const helperPath = join(pluginRoot, "skills", "publish", "scripts", "preflight-installation.mjs");
   const skillFile = join(pluginRoot, "skills", "publish", "SKILL.md");
-  const manifestPath = join(
-    pluginRoot,
-    client === "codex" ? ".codex-plugin" : ".claude-plugin",
-    "plugin.json",
-  );
+  const manifestPath = join(pluginRoot, client === "codex" ? ".codex-plugin" : ".claude-plugin", "plugin.json");
   await Promise.all([
     mkdir(join(pluginRoot, "skills", "publish", "scripts"), { recursive: true }),
     mkdir(join(pluginRoot, client === "codex" ? ".codex-plugin" : ".claude-plugin"), {
@@ -73,11 +69,10 @@ function registryFor(client, pluginRoot, overrides = {}) {
 }
 
 function runPreflight(fixture, client, registry, pins = [], rawInput) {
-  const result = spawnSync(
-    process.execPath,
-    [fixture.helperPath, client, ...pins],
-    { input: rawInput ?? JSON.stringify(registry), encoding: "utf8" },
-  );
+  const result = spawnSync(process.execPath, [fixture.helperPath, client, ...pins], {
+    input: rawInput ?? JSON.stringify(registry),
+    encoding: "utf8",
+  });
   const output = result.status === 0 ? result.stdout : result.stderr;
   return { ...result, response: JSON.parse(output) };
 }
@@ -105,12 +100,7 @@ test("resolves and pins the exact Codex and Claude installations", async (t) => 
     if (client === "codex") assert.equal(unpinned.response.pluginIdentity.pluginId, "dod-guard@dod-guard-monorepo");
     else assert.equal(unpinned.response.pluginIdentity.id, "dod-guard@dod-guard");
 
-    const pinned = runPreflight(fixture, client, registry, [
-      "--version",
-      "5.4.56",
-      "--skill-path",
-      fixture.skillFile,
-    ]);
+    const pinned = runPreflight(fixture, client, registry, ["--version", "5.4.56", "--skill-path", fixture.skillFile]);
     assert.equal(pinned.status, 0, pinned.stderr);
     assert.equal(pinned.response.requested.version, "5.4.56");
     assert.equal(pinned.response.requested.path, fixture.skillFile);
@@ -130,9 +120,7 @@ test("rejects absent, ambiguous, disabled, wrong-marketplace, and wrong-path reg
       },
       {
         name: "ambiguous enabled registrations",
-        registry: client === "codex"
-          ? { installed: [entry, structuredClone(entry)] }
-          : [entry, structuredClone(entry)],
+        registry: client === "codex" ? { installed: [entry, structuredClone(entry)] } : [entry, structuredClone(entry)],
         reason: /found 2/,
       },
       {
@@ -145,9 +133,7 @@ test("rejects absent, ambiguous, disabled, wrong-marketplace, and wrong-path reg
         registry: registryFor(
           client,
           fixture.pluginRoot,
-          client === "codex"
-            ? { marketplaceName: "other-marketplace" }
-            : { id: "dod-guard@other-marketplace" },
+          client === "codex" ? { marketplaceName: "other-marketplace" } : { id: "dod-guard@other-marketplace" },
         ),
         reason: /expected plugin and marketplace identity/,
       },
@@ -207,16 +193,10 @@ test("rejects malformed or contradictory manifests and missing publish skills", 
     );
 
     await writeFile(fixture.manifestPath, JSON.stringify({ name: "other-plugin", version: "5.4.56" }));
-    assertRejected(
-      runPreflight(fixture, client, registry),
-      /manifest name or version disagrees/,
-    );
+    assertRejected(runPreflight(fixture, client, registry), /manifest name or version disagrees/);
 
     await writeFile(fixture.manifestPath, JSON.stringify({ name: "dod-guard", version: "5.4.57" }));
-    assertRejected(
-      runPreflight(fixture, client, registry),
-      /manifest name or version disagrees/,
-    );
+    assertRejected(runPreflight(fixture, client, registry), /manifest name or version disagrees/);
 
     await writeFile(fixture.manifestPath, originalManifest);
     await rm(fixture.skillFile);
@@ -292,10 +272,7 @@ test("reports stale pins and malformed inventories without changing the installa
 });
 
 test("the skill blocks release work on preflight failure and documents exact caller pins", async () => {
-  const [skill, usage] = await Promise.all([
-    readFile(skillPath, "utf8"),
-    readFile(usagePath, "utf8"),
-  ]);
+  const [skill, usage] = await Promise.all([readFile(skillPath, "utf8"), readFile(usagePath, "utf8")]);
   const procedureOffset = skill.indexOf("## Procedure");
   const preflightOffset = skill.indexOf("## Installation identity preflight");
   const preflight = skill.slice(preflightOffset, procedureOffset);

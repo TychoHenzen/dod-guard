@@ -35,9 +35,7 @@ describe("findInvocations", () => {
   it("finds a slash command in a user message", () => {
     const records = [command("<command-name>/tighten</command-name>")];
     const found = findInvocations(records);
-    assert.deepEqual(found, [
-      { name: "tighten", args: "", form: "command", index: 0, timestamp: null },
-    ]);
+    assert.deepEqual(found, [{ name: "tighten", args: "", form: "command", index: 0, timestamp: null }]);
   });
 
   it("finds a Skill tool call and keeps its arguments", () => {

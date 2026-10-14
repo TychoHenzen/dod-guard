@@ -49,9 +49,7 @@ function markdownSection(body, heading) {
     return "";
   }
   const rest = marked.slice(start + 1);
-  const end = rest.findIndex(
-    (line) => !line.fenced && line.text.startsWith("## "),
-  );
+  const end = rest.findIndex((line) => !line.fenced && line.text.startsWith("## "));
   if (end < 0) {
     return rest.map((line) => line.text).join("\n");
   }

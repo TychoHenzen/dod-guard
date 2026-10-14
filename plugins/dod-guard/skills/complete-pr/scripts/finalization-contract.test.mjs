@@ -13,20 +13,29 @@ const completeRecords = (lensOwnership) =>
     (records, name) => ({ ...records, [name]: name === "lens-ownership" ? lensOwnership : true }),
     {},
   );
-const createReviewLenses = () => proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
-  id,
-  owner: "task-1",
-  evidence: `lens-${id}`,
-  headSha: "proof-head",
-  acceptanceEvidence: id === "wiring/usability"
-    ? ["matrix-evidence-2", "matrix-evidence-3"]
-    : id === "reliability" ? ["matrix-evidence-4", "matrix-evidence-5"] : id === "quality"
-      ? "matrix-evidence-6" : `matrix-evidence-${index + 1}`,
-  verificationEvidence: id === "wiring/usability"
-    ? ["matrix-proof-2", "matrix-proof-3"]
-    : id === "reliability" ? ["matrix-proof-4", "matrix-proof-5"] : id === "quality"
-      ? "matrix-proof-6" : `matrix-proof-${index + 1}`,
-}));
+const createReviewLenses = () =>
+  proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+    id,
+    owner: "task-1",
+    evidence: `lens-${id}`,
+    headSha: "proof-head",
+    acceptanceEvidence:
+      id === "wiring/usability"
+        ? ["matrix-evidence-2", "matrix-evidence-3"]
+        : id === "reliability"
+          ? ["matrix-evidence-4", "matrix-evidence-5"]
+          : id === "quality"
+            ? "matrix-evidence-6"
+            : `matrix-evidence-${index + 1}`,
+    verificationEvidence:
+      id === "wiring/usability"
+        ? ["matrix-proof-2", "matrix-proof-3"]
+        : id === "reliability"
+          ? ["matrix-proof-4", "matrix-proof-5"]
+          : id === "quality"
+            ? "matrix-proof-6"
+            : `matrix-proof-${index + 1}`,
+  }));
 const validConvergenceInput = () => {
   const reviewLenses = createReviewLenses();
   const acceptanceMatrix = [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((path, index) => ({
@@ -42,20 +51,20 @@ const validConvergenceInput = () => {
   }));
   return {
     records: completeRecords(reviewLenses),
-    tasks: [{
-      id: "task-1",
-      child: "search-flow",
-      evidence: [
-        "commit-proof",
-        ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
-      ],
-      acceptanceEvidence: acceptanceMatrix.map((row) => row.evidence),
-      verificationEvidence: acceptanceMatrix.map((row) => row.proof),
-    }, {
-      id: "task-2",
-      child: "settings-flow",
-      evidence: "settings-proof",
-    }],
+    tasks: [
+      {
+        id: "task-1",
+        child: "search-flow",
+        evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+        acceptanceEvidence: acceptanceMatrix.map((row) => row.evidence),
+        verificationEvidence: acceptanceMatrix.map((row) => row.proof),
+      },
+      {
+        id: "task-2",
+        child: "settings-flow",
+        evidence: "settings-proof",
+      },
+    ],
     children: [
       { id: "search-flow", evidence: "slice-proof" },
       { id: "settings-flow", evidence: "settings-slice-proof" },
@@ -77,8 +86,14 @@ test("finalizes each structured parent child only after the guarded merge", () =
   assert.match(finalization, /stop on any actionable\s+remainder/);
   assert.match(finalization, /calls the exported\s+`evaluateConvergence` API/);
   assert.match(finalization, /require `outcome: "verified"`/);
-  assert.match(finalization, /Resolve the\s+shared Project number, REST item IDs, Status-field ID, and `Done` option ID once/);
-  assert.match(finalization, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> \.\.\. <parent-item-id>/);
+  assert.match(
+    finalization,
+    /Resolve the\s+shared Project number, REST item IDs, Status-field ID, and `Done` option ID once/,
+  );
+  assert.match(
+    finalization,
+    /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> \.\.\. <parent-item-id>/,
+  );
   assert.match(
     finalization,
     prose("numeric REST id or its `PVTI_` global node id", "refuses two IDs that name one item"),
@@ -86,7 +101,10 @@ test("finalizes each structured parent child only after the guarded merge", () =
   assert.match(finalization, /child item IDs first and the parent\s+item ID last/);
   assert.match(finalization, /runner resolves the live REST field and item IDs/);
   assert.match(finalization, /reads\s+each item back\s+from the shared Project before continuing/);
-  assert.match(finalization, /For every code-backed\s+child, verify\s+its pushed commit is\s+included in the verified merge/);
+  assert.match(
+    finalization,
+    /For every code-backed\s+child, verify\s+its pushed commit is\s+included in the verified merge/,
+  );
   assert.match(finalization, /Close a\s+still-open code-backed\s+child only after\s+that verification/);
   assert.match(finalization, /Never finalize a parent or child\s+before the helper's merge result/);
   assert.match(finalization, /never\s+alter unrelated Project items/);
@@ -126,9 +144,7 @@ test("finalization relies on executable functional convergence proof", () => {
   const duplicateSlice = proof.evaluateConvergence(duplicateSliceInput);
 
   assert.ok(
-    duplicateSlice.remainder.some((entry) =>
-      entry.includes("search-flow slice has more than one owning task"),
-    ),
+    duplicateSlice.remainder.some((entry) => entry.includes("search-flow slice has more than one owning task")),
   );
   assert.equal(duplicateSlice.outcome, "actionable remainder");
 
@@ -137,9 +153,7 @@ test("finalization relies on executable functional convergence proof", () => {
   const duplicateEvidence = proof.evaluateConvergence(duplicateEvidenceInput);
 
   assert.ok(
-    duplicateEvidence.remainder.some((entry) =>
-      entry.includes("evidence commit-proof is mapped more than once"),
-    ),
+    duplicateEvidence.remainder.some((entry) => entry.includes("evidence commit-proof is mapped more than once")),
   );
   assert.equal(duplicateEvidence.outcome, "actionable remainder");
 });
@@ -149,17 +163,13 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   assert.equal(valid.nextStep, "project-status.mjs");
 
   const missingUserPath = validConvergenceInput();
-  missingUserPath.acceptanceMatrix = missingUserPath.acceptanceMatrix.filter(
-    (row) => row.path !== "browser/e2e",
-  );
+  missingUserPath.acceptanceMatrix = missingUserPath.acceptanceMatrix.filter((row) => row.path !== "browser/e2e");
   const missingUserPathResult = evaluateStructuredFinalization(missingUserPath);
   assert.equal(missingUserPathResult.nextStep, "stop");
   assert.ok(missingUserPathResult.remainder.some((entry) => entry.includes("browser/e2e")));
 
   const staleEvidence = validConvergenceInput();
-  staleEvidence.acceptanceMatrix = staleEvidence.acceptanceMatrix.map(
-    (row) => ({ ...row, headSha: "old-head" }),
-  );
+  staleEvidence.acceptanceMatrix = staleEvidence.acceptanceMatrix.map((row) => ({ ...row, headSha: "old-head" }));
   const staleEvidenceResult = evaluateStructuredFinalization(staleEvidence);
   assert.equal(staleEvidenceResult.nextStep, "stop");
   assert.ok(staleEvidenceResult.remainder.some((entry) => entry.includes("expected proof-head")));
@@ -171,11 +181,7 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   };
   const staleLensResult = evaluateStructuredFinalization(staleLens);
   assert.equal(staleLensResult.nextStep, "stop");
-  assert.ok(
-    staleLensResult.remainder.some((entry) =>
-      entry.includes("not bound to handoff head proof-head"),
-    ),
-  );
+  assert.ok(staleLensResult.remainder.some((entry) => entry.includes("not bound to handoff head proof-head")));
 
   const staleReferencedRow = validConvergenceInput();
   staleReferencedRow.acceptanceMatrix[0] = {
@@ -214,9 +220,7 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   assert.equal(missingLensMatrixEvidenceResult.nextStep, "stop");
   assert.ok(
     missingLensMatrixEvidenceResult.remainder.some((entry) =>
-      entry.includes(
-        "implementation review lens needs acceptance and verification evidence",
-      ),
+      entry.includes("implementation review lens needs acceptance and verification evidence"),
     ),
   );
 
@@ -253,11 +257,7 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   crossWiredEvidence.tasks[0].verificationEvidence[0] = crossWiredEvidence.acceptanceMatrix[0].proof;
   const crossWiredResult = evaluateStructuredFinalization(crossWiredEvidence);
   assert.equal(crossWiredResult.nextStep, "stop");
-  assert.ok(
-    crossWiredResult.remainder.some((entry) =>
-      entry.includes("must share one acceptance-matrix row"),
-    ),
-  );
+  assert.ok(crossWiredResult.remainder.some((entry) => entry.includes("must share one acceptance-matrix row")));
 
   const missingOwner = validConvergenceInput();
   missingOwner.reviewLenses[0].owner = "missing-task";
@@ -269,7 +269,9 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   unmappedSlice.tasks[0].child = "missing-flow";
   const unmappedSliceResult = evaluateStructuredFinalization(unmappedSlice);
   assert.equal(unmappedSliceResult.nextStep, "stop");
-  assert.ok(unmappedSliceResult.remainder.some((entry) => entry.includes("references missing functional slice missing-flow")));
+  assert.ok(
+    unmappedSliceResult.remainder.some((entry) => entry.includes("references missing functional slice missing-flow")),
+  );
 });
 
 test("finalization gate binds cross-cutting lenses to their user paths", () => {
@@ -280,12 +282,20 @@ test("finalization gate binds cross-cutting lenses to their user paths", () => {
       : lens,
   );
   const wrongWiringResult = evaluateStructuredFinalization(wrongWiringPath);
-  assert.ok(wrongWiringResult.remainder.some((entry) => entry.includes("wiring/usability review lens must cover required path(s)")));
+  assert.ok(
+    wrongWiringResult.remainder.some((entry) =>
+      entry.includes("wiring/usability review lens must cover required path(s)"),
+    ),
+  );
 
   const nearMatchPath = validConvergenceInput();
   nearMatchPath.acceptanceMatrix[2] = { ...nearMatchPath.acceptanceMatrix[2], path: "browser/e2e-fake" };
   const nearMatchResult = evaluateStructuredFinalization(nearMatchPath);
-  assert.ok(nearMatchResult.remainder.some((entry) => entry.includes("wiring/usability review lens must cover required path(s)")));
+  assert.ok(
+    nearMatchResult.remainder.some((entry) =>
+      entry.includes("wiring/usability review lens must cover required path(s)"),
+    ),
+  );
 
   const inapplicableBrowser = validConvergenceInput();
   inapplicableBrowser.acceptanceMatrix[2] = {
@@ -300,10 +310,10 @@ test("finalization gate binds cross-cutting lenses to their user paths", () => {
   reorderedEvidence.reviewLenses = reorderedEvidence.reviewLenses.map((lens) =>
     lens.id === "wiring/usability"
       ? {
-        ...lens,
-        acceptanceEvidence: ["matrix-evidence-3", "matrix-evidence-2"],
-        verificationEvidence: ["matrix-proof-3", "matrix-proof-2"],
-      }
+          ...lens,
+          acceptanceEvidence: ["matrix-evidence-3", "matrix-evidence-2"],
+          verificationEvidence: ["matrix-proof-3", "matrix-proof-2"],
+        }
       : lens,
   );
   const reorderedEvidenceResult = evaluateStructuredFinalization(reorderedEvidence);
@@ -316,7 +326,9 @@ test("finalization gate binds cross-cutting lenses to their user paths", () => {
       : lens,
   );
   const reusedRowResult = evaluateStructuredFinalization(reusedRow);
-  assert.ok(reusedRowResult.remainder.some((entry) => entry.includes("reliability review lens reuses acceptance-matrix row")));
+  assert.ok(
+    reusedRowResult.remainder.some((entry) => entry.includes("reliability review lens reuses acceptance-matrix row")),
+  );
 });
 
 test("keeps routine ProjectV2 guidance out of GraphQL", async () => {

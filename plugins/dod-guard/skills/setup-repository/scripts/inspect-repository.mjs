@@ -4,8 +4,8 @@ import { execFile } from "node:child_process";
 import { open, readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { promisify } from "node:util";
 import { pathToFileURL } from "node:url";
+import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
@@ -132,7 +132,8 @@ const CONFIG_NAMES = new Set([
 
 const INSTRUCTION_NAMES = new Set(["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md"]);
 const SAFE_SECRET_EXAMPLES = /(?:^|[._-])(?:example|sample|template)(?:[._-]|$)/i;
-const SUSPICIOUS_SECRET_FILE = /(?:^|\/)(?:\.env(?:\..+)?|id_(?:rsa|dsa|ecdsa|ed25519)|credentials(?:\..+)?|secrets?(?:\..+)?|.+\.(?:key|pem|p12|pfx))$/i;
+const SUSPICIOUS_SECRET_FILE =
+  /(?:^|\/)(?:\.env(?:\..+)?|id_(?:rsa|dsa|ecdsa|ed25519)|credentials(?:\..+)?|secrets?(?:\..+)?|.+\.(?:key|pem|p12|pfx))$/i;
 const TEXT_LIMIT_BYTES = 1024 * 1024;
 
 const SECRET_PATTERNS = [
@@ -149,15 +150,19 @@ function relative(root, file) {
 
 async function collectFiles(root, current = root) {
   const entries = await readdir(current, { withFileTypes: true });
-  const groups = await Promise.all(entries.sort((a, b) => a.name.localeCompare(b.name)).map(async (entry) => {
-    const fullPath = path.join(current, entry.name);
-    if (entry.isSymbolicLink()) return [];
-    if (entry.isDirectory()) {
-      if (SKIP_DIRECTORIES.has(entry.name.toLowerCase())) return [];
-      return collectFiles(root, fullPath);
-    }
-    return entry.isFile() ? [fullPath] : [];
-  }));
+  const groups = await Promise.all(
+    entries
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(async (entry) => {
+        const fullPath = path.join(current, entry.name);
+        if (entry.isSymbolicLink()) return [];
+        if (entry.isDirectory()) {
+          if (SKIP_DIRECTORIES.has(entry.name.toLowerCase())) return [];
+          return collectFiles(root, fullPath);
+        }
+        return entry.isFile() ? [fullPath] : [];
+      }),
+  );
   return groups.flat();
 }
 
@@ -252,9 +257,7 @@ function isManifest(file) {
 }
 
 function isMaintainedSource(file) {
-  return file
-    .split("/")
-    .every((segment) => !NON_MAINTAINED_DIRECTORY_NAMES.has(segment.toLowerCase()));
+  return file.split("/").every((segment) => !NON_MAINTAINED_DIRECTORY_NAMES.has(segment.toLowerCase()));
 }
 
 export async function inspectRepository(rootPath) {
@@ -296,8 +299,9 @@ export async function inspectRepository(rootPath) {
     git: await inspectGit(root),
     files: relativeFiles,
     manifests: relativeFiles.filter(isManifest),
-    configurations: relativeFiles.filter((file) =>
-      CONFIG_NAMES.has(path.basename(file)) || file.startsWith(".github/workflows/")),
+    configurations: relativeFiles.filter(
+      (file) => CONFIG_NAMES.has(path.basename(file)) || file.startsWith(".github/workflows/"),
+    ),
     instructions: relativeFiles.filter((file) => INSTRUCTION_NAMES.has(path.basename(file))),
     sourceExtensions: Object.fromEntries([...sourceExtensions].sort(([a], [b]) => a.localeCompare(b))),
     languageSignals: Object.fromEntries([...languageSignals].sort(([a], [b]) => a.localeCompare(b))),
@@ -382,19 +386,22 @@ export function assessGitHubSnapshot(snapshot) {
     readyForProtection: blockers.length === 0,
     blockers,
     requiredChecks: uniqueCheckNames,
-    protectionPayload: blockers.length === 0 ? {
-      required_status_checks: { strict: true, contexts: uniqueCheckNames },
-      enforce_admins: true,
-      required_pull_request_reviews: { required_approving_review_count: 0 },
-      restrictions: null,
-      required_linear_history: false,
-      allow_force_pushes: false,
-      allow_deletions: false,
-      block_creations: false,
-      required_conversation_resolution: true,
-      lock_branch: false,
-      allow_fork_syncing: false,
-    } : null,
+    protectionPayload:
+      blockers.length === 0
+        ? {
+            required_status_checks: { strict: true, contexts: uniqueCheckNames },
+            enforce_admins: true,
+            required_pull_request_reviews: { required_approving_review_count: 0 },
+            restrictions: null,
+            required_linear_history: false,
+            allow_force_pushes: false,
+            allow_deletions: false,
+            block_creations: false,
+            required_conversation_resolution: true,
+            lock_branch: false,
+            allow_fork_syncing: false,
+          }
+        : null,
   };
 }
 

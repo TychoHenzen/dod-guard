@@ -26,13 +26,7 @@ describe("splitClaims paragraphs", () => {
 
 describe("splitClaims list items", () => {
   it("groups a top-level list item with its nested continuation lines", () => {
-    const lines = [
-      "- Top item first line",
-      "  continuation line",
-      "  - nested bullet",
-      "- Second top item",
-      "",
-    ];
+    const lines = ["- Top item first line", "  continuation line", "  - nested bullet", "- Second top item", ""];
     const units = splitClaims("doc.md", lines.join("\n"));
     assert.deepEqual(
       units.map((u) => ({ kind: u.kind, startLine: u.startLine, endLine: u.endLine, text: u.text })),
@@ -77,7 +71,10 @@ describe("splitClaims frontmatter", () => {
   it("skips YAML frontmatter at the top of a file", () => {
     const lines = ["---", "title: Something", "---", "", "Body paragraph.", ""];
     const units = splitClaims("doc.md", lines.join("\n"));
-    assert.deepEqual(units.map((u) => u.text), ["Body paragraph."]);
+    assert.deepEqual(
+      units.map((u) => u.text),
+      ["Body paragraph."],
+    );
     assert.equal(units[0].startLine, 5);
     assert.equal(units[0].endLine, 5);
   });
@@ -143,7 +140,13 @@ describe("splitClaims JSON descriptions", () => {
     ];
     const units = splitClaims("some/plugin.json", lines.join("\n"));
     assert.deepEqual(
-      units.map((u) => ({ heading: u.heading, startLine: u.startLine, endLine: u.endLine, kind: u.kind, text: u.text })),
+      units.map((u) => ({
+        heading: u.heading,
+        startLine: u.startLine,
+        endLine: u.endLine,
+        kind: u.kind,
+        text: u.text,
+      })),
       [
         {
           heading: "description",
@@ -189,10 +192,6 @@ describe("listDocFiles", () => {
     };
     const files = listDocFiles("/repo", run);
     assert.deepEqual(calls, [["ls-files"]]);
-    assert.deepEqual(files, [
-      ".claude-plugin/marketplace.json",
-      ".claude-plugin/plugin.json",
-      "README.md",
-    ]);
+    assert.deepEqual(files, [".claude-plugin/marketplace.json", ".claude-plugin/plugin.json", "README.md"]);
   });
 });

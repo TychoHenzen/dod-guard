@@ -5,7 +5,10 @@ import { test } from "node:test";
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 
 test("usability-review is discoverable for user-facing review", () => {
-  assert.match(skill, /^---\nname: usability-review\ndescription: .*user-facing.*planning, implementation, review, or handoff.*\n---/s);
+  assert.match(
+    skill,
+    /^---\nname: usability-review\ndescription: .*user-facing.*planning, implementation, review, or handoff.*\n---/s,
+  );
   assert.match(skill, /Read and apply `standards\/working-defaults\.md`/);
   assert.match(skill, /explicitly or as a contextual review/);
 });

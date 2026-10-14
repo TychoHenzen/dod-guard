@@ -21,10 +21,7 @@ test("finds the scanner under Claude's quality-guard installPath", () => {
       installPath: "C:\\cache\\dod-guard\\quality-guard\\0.5.15",
     },
   ];
-  assert.equal(
-    scannerPath("claude", registry),
-    `C:/cache/dod-guard/quality-guard/0.5.15/${SCANNER}`,
-  );
+  assert.equal(scannerPath("claude", registry), `C:/cache/dod-guard/quality-guard/0.5.15/${SCANNER}`);
 });
 
 test("finds the scanner under Codex's quality-guard source path", () => {
@@ -38,21 +35,12 @@ test("finds the scanner under Codex's quality-guard source path", () => {
     ],
     available: [],
   };
-  assert.equal(
-    scannerPath("codex", registry),
-    `C:/m/packages/quality-guard/${SCANNER}`,
-  );
+  assert.equal(scannerPath("codex", registry), `C:/m/packages/quality-guard/${SCANNER}`);
 });
 
 test("refuses a missing, disabled, or ambiguous quality-guard install", () => {
   assert.throws(() => scannerPath("claude", []), /found 0/);
-  assert.throws(
-    () =>
-      scannerPath("claude", [
-        { id: "quality-guard@x", enabled: false, installPath: "a" },
-      ]),
-    /found 0/,
-  );
+  assert.throws(() => scannerPath("claude", [{ id: "quality-guard@x", enabled: false, installPath: "a" }]), /found 0/);
   const twice = [
     { id: "quality-guard@a", enabled: true, installPath: "a" },
     { id: "quality-guard@b", enabled: true, installPath: "b" },

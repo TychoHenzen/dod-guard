@@ -32,8 +32,9 @@ const pins = {
   "next-ticket runs the command before the branch exists": (text) => {
     const section = markdownSection(text, "Select a ticket");
     return (
-      prose("Before", "the branch exists, save the issue body", COMMAND, "exits 0 only on", "`verified`").test(section) &&
-      section.indexOf(COMMAND) < section.indexOf("After the handoff is")
+      prose("Before", "the branch exists, save the issue body", COMMAND, "exits 0 only on", "`verified`").test(
+        section,
+      ) && section.indexOf(COMMAND) < section.indexOf("After the handoff is")
     );
   },
   "project-workflow names both records and the command": (text) => {
@@ -58,13 +59,20 @@ test("refinement and next-ticket name the exact handoff-proof command, and the s
 test("each pin fails once its command or record name is removed", () => {
   for (const [name, pin] of Object.entries(pins)) {
     const withoutCommand = documents[name].replaceAll(COMMAND, "node handoff-proof.mjs");
-    const withoutRecords = NEW_RECORDS.reduce((text, record) => text.replaceAll(`\`${record}\``, "`record`"), documents[name]);
+    const withoutRecords = NEW_RECORDS.reduce(
+      (text, record) => text.replaceAll(`\`${record}\``, "`record`"),
+      documents[name],
+    );
 
     assert.ok(!pin(withoutCommand) || !pin(withoutRecords), name);
   }
   assert.ok(!pins["refine-backlog-item runs the command before Todo"](refine.replaceAll(COMMAND, "")));
   assert.ok(!pins["next-ticket runs the command before the branch exists"](nextTicket.replaceAll(COMMAND, "")));
-  assert.ok(!pins["project-workflow names both records and the command"](workflow.replace("- `planned-acceptance-matrix`:", "-")));
+  assert.ok(
+    !pins["project-workflow names both records and the command"](
+      workflow.replace("- `planned-acceptance-matrix`:", "-"),
+    ),
+  );
 });
 
 test("the documented command names the shipped script", () => {

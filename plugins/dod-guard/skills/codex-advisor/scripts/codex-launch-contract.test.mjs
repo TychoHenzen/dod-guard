@@ -36,7 +36,10 @@ test("resolves the native executable behind an npm codex.cmd shim", async () => 
   try {
     await mkdir(join(packageRoot, "bin"), { recursive: true });
     await mkdir(dirname(nativePath), { recursive: true });
-    await writeFile(join(root, "codex.cmd"), '@ECHO off\r\nnode "%dp0%\\node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n');
+    await writeFile(
+      join(root, "codex.cmd"),
+      '@ECHO off\r\nnode "%dp0%\\node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n',
+    );
     await writeFile(join(packageRoot, "package.json"), JSON.stringify({ name: "@openai/codex" }));
     await writeFile(join(packageRoot, "bin", "codex.js"), "");
     await writeFile(join(platformRoot, "package.json"), JSON.stringify({ name: "@openai/codex-win32-x64" }));
@@ -52,7 +55,10 @@ test("does not resolve a nonexistent executable from an incomplete npm codex.cmd
   const packageRoot = join(root, "node_modules", "@openai", "codex");
   try {
     await mkdir(join(packageRoot, "bin"), { recursive: true });
-    await writeFile(join(root, "codex.cmd"), '@ECHO off\r\nnode "%dp0%\\node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n');
+    await writeFile(
+      join(root, "codex.cmd"),
+      '@ECHO off\r\nnode "%dp0%\\node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n',
+    );
     await writeFile(join(packageRoot, "package.json"), JSON.stringify({ name: "@openai/codex" }));
     await writeFile(join(packageRoot, "bin", "codex.js"), "");
     assert.equal(resolveCodexExecutable("win32", { PATH: root }, "x64"), undefined);

@@ -1,15 +1,9 @@
+import { requirePlan, reviewSlots, slotsBlock, slotsByLens } from "./review-slots.mjs";
 import { judgmentFindings } from "./reviewer-results.mjs";
-import {
-  requirePlan,
-  reviewSlots,
-  slotsBlock,
-  slotsByLens,
-} from "./review-slots.mjs";
 import { ruleScope } from "./rule-scope.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
-const MARKER =
-  /<!-- dod-guard:review-pr head=([0-9a-f]{7,40}) recommendation=(APPROVE|REQUEST_CHANGES|BLOCK) -->/;
+const MARKER = /<!-- dod-guard:review-pr head=([0-9a-f]{7,40}) recommendation=(APPROVE|REQUEST_CHANGES|BLOCK) -->/;
 const SEVERITY_PREFIX = /^\*\*(BLOCKER|MAJOR|MINOR)\*\*/;
 
 function slashPath(path) {
@@ -64,33 +58,19 @@ function scannerGroups(scan, changedLines) {
 }
 
 function scannerFinding(file, violations) {
-  const sorted = [...violations].sort(
-    (left, right) =>
-      left.line - right.line || left.rule.localeCompare(right.rule),
-  );
-  const severity = sorted.some((violation) => violation.severity === "high")
-    ? "MAJOR"
-    : "MINOR";
-  const items = sorted.map(
-    (violation) =>
-      `- \`${violation.rule}\` line ${violation.line}: ${violation.message}`,
-  );
+  const sorted = [...violations].sort((left, right) => left.line - right.line || left.rule.localeCompare(right.rule));
+  const severity = sorted.some((violation) => violation.severity === "high") ? "MAJOR" : "MINOR";
+  const items = sorted.map((violation) => `- \`${violation.rule}\` line ${violation.line}: ${violation.message}`);
   return {
     severity,
     file,
     line: sorted[0].line,
-    body: [
-      `**${severity}** quality-guard structural findings (${sorted.length})`,
-      "",
-      ...items,
-    ].join("\n"),
+    body: [`**${severity}** quality-guard structural findings (${sorted.length})`, "", ...items].join("\n"),
   };
 }
 
 function nearestLine(lines, wanted) {
-  return [...lines].reduce((best, line) =>
-    Math.abs(line - wanted) < Math.abs(best - wanted) ? line : best,
-  );
+  return [...lines].reduce((best, line) => (Math.abs(line - wanted) < Math.abs(best - wanted) ? line : best));
 }
 
 function firstAnchor(changedLines) {
@@ -173,9 +153,7 @@ function anchoredFindings({ scan, changedLines, results, plan }) {
   const fallback = firstAnchor(changedLines);
   return [
     ...judgmentFindings(results, slotsByLens(plan)),
-    ...[...scannerGroups(scan, changedLines)].map(([file, group]) =>
-      scannerFinding(file, group),
-    ),
+    ...[...scannerGroups(scan, changedLines)].map(([file, group]) => scannerFinding(file, group)),
   ].map((finding) => anchor(finding, changedLines, fallback));
 }
 
@@ -186,9 +164,7 @@ function buildReview({ headSha, scan, diff, results, plan, pbi, subIssues }) {
   const slots = reviewSlots({ changedLines, pbi, subIssues });
   requirePlan(plan, slots);
   const findings = anchoredFindings({ scan, changedLines, results, plan });
-  const recommendation = recommendationFor(
-    findings.map((finding) => finding.severity),
-  );
+  const recommendation = recommendationFor(findings.map((finding) => finding.severity));
   const counts = countSeverities(findings);
   const inline = findings.filter((finding) => finding.anchored);
   const unanchored = findings.filter((finding) => !finding.anchored);
@@ -237,10 +213,7 @@ function existingReview(reviews) {
 
 function postedFindings(reviewId, reviewComments) {
   return reviewComments
-    .filter(
-      (comment) =>
-        comment.pull_request_review_id === reviewId && !comment.in_reply_to_id,
-    )
+    .filter((comment) => comment.pull_request_review_id === reviewId && !comment.in_reply_to_id)
     .map((comment) => ({
       id: `GH-${comment.id}`,
       severity: comment.body.match(SEVERITY_PREFIX)?.[1] ?? "MINOR",

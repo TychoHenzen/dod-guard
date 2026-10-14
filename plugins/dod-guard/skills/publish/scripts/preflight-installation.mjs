@@ -1,7 +1,7 @@
-import process from "node:process";
 import { constants } from "node:fs";
 import { open, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, normalize, parse, relative, resolve, sep } from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const repository = "https://github.com/TychoHenzen/dod-guard.git";
@@ -43,7 +43,8 @@ function failure(client, requested, reason, observed = {}) {
       ...observed,
     },
     reason,
-    nextStep: "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout.",
+    nextStep:
+      "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout.",
   };
 }
 
@@ -74,17 +75,21 @@ function isDodGuardEntry(client, entry) {
 
 function identityIsExpected(client, entry) {
   if (client === "codex") {
-    return entry.pluginId === "dod-guard@dod-guard-monorepo" &&
+    return (
+      entry.pluginId === "dod-guard@dod-guard-monorepo" &&
       entry.name === "dod-guard" &&
       entry.marketplaceName === "dod-guard-monorepo" &&
       entry.marketplaceSource?.sourceType === "git" &&
-      entry.marketplaceSource?.source === repository;
+      entry.marketplaceSource?.source === repository
+    );
   }
   return entry.id === "dod-guard@dod-guard";
 }
 
 function absoluteInstallPath(value) {
-  return typeof value === "string" && isAbsolute(value) && (process.platform !== "win32" || parse(value).root.length > 1);
+  return (
+    typeof value === "string" && isAbsolute(value) && (process.platform !== "win32" || parse(value).root.length > 1)
+  );
 }
 
 function normalizedPath(value) {
@@ -129,12 +134,19 @@ async function readRegistry(client, requested) {
 
 function selectRegistration(client, requested, entries) {
   const candidates = entries.filter((entry) => isDodGuardEntry(client, entry));
-  const active = candidates.filter((entry) => entry?.enabled === true && (client !== "codex" || entry?.installed === true));
+  const active = candidates.filter(
+    (entry) => entry?.enabled === true && (client !== "codex" || entry?.installed === true),
+  );
   if (active.length !== 1) {
-    return failure(client, requested, `Expected exactly one installed and enabled dod-guard registration; found ${active.length}.`, {
-      registry: "parsed",
-      registrations: candidates.map((entry) => summary(client, entry)),
-    });
+    return failure(
+      client,
+      requested,
+      `Expected exactly one installed and enabled dod-guard registration; found ${active.length}.`,
+      {
+        registry: "parsed",
+        registrations: candidates.map((entry) => summary(client, entry)),
+      },
+    );
   }
 
   const [entry] = active;
@@ -149,12 +161,17 @@ function selectRegistration(client, requested, entries) {
         marketplaceSource: { sourceType: "git", source: repository },
       };
     }
-    return failure(client, requested, "The enabled dod-guard registration does not match the expected plugin and marketplace identity.", {
-      registry: "parsed",
-      pluginIdentity: identity,
-      version: entry.version ?? "unavailable",
-      expectedIdentity: expected,
-    });
+    return failure(
+      client,
+      requested,
+      "The enabled dod-guard registration does not match the expected plugin and marketplace identity.",
+      {
+        registry: "parsed",
+        pluginIdentity: identity,
+        version: entry.version ?? "unavailable",
+        expectedIdentity: expected,
+      },
+    );
   }
 
   const pluginRoot = client === "codex" ? entry.source?.path : entry.installPath;
@@ -208,7 +225,10 @@ async function resolvePluginRoot(client, requested, installation) {
 }
 
 async function readManifest(client, requested, installation, pluginRoot) {
-  const manifestPath = resolve(pluginRoot, client === "codex" ? ".codex-plugin/plugin.json" : ".claude-plugin/plugin.json");
+  const manifestPath = resolve(
+    pluginRoot,
+    client === "codex" ? ".codex-plugin/plugin.json" : ".claude-plugin/plugin.json",
+  );
   let resolvedManifestPath;
   let manifest;
   try {
@@ -231,13 +251,18 @@ async function readManifest(client, requested, installation, pluginRoot) {
     });
   }
   if (manifest?.name !== "dod-guard" || manifest?.version !== installation.version) {
-    return failure(client, requested, "The installed plugin manifest name or version disagrees with the registration.", {
-      pluginIdentity: installation.identity,
-      version: installation.version,
-      manifestName: manifest?.name ?? "unavailable",
-      manifestVersion: manifest?.version ?? "unavailable",
-      manifestPath: resolvedManifestPath,
-    });
+    return failure(
+      client,
+      requested,
+      "The installed plugin manifest name or version disagrees with the registration.",
+      {
+        pluginIdentity: installation.identity,
+        version: installation.version,
+        manifestName: manifest?.name ?? "unavailable",
+        manifestVersion: manifest?.version ?? "unavailable",
+        manifestPath: resolvedManifestPath,
+      },
+    );
   }
   return { manifest };
 }
@@ -266,29 +291,47 @@ async function resolveSkillPath(client, requested, installation, manifest) {
   try {
     await readRegularFile(skillPath);
   } catch (error) {
-    return failure(client, requested, `The registered installation's publish skill is not a readable regular file: ${error.message}`, {
-      pluginIdentity: installation.identity,
-      version: installation.version,
-      pluginRoot: installation.pluginRoot,
-      skillPath,
-    });
+    return failure(
+      client,
+      requested,
+      `The registered installation's publish skill is not a readable regular file: ${error.message}`,
+      {
+        pluginIdentity: installation.identity,
+        version: installation.version,
+        pluginRoot: installation.pluginRoot,
+        skillPath,
+      },
+    );
   }
   if (requested.version !== undefined && requested.version !== installation.version) {
-    return failure(client, requested, "The requested version does not exactly match the active registration and manifest.", {
-      pluginIdentity: installation.identity,
-      version: installation.version,
-      manifestVersion: manifest.version,
-      pluginRoot: installation.pluginRoot,
-      skillPath,
-    });
+    return failure(
+      client,
+      requested,
+      "The requested version does not exactly match the active registration and manifest.",
+      {
+        pluginIdentity: installation.identity,
+        version: installation.version,
+        manifestVersion: manifest.version,
+        pluginRoot: installation.pluginRoot,
+        skillPath,
+      },
+    );
   }
-  if (requested.path !== undefined && (!absoluteInstallPath(requested.path) || normalizedPath(requested.path) !== normalizedPath(skillPath))) {
-    return failure(client, requested, "The requested path must exactly match the normalized absolute path of the loaded skills/publish/SKILL.md.", {
-      pluginIdentity: installation.identity,
-      version: installation.version,
-      pluginRoot: installation.pluginRoot,
-      skillPath,
-    });
+  if (
+    requested.path !== undefined &&
+    (!absoluteInstallPath(requested.path) || normalizedPath(requested.path) !== normalizedPath(skillPath))
+  ) {
+    return failure(
+      client,
+      requested,
+      "The requested path must exactly match the normalized absolute path of the loaded skills/publish/SKILL.md.",
+      {
+        pluginIdentity: installation.identity,
+        version: installation.version,
+        pluginRoot: installation.pluginRoot,
+        skillPath,
+      },
+    );
   }
   return { skillPath };
 }
@@ -328,6 +371,8 @@ function writeResult(result) {
 }
 
 const args = parseArguments(process.argv.slice(2));
-preflight(args).then(writeResult).catch((error) => {
-  writeResult(failure(args.client, args.requested, `Unexpected preflight failure: ${error.message}`));
-});
+preflight(args)
+  .then(writeResult)
+  .catch((error) => {
+    writeResult(failure(args.client, args.requested, `Unexpected preflight failure: ${error.message}`));
+  });
