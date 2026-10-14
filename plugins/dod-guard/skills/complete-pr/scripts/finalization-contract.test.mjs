@@ -154,6 +154,11 @@ const LINKED_PROJECT_COMMAND =
 
 const THREE_EXCEPTIONS = /three exceptions/;
 const STOP_SKILLS = ["add-backlog-idea", "refine-backlog-item", "next-ticket", "submit-draft-pr"];
+const SEVERAL_STOP = "With `several`, stop and list each owner, number, and title; never pick one by name.";
+const READ_ONLY_QUERY =
+  "one read-only `repository.projectsV2` query made by `skills/complete-pr/scripts/linked-project.mjs`";
+const NO_REST_LINK = "because REST has no endpoint for a repository's explicit Project link";
+const STEP_5 = "## 5. Resolve one linked GitHub Project";
 
 // Slicing by heading makes each pin prove where the text sits, not only that it
 // exists somewhere.
@@ -176,55 +181,57 @@ function readSkill(name) {
 test("standard step 3 names the linked-Project command and each outcome", () => {
   const step3 = sectionOf(standard, "3. Project:", "4. Status:");
   assert.ok(step3.includes(LINKED_PROJECT_COMMAND));
-  assert.match(step3, prose("Use the typed connector when it exposes that link", "Both read the same explicit link"));
-  assert.match(
-    step3,
-    prose("exit 0 is outcome `resolved`", "`ownerLogin`, `ownerType`", "`number`, `title`, and `id`"),
-  );
-  assert.match(step3, prose("exit 1 is outcome `none` or `several`", "owner, number, and title"));
-  assert.match(step3, prose("exit 2 is a usage, read, or response failure", "allows no other read in its place"));
-  assert.match(step3, prose("With `none`, stop and explain that an administrator must link a Project"));
-  assert.match(step3, prose("With `several`, stop and list each owner, number, and title; never pick one by name."));
-  assert.match(step3, prose("This explicit link is the only supported repository-to-Project mapping"));
+  const typed = "Use the typed connector when it exposes that link";
+  assert.match(step3, prose(typed, "Both read the same explicit link"));
+  const exit0 = "exit 0 is outcome `resolved`";
+  const fields = "`number`, `title`, and `id`";
+  assert.match(step3, prose(exit0, "`ownerLogin`, `ownerType`", fields));
+  const exit1 = "exit 1 is outcome `none` or `several`";
+  assert.match(step3, prose(exit1, "owner, number, and title"));
+  const exit2 = "exit 2 is a usage, read, or response failure";
+  assert.match(step3, prose(exit2, "allows no other read in its place"));
+  const none = "With `none`, stop and explain that an administrator";
+  assert.match(step3, prose(`${none} must link a Project`));
+  assert.match(step3, prose(SEVERAL_STOP));
+  const only = "This explicit link is the only supported";
+  assert.match(step3, prose(`${only} repository-to-Project mapping`));
 });
 
 test("both GraphQL exception lists name the linked-Project read as the fourth exception", () => {
   const transport = sectionOf(standard, "## Transport decision", "\n## ");
   const fallback = sectionOf(standard, "## CLI fallback");
-  assert.match(transport, prose("The fourth exception is the linked-Project read of step 3"));
-  assert.match(transport, prose("All four exceptions preserve redacted transport evidence"));
+  const fourth = "The fourth exception is the linked-Project read";
+  assert.match(transport, prose(`${fourth} of step 3`));
+  const evidence = "preserve redacted transport evidence";
+  assert.match(transport, prose(`All four exceptions ${evidence}`));
   assert.doesNotMatch(standard, THREE_EXCEPTIONS);
   for (const section of [transport, fallback]) {
-    assert.match(
-      section,
-      prose(
-        "one read-only `repository.projectsV2` query made by `skills/complete-pr/scripts/linked-project.mjs`",
-        "because REST has no endpoint for a repository's explicit Project link",
-      ),
-    );
+    assert.match(section, prose(READ_ONLY_QUERY, NO_REST_LINK));
   }
 });
 
 test("the five Project-resolving skills name the linked-Project command", async () => {
   const names = [...STOP_SKILLS, "setup-repository"];
   const texts = await Promise.all(names.map(readSkill));
+  const stop = prose("stop on outcome `none` or `several` or on exit 2");
   names.forEach((name, index) => {
     assert.ok(texts[index].includes(LINKED_PROJECT_COMMAND), name);
     if (STOP_SKILLS.includes(name)) {
-      assert.match(texts[index], prose("stop on outcome `none` or `several` or on exit 2"), name);
+      assert.match(texts[index], stop, name);
     }
   });
 });
 
 test("setup-repository branches on each linked-Project outcome", async () => {
-  const step5 = sectionOf(await readSkill("setup-repository"), "## 5. Resolve one linked GitHub Project", "\n## 6.");
+  const skillText = await readSkill("setup-repository");
+  const step5 = sectionOf(skillText, STEP_5, "\n## 6.");
   assert.ok(step5.includes(LINKED_PROJECT_COMMAND));
-  assert.match(step5, prose("`several` (exit 1): stop and list each owner, number, and title"));
+  const several = "`several` (exit 1): stop and list each owner";
+  assert.match(step5, prose(`${several}, number, and title`));
   assert.match(step5, prose("`resolved` (exit 0): preserve that Project"));
-  assert.match(
-    step5,
-    prose("`none` (exit 1): create one", "link it with `gh project link`", "rerun the command as the readback"),
-  );
+  const link = "link it with `gh project link`";
+  const rerun = "rerun the command as the readback";
+  assert.match(step5, prose("`none` (exit 1): create one", link, rerun));
   assert.match(step5, prose("Exit 2: stop with its message."));
 });
 

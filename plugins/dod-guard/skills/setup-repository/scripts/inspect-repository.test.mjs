@@ -354,7 +354,7 @@ test("applies the shared linked-Project count rule to zero, one, and two open Pr
   const checks = [{ name: "test", conclusion: "SUCCESS" }];
   const assess = (projects) => assessGitHubSnapshot({ projects, checks });
   const isProjectBlocker = (blocker) => blocker.includes("linked Project");
-  const projectBlocker = (assessment) => assessment.blockers.find(isProjectBlocker);
+  const projectBlocker = ({ blockers }) => blockers.find(isProjectBlocker);
 
   for (const projects of [[], [{ closed: true, statusOptions }]]) {
     const none = assess(projects);

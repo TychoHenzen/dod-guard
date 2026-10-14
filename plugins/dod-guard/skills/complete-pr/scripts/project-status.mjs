@@ -24,8 +24,8 @@ const NODE_ID_REMEDY = "Pass its numeric item id instead; the items list can lag
 // writeProjectStatuses is synchronous for closure apply and the CLI, so the
 // wait between reads blocks.
 function blockingSleep(milliseconds) {
-  const bytes = Int32Array.BYTES_PER_ELEMENT;
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(bytes)), 0, 0, milliseconds);
+  const buffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+  Atomics.wait(new Int32Array(buffer), 0, 0, milliseconds);
 }
 
 function requireText(value, name) {
@@ -203,8 +203,10 @@ function readProjectItemStatus(item, itemId, statusFieldId) {
 
 function readProjectItems(listRead) {
   const { owner, projectNumber, statusFieldId, commandRunner } = listRead;
-  const command = buildProjectItemListCommand(owner, projectNumber, statusFieldId);
-  const items = parseArrayResponse(commandRunner(command), "Project item readback");
+  const fieldId = statusFieldId;
+  const command = buildProjectItemListCommand(owner, projectNumber, fieldId);
+  const reply = commandRunner(command);
+  const items = parseArrayResponse(reply, "Project item readback");
   return validateProjectItems(items);
 }
 
@@ -302,7 +304,8 @@ function findReadbackProjectItem(items, itemId, identity) {
 // list page can reach megabytes, so a run with numeric inputs alone never reads
 // it.
 function projectItemReads({ itemIds, sleep, ...listRead }) {
-  const readSingle = (itemId) => readSingleProjectItem({ ...listRead, itemId, sleep });
+  const singleRead = { ...listRead, sleep };
+  const readSingle = (itemId) => readSingleProjectItem({ ...singleRead, itemId });
   let listItems = [];
   if (!itemIds.every(isNumericItemId)) {
     listItems = readProjectItems(listRead);

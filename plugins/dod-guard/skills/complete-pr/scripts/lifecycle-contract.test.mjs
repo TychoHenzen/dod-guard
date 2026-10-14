@@ -599,7 +599,9 @@ test("fails closed on missing, contradictory, and forbidden lifecycle evidence",
     FORBIDDEN_GRAPHQL,
   );
   const documented = linkedProjectReadArgs(REPOSITORY);
-  assert.throws(() => transport.commandRunner(documented.with(3, "query=mutation { x }")), FORBIDDEN_GRAPHQL);
+  const mutation = documented.with(3, "query=mutation { x }");
+  const runMutation = () => transport.commandRunner(mutation);
+  assert.throws(runMutation, FORBIDDEN_GRAPHQL);
   const linked = runRest(transport, documented);
   const { nodes } = linked.data.repository.projectsV2;
   assert.deepEqual(
