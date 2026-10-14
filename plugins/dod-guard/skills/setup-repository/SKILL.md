@@ -165,8 +165,21 @@ minimal top-level permissions and raise permissions only on the job that needs t
 fixture, archive, dependency, and vendored paths from maintained-source analysis where each tool
 supports exclusions.
 
+Add a pull-request quality gate for every repository with maintained source code. Generate a job
+named `quality-guard` that runs only on `pull_request`, checks out with `fetch-depth: 0`, and runs:
+
+```text
+node <dod-guard-checkout>/packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs --base=<base sha> --root=<source root>
+```
+
+The gate fails when a file the pull request changes has a high-severity quality-guard finding. Check
+out dod-guard at a pinned commit beside the project; do not copy the scanner. Do not register a
+quality-guard PostToolUse hook. Step 9 requires this job on the default branch.
+
 Run every generated command locally before accepting its workflow form. If a strict applicable
-check exposes existing debt, stop. Setup does not weaken the check or fix unrelated debt.
+check exposes existing debt, stop. Setup does not weaken the check or fix unrelated debt. Existing
+high-severity findings in a file block the pull requests that change it, so report them as debt
+before enabling the requirement.
 
 ## 4. Merge ignore rules and repository instructions
 
@@ -300,7 +313,9 @@ Malformed or incomplete snapshots are blockers and never produce a protection pa
 Re-query protection and confirm all of these exact outcomes:
 
 - pull requests are required;
-- required status checks are strict and contain every observed generated check;
+- required status checks are strict and contain every observed generated check, plus `quality-guard`
+  when the pull-request gate job was generated. That job runs only on pull requests, so it is not in
+  the default-branch snapshot; require it by name after a pull request has run it green;
 - protection applies to administrators;
 - `required_approving_review_count` is explicitly `0` for a solo owner who
   cannot self-approve;
