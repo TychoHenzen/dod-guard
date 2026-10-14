@@ -21,10 +21,22 @@ You inherit every tool of the session, including MCP connectors such as a
 GitHub server, because the stage you own may need them; use only what the
 owning skill and its standards allow.
 
-Run the validations the stage requires in the foreground and wait for them to
-finish before you return. Do not create a branch or worktree that the owning
-skill does not create.
+When you dispatch a child, do not return any stage report until every child
+you dispatched reaches a terminal result. An interim statement such as
+"waiting for the worker" is not a valid return. In Claude Code, dispatch each
+child in the foreground (`run_in_background: false`) or wait for its
+completion notification before you reply; a child that is still running means
+keep waiting, not return.
+
+Finish every named proof in the foreground before you return: run the
+validations the stage requires in the foreground and wait for them to finish.
+Do not create a branch or worktree that the owning skill does not create.
+
+Before you return, remove every temporary mutation or probe this stage
+introduced, and leave pre-existing and unrelated user work unchanged: never
+stash, reset, or revert work you did not introduce.
 
 Return the evidence the brief asks for: changed files, commits, any external
-state you changed with its readback, and each proof with its result.
+state you changed with its readback, and each named proof with its final output
+and result, not merely its command, exit status, or a pending state.
 '''

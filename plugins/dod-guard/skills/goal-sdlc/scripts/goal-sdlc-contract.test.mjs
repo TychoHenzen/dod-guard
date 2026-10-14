@@ -130,6 +130,20 @@ test("goal-sdlc delegates to subagents, not user-visible threads", () => {
   assert.match(skill, prose("do not create a lock file or local ledger"));
 });
 
+// A stage that admitted unfinished work used to be treated as done or replaced,
+// which advanced the run past owned work that was still running.
+test("goal-sdlc resumes a stage whose report admits unfinished work", () => {
+  const delegation = skill.slice(skill.indexOf("## Delegation"), skill.indexOf("## Blockers"));
+  assert.match(
+    delegation,
+    prose(
+      "A stage report that names a live child, a pending named proof, or a still-applied temporary probe is incomplete:",
+      "resume the same stage at its current checkpoint,",
+      "and do not advance or launch a replacement stage.",
+    ),
+  );
+});
+
 test("goal-sdlc keeps one daily friction log and a strict stop", () => {
   assert.match(skill, prose("titled exactly `Friction log YYYY-MM-DD`"));
   assert.match(skill, prose("The queue holds today's log while it collects entries"));

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { prose } from "../../../lib/skill-text.mjs";
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 
@@ -38,4 +39,24 @@ test("step-by-step accepts a calling skill's plan and owns the per-step commit",
     /the main thread commits the verified changes and reads the commit\s+back before the next step starts/,
   );
   assert.match(skill, /A step that changes no tracked file\s+records its evidence instead of a commit/);
+});
+
+// Workers returned while children or proofs still ran and left probes behind,
+// so the rules must travel in the brief itself, not only in the agent files.
+const DISPATCH_BRIEF_RULES = [
+  "wait for every child it dispatched to reach a terminal result",
+  "finish each named proof in the foreground",
+  "include each named proof's final output and result in its report",
+  "revert every temporary probe or mutation the step introduced while preserving pre-existing and unrelated work",
+];
+
+test("every dispatch brief carries the terminal-wait, proof, and cleanup rules", () => {
+  const dispatch = skill.slice(
+    skill.indexOf("2. Dispatch one fresh subagent"),
+    skill.indexOf("3. Read the subagent result"),
+  );
+  assert.match(dispatch, prose("The brief also tells the worker, before it returns"));
+  for (const rule of DISPATCH_BRIEF_RULES) {
+    assert.match(dispatch, prose(rule), rule);
+  }
 });
