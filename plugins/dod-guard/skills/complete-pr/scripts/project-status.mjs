@@ -6,10 +6,22 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { runTransport } from "../../../lib/transport-policy.mjs";
 import { runGh } from "./lib/gh-runner.mjs";
-import { statusValueName } from "./lib/project-reads.mjs";
+import { isNotFoundResult, statusValueName } from "./lib/project-reads.mjs";
 
 const PROJECT_NODE_ID = /^PVT_[A-Za-z0-9]+$/;
+const NUMERIC_ITEM_ID = /^\d+$/;
 const PROJECT_PAGE_SIZE = 100;
+// The single-item endpoint can answer 404 for a moment after an item is added, so a 404 is read
+// again. The attempt count is the bound; the delay only spaces the reads out.
+// ASSUMPTION: 3 reads with 250 ms then 500 ms between them covers that lag (issue #869, C6).
+const PROJECT_ITEM_READ_ATTEMPTS = 3;
+const PROJECT_ITEM_RETRY_DELAY_MS = 250;
+const GH_ACCEPTED_API_FAILURE = [0, 1];
+
+// writeProjectStatuses is synchronous for closure apply and the CLI, so the wait between reads blocks.
+function blockingSleep(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT)), 0, 0, milliseconds);
+}
 
 function requireText(value, name) {
   if (typeof value !== "string" || value.length === 0) {
@@ -58,6 +70,10 @@ function buildProjectItemListCommand(owner, projectNumber, statusFieldId) {
     "--slurp",
     `users/${owner}/projectsV2/${projectNumber}/items?per_page=${PROJECT_PAGE_SIZE}${fields}`,
   ];
+}
+
+function buildProjectItemReadCommand(owner, projectNumber, itemId, statusFieldId) {
+  return ["api", `users/${owner}/projectsV2/${projectNumber}/items/${itemId}?fields=${statusFieldId}`];
 }
 
 function buildProjectItemEditCommand({ owner, projectNumber, itemId, statusFieldId, statusOptionId }) {
@@ -178,12 +194,53 @@ function readProjectItemStatus(item, itemId, statusFieldId) {
   return name;
 }
 
-function readProjectItems({ owner, projectNumber, statusFieldId, targetItemIds, commandRunner }) {
+function readProjectItems({ owner, projectNumber, statusFieldId, commandRunner }) {
   const items = parseArrayResponse(
     commandRunner(buildProjectItemListCommand(owner, projectNumber, statusFieldId)),
     "Project item readback",
   );
-  return { items: validateProjectItems(items) };
+  return validateProjectItems(items);
+}
+
+function isNumericItemId(itemId) {
+  return NUMERIC_ITEM_ID.test(itemId);
+}
+
+// A node id can only be found through the items list, which lags behind a newly added item, so the
+// stop names the input that avoids the list.
+function missingItemError(itemId) {
+  if (isNumericItemId(itemId)) {
+    return new Error(`Project item ${itemId} was missing from readback.`);
+  }
+  return new Error(
+    `Project item ${itemId} was missing from readback. Pass its numeric item id instead; ` +
+      "the items list can lag behind a newly added item.",
+  );
+}
+
+// Returns null only when every bounded read answered 404; any other failure stops at once, because
+// only a 404 is the known lag.
+function readSingleProjectItem({ owner, projectNumber, statusFieldId, itemId, commandRunner, sleep }) {
+  const command = buildProjectItemReadCommand(owner, projectNumber, itemId, statusFieldId);
+  for (let attempt = 1; attempt <= PROJECT_ITEM_READ_ATTEMPTS; attempt += 1) {
+    if (attempt > 1) {
+      sleep(PROJECT_ITEM_RETRY_DELAY_MS * (attempt - 1));
+    }
+    const result = commandRunner(command, GH_ACCEPTED_API_FAILURE);
+    if (result?.status === 0) {
+      const item = parseJson(result, "Project item readback");
+      projectItemIdentity(item);
+      return item;
+    }
+    if (!isNotFoundResult(result)) {
+      throw new Error(
+        result?.stderr?.trim() ||
+          result?.stdout?.trim() ||
+          `Project item ${itemId} read exited with ${result?.status}.`,
+      );
+    }
+  }
+  return null;
 }
 
 function runStatusMutation(commandRunner, command) {
@@ -197,13 +254,13 @@ function runStatusMutation(commandRunner, command) {
 }
 
 // Two inputs that name one item would PATCH it twice and report it twice, so refuse before any write.
-function resolveProjectItemInputs(items, itemIds, statusFieldId) {
+function resolveProjectItemInputs(itemIds, statusFieldId, readTarget) {
   const resolved = new Map();
   const inputByNodeId = new Map();
   for (const itemId of itemIds) {
-    const item = findProjectItem(items, itemId);
+    const item = readTarget(itemId);
     if (!item) {
-      throw new Error(`Project item ${itemId} was missing from readback.`);
+      throw missingItemError(itemId);
     }
     const identity = projectItemIdentity(item);
     const firstInput = inputByNodeId.get(identity.nodeId);
@@ -234,6 +291,39 @@ function findReadbackProjectItem(items, itemId, identity) {
   return item;
 }
 
+// A numeric input is read through the single-item endpoint, which sees a new item before the list
+// does. A node id can only be found in the list, and one list page can reach megabytes, so a run with
+// numeric inputs alone never reads it.
+function projectItemReads({ itemIds, sleep, ...listRead }) {
+  const readSingle = (itemId) => readSingleProjectItem({ ...listRead, itemId, sleep });
+  let listItems = [];
+  if (!itemIds.every(isNumericItemId)) {
+    listItems = readProjectItems(listRead);
+  }
+  return {
+    resolveTarget(itemId) {
+      if (!isNumericItemId(itemId)) {
+        return findProjectItem(listItems, itemId);
+      }
+      const item = readSingle(itemId);
+      if (item === null) {
+        return null;
+      }
+      return findProjectItem([item], itemId);
+    },
+    readBack(itemId, identity) {
+      if (!isNumericItemId(itemId)) {
+        return findReadbackProjectItem(readProjectItems(listRead), itemId, identity);
+      }
+      const item = readSingle(identity.id);
+      if (item === null) {
+        throw missingItemError(itemId);
+      }
+      return findReadbackProjectItem([item], itemId, identity);
+    },
+  };
+}
+
 function writeProjectStatuses({
   owner,
   projectNumber,
@@ -242,6 +332,7 @@ function writeProjectStatuses({
   expectedStatus,
   itemIds,
   commandRunner = runGh,
+  sleep = blockingSleep,
 }) {
   requireText(owner, "owner");
   if (projectNumber === undefined || projectNumber === null || String(projectNumber).length === 0) {
@@ -269,14 +360,15 @@ function writeProjectStatuses({
   );
   resolveStatusOption(statusField, statusOptionId, expectedStatus);
   const restStatusFieldId = String(statusField.id);
-  const initialItems = readProjectItems({
+  const reads = projectItemReads({
     owner,
     projectNumber,
     statusFieldId: restStatusFieldId,
-    targetItemIds: itemIds,
     commandRunner,
+    sleep,
+    itemIds,
   });
-  const resolvedItems = resolveProjectItemInputs(initialItems.items, itemIds, restStatusFieldId);
+  const resolvedItems = resolveProjectItemInputs(itemIds, restStatusFieldId, reads.resolveTarget);
   const mutations = [];
 
   for (const itemId of itemIds) {
@@ -301,14 +393,7 @@ function writeProjectStatuses({
     } catch (error) {
       mutationError = error;
     }
-    const items = readProjectItems({
-      owner,
-      projectNumber,
-      statusFieldId: restStatusFieldId,
-      targetItemIds: itemIds,
-      commandRunner,
-    });
-    const item = findReadbackProjectItem(items.items, itemId, identity);
+    const item = reads.readBack(itemId, identity);
     const status = readProjectItemStatus(item, itemId, restStatusFieldId);
     if (status !== expectedStatus) {
       if (mutationError) {
@@ -392,7 +477,10 @@ export {
   buildProjectFieldsCommand,
   buildProjectItemEditCommand,
   buildProjectItemListCommand,
+  buildProjectItemReadCommand,
   buildProjectViewCommand,
+  PROJECT_ITEM_READ_ATTEMPTS,
+  PROJECT_ITEM_RETRY_DELAY_MS,
   resolveProjectNodeId,
   writeProjectStatuses,
   writeProjectStatusesWithFallback,
