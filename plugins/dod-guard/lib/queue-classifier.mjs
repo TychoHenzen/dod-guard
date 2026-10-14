@@ -318,21 +318,53 @@ function buildQueueRecords(index, options = {}) {
   return index.itemOrder.map((number) => recordFor(index, number, overlay));
 }
 
-// Groups each record under its root issue, so a child is never queued apart from its parent. A record
-// whose parent is not in the list is an orphan, and its group is held rather than dropped.
+function queueAncestry(record, byNumber) {
+  const path = [];
+  const seen = new Set();
+  let current = record;
+  while (current) {
+    if (seen.has(current.issueNumber)) return { path: [], reasons: ["cyclic parent/child relationship"] };
+    seen.add(current.issueNumber);
+    path.unshift(current);
+    current = byNumber.get(current.parentIssueNumber);
+  }
+  return { path, reasons: [] };
+}
+
 function classifyGroups(records, context) {
-  const marked = records.map((record) => ({
-    ...record,
-    orphan: record.parentIssueNumber !== null && !records.some(({ issueNumber }) => issueNumber === record.parentIssueNumber),
-  }));
+  const byNumber = new Map(records.map((record) => [record.issueNumber, record]));
+  const independentParents = new Set();
   const groups = new Map();
-  marked.forEach((record, order) => {
-    const rootIssueNumber = record.parentIssueNumber ?? record.issueNumber;
-    const group = groups.get(rootIssueNumber) ?? { rootIssueNumber, records: [], order };
+  records.forEach((record, order) => {
+    const { path, reasons } = queueAncestry(record, byNumber);
+    let rootIndex = 0;
+    for (let index = 1; index < path.length; index += 1) {
+      const parent = path[index - 1];
+      if (parent.projectStatus === "Backlog" && ["Todo", "In Progress", "Done"].includes(path[index].projectStatus)
+        && parent.pullRequests.length === 0 && activeCheckpointOf(parent) !== true) {
+        rootIndex = index;
+        independentParents.add(parent.issueNumber);
+      }
+    }
+    const root = path[rootIndex] ?? record;
+    const rootIssueNumber = rootIndex === 0 ? (root.parentIssueNumber ?? root.issueNumber) : root.issueNumber;
+    const ancestors = path.slice(0, rootIndex);
+    reasons.push(...recordReasons(ancestors).reasons, ...pullRequestReasons(ancestors.flatMap(({ pullRequests }) => pullRequests)));
+    const group = groups.get(rootIssueNumber) ?? { rootIssueNumber, records: [], order, ancestorReasons: [] };
     group.records.push(record);
+    group.ancestorReasons.push(...reasons);
     groups.set(rootIssueNumber, group);
   });
-  return [...groups.values()].map((group) => ({ ...group, decision: decideGroup(group.records, context) }));
+  return [...groups.values()].map(({ ancestorReasons, ...group }) => {
+    const reasons = [...ancestorReasons];
+    if (group.records.some(({ issueNumber }) => independentParents.has(issueNumber))) {
+      reasons.push("Backlog hierarchy has independent delivery children");
+    }
+    const judged = group.records.map((record) => record.issueNumber === group.rootIssueNumber && byNumber.has(record.parentIssueNumber)
+      ? { ...record, parentIssueNumber: null }
+      : record);
+    return { ...group, decision: reasons.length > 0 ? hold(reasons) : decideGroup(judged, context) };
+  });
 }
 
 // A queue group is only the top of a delivery. The closure judges the subtree under a root whatever

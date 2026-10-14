@@ -11,6 +11,11 @@ run". `/goal` owns persistence and stop.
 
 ## Check the condition
 
+An explicit user instruction to stop after a given condition is a valid goal
+stop condition. When that condition is met, preserve the delivery checkpoint
+and report that boundary as satisfied; do not drain later work or start the
+sound-command fallback below. A later explicit user stop also ends agent work.
+
 At the start of the run, read the `/goal` condition in the conversation. When
 it has no exit for a user stop, show the `USAGE.md` template once, say that
 this condition cannot end on a stop instruction, and continue the run.

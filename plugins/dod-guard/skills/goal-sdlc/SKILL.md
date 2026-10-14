@@ -54,7 +54,7 @@ Repeat until the stop condition holds:
    conflicting, or cross-repository evidence, selects nothing when the snapshot
    cannot be classified, and returns the first eligible group: In Progress parents
    first (one with an open pull request ahead of one without), then Todo, then
-   Backlog, each in Project order. Report held reasons; never guess past them.
+   Backlog, each in Project order. Report holds; `queueState: held` is not exhaustion.
 3. **Run the lifecycle for that parent.** Follow
    [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6 from the step the
    parent has reached. When refinement needs a user answer, leave the parent in
@@ -154,8 +154,8 @@ decision or action needed. Use plain words instead of workflow terms.
 
 ## Stop condition
 
-Stop only when no eligible parent remains, the user ends the run, or every
-remaining parent has stayed blocked by the same external cause across three
-evidence-backed attempts. An empty Todo column with a non-empty Backlog is not
-an empty queue, and finishing one PBI is not a reason to stop. Before
-reporting an empty queue, recheck the checkout for in-progress work.
+Stop only when no eligible parent remains after verified holds, a user stop condition is met, or the user ends the run,
+or every remaining parent stays blocked by the same external cause across three evidence-backed attempts.
+An empty Todo column with a non-empty Backlog is not an empty queue; finishing one PBI is not a reason to stop.
+An empty selection from selector defects or missing evidence is not completion.
+Recheck the checkout for in-progress work before reporting an exhausted queue.
