@@ -67,7 +67,9 @@ and a short body containing:
 - `## Open questions`: unresolved decisions, if any.
 
 After creating each issue, add it to the resolved Project and set Status to
-`Backlog`. Reuse the repository, Project, Status field, and Backlog option
+`Backlog`. The add follows the Project add-item rules under "Write plan" in
+`standards/github-request-discipline.md`, which name the request and treat an
+existing item as success. Reuse the repository, Project, Status field, and Backlog option
 resolved before creation. The issue's Repository field is its target
 repository. Do not create a draft issue. GitHub draft issues cannot populate
 that field. Do not add acceptance criteria, implementation notes, labels,

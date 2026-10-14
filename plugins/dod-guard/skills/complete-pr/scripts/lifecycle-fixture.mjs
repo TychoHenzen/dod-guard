@@ -280,10 +280,18 @@ export function createRecordingTransport({
       ]);
     }
     if (endpoint === projectItemsEndpoint && method === "POST") {
-      const issueId = Number(formValues(args, "content_id=")[0]);
+      // The live API rejected the content_id/content_type shape with a 422, so the fixture must too.
+      const [type] = formValues(args, "type=");
+      if (formValues(args, "content_").length > 0 || !["Issue", "PullRequest"].includes(type)) {
+        return commandResult({ message: "Validation Failed", status: "422" }, 1, "gh: Validation Failed (HTTP 422)");
+      }
+      const issueId = Number(formValues(args, "id=")[0]);
       const issue = [...issues.values()].find((candidate) => candidate.id === issueId);
       if (!issue) throw new Error(`Unknown project item issue ${issueId}.`);
-      if (projectItems.has(issue.number)) throw new Error("Content already exists in this project.");
+      if (projectItems.has(issue.number)) {
+        const message = "Content already exists in this project";
+        return commandResult({ message, status: "422" }, 1, `gh: ${message} (HTTP 422)`);
+      }
       const item = createProjectItem(issue);
       projectItems.set(issue.number, item);
       return commandResult(projectItem(item));

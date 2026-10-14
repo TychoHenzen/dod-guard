@@ -24,6 +24,8 @@ import { writeProjectStatuses, writeProjectStatusesWithFallback } from "./projec
 
 const GRAPHQL = /graphql/i;
 const FORBIDDEN_GRAPHQL = /Forbidden routine GraphQL request/;
+const ADD_ITEM_VALIDATION_FAILURE = /Validation Failed \(HTTP 422\)/;
+const DUPLICATE_ADD_ITEM = /Content already exists in this project \(HTTP 422\)/;
 
 // Any GraphQL except the documented linked-Project read, which is the one exception the standard allows.
 function isRoutineGraphql(args) {
@@ -126,10 +128,10 @@ async function ensureProjectMembership(context, issue) {
           "--method",
           "POST",
           `users/${OWNER}/projectsV2/${PROJECT_NUMBER}/items`,
-          "-F",
-          `content_id=${issue.id}`,
           "-f",
-          "content_type=Issue",
+          "type=Issue",
+          "-F",
+          `id=${issue.id}`,
         ]);
       }
       const readback = readProjectMembership(context.transport).filter(
@@ -450,6 +452,35 @@ test("reuses automatically-created Project items and skips an already-applied st
     transport.transitions.some(({ status }) => status === "Backlog"),
     false,
   );
+});
+
+test("rejects the content_id and content_type add-item shape the live API refused", () => {
+  const transport = createRecordingTransport({ existingIssueNumbers: [PARENT_NUMBER] });
+  const issueId = runRest(transport, ["api", `repos/${REPOSITORY}/issues/${PARENT_NUMBER}`]).id;
+  const addItem = (...fields) =>
+    transport.commandRunner([
+      "api",
+      "--method",
+      "POST",
+      `users/${OWNER}/projectsV2/${PROJECT_NUMBER}/items`,
+      ...fields,
+    ]);
+
+  for (const fields of [
+    ["-F", `content_id=${issueId}`, "-f", "content_type=Issue"],
+    ["-f", "type=Issue", "-F", `id=${issueId}`, "-f", "content_type=Issue"],
+  ]) {
+    const rejected = addItem(...fields);
+    assert.equal(rejected.status, 1);
+    assert.match(rejected.stderr, ADD_ITEM_VALIDATION_FAILURE);
+  }
+  assert.equal(transport.projectItems.size, 0);
+
+  assert.equal(addItem("-f", "type=Issue", "-F", `id=${issueId}`).status, 0);
+  assert.equal(transport.projectItems.size, 1);
+  // A repeated add answers 422 Content already exists, which the standard reads back as success.
+  assert.match(addItem("-f", "type=Issue", "-F", `id=${issueId}`).stderr, DUPLICATE_ADD_ITEM);
+  assert.equal(transport.projectItems.size, 1);
 });
 
 test("recovers an ambiguous status write from the authoritative readback once", async () => {

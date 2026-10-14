@@ -138,11 +138,22 @@ from an earlier run.
   Create only when it is absent. If a create fails or is ambiguous, read back
   before any retry; an existing resource is success, an unresolved readback
   stops, and no duplicate create is allowed.
+- Read Project membership before adding an issue or pull request. The
+  repository's auto-add may or may not have fired already; an existing item is
+  success, and no add is sent.
 - For every `add_project_item` operation, set `item_type` explicitly:
   `issue` for issue items and `pull_request` for pull requests. If the
   operation returns `missing required parameter: item_type`, read back the
   Project before retrying once with the matching type. Do not retry if the item
   already exists.
+- Over REST, add with `POST {users|orgs}/{owner}/projectsV2/{number}/items`
+  and `-f type=Issue|PullRequest -F id=<numeric REST id>`, taking
+  `{users|orgs}/{owner}` from the linked-project command's `basePath`. The `id`
+  is the issue's or pull request's numeric REST `id`, not its `node_id` and not
+  its number. A 422 `Content already exists` means the item is present: read
+  membership back and count it as success.
+- Pass the item id from a successful add, or from the membership read, to
+  `skills/complete-pr/scripts/project-status.mjs`.
 - Re-read only the mutated resource for safety. Do not rebuild the whole
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.
