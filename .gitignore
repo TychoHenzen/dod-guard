@@ -80,5 +80,5 @@ openspec/changes/archive/
 .dashboard.pid
 # MSYS/Git Bash tools (e.g. grep.exe) write a crash dump here when they abort
 *.stackdump
-# scripts/ci/preflight-static-analysis.mjs writes its coverage advisory output here
+# scripts/ci/check-coverage.mjs writes its advisory output here during preflight:static-analysis
 .coverage-advisory-*/
