@@ -1,11 +1,19 @@
 // The closure snapshot that standards/project-workflow.md defines, built from GitHub REST GET
-// requests only. Every read goes through one injected runner in gh-runner's convention, so the
-// tests answer the same calls from fixtures. The shaping functions take data already read and return
-// snapshot records; nothing here writes to GitHub.
+// requests plus the one read-only GraphQL read that resolves the linked Project, which REST cannot
+// read. Every read goes through one injected runner in gh-runner's convention, so the tests answer
+// the same calls from fixtures. The shaping functions take data already read and return snapshot
+// records; nothing here writes to GitHub.
 // biome-ignore lint/correctness/noNodejsModules: This shipped command writes the snapshot file.
 import { renameSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command reads its process id for the partial file.
 import process from "node:process";
+import {
+  describeLinkedProjects,
+  isLinkedProjectRead,
+  LINKED_PROJECT_READ,
+  LinkedProjectError,
+  resolveLinkedProject,
+} from "../../../../lib/linked-project.mjs";
 import {
   API_ISSUE_URL,
   API_PULL_URL,
@@ -17,7 +25,6 @@ import {
 import { readRequiredChecks } from "./github-client.mjs";
 import {
   contentRepository,
-  linkedProject,
   ProjectReadError,
   readSlurpedPages,
   sameRepository,
@@ -77,7 +84,11 @@ function namesRepository(url) {
   return urlRepository(url, API_REPOSITORY_URL) !== null || urlRepository(url, API_ISSUE_URL) !== null;
 }
 
+// The GraphQL read carries its whole query as an argument, so it is named by its read instead.
 function endpointOf(args) {
+  if (isLinkedProjectRead(args)) {
+    return LINKED_PROJECT_READ;
+  }
   const endpoint = args.find((arg) => ENDPOINT.test(arg));
   if (endpoint === undefined) {
     return args.join(" ");
@@ -148,6 +159,30 @@ function projectRead(work) {
     }
     throw readFailure(error.endpoint, error.detail, error);
   }
+}
+
+// The open Project explicitly linked to the repository, by the same rule and read as step 3. A read
+// failure the runner threw passes through unchanged so it is named once; a contract failure or a
+// count other than one is a read failure of the GraphQL read.
+function snapshotProject(read, repository) {
+  let resolution;
+  try {
+    resolution = resolveLinkedProject(repository, read);
+  } catch (error) {
+    if (error?.cause instanceof SnapshotReadError) {
+      throw error.cause;
+    }
+    if (error instanceof LinkedProjectError) {
+      throw readFailure(error.read, error.detail, error);
+    }
+    throw error;
+  }
+  if (resolution.outcome !== "resolved") {
+    const found = describeLinkedProjects(resolution.projects);
+    throw readFailure(LINKED_PROJECT_READ, `expected exactly one open linked Project, found ${found}`);
+  }
+  const [project] = resolution.projects;
+  return { basePath: project.basePath, project };
 }
 
 function readPages(read, endpoint) {
@@ -558,8 +593,12 @@ function pullRequestRecords(targets, repository, read, endpoint) {
 export function buildClosureSnapshot({ repository, runner }) {
   const read = guardedRunner(runner);
   const repo = readRepository(read, repository);
+  // ASSUMPTION: project.owner stays the repository owner, as before, while basePath comes from the
+  // Project owner the link names. They are the same login on every live repository today, and
+  // closure apply hands this field to project-status.mjs, which builds users/<owner> paths from it, so
+  // changing it belongs to its own change.
   const [owner] = repo.fullName.split("/");
-  const { basePath, project } = projectRead(() => linkedProject(read, owner, repo.fullName));
+  const { basePath, project } = snapshotProject(read, repo.fullName);
   const fields = projectFields(read, basePath, project.number);
   const itemsEndpoint = `${basePath}/projectsV2/${project.number}/items?per_page=100&fields=${fields.fieldIds.join(",")}`;
   const shaped = readPages(read, itemsEndpoint)

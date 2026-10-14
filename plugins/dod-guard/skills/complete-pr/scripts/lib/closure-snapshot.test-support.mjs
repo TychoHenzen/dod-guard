@@ -2,6 +2,7 @@
 // the builder reads (Project items, fields, issues, pull requests, check runs), and the ENDPOINT
 // path builders. fakeRest takes its routes as a parameter, and each test file builds its own route
 // table from these. The *.test-support.mjs name keeps the test glob from running it as a test.
+import { isLinkedProjectRead, LINKED_PROJECT_READ } from "../../../../lib/linked-project.mjs";
 
 const OWNER = "TychoHenzen";
 const REPO = `${OWNER}/dod-guard`;
@@ -13,8 +14,8 @@ const BASE_SHA = "c0".repeat(20);
 
 const ENDPOINT = {
   repository: `repos/${REPO}`,
-  projects: `users/${OWNER}/projectsV2?per_page=100`,
-  membership: (number) => `users/${OWNER}/projectsV2/${number}/items?per_page=100`,
+  // The route key for the one GraphQL read, whose last argument is a variable, not an endpoint.
+  linkedProjects: LINKED_PROJECT_READ,
   fields: (number) => `users/${OWNER}/projectsV2/${number}/fields?per_page=100`,
   values: (number) => `users/${OWNER}/projectsV2/${number}/items?per_page=100&fields=${FIELD_IDS.join(",")}`,
   subIssues: (number) => `repos/${REPO}/issues/${number}/sub_issues?per_page=100`,
@@ -35,14 +36,35 @@ function failed(stderr) {
 const SERVER_ERROR = failed("gh: Server Error (HTTP 500)");
 const NOT_FOUND = failed("gh: Not Found (HTTP 404)");
 
+// A Project node in the shape the live repository.projectsV2 read returned on 2026-10-14.
+function linkedProjectNode(number, { closed = false, login = OWNER, typename = "User" } = {}) {
+  return {
+    id: `PVT_${number}`,
+    number,
+    title: `Project ${number}`,
+    closed,
+    owner: { __typename: typename, login },
+  };
+}
+
+// The linked-Project read's answer: the repository's explicit links, closed ones included.
+function linkedProjectsReply(nodes, { hasNextPage = false } = {}) {
+  return ok({ data: { repository: { projectsV2: { nodes, pageInfo: { hasNextPage } } } } });
+}
+
 // Answers each endpoint from its route and honors acceptedExitCodes the way the shared runGh in
 // gh-runner.mjs does. An endpoint without a route throws, so a read the fixture does not expect
-// fails the test.
+// fails the test. The documented linked-Project read is the only GraphQL it answers.
 function fakeRest(routes) {
   const calls = [];
   const runner = (args, acceptedExitCodes = [0]) => {
     calls.push(args);
-    const endpoint = args.at(-1);
+    let endpoint = args.at(-1);
+    if (isLinkedProjectRead(args)) {
+      endpoint = ENDPOINT.linkedProjects;
+    } else if (args.includes("graphql")) {
+      throw new Error(`forbidden GraphQL request: ${args.join(" ")}`);
+    }
     const reply = routes[endpoint];
     if (reply === undefined) {
       throw new Error(`no fixture for ${endpoint}`);
@@ -191,6 +213,8 @@ export {
   fakeRest,
   fieldPages,
   issueContent,
+  linkedProjectNode,
+  linkedProjectsReply,
   MERGED_AT,
   NOT_FOUND,
   OWNER,

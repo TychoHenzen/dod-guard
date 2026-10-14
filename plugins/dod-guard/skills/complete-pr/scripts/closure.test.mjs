@@ -26,6 +26,8 @@ import {
   fakeRest,
   fieldPages,
   issueContent,
+  linkedProjectNode,
+  linkedProjectsReply,
   OWNER,
   ok,
   projectItem,
@@ -295,7 +297,6 @@ test("apply runs on a snapshot built to the documented closure snapshot shape", 
 const ROOT = 840;
 const ORIGINAL = DELIVERIES[ROOT].replaces;
 const BEEHAIVE = "TychoHenzen/BeeHAIve";
-const ONE_OPEN_PROJECT = [[{ number: 2, state: "open" }]];
 const STATUS_OPTIONS = fieldPages()[0][0].options;
 const SELECT_NEXT = fileURLToPath(new URL("../../goal-sdlc/scripts/select-next.mjs", import.meta.url));
 const ENDPOINT_PATH = /^(repos|users)\//;
@@ -338,13 +339,12 @@ function argValue(args, prefix) {
   return args.find((value) => String(value).startsWith(prefix))?.slice(prefix.length);
 }
 
-// The base routes of a linked-Project fixture: the repository, the one open Project, and the
-// membership, fields, and values reads of that Project over the given item pages.
+// The base routes of a linked-Project fixture: the repository, its one open explicit link, and the
+// fields and values reads of that Project over the given item pages.
 function projectRoutes(pages) {
   return {
     [ENDPOINT.repository]: ok({ full_name: REPOSITORY, default_branch: "master" }),
-    [ENDPOINT.projects]: ok(ONE_OPEN_PROJECT),
-    [ENDPOINT.membership(2)]: ok(pages),
+    [ENDPOINT.linkedProjects]: linkedProjectsReply([linkedProjectNode(2)]),
     [ENDPOINT.fields(2)]: ok(fieldPages()),
     [ENDPOINT.values(2)]: ok(pages),
   };

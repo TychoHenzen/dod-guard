@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { isLinkedProjectRead, linkedProjectReadArgs } from "../../../lib/linked-project.mjs";
 import { runTransport } from "../../../lib/transport-policy.mjs";
 import { GitHubClient } from "./lib/github-client.mjs";
 import {
@@ -20,6 +21,14 @@ import {
   STATUS_OPTIONS,
 } from "./lifecycle-fixture.mjs";
 import { writeProjectStatuses, writeProjectStatusesWithFallback } from "./project-status.mjs";
+
+const GRAPHQL = /graphql/i;
+const FORBIDDEN_GRAPHQL = /Forbidden routine GraphQL request/;
+
+// Any GraphQL except the documented linked-Project read, which is the one exception the standard allows.
+function isRoutineGraphql(args) {
+  return args.some((value) => GRAPHQL.test(String(value))) && !isLinkedProjectRead(args);
+}
 
 function runRest(transport, args) {
   const result = transport.commandRunner(args);
@@ -407,10 +416,7 @@ async function runDisposableLifecycle(options = {}) {
     ISSUE_NUMBERS.map((number) => ({ number, state: "CLOSED" })),
   );
   await assertIssueReadbacks(transportOptions, ISSUE_LABELS, "closed", "closure");
-  assert.equal(
-    transport.calls.some((args) => args.some((value) => /graphql/i.test(String(value)))),
-    false,
-  );
+  assert.equal(transport.calls.some(isRoutineGraphql), false);
   return { ...transport, ...transportOptions };
 }
 
@@ -530,10 +536,7 @@ test("runs every lifecycle boundary once through REST when MCP is rate limited",
       .length,
     1,
   );
-  assert.equal(
-    transport.calls.some((args) => args.some((value) => /graphql/i.test(String(value)))),
-    false,
-  );
+  assert.equal(transport.calls.some(isRoutineGraphql), false);
   assert.equal(
     transport.calls.some((args) => args[0] === "pr"),
     false,
@@ -556,6 +559,16 @@ test("fails closed on missing, contradictory, and forbidden lifecycle evidence",
   const transport = createRecordingTransport();
   assert.throws(
     () => transport.commandRunner(["api", "graphql", "-f", "query=query { projectsV2 }"]),
-    /Forbidden routine GraphQL request/,
+    FORBIDDEN_GRAPHQL,
+  );
+  const documented = linkedProjectReadArgs(REPOSITORY);
+  assert.throws(
+    () => transport.commandRunner([...documented.slice(0, 3), "query=mutation { x }", ...documented.slice(4)]),
+    FORBIDDEN_GRAPHQL,
+  );
+  const linked = runRest(transport, documented);
+  assert.deepEqual(
+    linked.data.repository.projectsV2.nodes.map(({ number, closed }) => ({ number, closed })),
+    [{ number: PROJECT_NUMBER, closed: false }],
   );
 });

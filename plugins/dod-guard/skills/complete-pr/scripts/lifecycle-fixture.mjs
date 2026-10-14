@@ -1,3 +1,5 @@
+import { isLinkedProjectRead } from "../../../lib/linked-project.mjs";
+
 export const REPOSITORY = "owner/repo";
 export const OWNER = "owner";
 export const PROJECT_NUMBER = 2;
@@ -130,6 +132,27 @@ export function createRecordingTransport({
 
   function run(args) {
     calls.push([...args]);
+    // The documented linked-Project read is the one GraphQL request a lifecycle may make.
+    if (isLinkedProjectRead(args)) {
+      return commandResult({
+        data: {
+          repository: {
+            projectsV2: {
+              nodes: [
+                {
+                  id: PROJECT_NODE_ID,
+                  number: PROJECT_NUMBER,
+                  title: "Disposable lifecycle Project",
+                  closed: false,
+                  owner: { __typename: "User", login: OWNER },
+                },
+              ],
+              pageInfo: { hasNextPage: false },
+            },
+          },
+        },
+      });
+    }
     if (args.some((value) => /graphql/i.test(String(value)))) {
       throw new Error("Forbidden routine GraphQL request.");
     }

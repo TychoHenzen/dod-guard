@@ -1,10 +1,9 @@
 // Every REST read of a GitHub Project that complete-pr's scripts make: the owned-Project listing, the
-// open-Project loop, the Status-value flattener, and the two linked-Project resolvers built on them.
-// The resolvers keep different membership rules on purpose. readIssueProjectStatuses wants the open
-// Project holding exactly one item for one issue and stops on an item it cannot place. linkedProject
-// wants the open Project holding any item of a repository and passes over an item with no repository.
-// Each keeps its own request form and stop texts, and every read goes through an injected runner in
-// gh-runner's convention.
+// open-Project loop, the Status-value flattener, and the issue-item resolver built on them.
+// readIssueProjectStatuses wants the open Project holding exactly one item for one issue and stops on
+// an item it cannot place. Which Project a repository is linked to is a different rule, read from the
+// explicit link by plugins/dod-guard/lib/linked-project.mjs. Every read goes through an injected
+// runner in gh-runner's convention.
 import { API_REPOSITORY_URL, isRepositoryName, urlRepository } from "../../../../lib/repository-identity.mjs";
 import { ghJson, ghJsonArrayPages, githubResponseContractError, githubResponseError } from "./gh-runner.mjs";
 
@@ -23,13 +22,6 @@ export class ProjectReadError extends Error {
     this.endpoint = endpoint;
     this.detail = detail;
   }
-}
-
-function messageOf(error) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error);
 }
 
 // REST spells a Status name as a bare string, as {name: "..."}, or as {name: {raw, html}}, and the
@@ -135,8 +127,8 @@ function listOwnedProjects(owner, commandRunner) {
   };
 }
 
-// The loop both resolvers share. checkEntry runs on every listed Project, closed ones included, so a
-// malformed entry stops the read wherever it is; visit runs on each open one, in listing order.
+// checkEntry runs on every listed Project, closed ones included, so a malformed entry stops the read
+// wherever it is; visit runs on each open one, in listing order.
 function forEachOpenProject(projects, checkEntry, visit) {
   for (const project of projects) {
     checkEntry(project);
@@ -379,58 +371,4 @@ export function contentRepository(content, endpoint) {
     throw new ProjectReadError(endpoint, "content repository_url must name a repository");
   }
   return repository;
-}
-
-function holdsRepository(read, endpoint, repository) {
-  return readSlurpedPages(read, endpoint).some((item) =>
-    sameRepository(contentRepository(item?.content, endpoint), repository),
-  );
-}
-
-function isProjectEntry(project) {
-  const number = project?.number;
-  const state = project?.state;
-  return Number.isInteger(number) && number > 0 && typeof state === "string" && state.trim().length > 0;
-}
-
-function describeFound(projects) {
-  if (projects.length === 0) {
-    return "none";
-  }
-  const numbers = projects.map(({ number }) => `#${number}`).join(", ");
-  return `${projects.length} (${numbers})`;
-}
-
-// A listing failure is restated at the listing endpoint, keeping the original error as its cause.
-function listedProjects(owner, read) {
-  try {
-    return listOwnedProjects(owner, read);
-  } catch (error) {
-    throw new ProjectReadError(`users/${owner}/projectsV2`, messageOf(error), { cause: error });
-  }
-}
-
-// The one open Project that holds an item of the repository. A Project item with no derivable
-// repository cannot be a member, so it is passed over rather than failing the read. Closed Projects
-// are never read. Every stop is a ProjectReadError naming its endpoint, except a failure the runner
-// itself throws for an item read, which passes through unchanged.
-export function linkedProject(read, owner, repository) {
-  const { basePath, projects } = listedProjects(owner, read);
-  const listing = `${basePath}/projectsV2`;
-  const linked = [];
-  const checkEntry = (project) => {
-    if (!isProjectEntry(project)) {
-      throw new ProjectReadError(listing, "every Project must carry a number and a state");
-    }
-  };
-  forEachOpenProject(projects, checkEntry, (project) => {
-    const endpoint = `${listing}/${project.number}/items?per_page=100`;
-    if (holdsRepository(read, endpoint, repository)) {
-      linked.push(project);
-    }
-  });
-  if (linked.length !== 1) {
-    throw new ProjectReadError(listing, `expected exactly one open linked Project, found ${describeFound(linked)}`);
-  }
-  return { basePath, project: linked[0] };
 }

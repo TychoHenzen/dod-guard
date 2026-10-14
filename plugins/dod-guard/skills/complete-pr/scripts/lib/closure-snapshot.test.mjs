@@ -3,6 +3,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { isLinkedProjectRead } from "../../../../lib/linked-project.mjs";
 import { runCli } from "../closure.mjs";
 import { planClosures } from "./closure-plan.mjs";
 import { buildClosureSnapshot } from "./closure-snapshot.mjs";
@@ -15,6 +16,8 @@ import {
   fakeRest,
   fieldPages,
   issueContent,
+  linkedProjectNode,
+  linkedProjectsReply,
   MERGED_AT,
   NOT_FOUND,
   OWNER,
@@ -44,6 +47,9 @@ const NOT_A_NAME = /not a name/u;
 const MISSING_BODY = /must carry body/u;
 const USAGE_LINE = /closure\.mjs snapshot --repository=<owner\/name> --output=<file\.json>/u;
 const ARCHIVED_ISSUE = /#13\b/u;
+// The two reads the membership rule made and the explicit-link read replaced.
+const OWNER_LISTING = /projectsV2\?/u;
+const MEMBERSHIP_READ = /projectsV2\/\d+\/items\?per_page=100$/u;
 
 // Two --slurp pages in Project order. PVTI_f11 is a foreign issue whose number matches target issue
 // #11. PVTI_t12 also links a foreign pull request: the item keeps that link, but the snapshot never
@@ -74,15 +80,8 @@ function valuePages() {
   ];
 }
 
-// Project 3 is closed and holds a target item, so it must never be read. Project 4 is open and holds
-// only a foreign item, so it is read for membership and never linked.
-const PROJECTS = [
-  [
-    { number: 2, state: "open" },
-    { number: 3, state: "closed" },
-    { number: 4, state: "open" },
-  ],
-];
+// The repository's explicit links. Project 3 is closed, so it is dropped before counting and never read.
+const LINKED = [linkedProjectNode(2), linkedProjectNode(3, { closed: true })];
 
 function setStatus(pages, nodeId, value) {
   const entry = pages.flat().find((item) => item.node_id === nodeId);
@@ -178,9 +177,7 @@ function fixtureRoutes(variant = "healthy") {
   }
   const routes = {
     [ENDPOINT.repository]: ok({ full_name: REPO, default_branch: "master" }),
-    [ENDPOINT.projects]: ok(PROJECTS),
-    [ENDPOINT.membership(2)]: ok(pages),
-    [ENDPOINT.membership(4)]: ok([[projectItem("PVTI_f40", 1040, issueContent(40, { repo: FOREIGN }))]]),
+    [ENDPOINT.linkedProjects]: linkedProjectsReply(LINKED),
     [ENDPOINT.fields(2)]: ok(fieldPages()),
     [ENDPOINT.values(2)]: ok(pages),
     [ENDPOINT.subIssues(10)]: ok([
@@ -211,11 +208,12 @@ function fixtureRoutes(variant = "healthy") {
   if (variant === "no-parent-field") {
     routes[ENDPOINT.fields(2)] = ok(fieldPages({ withParent: false }));
   }
+  // The repository's items may sit in a Project, but without an open explicit link it has none.
   if (variant === "no-linked-project") {
-    routes[ENDPOINT.membership(2)] = ok([[projectItem("PVTI_f11", 1011, issueContent(11, { repo: FOREIGN }))]]);
+    routes[ENDPOINT.linkedProjects] = linkedProjectsReply([linkedProjectNode(3, { closed: true })]);
   }
   if (variant === "two-linked-projects") {
-    routes[ENDPOINT.membership(4)] = ok(pages);
+    routes[ENDPOINT.linkedProjects] = linkedProjectsReply([...LINKED, linkedProjectNode(4)]);
   }
   if (variant === "protection-failure") {
     routes[ENDPOINT.protection] = SERVER_ERROR;
@@ -526,10 +524,12 @@ function methodsOf(args) {
   });
 }
 
-test("AC-05: every read is a GET, and only the reads the counts require are made", () => {
+test("AC-05: every read is a GET except the one linked-Project read, and only the reads the counts require are made", () => {
   const { runner, calls } = fakeRest(fixtureRoutes());
   buildClosureSnapshot({ repository: REPO, runner });
-  for (const args of calls) {
+  // gh api graphql always posts its query, so the documented read-only query is the one exemption.
+  assert.equal(calls.filter(isLinkedProjectRead).length, 1);
+  for (const args of calls.filter((call) => !isLinkedProjectRead(call))) {
     assert.equal(args[0], "api", args.join(" "));
     assert.notEqual(args[1], "graphql", args.join(" "));
     assert.ok(!args.some((arg) => BODY_FLAG.test(arg)), args.join(" "));
@@ -638,78 +638,53 @@ test("AC-07: the built snapshot plans with no repository identity hold", () => {
 
 // The error a failed read leaves: the endpoint it names, then the colon that ends it.
 const failedAt = (endpoint) => `closure snapshot read failed: ${endpoint}:`;
-const PROJECTS_LIST = `users/${OWNER}/projectsV2`;
 
 function buildFailureWith(overrides) {
   return buildFailure({ ...fixtureRoutes(), ...overrides });
 }
 
-test("the linked-Project read stops on a Project entry without a positive-integer number or a state", () => {
-  const malformed = [
-    [{ number: 2 }],
-    [{ state: "open" }],
-    [{ number: "2", state: "open" }],
-    [{ number: 2, state: " " }],
-    [{ number: 3, state: "closed" }, { state: "closed" }],
-  ];
-  for (const projects of malformed) {
-    const error = buildFailureWith({ [ENDPOINT.projects]: ok([projects]) });
-    assert.equal(
-      error?.message,
-      `closure snapshot read failed: ${PROJECTS_LIST}: every Project must carry a number and a state`,
-      JSON.stringify(projects),
-    );
-  }
+test("the snapshot resolves its Project from the explicit link with one GraphQL read and no listing", () => {
+  const { runner, calls } = fakeRest(fixtureRoutes());
+  buildClosureSnapshot({ repository: REPO, runner });
+  const graphql = calls.filter((args) => args.includes("graphql"));
+  assert.equal(graphql.length, 1);
+  assert.equal(isLinkedProjectRead(graphql[0]), true);
+  assert.ok(graphql[0].includes(`owner=${OWNER}`) && graphql[0].includes("name=dod-guard"), graphql[0].join(" "));
+  const endpoints = calls.map((args) => args.at(-1));
+  assert.ok(!endpoints.some((endpoint) => OWNER_LISTING.test(endpoint)), "an owner-level Project listing was read");
+  assert.ok(!endpoints.some((endpoint) => MEMBERSHIP_READ.test(endpoint)), "a membership read was made");
 });
 
-test("the linked-Project read names the listing endpoint once for a listing that fails or is malformed", () => {
-  const serverError = buildFailureWith({ [ENDPOINT.projects]: SERVER_ERROR });
-  assert.equal(serverError?.message, `closure snapshot read failed: ${ENDPOINT.projects}: gh: Server Error (HTTP 500)`);
-
-  const notPages = buildFailureWith({ [ENDPOINT.projects]: ok({ message: "x" }) });
-  assert.equal(
-    notPages?.message,
-    `closure snapshot read failed: ${PROJECTS_LIST}: GitHub response for ${ENDPOINT.projects} must include an array an array response.`,
-  );
+test("a freshly linked Project with no items still resolves, because the link decides and not membership", () => {
+  const routes = fixtureRoutes();
+  const snapshot = build({ ...routes, [ENDPOINT.values(2)]: ok([[]]) });
+  assert.equal(snapshot.project.number, 2);
+  assert.deepEqual(snapshot.items, []);
 });
 
-test("the linked-Project read falls back to orgs/<owner> after a users/ HTTP 404 and reads its items there", () => {
-  const orgProjects = `orgs/${OWNER}/projectsV2?per_page=100`;
-  const orgItems = `orgs/${OWNER}/projectsV2/2/items?per_page=100`;
+test("an Organization-owned linked Project is read under orgs/<login>", () => {
+  const orgFields = "orgs/acme/projectsV2/2/fields?per_page=100";
   const error = buildFailureWith({
-    [ENDPOINT.projects]: NOT_FOUND,
-    [orgProjects]: ok([[{ number: 2, state: "open" }]]),
+    [ENDPOINT.linkedProjects]: linkedProjectsReply([linkedProjectNode(2, { typename: "Organization", login: "acme" })]),
   });
-  assert.equal(error?.message, `closure snapshot read failed: ${orgItems}: no fixture for ${orgItems}`);
+  assert.equal(error?.message, `closure snapshot read failed: ${orgFields}: no fixture for ${orgFields}`);
 });
 
-test("the linked-Project read stops on a malformed membership page and names the membership endpoint", () => {
-  const membership = ENDPOINT.membership(2);
+test("the linked-Project read names itself once for a failed, erroring, or untrustworthy answer", () => {
   const cases = [
+    [SERVER_ERROR, "gh: Server Error (HTTP 500)"],
+    [ok({ errors: [{ message: "Something went wrong" }] }), "returned errors: Something went wrong"],
+    [ok({ data: { repository: null } }), "named no repository"],
+    [linkedProjectsReply([linkedProjectNode(2)], { hasNextPage: true }), "is incomplete"],
+    [linkedProjectsReply([linkedProjectNode(2), null]), "malformed Project node null"],
     [{ status: 0, stdout: "not json", stderr: "" }, "did not return JSON"],
-    [ok([[], { message: "Not Found" }]), "missing page: every page must be an array"],
-    [
-      ok([[{ content: { repository_url: "https://example.test/repos/x/y" } }]]),
-      "content repository_url must name a repository",
-    ],
-    [
-      ok([[{ content: { repository: { full_name: "not a name" } } }]]),
-      "content repository full_name must name a repository",
-    ],
   ];
   for (const [reply, detail] of cases) {
-    const error = buildFailureWith({ [membership]: reply });
-    assert.equal(error?.message, `closure snapshot read failed: ${membership}: ${detail}`, detail);
+    const error = buildFailureWith({ [ENDPOINT.linkedProjects]: reply });
+    assert.ok(error?.message.startsWith(failedAt(ENDPOINT.linkedProjects)), `${detail}: ${error?.message}`);
+    assert.ok(error.message.includes(detail), `${detail}: ${error.message}`);
+    assert.equal(error.message.split("closure snapshot read failed:").length - 1, 1, error.message);
   }
-});
-
-test("the linked-Project read passes over a membership item with no repository instead of stopping", () => {
-  const routes = fixtureRoutes();
-  const pages = JSON.parse(routes[ENDPOINT.membership(2)].stdout);
-  // First on the first page, because the membership check stops at the first item of the repository.
-  pages[0].unshift({ id: 1999, node_id: "PVTI_draft", content: {} }, { id: 1998, node_id: "PVTI_none" });
-  const snapshot = build({ ...routes, [ENDPOINT.membership(2)]: ok(pages) });
-  assert.equal(snapshot.project.number, 2);
 });
 
 const FAULTS = [
@@ -717,8 +692,11 @@ const FAULTS = [
   ["items", [failedAt(ENDPOINT.values(2))]],
   ["missing-page", [failedAt(ENDPOINT.values(2)), "missing page"]],
   ["no-parent-field", [failedAt(ENDPOINT.fields(2)), 'must include exactly one "Parent issue" field, found 0']],
-  ["no-linked-project", [failedAt(PROJECTS_LIST), "expected exactly one open linked Project, found none"]],
-  ["two-linked-projects", [failedAt(PROJECTS_LIST), "expected exactly one open linked Project, found 2 (#2, #4)"]],
+  ["no-linked-project", [failedAt(ENDPOINT.linkedProjects), "expected exactly one open linked Project, found none"]],
+  [
+    "two-linked-projects",
+    [failedAt(ENDPOINT.linkedProjects), "expected exactly one open linked Project, found 2 (#2, #4)"],
+  ],
   [
     "protection-failure",
     [failedAt(ENDPOINT.protection)],
