@@ -118,13 +118,45 @@ test("shares the global ProjectV2 resolution and sequential readback contract", 
   assert.match(standard, /skills\/complete-pr\/scripts\/project-status\.mjs/);
 });
 
+const STALE_ITEM_IDS = /global item and Status-field ids/;
+const STALE_ITEM_READ = /REST Project items endpoint/;
+const SINGLE_ITEM_PATH = "`users/{owner}/projectsV2/{number}/items/{id}`";
+
+test("status writes pass numeric item ids, read back one item at a time", async () => {
+  const section = sectionOf(standard, "## ProjectV2 status writes", "\n## ");
+  const numericId = prose("Pass each item's numeric REST item `id`", "(from the add response or the membership read)");
+  assert.match(section, numericId);
+  const singleItem = prose(
+    "reads a numeric item id through the single-item endpoint",
+    SINGLE_ITEM_PATH,
+    "within its bounded attempts",
+  );
+  assert.match(section, singleItem);
+  const nodeId = prose(
+    "A `PVTI_` global node id can only be found through the items list",
+    "which can",
+    "lag behind a newly added item",
+  );
+  assert.match(section, nodeId);
+  assert.doesNotMatch(section, STALE_ITEM_IDS);
+  assert.doesNotMatch(section, STALE_ITEM_READ);
+  const writePlan = sectionOf(standard, "## Write plan", "\n## ");
+  const writePlanId = prose("Pass the Project item's", "numeric REST `id`, not its `node_id`");
+  assert.match(writePlan, writePlanId);
+  const skillId = prose("Pass numeric ids: the runner reads them through the", "single-item endpoint");
+  assert.match(skill, skillId);
+  const nextTicketId = prose("Pass the numeric id: the runner reads", "single-item endpoint");
+  assert.match(await readSkill("next-ticket"), nextTicketId);
+});
+
 const LINKED_PROJECT_COMMAND =
   "node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>";
 
 const THREE_EXCEPTIONS = /three exceptions/;
 const STOP_SKILLS = ["add-backlog-idea", "refine-backlog-item", "next-ticket", "submit-draft-pr"];
 
-// Slicing by heading makes each pin prove where the text sits, not only that it exists somewhere.
+// Slicing by heading makes each pin prove where the text sits, not only that it
+// exists somewhere.
 function sectionOf(text, start, end) {
   const from = text.indexOf(start);
   let to = text.length;

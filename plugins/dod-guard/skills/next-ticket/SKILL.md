@@ -161,7 +161,9 @@ Perform these actions in order:
    uses the numeric project number as the REST path identifier, and reads the
    item back before the ticket-start sequence can continue. The item id may be
    the Project item's numeric REST id or its `PVTI_` global node id; the runner
-   resolves either form to the same item.
+   resolves either form to the same item. Pass the numeric id: the runner reads
+   it through the single-item endpoint, while a `PVTI_` id is found only through
+   the items list, which can lag behind a newly added item.
 
 Do not create or switch to an existing branch. Report the exact completed
 actions if a later mutation fails. Keep the successfully created branch and

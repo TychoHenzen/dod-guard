@@ -119,11 +119,18 @@ from an earlier run.
 - A numeric Project number is the REST path identifier. Resolve the live
   Project, Status field, item ids, and scalar single-select option ids from the
   same REST snapshot before writing.
-- Use the global item and Status-field ids from that snapshot, and use the
-  scalar single-select option id for the requested value.
+- Pass each item's numeric REST item `id` (from the add response or the
+  membership read), the Status-field id from that snapshot, and the scalar
+  single-select option id for the requested value.
+- `project-status.mjs` reads a numeric item id through the single-item endpoint
+  `users/{owner}/projectsV2/{number}/items/{id}`, within its bounded attempts,
+  because that endpoint sees a newly added item before the items list does. A
+  `PVTI_` global node id can only be found through the items list, which can
+  lag behind a newly added item, so use it only for an item that is already
+  listed.
 - Run status mutations sequentially. For a structured parent, write every child
-  before the parent, then read each item from the REST Project items endpoint
-  before the next mutation. A missing or unexpected readback stops the sequence.
+  before the parent, then read each item back the same way before the next
+  mutation. A missing or unexpected readback stops the sequence.
 - The shared `skills/complete-pr/scripts/project-status.mjs` runner performs
   this resolution and readback without invoking Git or inspecting worktrees.
 
@@ -153,7 +160,8 @@ from an earlier run.
   its number. A 422 `Content already exists` means the item is present: read
   membership back and count it as success.
 - Pass the item id from a successful add, or from the membership read, to
-  `skills/complete-pr/scripts/project-status.mjs`.
+  `skills/complete-pr/scripts/project-status.mjs`. Pass the Project item's
+  numeric REST `id`, not its `node_id`, as "ProjectV2 status writes" explains.
 - Re-read only the mutated resource for safety. Do not rebuild the whole
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.

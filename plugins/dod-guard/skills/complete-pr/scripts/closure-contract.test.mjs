@@ -5,6 +5,16 @@ import { prose } from "../../../lib/skill-text.mjs";
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const standard = await readFile(new URL("../../../standards/project-workflow.md", import.meta.url), "utf8");
+const REST_ONLY_CLAIM = /REST reads only/;
+
+test("the standard names the closure snapshot's one GraphQL read", () => {
+  const reads = prose(
+    "That command makes GitHub REST reads plus the one read-only GraphQL read",
+    "resolves the explicitly linked Project",
+  );
+  assert.match(standard, reads);
+  assert.doesNotMatch(standard, REST_ONLY_CLAIM);
+});
 
 test("the standard defines both closure records once", () => {
   assert.equal(standard.match(/^## Closure records$/gm)?.length, 1);

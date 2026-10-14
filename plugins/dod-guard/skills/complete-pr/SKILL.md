@@ -208,7 +208,9 @@ node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <projec
 
 Each item ID may be the Project item's numeric REST id or its `PVTI_` global
 node id; the runner resolves either form to the same item and refuses two IDs
-that name one item.
+that name one item. Pass numeric ids: the runner reads them through the
+single-item endpoint, while a `PVTI_` id is found only through the items list,
+which can lag behind a newly added item.
 
 The runner resolves the live REST field and item IDs and reads each item back
 from the shared Project before continuing. For every code-backed child, verify
