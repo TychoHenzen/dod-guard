@@ -92,11 +92,10 @@ model tier from
 and answers planned questions. The main thread checks cheap-tier output before
 anything relies on it and reads back each stage's commit. A stage whose owner
 splits its work, such as `/review-pr`, runs on the strong stage agent, which
-dispatches those split rows itself. Every progress message starts with the local
-`[HH:MM]` time and shows `PBIs completed: P parent / C child`. That figure
-counts only the target repository's parent and child PBIs whose Project status
-reads Done, as select-next's `counts` report them, even when the linked Project
-spans several repositories.
+dispatches those split rows itself. The final report says how many parent and
+child PBIs reached Done. That figure counts only the target repository's parent
+and child PBIs whose Project status reads Done, as select-next's `counts` report
+them, even when the linked Project spans several repositories.
 
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:

@@ -133,7 +133,7 @@ test("goal-sdlc delegates to subagents, not user-visible threads", () => {
 test("goal-sdlc keeps one daily friction log and a strict stop", () => {
   assert.match(skill, prose("titled exactly `Friction log YYYY-MM-DD`"));
   assert.match(skill, prose("The queue holds today's log while it collects entries"));
-  assert.match(skill, prose("starts", "with `[HH:MM] Blocked:`"));
+  assert.match(skill, prose("starts", "with `Blocked:`"));
   assert.match(skill, prose("An empty Todo column with a non-empty Backlog is not", "an empty queue"));
   assert.match(skill, prose("three", "evidence-backed attempts"));
   assert.match(skill, /^- Re-read the issue before appending, and read it back after writing\.$/m);
