@@ -59,7 +59,7 @@ function selectNext(input, today) {
   const { groups, selected, counts, missingEvidence } = classifyQueue(snapshot, { today });
   const held = missingEvidence.length > 0 || groups.some(({ decision }) => decision.kind === "hold");
   return {
-    queueState: selected ? "ready" : (held ? "held" : "exhausted"),
+    queueState: selected ? "ready" : held ? "held" : "exhausted",
     selected: selected && {
       rootIssueNumber: selected.rootIssueNumber,
       status: selected.decision.status,

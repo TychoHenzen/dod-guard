@@ -3,12 +3,11 @@
 // in for a target record. It reads no provider and no clock: the caller passes the snapshot and the
 // local date.
 
-import { collectingFrictionLog } from "./friction-log.mjs";
 import {
   fieldValue,
   indexSnapshot,
-  isTargetReference,
   issueFor,
+  isTargetReference,
   itemFor,
   itemPullNumbers,
   itemStatus,
@@ -19,6 +18,7 @@ import {
   referenceRepository,
   relationReasons,
 } from "./closure-index.mjs";
+import { collectingFrictionLog } from "./friction-log.mjs";
 
 const OPEN_PULL_REQUEST = "open implementation pull request remains active";
 const ACTIVE_CHECKPOINT = "active implementation checkpoint remains";
