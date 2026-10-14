@@ -76,22 +76,22 @@ context-heavy work. Each stage runs in one fresh subagent as one step of
 proof, commit, and repair rules. A stage's split rows are dispatched by its
 owner, as `standards/model-routing.md` says. Each row runs at this tier:
 
-| Stage | Tier | Effort |
-|---|---|---|
-| Queue snapshot read | cheap | `max` |
-| Refinement: plan research questions | strong | `medium` |
-| Refinement: investigate code, callers, and tests | cheap | `max` |
-| Refinement: decide classification and criteria | strong | `medium` |
-| `/next-ticket`: implement one task | strong | `medium` |
-| `/next-ticket`: run validations and regenerate artifacts | cheap | `max` |
-| `/submit-draft-pr` | strong | `medium` |
-| `/review-pr`: plan | strong | `medium` |
-| `/review-pr`: investigate | cheap | `max` |
-| `/review-pr`: judge | strong | `medium` |
-| `/fix-pr-review` | strong | `medium` |
-| `/complete-pr`: guarded merge and Project finalization | strong | `medium` |
-| `/add-backlog-idea`, including the friction log | strong | `medium` |
-| Merge conflict on a PBI head | per `standards/conflict-triage.md` | per `standards/conflict-triage.md`; unresolvable conflicts stop and report, and a verified push re-enters at `/submit-draft-pr` |
+| Stage | Tier |
+|---|---|
+| Queue snapshot read | cheap |
+| Refinement: plan research questions | strong |
+| Refinement: investigate code, callers, and tests | cheap |
+| Refinement: decide classification and criteria | strong |
+| `/next-ticket`: implement one task | strong |
+| `/next-ticket`: run validations and regenerate artifacts | cheap |
+| `/submit-draft-pr` | strong |
+| `/review-pr`: plan | strong |
+| `/review-pr`: investigate | cheap |
+| `/review-pr`: judge | strong |
+| `/fix-pr-review` | strong |
+| `/complete-pr`: guarded merge and Project finalization | strong |
+| `/add-backlog-idea`, including the friction log | strong |
+| Merge conflict on a PBI head | per `standards/conflict-triage.md`; unresolvable conflicts stop and report, and a verified push re-enters at `/submit-draft-pr` |
 
 Dispatch each row as `standards/model-routing.md` says: pass its model and
 effort to the Agent call in Claude Code, or use the registered tier agent in

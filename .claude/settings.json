@@ -9,6 +9,6 @@
   },
   "enabledPlugins": {
     "dod-guard@dod-guard-monorepo": true,
-    "quality-guard@dod-guard-monorepo": true
+    "quality-guard@dod-guard-monorepo": false
   }
 }

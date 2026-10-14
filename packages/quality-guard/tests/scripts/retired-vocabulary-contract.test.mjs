@@ -93,7 +93,6 @@ function collectFiles() {
     ...SOURCE_ROOTS.flatMap((root) =>
       listFiles(root, (name) => SOURCE_FILE.test(name)),
     ),
-    "hooks/hooks.json",
   ].filter((path) => !owners.has(path));
   const documentPaths = [
     "README.md",

@@ -1,6 +1,6 @@
 {
   "name": "quality-guard",
-  "version": "0.6.0",
+  "version": "0.6.2",
   "description": "Advisory structural and plaintext quality diagnostics, report evidence, and guided refactoring.",
   "author": {
     "name": "tychohenzen",

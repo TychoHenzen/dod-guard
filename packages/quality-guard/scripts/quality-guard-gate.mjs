@@ -62,8 +62,9 @@ function continueGate(context) {
 export function gate(input, filePath, deps = {}) {
   const services = { ...DEFAULT_SERVICES, ...deps };
   const repoRoot = findRepoRoot(filePath);
-  if (!repoRoot)
-    return services.unavailable(filePath, "no Git repository root was found.");
+  // The hook runs after every Edit and Write. A file outside a Git repository
+  // gets no advisory, so scratch folders do not repeat "unavailable" text.
+  if (!repoRoot) return 0;
   const prepared = prepareGate({
     filePath,
     repoRoot,

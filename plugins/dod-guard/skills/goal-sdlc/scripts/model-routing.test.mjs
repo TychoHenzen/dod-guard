@@ -9,28 +9,40 @@ import { prose } from "../../../lib/skill-text.mjs";
 const pluginRoot = new URL("../../../", import.meta.url);
 const repositoryRoot = new URL("../../../../../", import.meta.url);
 
+// Each agent's frontmatter is the single source for its Claude Code effort and
+// for its Codex effort (`codex_effort`, falling back to `effort`). The model
+// tier and Codex model are fixed here; the efforts are read, not repeated.
 const TIER_AGENTS = [
-  { name: "stage-strong", model: "opus", effort: "medium", codex: "gpt-5.6-sol", sandbox: "workspace-write" },
-  { name: "stage-cheap", model: "haiku", effort: "max", codex: "gpt-5.6-luna", sandbox: "workspace-write" },
-  { name: "read-strong", model: "opus", effort: "medium", codex: "gpt-5.6-sol", sandbox: "read-only" },
-  { name: "read-cheap", model: "haiku", effort: "max", codex: "gpt-5.6-luna", sandbox: "read-only" },
+  { name: "stage-strong", model: "opus", codex: "gpt-5.6-sol", codexEffort: "medium", sandbox: "workspace-write" },
+  { name: "stage-cheap", model: "haiku", codex: "gpt-5.6-luna", codexEffort: "max", sandbox: "workspace-write" },
+  { name: "read-strong", model: "opus", codex: "gpt-5.6-sol", codexEffort: "medium", sandbox: "read-only" },
+  { name: "read-cheap", model: "haiku", codex: "gpt-5.6-luna", codexEffort: "max", sandbox: "read-only" },
 ];
+const EFFORT_LEVELS = new Set(["low", "medium", "high", "xhigh", "max"]);
 
 function line(key, value, separator) {
   return new RegExp(`^${key}${separator}${value}$`, "m");
+}
+
+function frontmatterValue(source, key) {
+  const match = source.match(new RegExp(`^${key}: (.+)$`, "m"));
+  return match ? match[1].trim() : undefined;
 }
 
 test("each tier agent pins its model and effort for Claude Code and Codex", async () => {
   for (const agent of TIER_AGENTS) {
     const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
     assert.match(source, line("model", agent.model, ": "), agent.name);
-    assert.match(source, line("effort", agent.effort, ": "), agent.name);
+    const effort = frontmatterValue(source, "effort");
+    assert.ok(EFFORT_LEVELS.has(effort), `${agent.name} effort must be a known level`);
+    const codexEffort = frontmatterValue(source, "codex_effort") ?? effort;
+    assert.equal(codexEffort, agent.codexEffort, agent.name);
     assert.ok(!source.includes("\r"), `${agent.name} must use LF line endings`);
 
     const tomlName = `dod_guard_${agent.name.replaceAll("-", "_")}.toml`;
     const toml = await readFile(new URL(`.codex/agents/${tomlName}`, repositoryRoot), "utf8");
     assert.match(toml, line("model", `"${agent.codex}"`, " = "), agent.name);
-    assert.match(toml, line("model_reasoning_effort", `"${agent.effort}"`, " = "), agent.name);
+    assert.match(toml, line("model_reasoning_effort", `"${agent.codexEffort}"`, " = "), agent.name);
     assert.match(toml, line("sandbox_mode", `"${agent.sandbox}"`, " = "), agent.name);
   }
 });
@@ -40,11 +52,11 @@ const standard = await readFile(new URL("standards/model-routing.md", pluginRoot
 test("the routing standard defines the tiers, runtime rules, and verification once", () => {
   for (const phrase of [
     "The strong tier is for judgement with modest reasoning effort",
-    "The cheap tier is for mechanical, high-volume work with high reasoning effort",
-    "| strong | `opus`, `medium` |",
-    "| cheap | `haiku`, `max` |",
-    "`gpt-5.6-sol`, `medium`",
-    "`gpt-5.6-luna`, `max`",
+    "The cheap tier is for mechanical, high-volume work:",
+    "| strong | `opus`; effort from frontmatter |",
+    "| cheap | `haiku`; effort from frontmatter |",
+    "`gpt-5.6-sol`; effort from frontmatter",
+    "`gpt-5.6-luna`; `codex_effort`",
     "the Agent call's `model` and `effort` override the agent's frontmatter",
     "spawn-time model and effort values can be ignored or capped",
     "A Codex stage is pinned only when it runs through a registered agent",

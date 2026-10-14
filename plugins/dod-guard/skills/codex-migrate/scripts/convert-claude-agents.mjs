@@ -72,7 +72,8 @@ function renderAgent(sourceName, parsed) {
   if (body.includes("'''")) throw new Error(`Agent body contains unsupported TOML delimiter: ${sourceName}`);
 
   const { label, writes, hasShell } = toolProfile(values.tools);
-  const effort = values.effort || "medium";
+  // codex_effort lets Codex keep a different effort than Claude Code's effort.
+  const effort = values.codex_effort || values.effort || "medium";
   const turnInstruction = values.maxTurns
     ? `Source compatibility: finish within ${values.maxTurns} agent turns.\n\n`
     : "";

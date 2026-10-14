@@ -155,10 +155,9 @@ const ROUTES = [
   ["`/complete-pr`: guarded merge and Project finalization", "strong"],
   ["`/add-backlog-idea`, including the friction log", "strong"],
 ];
-const EFFORT = { strong: "`medium`", cheap: "`max`" };
-
+// Effort is not repeated here: each tier agent's frontmatter owns it.
 function routingRows(text) {
-  const start = text.indexOf("| Stage | Tier | Effort |");
+  const start = text.indexOf("| Stage | Tier |");
   const end = text.indexOf("\n\n", start);
   return text
     .slice(start, end)
@@ -172,13 +171,12 @@ function routingRows(text) {
     );
 }
 
-test("goal-sdlc routes every stage to one tier with an explicit effort", () => {
+test("goal-sdlc routes every stage to one tier", () => {
   const rows = routingRows(skill);
   assert.deepEqual(rows, [
-    ...ROUTES.map(([stage, tier]) => [stage, tier, EFFORT[tier]]),
+    ...ROUTES.map(([stage, tier]) => [stage, tier]),
     [
       "Merge conflict on a PBI head",
-      "per `standards/conflict-triage.md`",
       "per `standards/conflict-triage.md`; unresolvable conflicts stop and report, " +
         "and a verified push re-enters at `/submit-draft-pr`",
     ],
