@@ -35,10 +35,11 @@ test("the hook emits advisory findings through the exit-0 JSON protocol", () => 
     encoding: "utf8",
   });
   assert.equal(externalResult.status, 0);
-  const externalContext = JSON.parse(externalResult.stdout).hookSpecificOutput;
-  assert.equal(externalContext.hookEventName, "PostToolUse");
-  assert.match(externalContext.additionalContext, /advisory unavailable/);
-  assert.match(externalContext.additionalContext, /no Git repository root/);
+  assert.equal(
+    externalResult.stdout.trim(),
+    "",
+    "a file outside a Git repository gets no advisory",
+  );
 
   const repository = resolve(directory, "repository");
   mkdirSync(resolve(repository, ".git"), { recursive: true });

@@ -58,6 +58,32 @@ Change one file.
   assert.deepEqual(await checkAgentOutputs(source, output), ["stale dod_guard_patch_writer.toml"]);
 });
 
+test("codex_effort overrides effort for Codex only", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "codex-agents-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const source = path.join(root, "agents");
+  const output = path.join(root, ".codex", "agents");
+  await mkdir(source, { recursive: true });
+  await writeFile(path.join(source, "cheap.md"), `---
+name: cheap-reader
+description: Read cheaply.
+model: haiku
+tools: Read, Grep, Glob
+effort: medium
+codex_effort: max
+---
+
+# Cheap reader
+
+Read.
+`);
+
+  assert.equal(await writeAgentOutputs(source, output), 1);
+  const cheap = await readFile(path.join(output, "dod_guard_cheap_reader.toml"), "utf8");
+  assert.match(cheap, /model_reasoning_effort = "max"/);
+  assert.doesNotMatch(cheap, /model_reasoning_effort = "medium"/);
+});
+
 test("an agent without a tools line inherits every tool and writes", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "codex-agents-"));
   t.after(() => rm(root, { recursive: true, force: true }));

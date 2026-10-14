@@ -3,7 +3,8 @@ name: stage-cheap
 description: Carry out one planned, mechanical lifecycle step on the cheap tier, such as applying a written plan, running validations, regenerating artifacts, or gathering bulk evidence, and return the evidence. Use when a main thread dispatches a bounded step whose decisions are already made.
 model: haiku
 tools: Read, Grep, Glob, Bash, Edit, Write
-effort: max
+effort: medium
+codex_effort: max
 ---
 
 # Cheap-tier stage worker

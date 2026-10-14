@@ -11,14 +11,19 @@ The strong tier is for judgement with modest reasoning effort: planning what to
 look for, deciding scope and acceptance, judging evidence into findings,
 drafting a pull request, remediation, and the guarded merge.
 
-The cheap tier is for mechanical, high-volume work with high reasoning effort:
+The cheap tier is for mechanical, high-volume work:
 applying a written plan, running validations, regenerating artifacts, and
 reading files to answer planned questions.
 
 | Tier | Claude Code `model`, `effort` | Codex agent file | Write-capable agent | Read-only agent |
 |---|---|---|---|---|
-| strong | `opus`, `medium` | `gpt-5.6-sol`, `medium` | `dod-guard:stage-strong` | `dod-guard:read-strong` |
-| cheap | `haiku`, `max` | `gpt-5.6-luna`, `max` | `dod-guard:stage-cheap` | `dod-guard:read-cheap` |
+| strong | `opus`; effort from frontmatter | `gpt-5.6-sol`; effort from frontmatter | `dod-guard:stage-strong` | `dod-guard:read-strong` |
+| cheap | `haiku`; effort from frontmatter | `gpt-5.6-luna`; `codex_effort` | `dod-guard:stage-cheap` | `dod-guard:read-cheap` |
+
+The tier agent's frontmatter is the single source for these values. Its
+`model` and `effort` are the Claude Code values. Its `codex_effort`, when set,
+is the Codex effort, and otherwise `effort` is used. The generated
+`.codex/agents` files carry the Codex values, so do not copy them elsewhere.
 
 A stage that changes files uses the write-capable agent. A stage that only
 plans, reads, or judges uses the read-only agent, or the stage owner's own
@@ -29,8 +34,8 @@ agent when it has one.
 The two runtimes resolve a requested model differently:
 
 - In Claude Code, the Agent call's `model` and `effort` override the agent's
-  frontmatter. Every routed Agent call therefore passes both values from the
-  tier, and the progress message names the stage, tier, model, and effort.
+  frontmatter. Every routed Agent call therefore passes both values, read from the
+  tier agent's frontmatter, and the progress message names the stage, tier, model, and effort.
 - In Codex, spawn-time model and effort values can be ignored or capped, and
   the values in a registered agent file take precedence. A Codex stage is
   pinned only when it runs through a registered agent whose
