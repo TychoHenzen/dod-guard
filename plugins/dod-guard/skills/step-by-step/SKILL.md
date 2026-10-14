@@ -42,7 +42,12 @@ For each step, in order:
    current branch, and prior completed steps.
 2. Dispatch one fresh subagent with only that checkpoint, applicable repository
    instructions, owned files/responsibility, and a prohibition on branches,
-   pull requests, worktrees, or unrelated edits.
+   pull requests, worktrees, or unrelated edits. The brief also tells the
+   worker, before it returns, to wait for every child it dispatched to reach a
+   terminal result, finish each named proof in the foreground, include each
+   named proof's final output and result in its report, and revert every
+   temporary probe or mutation the step introduced while preserving
+   pre-existing and unrelated work.
 3. Read the subagent result and inspect the changed state. Run the step's named
    proof before marking it complete.
 4. When the plan asks for a commit per step and the step changed tracked
@@ -63,6 +68,12 @@ same invocation, and retry only after explicit cancellation or confirmed
 session failure. Record the exact command and handle; cancel only the
 invocation-owned process or session when required, confirm it stopped, then
 give one fresh bounded repair task the failed step, error, and required proof.
+A subagent result that names a live child, a pending named proof, or a
+still-applied temporary probe is incomplete but is not a failed step, and the
+fresh repair task above does not apply to it: the main thread resumes that same
+worker at the current checkpoint, for example by messaging it to finish, and
+dispatches nothing else, including a replacement, until that worker returns a
+terminal result.
 Do not skip forward or restart completed steps. If repair cannot establish the step's
 acceptance condition, stop with the checkpoint and the precise missing evidence.
 

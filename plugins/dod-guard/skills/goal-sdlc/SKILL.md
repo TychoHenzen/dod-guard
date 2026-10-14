@@ -96,11 +96,13 @@ Dispatch each row as `standards/model-routing.md` says: pass its model and
 effort to the Agent call in Claude Code, or use the registered tier agent in
 Codex, and name the stage, tier, model, and effort in the progress message. A
 user's model or effort override is applied and recorded as that standard says.
-Verify cheap-tier output before anything relies on it, and read back the
-commit of any stage that changed tracked files before the next stage starts.
-
-Use the Agent tool in Claude Code and spawned agents in Codex. User-visible
-tasks or threads (`create_thread`, `fork_thread`, `send_message_to_thread`,
+Verify cheap-tier output before anything relies on it, and read back the commit
+of any stage that changed tracked files before the next stage starts. A stage
+report that names a live child, a pending named proof, or a still-applied
+temporary probe is incomplete: resume the same stage at its current checkpoint,
+and do not advance or launch a replacement stage. Use the Agent tool in Claude
+Code and spawned agents in Codex. User-visible tasks or threads
+(`create_thread`, `fork_thread`, `send_message_to_thread`,
 `codex://threads/...`) are not subagents. Retire a subagent before its context
 passes about 100,000 tokens and brief a fresh one with the compact checkpoint.
 

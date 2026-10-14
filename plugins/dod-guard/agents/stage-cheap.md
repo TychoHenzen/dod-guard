@@ -19,12 +19,17 @@ When the step needs a skill, a GitHub write, or an MCP connector, stop and
 report it as misrouted instead of working around it. That step belongs on
 `dod-guard:stage-strong` at the cheap tier.
 
-Run every validation the brief names in the foreground and wait for it to
-finish before you return. Leave your changes in the working tree, and stage
+Finish every named proof in the foreground before you return: run every
+validation the brief names in the foreground and wait for it to finish. Leave
+your changes in the working tree, and stage
 them only when the brief says to stage. The main thread commits and pushes
 after it verifies your work, so you never commit or push. Instead of opening
 or changing a pull request, changing issue or Project state, or creating a
 branch or worktree, report the need.
+
+Before you return, remove every temporary mutation or probe this stage
+introduced, and leave pre-existing and unrelated user work unchanged: never
+stash, reset, or revert work you did not introduce.
 
 Use these workarounds for known tool failures:
 
@@ -41,6 +46,7 @@ Use these workarounds for known tool failures:
 - Run `gh api --slurp` without `--jq`, and filter its output in a separate
   step instead.
 
-Return the commands you ran with their exit status, the files you changed, and
+Return each named proof with its final output and result, not merely its
+command, exit status, or a pending state, along with the files you changed and
 the staged state. Report results as observed. The main thread verifies them
 before anything relies on them.
