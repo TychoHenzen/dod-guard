@@ -54,7 +54,8 @@ function formValues(args, prefix) {
 
 // The answer gh gives for a REST 422: the body on stdout and exit 1.
 function unprocessable(message) {
-  return commandResult({ message, status: "422" }, 1, `gh: ${message} (HTTP 422)`);
+  const stderr = `gh: ${message} (HTTP 422)`;
+  return commandResult({ message, status: "422" }, 1, stderr);
 }
 
 // The live API rejected the content_id/content_type shape with a 422, so the

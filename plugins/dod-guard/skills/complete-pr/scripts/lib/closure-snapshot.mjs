@@ -163,6 +163,8 @@ function projectRead(work) {
   }
 }
 
+const EXPECTED_ONE_PROJECT = "expected exactly one open linked Project, found";
+
 // The open Project explicitly linked to the repository, by the same rule and
 // read as step 3. A read failure the runner threw passes through unchanged so
 // it is named once; a contract failure or a count other than one is a read
@@ -182,7 +184,7 @@ function snapshotProject(read, repository) {
   }
   if (resolution.outcome !== "resolved") {
     const found = describeLinkedProjects(resolution.projects);
-    throw readFailure(LINKED_PROJECT_READ, `expected exactly one open linked Project, found ${found}`);
+    throw readFailure(LINKED_PROJECT_READ, `${EXPECTED_ONE_PROJECT} ${found}`);
   }
   const [project] = resolution.projects;
   return { basePath: project.basePath, project };

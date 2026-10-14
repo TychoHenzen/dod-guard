@@ -19,11 +19,13 @@ const PROJECT_PAGE_SIZE = 100;
 const PROJECT_ITEM_READ_ATTEMPTS = 3;
 const PROJECT_ITEM_RETRY_DELAY_MS = 250;
 const GH_ACCEPTED_API_FAILURE = [0, 1];
+const NODE_ID_REMEDY = "Pass its numeric item id instead; the items list can lag behind a newly added item.";
 
 // writeProjectStatuses is synchronous for closure apply and the CLI, so the
 // wait between reads blocks.
 function blockingSleep(milliseconds) {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT)), 0, 0, milliseconds);
+  const bytes = Int32Array.BYTES_PER_ELEMENT;
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(bytes)), 0, 0, milliseconds);
 }
 
 function requireText(value, name) {
@@ -75,7 +77,8 @@ function buildProjectItemListCommand(owner, projectNumber, statusFieldId) {
   ];
 }
 
-function buildProjectItemReadCommand({ owner, projectNumber, itemId, statusFieldId }) {
+function buildProjectItemReadCommand(target) {
+  const { owner, projectNumber, itemId, statusFieldId } = target;
   const item = `users/${owner}/projectsV2/${projectNumber}/items/${itemId}`;
   return ["api", `${item}?fields=${statusFieldId}`];
 }
@@ -198,11 +201,10 @@ function readProjectItemStatus(item, itemId, statusFieldId) {
   return name;
 }
 
-function readProjectItems({ owner, projectNumber, statusFieldId, commandRunner }) {
-  const items = parseArrayResponse(
-    commandRunner(buildProjectItemListCommand(owner, projectNumber, statusFieldId)),
-    "Project item readback",
-  );
+function readProjectItems(listRead) {
+  const { owner, projectNumber, statusFieldId, commandRunner } = listRead;
+  const command = buildProjectItemListCommand(owner, projectNumber, statusFieldId);
+  const items = parseArrayResponse(commandRunner(command), "Project item readback");
   return validateProjectItems(items);
 }
 
@@ -216,15 +218,14 @@ function missingItemError(itemId) {
   if (isNumericItemId(itemId)) {
     return new Error(`Project item ${itemId} was missing from readback.`);
   }
-  return new Error(
-    `Project item ${itemId} was missing from readback. Pass its numeric item id instead; ` +
-      "the items list can lag behind a newly added item.",
-  );
+  const missing = `Project item ${itemId} was missing from readback.`;
+  return new Error(`${missing} ${NODE_ID_REMEDY}`);
 }
 
 function readFailure(result, itemId) {
   const text = result?.stderr?.trim() || result?.stdout?.trim();
-  return new Error(text || `Project item ${itemId} read exited with ${result?.status}.`);
+  const exited = `Project item ${itemId} read exited with ${result?.status}.`;
+  return new Error(text || exited);
 }
 
 // Returns null only when every bounded read answered 404; any other failure
@@ -380,11 +381,13 @@ function writeProjectStatuses({
     sleep,
     itemIds,
   });
-  const resolvedItems = resolveProjectItemInputs(itemIds, restStatusFieldId, reads.resolveTarget);
+  const { resolveTarget } = reads;
+  const fieldId = restStatusFieldId;
+  const resolved = resolveProjectItemInputs(itemIds, fieldId, resolveTarget);
   const mutations = [];
 
   for (const itemId of itemIds) {
-    const { identity, status: initialStatus } = resolvedItems.get(itemId);
+    const { identity, status: initialStatus } = resolved.get(itemId);
     if (initialStatus === expectedStatus) {
       mutations.push({ itemId, status: expectedStatus });
       continue;

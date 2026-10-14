@@ -30,7 +30,8 @@ const DUPLICATE_ADD_ITEM = /Content already exists in this project \(HTTP 422\)/
 // Any GraphQL except the documented linked-Project read, which is the one
 // exception the standard allows.
 function isRoutineGraphql(args) {
-  return args.some((value) => GRAPHQL.test(String(value))) && !isLinkedProjectRead(args);
+  const graphql = args.some((value) => GRAPHQL.test(String(value)));
+  return graphql && !isLinkedProjectRead(args);
 }
 
 function runRest(transport, args) {
@@ -456,8 +457,10 @@ test("reuses automatically-created Project items and skips an already-applied st
 });
 
 test("rejects the content_id and content_type add-item shape the live API refused", () => {
-  const transport = createRecordingTransport({ existingIssueNumbers: [PARENT_NUMBER] });
-  const issueId = runRest(transport, ["api", `repos/${REPOSITORY}/issues/${PARENT_NUMBER}`]).id;
+  const existing = { existingIssueNumbers: [PARENT_NUMBER] };
+  const transport = createRecordingTransport(existing);
+  const issuePath = `repos/${REPOSITORY}/issues/${PARENT_NUMBER}`;
+  const issueId = runRest(transport, ["api", issuePath]).id;
   const addItem = (...fields) =>
     transport.commandRunner([
       "api",
@@ -481,7 +484,8 @@ test("rejects the content_id and content_type add-item shape the live API refuse
   assert.equal(transport.projectItems.size, 1);
   // A repeated add answers 422 Content already exists, which the standard reads
   // back as success.
-  assert.match(addItem("-f", "type=Issue", "-F", `id=${issueId}`).stderr, DUPLICATE_ADD_ITEM);
+  const repeated = addItem("-f", "type=Issue", "-F", `id=${issueId}`);
+  assert.match(repeated.stderr, DUPLICATE_ADD_ITEM);
   assert.equal(transport.projectItems.size, 1);
 });
 
@@ -595,13 +599,11 @@ test("fails closed on missing, contradictory, and forbidden lifecycle evidence",
     FORBIDDEN_GRAPHQL,
   );
   const documented = linkedProjectReadArgs(REPOSITORY);
-  assert.throws(
-    () => transport.commandRunner([...documented.slice(0, 3), "query=mutation { x }", ...documented.slice(4)]),
-    FORBIDDEN_GRAPHQL,
-  );
+  assert.throws(() => transport.commandRunner(documented.with(3, "query=mutation { x }")), FORBIDDEN_GRAPHQL);
   const linked = runRest(transport, documented);
+  const { nodes } = linked.data.repository.projectsV2;
   assert.deepEqual(
-    linked.data.repository.projectsV2.nodes.map(({ number, closed }) => ({ number, closed })),
+    nodes.map(({ number, closed }) => ({ number, closed })),
     [{ number: PROJECT_NUMBER, closed: false }],
   );
 });

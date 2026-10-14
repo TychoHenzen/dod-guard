@@ -121,32 +121,32 @@ test("shares the global ProjectV2 resolution and sequential readback contract", 
 const STALE_ITEM_IDS = /global item and Status-field ids/;
 const STALE_ITEM_READ = /REST Project items endpoint/;
 const SINGLE_ITEM_PATH = "`users/{owner}/projectsV2/{number}/items/{id}`";
+const SINGLE_ITEM = "single-item endpoint";
+const ITEM_ID = "Pass each item's numeric REST item `id`";
+const ITEM_ID_SOURCE = "(from the add response or the membership read)";
+const NOT_NODE_ID = "numeric REST `id`, not its `node_id`";
+const NODE_ID_LIST = "A `PVTI_` global node id can only be found through";
 
-test("status writes pass numeric item ids, read back one item at a time", async () => {
+test("status writes pass numeric item ids", async () => {
   const section = sectionOf(standard, "## ProjectV2 status writes", "\n## ");
-  const numericId = prose("Pass each item's numeric REST item `id`", "(from the add response or the membership read)");
-  assert.match(section, numericId);
+  assert.match(section, prose(ITEM_ID, ITEM_ID_SOURCE));
   const singleItem = prose(
     "reads a numeric item id through the single-item endpoint",
     SINGLE_ITEM_PATH,
     "within its bounded attempts",
   );
   assert.match(section, singleItem);
-  const nodeId = prose(
-    "A `PVTI_` global node id can only be found through the items list",
-    "which can",
-    "lag behind a newly added item",
-  );
+  const lag = "lag behind a newly added item";
+  const nodeId = prose(`${NODE_ID_LIST} the items list`, "which can", lag);
   assert.match(section, nodeId);
   assert.doesNotMatch(section, STALE_ITEM_IDS);
   assert.doesNotMatch(section, STALE_ITEM_READ);
   const writePlan = sectionOf(standard, "## Write plan", "\n## ");
-  const writePlanId = prose("Pass the Project item's", "numeric REST `id`, not its `node_id`");
-  assert.match(writePlan, writePlanId);
-  const skillId = prose("Pass numeric ids: the runner reads them through the", "single-item endpoint");
+  assert.match(writePlan, prose("Pass the Project item's", NOT_NODE_ID));
+  const skillId = prose("Pass numeric ids: the runner reads them", SINGLE_ITEM);
   assert.match(skill, skillId);
-  const nextTicketId = prose("Pass the numeric id: the runner reads", "single-item endpoint");
-  assert.match(await readSkill("next-ticket"), nextTicketId);
+  const ticketId = prose("Pass the numeric id: the runner reads", SINGLE_ITEM);
+  assert.match(await readSkill("next-ticket"), ticketId);
 });
 
 const LINKED_PROJECT_COMMAND =
