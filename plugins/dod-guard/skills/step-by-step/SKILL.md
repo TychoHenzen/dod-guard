@@ -69,10 +69,11 @@ session failure. Record the exact command and handle; cancel only the
 invocation-owned process or session when required, confirm it stopped, then
 give one fresh bounded repair task the failed step, error, and required proof.
 A subagent result that names a live child, a pending named proof, or a
-still-applied temporary probe is not a failed or incomplete step either and gets
-no fresh repair task: the main thread resumes that same worker at the current
-checkpoint, for example by messaging it to finish, and dispatches nothing else,
-including a replacement, until that worker returns a terminal result.
+still-applied temporary probe is incomplete but is not a failed step, and the
+fresh repair task above does not apply to it: the main thread resumes that same
+worker at the current checkpoint, for example by messaging it to finish, and
+dispatches nothing else, including a replacement, until that worker returns a
+terminal result.
 Do not skip forward or restart completed steps. If repair cannot establish the step's
 acceptance condition, stop with the checkpoint and the precise missing evidence.
 

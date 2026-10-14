@@ -68,8 +68,8 @@ test("a report naming unfinished owned work resumes that same worker instead of 
     repair,
     prose(
       "names a live child, a pending named proof, or a still-applied temporary probe",
-      "is not a failed or incomplete step",
-      "no fresh repair task",
+      "is incomplete but is not a failed step",
+      "the fresh repair task above does not apply to it",
       "resumes that same worker at the current checkpoint",
       "dispatches nothing else",
       "including a replacement",
