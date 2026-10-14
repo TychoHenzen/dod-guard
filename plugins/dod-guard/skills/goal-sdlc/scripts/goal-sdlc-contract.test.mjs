@@ -137,7 +137,8 @@ test("goal-sdlc resumes a stage whose report admits unfinished work", () => {
   assert.match(
     delegation,
     prose(
-      "A stage report that names a live child, a pending named proof, or a still-applied temporary probe is incomplete:",
+      "A stage report that names a live child, a pending named proof, " +
+        "or a still-applied temporary probe is incomplete:",
       "resume the same stage at its current checkpoint,",
       "and do not advance or launch a replacement stage.",
     ),
