@@ -38,8 +38,10 @@ boundaries in this skill win.
 
 Resolve the repository, its linked Project, and the `Todo` and `In Progress`
 statuses as described under "Resolve the repository and Project" in
-`standards/github-request-discipline.md`. Report the Project's owner, number,
-and title, then use it for ticket lookup.
+`standards/github-request-discipline.md`. For the Project, run
+`node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`
+and stop on outcome `none` or `several` or on exit 2. Report the Project's
+owner, number, and title, then use it for ticket lookup.
 
 ## Select a ticket
 

@@ -204,15 +204,18 @@ one.
 
 ## 5. Resolve one linked GitHub Project and common labels
 
-Query the repository's linked Project through the typed connector or the REST
-ProjectsV2 endpoints. Request project id, number, title, closed state, owner
-login, fields, and single-select options. Keep only open projects explicitly
-linked to this repository.
+Resolve the open Project explicitly linked to this repository with
+`node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`,
+then branch on its outcome:
 
-- More than one open linked Project: stop and list each owner, number, and title.
-- One open linked Project: preserve it and merge the required status options.
-- No open linked Project: create one under the resolved repository owner and link it with
-  `gh project link`.
+- `several` (exit 1): stop and list each owner, number, and title from its `projects`.
+- `resolved` (exit 0): preserve that Project and merge the required status options.
+- `none` (exit 1): create one under the resolved repository owner, link it with
+  `gh project link`, and rerun the command as the readback; it must report `resolved`.
+- Exit 2: stop with its message.
+
+Read the resolved Project's fields and single-select options through the typed connector or
+the REST ProjectsV2 field endpoints.
 
 The final Project must contain exactly one `Status` field and exactly one case-insensitive option for
 each of `Backlog`, `Todo`, `In Progress`, and `Done`.

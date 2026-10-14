@@ -118,6 +118,84 @@ test("shares the global ProjectV2 resolution and sequential readback contract", 
   assert.match(standard, /skills\/complete-pr\/scripts\/project-status\.mjs/);
 });
 
+const LINKED_PROJECT_COMMAND =
+  "node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>";
+
+const THREE_EXCEPTIONS = /three exceptions/;
+const STOP_SKILLS = ["add-backlog-idea", "refine-backlog-item", "next-ticket", "submit-draft-pr"];
+
+// Slicing by heading makes each pin prove where the text sits, not only that it exists somewhere.
+function sectionOf(text, start, end) {
+  const from = text.indexOf(start);
+  let to = text.length;
+  if (end !== undefined) {
+    to = text.indexOf(end, from);
+  }
+  if (from === -1 || to === -1) {
+    throw new Error(`missing section ${start} .. ${end}`);
+  }
+  return text.slice(from, to);
+}
+
+function readSkill(name) {
+  return readFile(new URL(`../../${name}/SKILL.md`, import.meta.url), "utf8");
+}
+
+test("standard step 3 names the linked-Project command and each outcome", () => {
+  const step3 = sectionOf(standard, "3. Project:", "4. Status:");
+  assert.ok(step3.includes(LINKED_PROJECT_COMMAND));
+  assert.match(step3, prose("Use the typed connector when it exposes that link", "Both read the same explicit link"));
+  assert.match(
+    step3,
+    prose("exit 0 is outcome `resolved`", "`ownerLogin`, `ownerType`", "`number`, `title`, and `id`"),
+  );
+  assert.match(step3, prose("exit 1 is outcome `none` or `several`", "owner, number, and title"));
+  assert.match(step3, prose("exit 2 is a usage, read, or response failure", "allows no other read in its place"));
+  assert.match(step3, prose("With `none`, stop and explain that an administrator must link a Project"));
+  assert.match(step3, prose("With `several`, stop and list each owner, number, and title; never pick one by name."));
+  assert.match(step3, prose("This explicit link is the only supported repository-to-Project mapping"));
+});
+
+test("both GraphQL exception lists name the linked-Project read as the fourth exception", () => {
+  const transport = sectionOf(standard, "## Transport decision", "\n## ");
+  const fallback = sectionOf(standard, "## CLI fallback");
+  assert.match(transport, prose("The fourth exception is the linked-Project read of step 3"));
+  assert.match(transport, prose("All four exceptions preserve redacted transport evidence"));
+  assert.doesNotMatch(standard, THREE_EXCEPTIONS);
+  for (const section of [transport, fallback]) {
+    assert.match(
+      section,
+      prose(
+        "one read-only `repository.projectsV2` query made by `skills/complete-pr/scripts/linked-project.mjs`",
+        "because REST has no endpoint for a repository's explicit Project link",
+      ),
+    );
+  }
+});
+
+test("the five Project-resolving skills name the linked-Project command", async () => {
+  const names = [...STOP_SKILLS, "setup-repository"];
+  const texts = await Promise.all(names.map(readSkill));
+  names.forEach((name, index) => {
+    assert.ok(texts[index].includes(LINKED_PROJECT_COMMAND), name);
+    if (STOP_SKILLS.includes(name)) {
+      assert.match(texts[index], prose("stop on outcome `none` or `several` or on exit 2"), name);
+    }
+  });
+});
+
+test("setup-repository branches on each linked-Project outcome", async () => {
+  const step5 = sectionOf(await readSkill("setup-repository"), "## 5. Resolve one linked GitHub Project", "\n## 6.");
+  assert.ok(step5.includes(LINKED_PROJECT_COMMAND));
+  assert.match(step5, prose("`several` (exit 1): stop and list each owner, number, and title"));
+  assert.match(step5, prose("`resolved` (exit 0): preserve that Project"));
+  assert.match(
+    step5,
+    prose("`none` (exit 1): create one", "link it with `gh project link`", "rerun the command as the readback"),
+  );
+  assert.match(step5, prose("Exit 2: stop with its message."));
+});
+
 test("finalization relies on executable functional convergence proof", () => {
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
   const passing = proof.evaluateConvergence(validConvergenceInput());

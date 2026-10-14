@@ -6,6 +6,7 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
+import { classifyOpenProjects } from "../../../lib/linked-project.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -345,12 +346,12 @@ export function assessGitHubSnapshot(snapshot) {
 
   const projects = Array.isArray(snapshot.projects) ? snapshot.projects : [];
   if (!Array.isArray(snapshot.projects)) blockers.push("linked Project snapshot is missing or malformed");
-  const openProjects = projects.filter((project) => project && project.closed === false);
-  if (openProjects.length !== 1) {
+  const { outcome, open: openProjects } = classifyOpenProjects(projects);
+  if (outcome !== "resolved") {
     blockers.push(`expected exactly one open linked Project, found ${openProjects.length}`);
   }
 
-  if (openProjects.length === 1) {
+  if (outcome === "resolved") {
     const options = Array.isArray(openProjects[0].statusOptions) ? openProjects[0].statusOptions : [];
     if (!Array.isArray(openProjects[0].statusOptions)) {
       blockers.push("linked Project status options are missing or malformed");

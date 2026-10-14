@@ -145,12 +145,19 @@ function outcomeOf(count) {
   return "several";
 }
 
+// The count rule, shared with callers that already hold a list of linked Projects (setup-repository's
+// protection snapshot). Only an entry whose closed flag is exactly false counts as open, so a
+// malformed entry can never be the one that makes a list "resolved".
+function classifyOpenProjects(entries) {
+  const open = entries.filter((entry) => entry?.closed === false);
+  return { outcome: outcomeOf(open.length), open };
+}
+
 // Every node is checked, closed ones included, before closed Projects are dropped, so a malformed
 // entry stops the read wherever it sits.
 function classifyLinkedProjects(response) {
-  const nodes = connectionOf(response).nodes.map(projectOf);
-  const projects = nodes.filter(({ closed }) => !closed).map(({ project }) => project);
-  return { outcome: outcomeOf(projects.length), projects };
+  const { outcome, open } = classifyOpenProjects(connectionOf(response).nodes.map(projectOf));
+  return { outcome, projects: open.map(({ project }) => project) };
 }
 
 // "none", or the count and numbers, for the stop text the closure snapshot keeps.
@@ -199,6 +206,7 @@ function resolveLinkedProject(repository, runner) {
 
 export {
   classifyLinkedProjects,
+  classifyOpenProjects,
   describeLinkedProjects,
   isLinkedProjectRead,
   LINKED_PROJECT_QUERY,

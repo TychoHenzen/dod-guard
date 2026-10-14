@@ -51,7 +51,10 @@ feature.
 3. For the selected target, resolve access, the linked Project, and its
    `Backlog` status as described under "Resolve the repository and Project" in
    `standards/github-request-discipline.md`. For a supplied or chosen target,
-   pass it to `gh repo view <target>`.
+   pass it to `gh repo view <target>`. For the Project, run
+   `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`
+   with the target's `nameWithOwner`, and stop on outcome `none` or `several`
+   or on exit 2.
 
 ## Create the idea
 

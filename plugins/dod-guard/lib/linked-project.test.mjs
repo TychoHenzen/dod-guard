@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   classifyLinkedProjects,
+  classifyOpenProjects,
   describeLinkedProjects,
   isLinkedProjectRead,
   LINKED_PROJECT_QUERY,
@@ -134,6 +135,17 @@ test("no open link is none, and two open links are several", () => {
     several.projects.map(({ number }) => number),
     [2, 5],
   );
+});
+
+test("classifyOpenProjects counts only entries whose closed flag is exactly false", () => {
+  const open = { closed: false, title: "Open" };
+  assert.deepEqual(classifyOpenProjects([]), { outcome: "none", open: [] });
+  assert.deepEqual(classifyOpenProjects([{ closed: true }, { closed: undefined }, null]), {
+    outcome: "none",
+    open: [],
+  });
+  assert.deepEqual(classifyOpenProjects([open, { closed: true }]), { outcome: "resolved", open: [open] });
+  assert.equal(classifyOpenProjects([open, { closed: false }]).outcome, "several");
 });
 
 test("describeLinkedProjects gives the stop text the closure snapshot keeps", () => {

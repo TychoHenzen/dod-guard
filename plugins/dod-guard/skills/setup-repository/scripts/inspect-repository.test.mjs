@@ -347,6 +347,33 @@ test("blocks ambiguous linked Project state", () => {
   assert.equal(assessment.protectionPayload, null);
 });
 
+test("applies the shared linked-Project count rule to zero, one, and two open Projects", () => {
+  const statusOptions = ["Backlog", "Todo", "In Progress", "Done"];
+  const checks = [{ name: "test", conclusion: "SUCCESS" }];
+  const assess = (projects) => assessGitHubSnapshot({ projects, checks });
+  const projectBlocker = (assessment) => assessment.blockers.find((blocker) => blocker.includes("linked Project"));
+
+  for (const projects of [[], [{ closed: true, statusOptions }]]) {
+    const none = assess(projects);
+    assert.equal(none.readyForProtection, false);
+    assert.equal(projectBlocker(none), "expected exactly one open linked Project, found 0");
+  }
+
+  const one = assess([
+    { closed: false, statusOptions },
+    { closed: true, statusOptions },
+  ]);
+  assert.equal(one.readyForProtection, true);
+  assert.equal(projectBlocker(one), undefined);
+
+  const two = assess([
+    { closed: false, statusOptions },
+    { closed: false, statusOptions },
+  ]);
+  assert.equal(two.readyForProtection, false);
+  assert.equal(projectBlocker(two), "expected exactly one open linked Project, found 2");
+});
+
 test("blocks protection after a failed check", () => {
   const assessment = assessGitHubSnapshot({
     projects: [{ closed: false, statusOptions: ["Backlog", "Todo", "In Progress", "Done"] }],
