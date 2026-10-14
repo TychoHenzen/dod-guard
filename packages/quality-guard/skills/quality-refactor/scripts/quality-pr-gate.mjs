@@ -49,14 +49,14 @@ function git(args, cwd) {
   return result.stdout;
 }
 
-export function changedFiles(base, cwd) {
+function changedFiles(base, cwd) {
   return git(["diff", "--name-only", "--diff-filter=ACMR", `${base}...HEAD`], cwd)
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 }
 
-export function scanViolations(options, cwd) {
+function scanViolations(options, cwd) {
   const args = [
     SCAN,
     ...options.roots,
@@ -71,7 +71,7 @@ export function scanViolations(options, cwd) {
   return JSON.parse(result.stdout).violations ?? [];
 }
 
-export function main(argv, { cwd = process.cwd(), out = process.stdout, err = process.stderr } = {}) {
+function main(argv, { cwd = process.cwd(), out = process.stdout, err = process.stderr } = {}) {
   const options = parseArgs(argv);
   if (options.error) {
     err.write(`quality-pr-gate: ${options.error}\n`);

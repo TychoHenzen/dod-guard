@@ -20,8 +20,8 @@ files the pull request changed. It does not persist a quality decision.
 
 The scanner lives with the skill, not in `src/`, because it must run with no
 build step and no dependencies. The gate and the server both reach into it
-rather than reimplementing it. No package path creates or consumes stored
-acceptance state.
+rather than reimplementing it. No package path creates or consumes
+stored acceptance state.
 
 ## Supported contracts
 
@@ -71,8 +71,8 @@ cannot enter the shipped `dist/` bundle or skill paths.
 Structural, test-quality, coverage, audit, and readability results are
 diagnostic evidence. They should be current and understandable. Only the
 pull-request gate turns a result into a check, and only for high-severity
-findings in files the pull request changed. Do not create or consume stored
-acceptance state as part of this package.
+findings in files the pull request changed. Do not create or consume
+stored acceptance state as part of this package.
 
 Correctness still matters. Build and test failures, plugin configuration,
 workflow validation, lockfile drift, generated-file drift, bundle and package
