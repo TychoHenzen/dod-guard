@@ -60,3 +60,20 @@ test("every dispatch brief carries the terminal-wait, proof, and cleanup rules",
     assert.match(dispatch, prose(rule), rule);
   }
 });
+
+// A generic "incomplete step" repair once launched a replacement beside a worker that was still running.
+test("a report naming unfinished owned work resumes that same worker instead of repairing", () => {
+  const repair = skill.slice(skill.indexOf("## Failures and repair"), skill.indexOf("## Finish"));
+  assert.match(
+    repair,
+    prose(
+      "names a live child, a pending named proof, or a still-applied temporary probe",
+      "is not a failed or incomplete step",
+      "no fresh repair task",
+      "resumes that same worker at the current checkpoint",
+      "dispatches nothing else",
+      "including a replacement",
+      "until that worker returns a terminal result",
+    ),
+  );
+});
