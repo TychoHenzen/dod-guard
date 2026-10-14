@@ -163,7 +163,7 @@ function recordedDelivery(pendingRows = []) {
   });
   const pull = { number: 836, repository: REPOSITORY };
   const input = snapshot();
-  input.items.push(item(831, "Done", null, [pull]), item(832, "Done", { repository: REPOSITORY, number: 831 }));
+  input.items.push(item(831, "Done", null, [pull]), item(832, "Done", { repository: REPOSITORY, number: 831 }, [pull]));
   input.issues.push(
     issue(831, {
       state: "closed",

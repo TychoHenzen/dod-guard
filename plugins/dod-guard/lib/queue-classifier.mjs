@@ -194,7 +194,13 @@ function mergedDecision(reasons) {
 // is merged, so the reasons keep the order they have always had.
 function groupEvidence(records, context) {
   const { reasons, uniqueStatuses } = recordReasons(records);
-  const pullRequests = records.flatMap(({ pullRequests: linked }) => linked ?? []);
+  const pullRequests = [
+    ...new Map(
+      records
+        .flatMap(({ pullRequests: linked }) => linked ?? [])
+        .map((pullRequest) => [qualifiedKey(pullRequest.repository, pullRequest.number), pullRequest]),
+    ).values(),
+  ];
   reasons.push(...pullRequestReasons(pullRequests));
   const merged = pullRequests.filter(mergedPullRequest);
   if (merged.length > 0) {
@@ -254,6 +260,7 @@ function pullRequestRecords(index, item, overlay) {
     .map((number) => ({ number, pull: pullFor(index, number) }))
     .filter(({ pull }) => pull !== null)
     .map(({ number, pull }) => ({
+      repository: index.repository,
       number,
       state: pull.state,
       mergedAt: pull.mergedAt ?? null,
