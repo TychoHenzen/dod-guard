@@ -233,6 +233,30 @@ test("without a date an otherwise eligible group holds as local date missing", (
   assert.deepEqual(groupOf(result, 517).decision.reasons, ["local date missing"]);
 });
 
+test("closed issues without a verified merge hold every unmerged queue state", () => {
+  for (const status of ["Todo", "Backlog", "In Progress"]) {
+    const input = snapshot({ items: [item(866, status)], issues: [issue(866, { state: "closed" })] });
+    const result = classify(input);
+    assert.equal(result.selected, null);
+    assert.deepEqual(groupOf(result, 866).decision, {
+      kind: "hold",
+      eligible: false,
+      reasons: ["issue #866 is closed without a verified merged delivery"],
+    });
+  }
+});
+
+test("a closed current friction log keeps both hold reasons", () => {
+  const input = snapshot({
+    items: [item(866, "Backlog")],
+    issues: [issue(866, { state: "closed", title: `Friction log ${TODAY}` })],
+  });
+  assert.deepEqual(groupOf(classify(input), 866).decision.reasons, [
+    "friction log still collecting entries",
+    "issue #866 is closed without a verified merged delivery",
+  ]);
+});
+
 test("the classifier reads no clock and no network while it classifies", () => {
   const originalDate = globalThis.Date;
   const originalFetch = globalThis.fetch;
