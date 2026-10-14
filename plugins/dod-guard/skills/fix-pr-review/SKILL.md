@@ -29,8 +29,6 @@ boundaries in this skill win.
 - Do not add compatibility paths, speculative abstractions, or unrelated cleanup.
 - Do not approve, mark ready, merge, or close the parent PBI.
 - Reply to or resolve a finding only after its fix commit is pushed.
-- Reply once per finding. When the thread already has a reply that names a
-  pushed fix commit, resolve it without replying again.
 
 The skill directory is `${CLAUDE_PLUGIN_ROOT}/skills/fix-pr-review` in Claude
 Code and the directory containing this `SKILL.md` in Codex.
