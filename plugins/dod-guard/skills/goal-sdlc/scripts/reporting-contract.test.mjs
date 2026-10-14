@@ -15,15 +15,16 @@ const SCOPE =
   "only the target repository's parent and child PBIs whose Project status reads Done, as select-next's `counts` " +
   "report them, even when the linked Project spans several repositories.";
 
-test("goal-sdlc reports the time and parent and child completions", () => {
-  assert.match(skill, prose("Start every progress message with the local `[HH:MM]` time from the clock."));
+// Fixed per-message templates made reports unreadable to the owner, so progress
+// messages are free-form and only the final report carries the count.
+test("goal-sdlc reports parent and child completions only in the final report", () => {
+  assert.match(reporting, prose("Progress messages have no fixed format."));
   assert.match(
     reporting,
-    prose(
-      `Every progress message and the final report carry \`PBIs completed: P parent / C child\`, counting ${SCOPE}`,
-    ),
+    prose(`The final report says how many parent and child PBIs reached Done, counting ${SCOPE}`),
   );
-  assert.match(skill, prose("Otherwise update `PBIs completed: P parent / C child`"));
+  assert.doesNotMatch(skill, /\[HH:MM\]/);
+  assert.doesNotMatch(skill, /PBIs completed/);
   assert.match(
     skill,
     prose(
@@ -31,13 +32,11 @@ test("goal-sdlc reports the time and parent and child completions", () => {
       "go to `/submit-draft-pr` for the new head, not to the completion owner.",
     ),
   );
-  assert.doesNotMatch(skill, /PBIs completed: N/);
   for (const phrase of [
     "on a model tier from `standards/model-routing.md`",
     "the strong tier (Opus, `gpt-5.6-sol` in Codex) plans, decides, and judges",
     "the cheap tier (Haiku, `gpt-5.6-luna` in Codex)",
-    "starts with the local `[HH:MM]` time",
-    `\`PBIs completed: P parent / C child\`. That figure counts ${SCOPE}`,
+    `The final report says how many parent and child PBIs reached Done. That figure counts ${SCOPE}`,
   ]) {
     assert.match(usage, prose(phrase), phrase);
   }

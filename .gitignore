@@ -82,3 +82,6 @@ openspec/changes/archive/
 *.stackdump
 # scripts/ci/check-coverage.mjs writes its advisory output here during preflight:static-analysis
 .coverage-advisory-*/
+
+# Acceptance-matrix scratch files that /complete-pr runs write to the repo root
+.tmp-complete-pr-*.json
