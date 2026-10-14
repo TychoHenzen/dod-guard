@@ -1,12 +1,16 @@
-// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
+// biome-ignore lint/correctness/noNodejsModules: A Node test file.
 import assert from "node:assert/strict";
-// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
+// biome-ignore lint/correctness/noNodejsModules: A Node test file.
 import test from "node:test";
 import { isLinkedProjectRead } from "../../../lib/linked-project.mjs";
+import { linkedProjectNode, linkedProjectsReply } from "./lib/closure-snapshot.test-support.mjs";
 import { runGh } from "./lib/gh-runner.mjs";
 import { runCli } from "./linked-project.mjs";
 
+const node = linkedProjectNode;
+const reply = linkedProjectsReply;
 const REPOSITORY = "TychoHenzen/dod-guard";
+const REPOSITORY_ARG = `--repository=${REPOSITORY}`;
 const WRITE_OR_MUTATION = /mutation|--method/;
 const REST_PROJECTS_READ = /^(?:users|orgs|repos)\/.*projectsV2/;
 const FAILURE_PREFIX = /^linked-project failed: graphql repository\.projectsV2: /;
@@ -17,50 +21,45 @@ const RETURNED_ERRORS = /returned errors: Could not resolve/;
 const NO_REPOSITORY = /named no repository/;
 const MALFORMED_NODE = /malformed Project node/;
 const INCOMPLETE = /is incomplete/;
+const ALL_REPOSITORIES = "All Repositories";
+const TITLED = { ...node(2), title: ALL_REPOSITORIES };
+const OWNER = {
+  ownerLogin: "TychoHenzen",
+  ownerType: "User",
+  basePath: "users/TychoHenzen",
+};
+const NOT_LOGGED_IN = "gh: To get started with GitHub CLI, please run: gh auth login";
+const MISSING_REPOSITORY = "gh: Could not resolve to a Repository with the name 'TychoHenzen/missing'.";
 
-// The node shape the live read returned for TychoHenzen/dod-guard on 2026-10-14.
-function node(number, { closed = false, title = `Project ${number}`, typename = "User", login = "TychoHenzen" } = {}) {
-  return { id: `PVT_${number}`, number, title, closed, owner: { __typename: typename, login } };
-}
-
-function graphqlReply(nodes, { hasNextPage = false } = {}) {
-  return {
-    status: 0,
-    stderr: "",
-    stdout: JSON.stringify({ data: { repository: { projectsV2: { nodes, pageInfo: { hasNextPage } } } } }),
-  };
-}
-
-// Answers the first call from reply and fails the test on any later call, so a fallback read cannot
-// pass unnoticed. Exit codes are honored the way the shared runGh honors them.
-function oneReadRunner(reply) {
+// Answers the first call from reply and fails the test on any later call, so
+// a fallback read cannot pass unnoticed. Exit codes are honored the way the
+// shared runGh honors them.
+function oneReadRunner(answer) {
   const calls = [];
   const runner = (args, acceptedExitCodes = [0]) => {
     calls.push(args);
     if (calls.length > 1) {
       throw new Error(`second call ${args.join(" ")}`);
     }
-    return runGh(args, acceptedExitCodes, () => reply);
+    return runGh(args, acceptedExitCodes, () => answer);
   };
   return { calls, runner };
 }
 
-function run(argv, reply) {
-  const { calls, runner } = oneReadRunner(reply);
+function sink(text, key) {
+  return {
+    write: (chunk) => {
+      text[key] += chunk;
+    },
+  };
+}
+
+function run(argv, answer) {
+  const { calls, runner } = oneReadRunner(answer);
   const text = { out: "", err: "" };
-  const code = runCli(argv, {
-    runner,
-    stdout: {
-      write: (chunk) => {
-        text.out += chunk;
-      },
-    },
-    stderr: {
-      write: (chunk) => {
-        text.err += chunk;
-      },
-    },
-  });
+  const stdout = sink(text, "out");
+  const stderr = sink(text, "err");
+  const code = runCli(argv, { runner, stdout, stderr });
   return { code, calls, ...text };
 }
 
@@ -69,50 +68,42 @@ function assertOneDocumentedRead(calls) {
   assert.equal(isLinkedProjectRead(calls[0]), true, calls[0].join(" "));
   const text = calls[0].join(" ");
   assert.doesNotMatch(text, WRITE_OR_MUTATION);
-  assert.ok(!calls[0].some((arg) => REST_PROJECTS_READ.test(arg)), "a REST projectsV2 read");
+  const restRead = calls[0].some((arg) => REST_PROJECTS_READ.test(arg));
+  assert.ok(!restRead, "a REST projectsV2 read");
 }
 
 test("R1: one open linked Project prints resolved with every Project field and exits 0", () => {
-  const result = run(
-    [`--repository=${REPOSITORY}`],
-    graphqlReply([node(2, { title: "All Repositories" }), node(7, { closed: true })]),
-  );
+  const nodes = [TITLED, node(7, { closed: true })];
+  const result = run([REPOSITORY_ARG], reply(nodes));
   assert.equal(result.code, 0, result.err);
   assert.deepEqual(JSON.parse(result.out), {
     outcome: "resolved",
     repository: REPOSITORY,
-    project: {
-      ownerLogin: "TychoHenzen",
-      ownerType: "User",
-      basePath: "users/TychoHenzen",
-      number: 2,
-      title: "All Repositories",
-      id: "PVT_2",
-    },
+    project: { ...OWNER, number: 2, title: ALL_REPOSITORIES, id: "PVT_2" },
   });
   assertOneDocumentedRead(result.calls);
 });
 
 test("R2: zero open links, or only closed ones, print none and exit 1", () => {
+  const none = { outcome: "none", repository: REPOSITORY, projects: [] };
   for (const nodes of [[], [node(3, { closed: true })]]) {
-    const result = run([`--repository=${REPOSITORY}`], graphqlReply(nodes));
+    const result = run([REPOSITORY_ARG], reply(nodes));
     assert.equal(result.code, 1, result.err);
-    assert.deepEqual(JSON.parse(result.out), { outcome: "none", repository: REPOSITORY, projects: [] });
+    assert.deepEqual(JSON.parse(result.out), none);
     assertOneDocumentedRead(result.calls);
   }
 });
 
 test("R2: two open links print several with each owner, number, and title, and exit 1", () => {
-  const result = run(
-    [`--repository=${REPOSITORY}`],
-    graphqlReply([node(2, { title: "All Repositories" }), node(4, { typename: "Organization", login: "acme" })]),
-  );
+  const acme = { typename: "Organization", login: "acme" };
+  const nodes = [TITLED, node(4, acme)];
+  const result = run([REPOSITORY_ARG], reply(nodes));
   assert.equal(result.code, 1, result.err);
   assert.deepEqual(JSON.parse(result.out), {
     outcome: "several",
     repository: REPOSITORY,
     projects: [
-      { ownerLogin: "TychoHenzen", number: 2, title: "All Repositories" },
+      { ownerLogin: "TychoHenzen", number: 2, title: ALL_REPOSITORIES },
       { ownerLogin: "acme", number: 4, title: "Project 4" },
     ],
   });
@@ -122,22 +113,24 @@ test("R2: two open links print several with each owner, number, and title, and e
 test("R2: a gh failure, GraphQL errors, a null repository, a malformed node, or a further page exit 2", () => {
   const graphqlErrors = {
     status: 1,
-    stderr: "gh: Could not resolve to a Repository with the name 'TychoHenzen/missing'.",
+    stderr: MISSING_REPOSITORY,
     stdout: JSON.stringify({
       data: { repository: null },
       errors: [{ type: "NOT_FOUND", message: "Could not resolve" }],
     }),
   };
+  const nullRepository = JSON.stringify({ data: { repository: null } });
+  const ownerless = { ...node(2), owner: { __typename: "User" } };
   const cases = [
-    [{ status: 4, stderr: "gh: To get started with GitHub CLI, please run: gh auth login", stdout: "" }, GH_FAILED],
+    [{ status: 4, stderr: NOT_LOGGED_IN, stdout: "" }, GH_FAILED],
     [{ status: 1, stderr: "gh: HTTP 502", stdout: "" }, GH_502],
     [graphqlErrors, RETURNED_ERRORS],
-    [{ status: 0, stderr: "", stdout: JSON.stringify({ data: { repository: null } }) }, NO_REPOSITORY],
-    [graphqlReply([{ ...node(2), owner: { __typename: "User" } }]), MALFORMED_NODE],
-    [graphqlReply([node(2)], { hasNextPage: true }), INCOMPLETE],
+    [{ status: 0, stderr: "", stdout: nullRepository }, NO_REPOSITORY],
+    [reply([ownerless]), MALFORMED_NODE],
+    [reply([node(2)], { hasNextPage: true }), INCOMPLETE],
   ];
-  for (const [reply, message] of cases) {
-    const result = run([`--repository=${REPOSITORY}`], reply);
+  for (const [answer, message] of cases) {
+    const result = run([REPOSITORY_ARG], answer);
     assert.equal(result.code, 2, result.err);
     assert.equal(result.out, "");
     assert.match(result.err, FAILURE_PREFIX);
@@ -152,9 +145,9 @@ test("a missing, malformed, or extra flag is a usage error with no read", () => 
     ["--repository=not-a-repository"],
     ["--repository"],
     [REPOSITORY],
-    [`--repository=${REPOSITORY}`, "--fallback=membership"],
+    [REPOSITORY_ARG, "--fallback=membership"],
   ]) {
-    const result = run(argv, graphqlReply([node(2)]));
+    const result = run(argv, reply([node(2)]));
     assert.equal(result.code, 2, argv.join(" "));
     assert.match(result.err, USAGE_LINE);
     assert.deepEqual(result.calls, []);

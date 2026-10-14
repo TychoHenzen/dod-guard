@@ -52,6 +52,33 @@ function formValues(args, prefix) {
     .map((value) => value.slice(prefix.length));
 }
 
+// The answer gh gives for a REST 422: the body on stdout and exit 1.
+function unprocessable(message) {
+  return commandResult({ message, status: "422" }, 1, `gh: ${message} (HTTP 422)`);
+}
+
+// The live API rejected the content_id/content_type shape with a 422, so the
+// fixture accepts only type with an id.
+function isLiveAddItemShape(args) {
+  const [type] = formValues(args, "type=");
+  const legacy = formValues(args, "content_").length > 0;
+  return !legacy && ["Issue", "PullRequest"].includes(type);
+}
+
+// The repository's one open explicit link, as the linked-Project read returns
+// it.
+function linkedProjectReply() {
+  const project = {
+    id: PROJECT_NODE_ID,
+    number: PROJECT_NUMBER,
+    title: "Disposable lifecycle Project",
+    closed: false,
+    owner: { __typename: "User", login: OWNER },
+  };
+  const projectsV2 = { nodes: [project], pageInfo: { hasNextPage: false } };
+  return { data: { repository: { projectsV2 } } };
+}
+
 export function createRecordingTransport({
   missingProjectItem,
   contradictoryStatus = false,
@@ -132,26 +159,9 @@ export function createRecordingTransport({
 
   function run(args) {
     calls.push([...args]);
-    // The documented linked-Project read is the one GraphQL request a lifecycle may make.
+    // The documented linked-Project read is the one GraphQL a lifecycle makes.
     if (isLinkedProjectRead(args)) {
-      return commandResult({
-        data: {
-          repository: {
-            projectsV2: {
-              nodes: [
-                {
-                  id: PROJECT_NODE_ID,
-                  number: PROJECT_NUMBER,
-                  title: "Disposable lifecycle Project",
-                  closed: false,
-                  owner: { __typename: "User", login: OWNER },
-                },
-              ],
-              pageInfo: { hasNextPage: false },
-            },
-          },
-        },
-      });
+      return commandResult(linkedProjectReply());
     }
     if (args.some((value) => /graphql/i.test(String(value)))) {
       throw new Error("Forbidden routine GraphQL request.");
@@ -280,17 +290,14 @@ export function createRecordingTransport({
       ]);
     }
     if (endpoint === projectItemsEndpoint && method === "POST") {
-      // The live API rejected the content_id/content_type shape with a 422, so the fixture must too.
-      const [type] = formValues(args, "type=");
-      if (formValues(args, "content_").length > 0 || !["Issue", "PullRequest"].includes(type)) {
-        return commandResult({ message: "Validation Failed", status: "422" }, 1, "gh: Validation Failed (HTTP 422)");
+      if (!isLiveAddItemShape(args)) {
+        return unprocessable("Validation Failed");
       }
       const issueId = Number(formValues(args, "id=")[0]);
       const issue = [...issues.values()].find((candidate) => candidate.id === issueId);
       if (!issue) throw new Error(`Unknown project item issue ${issueId}.`);
       if (projectItems.has(issue.number)) {
-        const message = "Content already exists in this project";
-        return commandResult({ message, status: "422" }, 1, `gh: ${message} (HTTP 422)`);
+        return unprocessable("Content already exists in this project");
       }
       const item = createProjectItem(issue);
       projectItems.set(issue.number, item);

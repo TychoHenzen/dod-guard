@@ -80,7 +80,8 @@ function valuePages() {
   ];
 }
 
-// The repository's explicit links. Project 3 is closed, so it is dropped before counting and never read.
+// The repository's explicit links. Project 3 is closed, so it is dropped before
+// counting and never read.
 const LINKED = [linkedProjectNode(2), linkedProjectNode(3, { closed: true })];
 
 function setStatus(pages, nodeId, value) {
@@ -208,7 +209,8 @@ function fixtureRoutes(variant = "healthy") {
   if (variant === "no-parent-field") {
     routes[ENDPOINT.fields(2)] = ok(fieldPages({ withParent: false }));
   }
-  // The repository's items may sit in a Project, but without an open explicit link it has none.
+  // The repository's items may sit in a Project, but without an open explicit
+  // link it has none.
   if (variant === "no-linked-project") {
     routes[ENDPOINT.linkedProjects] = linkedProjectsReply([linkedProjectNode(3, { closed: true })]);
   }
@@ -527,7 +529,8 @@ function methodsOf(args) {
 test("AC-05: every read is a GET except the one linked-Project read, and only the reads the counts require are made", () => {
   const { runner, calls } = fakeRest(fixtureRoutes());
   buildClosureSnapshot({ repository: REPO, runner });
-  // gh api graphql always posts its query, so the documented read-only query is the one exemption.
+  // gh api graphql always posts its query, so the documented read-only query is
+  // the one exemption.
   assert.equal(calls.filter(isLinkedProjectRead).length, 1);
   for (const args of calls.filter((call) => !isLinkedProjectRead(call))) {
     assert.equal(args[0], "api", args.join(" "));

@@ -27,7 +27,8 @@ const FORBIDDEN_GRAPHQL = /Forbidden routine GraphQL request/;
 const ADD_ITEM_VALIDATION_FAILURE = /Validation Failed \(HTTP 422\)/;
 const DUPLICATE_ADD_ITEM = /Content already exists in this project \(HTTP 422\)/;
 
-// Any GraphQL except the documented linked-Project read, which is the one exception the standard allows.
+// Any GraphQL except the documented linked-Project read, which is the one
+// exception the standard allows.
 function isRoutineGraphql(args) {
   return args.some((value) => GRAPHQL.test(String(value))) && !isLinkedProjectRead(args);
 }
@@ -478,7 +479,8 @@ test("rejects the content_id and content_type add-item shape the live API refuse
 
   assert.equal(addItem("-f", "type=Issue", "-F", `id=${issueId}`).status, 0);
   assert.equal(transport.projectItems.size, 1);
-  // A repeated add answers 422 Content already exists, which the standard reads back as success.
+  // A repeated add answers 422 Content already exists, which the standard reads
+  // back as success.
   assert.match(addItem("-f", "type=Issue", "-F", `id=${issueId}`).stderr, DUPLICATE_ADD_ITEM);
   assert.equal(transport.projectItems.size, 1);
 });

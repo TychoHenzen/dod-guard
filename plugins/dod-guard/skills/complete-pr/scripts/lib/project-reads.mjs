@@ -1,9 +1,10 @@
-// Every REST read of a GitHub Project that complete-pr's scripts make: the owned-Project listing, the
-// open-Project loop, the Status-value flattener, and the issue-item resolver built on them.
-// readIssueProjectStatuses wants the open Project holding exactly one item for one issue and stops on
-// an item it cannot place. Which Project a repository is linked to is a different rule, read from the
-// explicit link by plugins/dod-guard/lib/linked-project.mjs. Every read goes through an injected
-// runner in gh-runner's convention.
+// Every REST read of a GitHub Project that complete-pr's scripts make: the
+// owned-Project listing, the open-Project loop, the Status-value flattener, and
+// the issue-item resolver built on them. readIssueProjectStatuses wants the
+// open Project holding exactly one item for one issue and stops on an item it
+// cannot place. Which Project a repository is linked to is a different rule,
+// read from the explicit link by plugins/dod-guard/lib/linked-project.mjs.
+// Every read goes through an injected runner in gh-runner's convention.
 import { API_REPOSITORY_URL, isRepositoryName, urlRepository } from "../../../../lib/repository-identity.mjs";
 import { ghJson, ghJsonArrayPages, githubResponseContractError, githubResponseError } from "./gh-runner.mjs";
 
@@ -13,8 +14,8 @@ const PROJECT_REPOSITORY_IDENTITY_KEYS = ["full_name", "fullName"];
 const PROJECT_ITEM_IDENTITY_JQ =
   ".[] | {id: .id, node_id: .node_id, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
 
-// gh reports a REST 404 only in stderr, with the same exit code as every other API failure, so a
-// caller that reads a 404 as absence has to look there.
+// gh reports a REST 404 only in stderr, with the same exit code as every other
+// API failure, so a caller that reads a 404 as absence has to look there.
 export function isNotFoundResult(result) {
   return HTTP_NOT_FOUND.test(String(result?.stderr ?? ""));
 }
@@ -133,8 +134,9 @@ function listOwnedProjects(owner, commandRunner) {
   };
 }
 
-// checkEntry runs on every listed Project, closed ones included, so a malformed entry stops the read
-// wherever it is; visit runs on each open one, in listing order.
+// checkEntry runs on every listed Project, closed ones included, so a malformed
+// entry stops the read wherever it is; visit runs on each open one, in listing
+// order.
 function forEachOpenProject(projects, checkEntry, visit) {
   for (const project of projects) {
     checkEntry(project);

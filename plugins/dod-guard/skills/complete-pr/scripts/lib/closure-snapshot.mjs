@@ -1,8 +1,9 @@
-// The closure snapshot that standards/project-workflow.md defines, built from GitHub REST GET
-// requests plus the one read-only GraphQL read that resolves the linked Project, which REST cannot
-// read. Every read goes through one injected runner in gh-runner's convention, so the tests answer
-// the same calls from fixtures. The shaping functions take data already read and return snapshot
-// records; nothing here writes to GitHub.
+// The closure snapshot that standards/project-workflow.md defines, built from
+// GitHub REST GET requests plus the one read-only GraphQL read that resolves
+// the linked Project, which REST cannot read. Every read goes through one
+// injected runner in gh-runner's convention, so the tests answer the same calls
+// from fixtures. The shaping functions take data already read and return
+// snapshot records; nothing here writes to GitHub.
 // biome-ignore lint/correctness/noNodejsModules: This shipped command writes the snapshot file.
 import { renameSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command reads its process id for the partial file.
@@ -84,7 +85,8 @@ function namesRepository(url) {
   return urlRepository(url, API_REPOSITORY_URL) !== null || urlRepository(url, API_ISSUE_URL) !== null;
 }
 
-// The GraphQL read carries its whole query as an argument, so it is named by its read instead.
+// The GraphQL read carries its whole query as an argument, so it is named by
+// its read instead.
 function endpointOf(args) {
   if (isLinkedProjectRead(args)) {
     return LINKED_PROJECT_READ;
@@ -161,9 +163,10 @@ function projectRead(work) {
   }
 }
 
-// The open Project explicitly linked to the repository, by the same rule and read as step 3. A read
-// failure the runner threw passes through unchanged so it is named once; a contract failure or a
-// count other than one is a read failure of the GraphQL read.
+// The open Project explicitly linked to the repository, by the same rule and
+// read as step 3. A read failure the runner threw passes through unchanged so
+// it is named once; a contract failure or a count other than one is a read
+// failure of the GraphQL read.
 function snapshotProject(read, repository) {
   let resolution;
   try {
@@ -589,15 +592,21 @@ function pullRequestRecords(targets, repository, read, endpoint) {
   return [...records.values()];
 }
 
+// ASSUMPTION: project.owner stays the repository owner, as before, while
+// basePath comes from the Project owner the link names. They are the same
+// login on every live repository today, and closure apply hands this field to
+// project-status.mjs, which builds users/<owner> paths from it, so changing
+// it belongs to its own change.
+function projectRecord(repositoryName, project, fields) {
+  const [owner] = repositoryName.split("/");
+  const { statusFieldId, doneOptionId } = fields;
+  return { owner, number: project.number, statusFieldId, doneOptionId };
+}
+
 // Builds the snapshot for one repository. Every read goes through the runner and nothing is written.
 export function buildClosureSnapshot({ repository, runner }) {
   const read = guardedRunner(runner);
   const repo = readRepository(read, repository);
-  // ASSUMPTION: project.owner stays the repository owner, as before, while basePath comes from the
-  // Project owner the link names. They are the same login on every live repository today, and
-  // closure apply hands this field to project-status.mjs, which builds users/<owner> paths from it, so
-  // changing it belongs to its own change.
-  const [owner] = repo.fullName.split("/");
   const { basePath, project } = snapshotProject(read, repo.fullName);
   const fields = projectFields(read, basePath, project.number);
   const itemsEndpoint = `${basePath}/projectsV2/${project.number}/items?per_page=100&fields=${fields.fieldIds.join(",")}`;
@@ -613,12 +622,7 @@ export function buildClosureSnapshot({ repository, runner }) {
   return {
     repository: repo.fullName,
     defaultBranch: repo.defaultBranch,
-    project: {
-      owner,
-      number: project.number,
-      statusFieldId: fields.statusFieldId,
-      doneOptionId: fields.doneOptionId,
-    },
+    project: projectRecord(repo.fullName, project, fields),
     items: shaped.map(({ item }) => item),
     issues,
     pullRequests: pullRequestRecords(targets, repo.fullName, read, itemsEndpoint),

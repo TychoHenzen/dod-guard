@@ -339,8 +339,9 @@ function argValue(args, prefix) {
   return args.find((value) => String(value).startsWith(prefix))?.slice(prefix.length);
 }
 
-// The base routes of a linked-Project fixture: the repository, its one open explicit link, and the
-// fields and values reads of that Project over the given item pages.
+// The base routes of a linked-Project fixture: the repository, its one open
+// explicit link, and the fields and values reads of that Project over the given
+// item pages.
 function projectRoutes(pages) {
   return {
     [ENDPOINT.repository]: ok({ full_name: REPOSITORY, default_branch: "master" }),

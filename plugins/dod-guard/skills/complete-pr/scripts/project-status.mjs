@@ -11,14 +11,17 @@ import { isNotFoundResult, statusValueName } from "./lib/project-reads.mjs";
 const PROJECT_NODE_ID = /^PVT_[A-Za-z0-9]+$/;
 const NUMERIC_ITEM_ID = /^\d+$/;
 const PROJECT_PAGE_SIZE = 100;
-// The single-item endpoint can answer 404 for a moment after an item is added, so a 404 is read
-// again. The attempt count is the bound; the delay only spaces the reads out.
-// ASSUMPTION: 3 reads with 250 ms then 500 ms between them covers that lag (issue #869, C6).
+// The single-item endpoint can answer 404 for a moment after an item is added,
+// so a 404 is read again. The attempt count is the bound; the delay only spaces
+// the reads out.
+// ASSUMPTION: 3 reads with 250 ms then 500 ms between them covers that lag
+// (issue #869, C6).
 const PROJECT_ITEM_READ_ATTEMPTS = 3;
 const PROJECT_ITEM_RETRY_DELAY_MS = 250;
 const GH_ACCEPTED_API_FAILURE = [0, 1];
 
-// writeProjectStatuses is synchronous for closure apply and the CLI, so the wait between reads blocks.
+// writeProjectStatuses is synchronous for closure apply and the CLI, so the
+// wait between reads blocks.
 function blockingSleep(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT)), 0, 0, milliseconds);
 }
@@ -72,8 +75,9 @@ function buildProjectItemListCommand(owner, projectNumber, statusFieldId) {
   ];
 }
 
-function buildProjectItemReadCommand(owner, projectNumber, itemId, statusFieldId) {
-  return ["api", `users/${owner}/projectsV2/${projectNumber}/items/${itemId}?fields=${statusFieldId}`];
+function buildProjectItemReadCommand({ owner, projectNumber, itemId, statusFieldId }) {
+  const item = `users/${owner}/projectsV2/${projectNumber}/items/${itemId}`;
+  return ["api", `${item}?fields=${statusFieldId}`];
 }
 
 function buildProjectItemEditCommand({ owner, projectNumber, itemId, statusFieldId, statusOptionId }) {
@@ -206,8 +210,8 @@ function isNumericItemId(itemId) {
   return NUMERIC_ITEM_ID.test(itemId);
 }
 
-// A node id can only be found through the items list, which lags behind a newly added item, so the
-// stop names the input that avoids the list.
+// A node id can only be found through the items list, which lags behind a newly
+// added item, so the stop names the input that avoids the list.
 function missingItemError(itemId) {
   if (isNumericItemId(itemId)) {
     return new Error(`Project item ${itemId} was missing from readback.`);
@@ -218,10 +222,15 @@ function missingItemError(itemId) {
   );
 }
 
-// Returns null only when every bounded read answered 404; any other failure stops at once, because
-// only a 404 is the known lag.
-function readSingleProjectItem({ owner, projectNumber, statusFieldId, itemId, commandRunner, sleep }) {
-  const command = buildProjectItemReadCommand(owner, projectNumber, itemId, statusFieldId);
+function readFailure(result, itemId) {
+  const text = result?.stderr?.trim() || result?.stdout?.trim();
+  return new Error(text || `Project item ${itemId} read exited with ${result?.status}.`);
+}
+
+// Returns null only when every bounded read answered 404; any other failure
+// stops at once, because only a 404 is the known lag.
+function readSingleProjectItem({ commandRunner, sleep, ...target }) {
+  const command = buildProjectItemReadCommand(target);
   for (let attempt = 1; attempt <= PROJECT_ITEM_READ_ATTEMPTS; attempt += 1) {
     if (attempt > 1) {
       sleep(PROJECT_ITEM_RETRY_DELAY_MS * (attempt - 1));
@@ -233,11 +242,7 @@ function readSingleProjectItem({ owner, projectNumber, statusFieldId, itemId, co
       return item;
     }
     if (!isNotFoundResult(result)) {
-      throw new Error(
-        result?.stderr?.trim() ||
-          result?.stdout?.trim() ||
-          `Project item ${itemId} read exited with ${result?.status}.`,
-      );
+      throw readFailure(result, target.itemId);
     }
   }
   return null;
@@ -291,37 +296,44 @@ function findReadbackProjectItem(items, itemId, identity) {
   return item;
 }
 
-// A numeric input is read through the single-item endpoint, which sees a new item before the list
-// does. A node id can only be found in the list, and one list page can reach megabytes, so a run with
-// numeric inputs alone never reads it.
+// A numeric input is read through the single-item endpoint, which sees a new
+// item before the list does. A node id can only be found in the list, and one
+// list page can reach megabytes, so a run with numeric inputs alone never reads
+// it.
 function projectItemReads({ itemIds, sleep, ...listRead }) {
   const readSingle = (itemId) => readSingleProjectItem({ ...listRead, itemId, sleep });
   let listItems = [];
   if (!itemIds.every(isNumericItemId)) {
     listItems = readProjectItems(listRead);
   }
+  const reads = { listItems, listRead, readSingle };
   return {
-    resolveTarget(itemId) {
-      if (!isNumericItemId(itemId)) {
-        return findProjectItem(listItems, itemId);
-      }
-      const item = readSingle(itemId);
-      if (item === null) {
-        return null;
-      }
-      return findProjectItem([item], itemId);
-    },
-    readBack(itemId, identity) {
-      if (!isNumericItemId(itemId)) {
-        return findReadbackProjectItem(readProjectItems(listRead), itemId, identity);
-      }
-      const item = readSingle(identity.id);
-      if (item === null) {
-        throw missingItemError(itemId);
-      }
-      return findReadbackProjectItem([item], itemId, identity);
-    },
+    resolveTarget: (itemId) => resolveReadTarget(reads, itemId),
+    readBack: (itemId, identity) => readBackItem(reads, itemId, identity),
   };
+}
+
+function resolveReadTarget({ listItems, readSingle }, itemId) {
+  if (!isNumericItemId(itemId)) {
+    return findProjectItem(listItems, itemId);
+  }
+  const item = readSingle(itemId);
+  if (item === null) {
+    return null;
+  }
+  return findProjectItem([item], itemId);
+}
+
+function readBackItem({ listRead, readSingle }, itemId, identity) {
+  if (!isNumericItemId(itemId)) {
+    const listed = readProjectItems(listRead);
+    return findReadbackProjectItem(listed, itemId, identity);
+  }
+  const item = readSingle(identity.id);
+  if (item === null) {
+    throw missingItemError(itemId);
+  }
+  return findReadbackProjectItem([item], itemId, identity);
 }
 
 function writeProjectStatuses({
