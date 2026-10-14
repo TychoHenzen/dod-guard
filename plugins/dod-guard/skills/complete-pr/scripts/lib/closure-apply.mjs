@@ -67,10 +67,7 @@ function closeIssue(runner, repository, number, stateReason) {
 function requireProject(project) {
   const complete = project && ["owner", "number", "statusFieldId", "doneOptionId"].every((key) => project[key]);
   if (!complete) {
-    throw new ClosureStop(
-      "snapshot.project needs owner, number, statusFieldId, and doneOptionId",
-      { applied: [] },
-    );
+    throw new ClosureStop("snapshot.project needs owner, number, statusFieldId, and doneOptionId", { applied: [] });
   }
   return project;
 }
@@ -81,10 +78,14 @@ function requireProject(project) {
 function confirmRoot(runner, repository, close) {
   const { record, error } = parseCompletionRecord(readComments(runner, repository, close.root));
   const pull = gh(runner, ["api", `repos/${repository}/pulls/${close.pullRequest}`]);
-  const same = record && record.pullRequest === close.pullRequest && record.mergeCommit === close.mergeCommit &&
-    record.trustedHeadSha === close.trustedHeadSha && record.pendingRows.length === 0;
-  const live = pull?.merged_at && pull.merge_commit_sha === close.mergeCommit &&
-    pull.head?.sha === close.trustedHeadSha;
+  const same =
+    record &&
+    record.pullRequest === close.pullRequest &&
+    record.mergeCommit === close.mergeCommit &&
+    record.trustedHeadSha === close.trustedHeadSha &&
+    record.pendingRows.length === 0;
+  const live =
+    pull?.merged_at && pull.merge_commit_sha === close.mergeCommit && pull.head?.sha === close.trustedHeadSha;
   if (!(same && live)) {
     throw new ClosureStop(`root #${close.root} no longer verifies (${error ?? "record or pull request changed"})`, {
       issue: close.issue,
@@ -183,8 +184,11 @@ function applyClosures(snapshot, { runner, ...options }) {
 }
 
 function requireMergeResult(result) {
-  const valid = Number.isInteger(result?.pullNumber) && FULL_SHA.test(result?.trustedHead ?? "") &&
-    FULL_SHA.test(result?.mergeCommitSha ?? "") && Array.isArray(result?.linkedIssues);
+  const valid =
+    Number.isInteger(result?.pullNumber) &&
+    FULL_SHA.test(result?.trustedHead ?? "") &&
+    FULL_SHA.test(result?.mergeCommitSha ?? "") &&
+    Array.isArray(result?.linkedIssues);
   if (!valid) throw new ClosureStop("merge result needs pullNumber, trustedHead, mergeCommitSha, and linkedIssues", {});
   return result;
 }

@@ -30,12 +30,18 @@ function normalizeRecord(record) {
 
 function normalizeEvent(record) {
   const isUser = record.type === "event_msg" && record.payload?.type === "user_message";
-  return isUser ? [{ type: "user", timestamp: record.timestamp, message: { content: record.payload.message } }] : [record];
+  return isUser
+    ? [{ type: "user", timestamp: record.timestamp, message: { content: record.payload.message } }]
+    : [record];
 }
 
 function normalizeResponse(record) {
   const payload = record.payload ?? {};
-  const handlers = { message: normalizeMessage, custom_tool_call: normalizeToolCall, custom_tool_call_output: normalizeToolOutput };
+  const handlers = {
+    message: normalizeMessage,
+    custom_tool_call: normalizeToolCall,
+    custom_tool_call_output: normalizeToolOutput,
+  };
   return handlers[payload.type]?.(record, payload) ?? [];
 }
 
@@ -46,8 +52,18 @@ function normalizeMessage(record, payload) {
 
 function normalizeToolCall(record, payload) {
   let input = payload.input;
-  try { input = JSON.parse(input); } catch { /* retain raw input */ }
-  return [{ type: "assistant", timestamp: record.timestamp, message: { content: [{ type: "tool_use", name: payload.name, input }] } }];
+  try {
+    input = JSON.parse(input);
+  } catch {
+    /* retain raw input */
+  }
+  return [
+    {
+      type: "assistant",
+      timestamp: record.timestamp,
+      message: { content: [{ type: "tool_use", name: payload.name, input }] },
+    },
+  ];
 }
 
 function normalizeToolOutput(record, payload) {

@@ -43,13 +43,8 @@ test("decodes Git's quoted and TAB-terminated diff paths", () => {
     "+++ b/sp ace.md\t",
     "+++ /dev/null",
   ];
-  const diff = sides
-    .flatMap((side) => [side, "@@ -0,0 +1 @@", "+x"])
-    .join("\n");
-  assert.deepEqual(
-    [...parseChangedLines(diff).keys()],
-    ["docs x/p & ü.md", 'quote"d\\back.md', "sp ace.md"],
-  );
+  const diff = sides.flatMap((side) => [side, "@@ -0,0 +1 @@", "+x"]).join("\n");
+  assert.deepEqual([...parseChangedLines(diff).keys()], ["docs x/p & ü.md", 'quote"d\\back.md', "sp ace.md"]);
 });
 
 test("treats added lines that start with ++ as content, not as a header", () => {

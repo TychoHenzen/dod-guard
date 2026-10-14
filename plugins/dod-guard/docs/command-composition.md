@@ -35,6 +35,7 @@ wildcard or a PowerShell array through an npm shim and claim success from
   "packages/fossil/src/" `
   "packages/knowledge-base/src/" `
   "packages/quality-guard/src/" `
+  "plugins/dod-guard/" `
   "scripts/ci/" `
   --no-errors-on-unmatched
 if ($LASTEXITCODE -ne 0) { throw "Biome check failed with exit code $LASTEXITCODE" }

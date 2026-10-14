@@ -49,7 +49,10 @@ function hasWorktreeCommand(calls) {
 test("moves a clean current checkout before deleting the merged local branch", () => {
   const fixture = createGitFixture([
     [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
-    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result(), result("", 1)]],
+    [
+      ["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`],
+      [result(), result("", 1)],
+    ],
     [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
     [["-C", CURRENT_ROOT, "status", "--porcelain"], [result()]],
     [["fetch", "--no-tags", "origin", "master"], [result()]],
@@ -79,13 +82,19 @@ test("preserves the current branch and dirty files", () => {
 
   assert.deepEqual(cleanup, { branch: "retained_dirty", currentCheckout: "unchanged" });
   assert.equal(hasWorktreeCommand(fixture.calls), false);
-  assert.equal(fixture.calls.some((args) => args[0] === "switch" || (args[0] === "branch" && args[1] === "-d")), false);
+  assert.equal(
+    fixture.calls.some((args) => args[0] === "switch" || (args[0] === "branch" && args[1] === "-d")),
+    false,
+  );
 });
 
 test("retains a local branch when Git refuses deletion", () => {
   const fixture = createGitFixture([
     [["branch", "--show-current"], [result("master\n")]],
-    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result(), result()]],
+    [
+      ["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`],
+      [result(), result()],
+    ],
     [["branch", "-d", "--", TARGET_BRANCH], [new Error("branch is checked out elsewhere")]],
   ]);
   const git = new LocalGit(fixture.runner);
@@ -109,7 +118,12 @@ test("dry run describes current-checkout cleanup without mutating Git", () => {
 
   assert.deepEqual(cleanup, { branch: "would_delete", currentCheckout: "would_switch_to_default" });
   assert.equal(hasWorktreeCommand(fixture.calls), false);
-  assert.equal(fixture.calls.some((args) => ["fetch", "switch", "merge"].includes(args[0]) || (args[0] === "branch" && args[1] === "-d")), false);
+  assert.equal(
+    fixture.calls.some(
+      (args) => ["fetch", "switch", "merge"].includes(args[0]) || (args[0] === "branch" && args[1] === "-d"),
+    ),
+    false,
+  );
 });
 
 test("does not delete a missing local branch", () => {
@@ -140,8 +154,14 @@ test("preserves the local branch when the default branch cannot fast-forward", (
 
   assert.deepEqual(cleanup, { branch: "switch_refused", currentCheckout: "unchanged" });
   assert.equal(hasWorktreeCommand(fixture.calls), false);
-  assert.equal(fixture.calls.some((args) => args[0] === "switch"), false);
-  assert.equal(fixture.calls.some((args) => args[0] === "branch" && args[1] === "-d"), false);
+  assert.equal(
+    fixture.calls.some((args) => args[0] === "switch"),
+    false,
+  );
+  assert.equal(
+    fixture.calls.some((args) => args[0] === "branch" && args[1] === "-d"),
+    false,
+  );
 });
 
 test("restores the feature checkout if fast-forward fails after the switch", () => {
@@ -162,5 +182,8 @@ test("restores the feature checkout if fast-forward fails after the switch", () 
 
   assert.deepEqual(cleanup, { branch: "switch_refused", currentCheckout: "unchanged" });
   assert.equal(hasWorktreeCommand(fixture.calls), false);
-  assert.equal(fixture.calls.some((args) => args[0] === "branch" && args[1] === "-d"), false);
+  assert.equal(
+    fixture.calls.some((args) => args[0] === "branch" && args[1] === "-d"),
+    false,
+  );
 });

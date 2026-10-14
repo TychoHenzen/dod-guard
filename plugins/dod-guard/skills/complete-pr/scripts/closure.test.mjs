@@ -7,26 +7,26 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./closure.mjs";
 import {
+  completionComment,
   DELIVERIES,
   FOREIGN_REPOSITORY,
-  REPOSITORY,
-  completionComment,
   fakeGitHub,
   holdOf,
   mergeResult,
   patchesTo,
   quotingComment,
+  REPOSITORY,
   recordedSnapshot,
   supersedesBody,
 } from "./lib/closure.test-support.mjs";
 import {
-  ENDPOINT,
-  OWNER,
   checkRunsReply,
   commitStatusReply,
+  ENDPOINT,
   fakeRest,
   fieldPages,
   issueContent,
+  OWNER,
   ok,
   projectItem,
   pull,
@@ -55,7 +55,10 @@ test("the shipped plan command prints the planned close for a verified root", as
   const run = spawnSync(process.execPath, [SCRIPT, "plan", `--snapshot=${file}`], { encoding: "utf8" });
   assert.equal(run.status, 0, run.stderr);
   const plan = JSON.parse(run.stdout);
-  assert.deepEqual(plan.closes.map(({ issue, rule }) => [issue, rule]), [[777, "replaced-original"]]);
+  assert.deepEqual(
+    plan.closes.map(({ issue, rule }) => [issue, rule]),
+    [[777, "replaced-original"]],
+  );
 });
 
 test("the command rejects an unknown command or a missing flag", () => {
@@ -167,21 +170,27 @@ test("end to end: plan and apply on the #683 hierarchy", async () => {
   const run = spawnSync(process.execPath, [SCRIPT, "plan", `--snapshot=${file}`], { encoding: "utf8" });
   assert.equal(run.status, 0, run.stderr);
   const plan = JSON.parse(run.stdout);
-  assert.deepEqual(plan.closes.map(({ issue, rule, stateReason }) => [issue, rule, stateReason]), [
-    [775, "replaced-original", "completed"],
-    [776, "replaced-original", "completed"],
-    [777, "replaced-original", "completed"],
-    [778, "replaced-original", "completed"],
-    [683, "parent", "completed"],
-  ]);
+  assert.deepEqual(
+    plan.closes.map(({ issue, rule, stateReason }) => [issue, rule, stateReason]),
+    [
+      [775, "replaced-original", "completed"],
+      [776, "replaced-original", "completed"],
+      [777, "replaced-original", "completed"],
+      [778, "replaced-original", "completed"],
+      [683, "parent", "completed"],
+    ],
+  );
   assert.deepEqual(plan.holds, []);
   assert.deepEqual(plan.reports, []);
-  assert.deepEqual(plan.deliveries.map(({ root, status }) => [root, status]), [
-    [818, "verified"],
-    [820, "verified"],
-    [840, "verified"],
-    [841, "verified"],
-  ]);
+  assert.deepEqual(
+    plan.deliveries.map(({ root, status }) => [root, status]),
+    [
+      [818, "verified"],
+      [820, "verified"],
+      [840, "verified"],
+      [841, "verified"],
+    ],
+  );
 
   const github = fakeGitHub(snapshot);
   const io = capture();
@@ -213,12 +222,21 @@ test("end to end: the recorded state with #840 and #841 unmerged holds and repor
   });
   assert.equal(run.status, 0, run.stderr);
   const plan = JSON.parse(run.stdout);
-  assert.deepEqual(plan.closes.map(({ issue }) => issue), [775, 776]);
-  assert.deepEqual(plan.holds.map(({ issue }) => issue), [777, 778, 683]);
-  assert.deepEqual(plan.reports.map(({ issue, kind }) => [issue, kind]), [
-    [840, "unverified-closed"],
-    [841, "unverified-closed"],
-  ]);
+  assert.deepEqual(
+    plan.closes.map(({ issue }) => issue),
+    [775, 776],
+  );
+  assert.deepEqual(
+    plan.holds.map(({ issue }) => issue),
+    [777, 778, 683],
+  );
+  assert.deepEqual(
+    plan.reports.map(({ issue, kind }) => [issue, kind]),
+    [
+      [840, "unverified-closed"],
+      [841, "unverified-closed"],
+    ],
+  );
 });
 
 test("a stop reports its partial state and exits 1", async () => {
@@ -376,18 +394,14 @@ function roundTripFixture() {
   const pendingPull = pull(pending.pull, { sha: pending.head, mergeCommit: pending.merge });
   const pages = [
     [
-      projectItem(
-        "PVTI_840",
-        8401,
-        issueContent(840, { state: "closed", stateReason: "completed", comments: 1 }),
-        { status: "Done", linked: [verifiedPull] },
-      ),
-      projectItem(
-        "PVTI_841",
-        8411,
-        issueContent(841, { state: "closed", stateReason: "completed", comments: 1 }),
-        { status: "Done", linked: [pendingPull] },
-      ),
+      projectItem("PVTI_840", 8401, issueContent(840, { state: "closed", stateReason: "completed", comments: 1 }), {
+        status: "Done",
+        linked: [verifiedPull],
+      }),
+      projectItem("PVTI_841", 8411, issueContent(841, { state: "closed", stateReason: "completed", comments: 1 }), {
+        status: "Done",
+        linked: [pendingPull],
+      }),
       projectItem("PVTI_950", 9501, issueContent(950), { status: "Todo" }),
     ],
   ];
@@ -541,11 +555,14 @@ test("AC-03: a built delivery annotates to a complete group, and select-next rep
   assert.deepEqual(result.missingEvidence, []);
   assert.deepEqual(result.counts.missingEvidence, []);
   assert.equal(result.counts.balanced, true);
-  assert.deepEqual(result.groups.find(({ rootIssueNumber }) => rootIssueNumber === ROOT), {
-    rootIssueNumber: ROOT,
-    kind: "complete",
-    reasons: [],
-  });
+  assert.deepEqual(
+    result.groups.find(({ rootIssueNumber }) => rootIssueNumber === ROOT),
+    {
+      rootIssueNumber: ROOT,
+      kind: "complete",
+      reasons: [],
+    },
+  );
   assert.deepEqual(result.selected.issueNumbers, [ORIGINAL]);
 });
 

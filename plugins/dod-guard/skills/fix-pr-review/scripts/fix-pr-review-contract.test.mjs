@@ -17,21 +17,13 @@ function assertInOrder(text, patterns) {
 }
 test("documents supported GitHub review-comment request shapes", () => {
   const updateSection = skill.slice(skill.indexOf("## Update proven findings"));
-  const replySection =
-    updateSection.match(
-      /Otherwise reply through([\s\S]*?)Do\s+not use the legacy/,
-    )?.[1] ?? "";
+  const replySection = updateSection.match(/Otherwise reply through([\s\S]*?)Do\s+not use the legacy/)?.[1] ?? "";
   const inlineSection =
-    updateSection.match(
-      /For a\s+new inline review comment([\s\S]*?)REST cannot resolve a thread/,
-    )?.[1] ?? "";
+    updateSection.match(/For a\s+new inline review comment([\s\S]*?)REST cannot resolve a thread/)?.[1] ?? "";
 
   assert.notEqual(replySection, "");
   assert.notEqual(inlineSection, "");
-  assert.match(
-    replySection,
-    /POST \/repos\/\{owner\}\/\{repo\}\/pulls\/\{pull_number\}\/comments/,
-  );
+  assert.match(replySection, /POST \/repos\/\{owner\}\/\{repo\}\/pulls\/\{pull_number\}\/comments/);
   assert.match(replySection, /`in_reply_to` set to the selected root/);
   assert.doesNotMatch(replySection, /pulls\/comments\/\{comment_id\}\/replies/);
   assert.match(inlineSection, /diff `position`/);
@@ -51,29 +43,12 @@ test("documents narrow GitHub readback and guarded thread resolution", () => {
     /`reviewThreads` limited to `id`, `isResolved`/,
     /3\. When that read returns an explicit unsupported response \(404\/405\), the REST\s+review-comment endpoints/,
   ]);
-  assert.match(
-    readbackSection,
-    /pulls\/\{pull_number\}\/comments\?per_page=100&page=N/,
-  );
-  assert.match(
-    readbackSection,
-    /pagination until every selected root comment is present/,
-  );
-  assert.match(
-    readbackSection,
-    /authentication failure,\s+rate limit \(403\/429\)/,
-  );
-  assert.match(
-    readbackSection,
-    /Do not request the unsupported\s+`PullRequestReviewComment\.inReplyTo` field/,
-  );
-  assert.match(
-    updateSection,
-    /`threadId` comes from the\s+thread metadata read under "Resolve the input"/,
-  );
-  const readbackOffset = updateSection.indexOf(
-    "Read back the exact review thread",
-  );
+  assert.match(readbackSection, /pulls\/\{pull_number\}\/comments\?per_page=100&page=N/);
+  assert.match(readbackSection, /pagination until every selected root comment is present/);
+  assert.match(readbackSection, /authentication failure,\s+rate limit \(403\/429\)/);
+  assert.match(readbackSection, /Do not request the unsupported\s+`PullRequestReviewComment\.inReplyTo` field/);
+  assert.match(updateSection, /`threadId` comes from the\s+thread metadata read under "Resolve the input"/);
+  const readbackOffset = updateSection.indexOf("Read back the exact review thread");
   const resolutionOffset = updateSection.indexOf("resolveReviewThread");
   assert.notEqual(readbackOffset, -1);
   assert.notEqual(resolutionOffset, -1);

@@ -3,18 +3,18 @@
 // group verdict comes from the shared queue classifier that select-next uses, over the same snapshot
 // shape, so cleanup and selection cannot disagree. The overlay comes from the root's completion record only.
 
-import { buildQueueRecords, classifyDelivery } from "../../../../lib/queue-classifier.mjs";
-import { parseCompletionRecord } from "./closure-records.mjs";
 import {
   childNumbers,
   indexSnapshot,
-  isTargetRepository,
   issueFor,
+  isTargetRepository,
   numberOf,
   pullFor,
   recordRepository,
   relationReasons,
 } from "../../../../lib/closure-index.mjs";
+import { buildQueueRecords, classifyDelivery } from "../../../../lib/queue-classifier.mjs";
+import { parseCompletionRecord } from "./closure-records.mjs";
 
 // An issue's checkpoint is finished only when its own completion record names
 // the same delivery and leaves no acceptance row pending.

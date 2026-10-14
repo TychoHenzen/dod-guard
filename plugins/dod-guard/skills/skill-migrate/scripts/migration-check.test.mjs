@@ -1,9 +1,9 @@
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { after, before, describe, it } from "node:test";
 
 const SCRIPT = new URL("./migration-check.mjs", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
 
@@ -387,10 +387,7 @@ describe("migration-check", () => {
   it("scores a clean skill above a scaffolding-laden one", () => {
     const clean = runJson(join(dir, "good.md"));
     const bad = runJson(join(dir, "bad.md"));
-    assert.ok(
-      clean.score > bad.score,
-      `Expected clean (${clean.score}) > scaffolded (${bad.score})`,
-    );
+    assert.ok(clean.score > bad.score, `Expected clean (${clean.score}) > scaffolded (${bad.score})`);
   });
 
   it("detects kind skill from a SKILL.md basename", () => {
@@ -559,7 +556,10 @@ describe("migration-check", () => {
       );
     }
     for (const id of ["name-format", "description-present", "description-person"]) {
-      assert.ok(out.checks.find((c) => c.id === id), `Expected ${id} to remain in memory checks`);
+      assert.ok(
+        out.checks.find((c) => c.id === id),
+        `Expected ${id} to remain in memory checks`,
+      );
     }
     const total = out.checks.reduce((sum, c) => sum + c.weight, 0);
     assert.ok(Math.abs(total - 100) < 0.01, `Expected weights to sum to 100, got ${total}`);
@@ -739,8 +739,14 @@ describe("migration-check", () => {
 
   it("a skill-kind run reports neither memory-frontmatter nor agent-tools", () => {
     const { checks } = runJson(join(dir, "good.md"));
-    assert.equal(checks.find((c) => c.id === "memory-frontmatter"), undefined);
-    assert.equal(checks.find((c) => c.id === "agent-tools"), undefined);
+    assert.equal(
+      checks.find((c) => c.id === "memory-frontmatter"),
+      undefined,
+    );
+    assert.equal(
+      checks.find((c) => c.id === "agent-tools"),
+      undefined,
+    );
   });
 
   it("agent and memory kind weights still sum to 100 with their extra check included", () => {

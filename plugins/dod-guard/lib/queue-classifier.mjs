@@ -68,10 +68,12 @@ function checkBucket(check) {
 
 function requiredChecksComplete(value) {
   const checks = Array.isArray(value) ? value : value?.checks;
-  if (!Array.isArray(checks) || checks.length === 0) return { complete: false, reason: "required checks missing or empty" };
+  if (!Array.isArray(checks) || checks.length === 0)
+    return { complete: false, reason: "required checks missing or empty" };
   const invalid = checks.filter((check) => !PASSING_CHECK_BUCKETS.has(checkBucket(check)));
   if (invalid.length > 0) return { complete: false, reason: "required checks are incomplete or failed" };
-  if (value && !Array.isArray(value) && value.complete === false) return { complete: false, reason: "required checks are incomplete" };
+  if (value && !Array.isArray(value) && value.complete === false)
+    return { complete: false, reason: "required checks are incomplete" };
   return { complete: true };
 }
 
@@ -93,8 +95,10 @@ function mergedEvidenceReasons(records, context, mergedPullRequests) {
   if (!defaultBranch) reasons.push("default base branch missing");
   if (mergedPullRequests.length !== 1) reasons.push("merged delivery relationship is missing or duplicated");
   for (const pullRequest of mergedPullRequests) {
-    if (!sameRepository(pullRequest.headRepository, repository)) reasons.push("pull request head repository is not the target repository");
-    if (!defaultBranch || pullRequest.baseRef !== defaultBranch) reasons.push("pull request base is not the default branch");
+    if (!sameRepository(pullRequest.headRepository, repository))
+      reasons.push("pull request head repository is not the target repository");
+    if (!defaultBranch || pullRequest.baseRef !== defaultBranch)
+      reasons.push("pull request base is not the default branch");
     if (!pullRequest.headRef || !pullRequest.headSha) reasons.push("trusted pull request head is missing");
     if (!trustedHead(pullRequest)) reasons.push("trusted pull request head evidence is missing or stale");
     if (!pullRequest.mergeCommitSha) reasons.push("merge commit is missing");
@@ -102,9 +106,11 @@ function mergedEvidenceReasons(records, context, mergedPullRequests) {
     if (!checks.complete) reasons.push(checks.reason);
   }
   for (const record of records) {
-    if (!record.issue || issueState(record.issue) !== "CLOSED") reasons.push(`issue #${record.issueNumber} is not closed`);
+    if (!record.issue || issueState(record.issue) !== "CLOSED")
+      reasons.push(`issue #${record.issueNumber} is not closed`);
     if (record.projectStatus !== "Done") reasons.push(`Project item #${record.issueNumber} is not Done`);
-    if (activeCheckpointOf(record) !== false) reasons.push(`active checkpoint for issue #${record.issueNumber} is not explicitly false`);
+    if (activeCheckpointOf(record) !== false)
+      reasons.push(`active checkpoint for issue #${record.issueNumber} is not explicitly false`);
   }
   return [...new Set(reasons)];
 }
@@ -154,7 +160,9 @@ function evidenceOf(record) {
   const entries = [...(record.missingEvidence ?? [])];
   if (record.parentItemMissing) {
     const entry = `parent issue #${record.parentIssueNumber} Project item`;
-    const at = entries.findIndex((text) => text.startsWith("contradictory parent for issue #") || text.startsWith("child issue #"));
+    const at = entries.findIndex(
+      (text) => text.startsWith("contradictory parent for issue #") || text.startsWith("child issue #"),
+    );
     if (at === -1) {
       entries.push(entry);
     } else {
@@ -171,7 +179,8 @@ function recordReasons(records) {
   if (statuses.some((status) => status === null)) reasons.push("Project status missing");
   if (uniqueStatuses.length > 1) reasons.push(`Project status drift: ${uniqueStatuses.join(", ")}`);
   const recordNumbers = new Set(records.map(({ issueNumber }) => issueNumber));
-  const orphaned = (record) => record.parentIssueNumber !== null && (record.orphan || !recordNumbers.has(record.parentIssueNumber));
+  const orphaned = (record) =>
+    record.parentIssueNumber !== null && (record.orphan || !recordNumbers.has(record.parentIssueNumber));
   if (records.some(orphaned)) reasons.push("orphaned parent/child relationship");
   if (records.some((record) => activeCheckpointOf(record) === true)) reasons.push(ACTIVE_CHECKPOINT);
   return { reasons, uniqueStatuses };
@@ -278,7 +287,11 @@ function missingEvidenceOf(index, number, item, issue, parentIssueFieldObserved)
     }
   }
   if (issue !== null && !Array.isArray(issue.children)) entries.push(`issue #${number} child relationship`);
-  if (issue !== null && parentIssueFieldObserved && referenceKey(fieldValue(item, "Parent issue")) !== referenceKey(issue.parent)) {
+  if (
+    issue !== null &&
+    parentIssueFieldObserved &&
+    referenceKey(fieldValue(item, "Parent issue")) !== referenceKey(issue.parent)
+  ) {
     entries.push(`contradictory parent for issue #${number}`);
   }
   if (issue !== null && Array.isArray(issue.children)) {
@@ -340,8 +353,12 @@ function classifyGroups(records, context) {
     let rootIndex = 0;
     for (let index = 1; index < path.length; index += 1) {
       const parent = path[index - 1];
-      if (parent.projectStatus === "Backlog" && ["Todo", "In Progress", "Done"].includes(path[index].projectStatus)
-        && parent.pullRequests.length === 0 && activeCheckpointOf(parent) !== true) {
+      if (
+        parent.projectStatus === "Backlog" &&
+        ["Todo", "In Progress", "Done"].includes(path[index].projectStatus) &&
+        parent.pullRequests.length === 0 &&
+        activeCheckpointOf(parent) !== true
+      ) {
         rootIndex = index;
         independentParents.add(parent.issueNumber);
       }
@@ -349,7 +366,10 @@ function classifyGroups(records, context) {
     const root = path[rootIndex] ?? record;
     const rootIssueNumber = rootIndex === 0 ? (root.parentIssueNumber ?? root.issueNumber) : root.issueNumber;
     const ancestors = path.slice(0, rootIndex);
-    reasons.push(...recordReasons(ancestors).reasons, ...pullRequestReasons(ancestors.flatMap(({ pullRequests }) => pullRequests)));
+    reasons.push(
+      ...recordReasons(ancestors).reasons,
+      ...pullRequestReasons(ancestors.flatMap(({ pullRequests }) => pullRequests)),
+    );
     const group = groups.get(rootIssueNumber) ?? { rootIssueNumber, records: [], order, ancestorReasons: [] };
     group.records.push(record);
     group.ancestorReasons.push(...reasons);
@@ -360,9 +380,11 @@ function classifyGroups(records, context) {
     if (group.records.some(({ issueNumber }) => independentParents.has(issueNumber))) {
       reasons.push("Backlog hierarchy has independent delivery children");
     }
-    const judged = group.records.map((record) => record.issueNumber === group.rootIssueNumber && byNumber.has(record.parentIssueNumber)
-      ? { ...record, parentIssueNumber: null }
-      : record);
+    const judged = group.records.map((record) =>
+      record.issueNumber === group.rootIssueNumber && byNumber.has(record.parentIssueNumber)
+        ? { ...record, parentIssueNumber: null }
+        : record,
+    );
     return { ...group, decision: reasons.length > 0 ? hold(reasons) : decideGroup(judged, context) };
   });
 }
@@ -385,7 +407,8 @@ function classifyDelivery(records, rootNumber, context) {
 // Resume In Progress work first, the furthest along (an open pull request) ahead of the rest, then
 // start Todo before Backlog.
 function selectGroup(groups) {
-  const rank = ({ status, openPullRequest }) => ({ "In Progress": openPullRequest ? 0 : 1, Todo: 2, Backlog: 3 })[status] ?? 4;
+  const rank = ({ status, openPullRequest }) =>
+    ({ "In Progress": openPullRequest ? 0 : 1, Todo: 2, Backlog: 3 })[status] ?? 4;
   const candidates = groups
     .filter(({ decision }) => decision?.eligible)
     .sort((left, right) => rank(left.decision) - rank(right.decision) || left.order - right.order);
@@ -431,12 +454,15 @@ function problemCause(index, { issue, reasons, record }) {
 function snapshotCauses(index) {
   const causes = index.repository === null ? ["target repository identity missing"] : [];
   causes.push(...index.problems.map((problem) => problemCause(index, problem)));
-  causes.push(...index.itemOrder
-    .filter((number) => issueFor(index, number) === null)
-    .map((number) => `issue missing from issues: ${index.repository}#${number}`));
+  causes.push(
+    ...index.itemOrder
+      .filter((number) => issueFor(index, number) === null)
+      .map((number) => `issue missing from issues: ${index.repository}#${number}`),
+  );
   for (const number of index.itemOrder) {
     for (const pull of itemPullNumbers(index, itemFor(index, number))) {
-      if (pullFor(index, pull) === null) causes.push(`pull request missing from pullRequests: ${index.repository}#${pull}`);
+      if (pullFor(index, pull) === null)
+        causes.push(`pull request missing from pullRequests: ${index.repository}#${pull}`);
     }
   }
   return [...new Set(causes)];
@@ -456,8 +482,4 @@ function classifyQueue(snapshot, { today }) {
   return { groups, selected, counts, missingEvidence };
 }
 
-export {
-  buildQueueRecords,
-  classifyDelivery,
-  classifyQueue,
-};
+export { buildQueueRecords, classifyDelivery, classifyQueue };

@@ -105,7 +105,9 @@ test("retries one transient exact-head check-runs failure with the identical req
   const { calls, runner } = createRestChecksRunner({
     checkRunResponses: [
       { stderr: "HTTP 503: transient provider failure", status: 1, stdout: "" },
-      checkRunsResponse([{ app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" }]),
+      checkRunsResponse([
+        { app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
+      ]),
     ],
   });
 
@@ -134,7 +136,10 @@ test("stops after one transient exact-head check-runs retry", () => {
 
   const checkRunsCalls = calls.filter((args) => args.some((value) => value.includes("/check-runs?")));
   assert.equal(checkRunsCalls.length, 2);
-  assert.equal(calls.some((args) => args.some((value) => value.includes("/status?"))), false);
+  assert.equal(
+    calls.some((args) => args.some((value) => value.includes("/status?"))),
+    false,
+  );
 });
 
 for (const [failureName, failureResponse] of [
@@ -146,31 +151,25 @@ for (const [failureName, failureResponse] of [
   test(`does not retry exact-head check-runs ${failureName}`, () => {
     const { calls, runner } = createRestChecksRunner({ checkRunResponses: [failureResponse] });
 
-    assert.throws(
-      () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
-    );
+    assert.throws(() => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()));
 
-    assert.equal(
-      calls.filter((args) => args.some((value) => value.includes("/check-runs?"))).length,
-      1,
-    );
+    assert.equal(calls.filter((args) => args.some((value) => value.includes("/check-runs?"))).length, 1);
   });
 }
 
 test("does not retry or accept a wrong-provider exact-head check run", () => {
   const { calls, runner } = createRestChecksRunner({
-    checkRunResponses: [checkRunsResponse([
-      { app: { id: 57_789 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
-    ])],
+    checkRunResponses: [
+      checkRunsResponse([
+        { app: { id: 57_789 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
+      ]),
+    ],
   });
 
   const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
 
   assert.deepEqual(checks, [{ bucket: "unknown", name: "build-test", state: "PROVIDER_MISMATCH" }]);
-  assert.equal(
-    calls.filter((args) => args.some((value) => value.includes("/check-runs?"))).length,
-    1,
-  );
+  assert.equal(calls.filter((args) => args.some((value) => value.includes("/check-runs?"))).length, 1);
 });
 
 const protectionEndpoint = "repos/owner/repo/branches/master/protection/required_status_checks";
@@ -278,7 +277,10 @@ test("getRequiredChecks reads only REST endpoints and settles two passing runs f
   const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
 
   assert.deepEqual(checks, [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
-  assert.deepEqual(calls.map((args) => args[0]), ["api", "api", "api"]);
+  assert.deepEqual(
+    calls.map((args) => args[0]),
+    ["api", "api", "api"],
+  );
 });
 
 test("reads temporary pull-request refs with a delimited pull-number prefix", () => {
@@ -300,7 +302,10 @@ test("reads temporary pull-request refs with a delimited pull-number prefix", ()
     { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-1" },
   ]);
   assert.deepEqual(calls, [["api", "repos/owner/repo/git/matching-refs/pull/24/"]]);
-  assert.equal(calls.some((args) => args.includes("--method") || args.includes("PUT") || args.includes("POST")), false);
+  assert.equal(
+    calls.some((args) => args.includes("--method") || args.includes("PUT") || args.includes("POST")),
+    false,
+  );
 });
 
 test("treats an absent temporary pull-request ref set as empty", () => {
@@ -346,56 +351,58 @@ test("rejects a malformed source branch ref", () => {
 
 test("returns every unresolved review thread regardless of author or outdated state", () => {
   const { calls, runner } = threadRunner([
-    okResponse(threadPageStdout([
-      threadNode({
-        id: "t1",
-        isResolved: false,
-        isOutdated: false,
-        path: "src/a.mjs",
-        url: discussionUrl("bot-open"),
-        login: "chatgpt-codex-connector[bot]",
-      }),
-      threadNode({
-        id: "t2",
-        isResolved: true,
-        isOutdated: false,
-        path: "src/b.mjs",
-        url: discussionUrl("bot-resolved"),
-        login: "chatgpt-codex-connector[bot]",
-      }),
-      threadNode({
-        id: "t3",
-        isResolved: false,
-        isOutdated: true,
-        path: "src/c.mjs",
-        url: discussionUrl("human-open"),
-        login: "human-reviewer",
-      }),
-      threadNode({
-        id: "t4",
-        isResolved: true,
-        isOutdated: true,
-        path: "src/d.mjs",
-        url: discussionUrl("human-resolved"),
-        login: "human-reviewer",
-      }),
-      threadNode({
-        id: "t5",
-        isResolved: false,
-        isOutdated: false,
-        path: "src/e.mjs",
-        url: discussionUrl("author-open"),
-        login: "pr-author",
-      }),
-      threadNode({
-        id: "t6",
-        isResolved: true,
-        isOutdated: false,
-        path: "src/f.mjs",
-        url: discussionUrl("author-resolved"),
-        login: "pr-author",
-      }),
-    ])),
+    okResponse(
+      threadPageStdout([
+        threadNode({
+          id: "t1",
+          isResolved: false,
+          isOutdated: false,
+          path: "src/a.mjs",
+          url: discussionUrl("bot-open"),
+          login: "chatgpt-codex-connector[bot]",
+        }),
+        threadNode({
+          id: "t2",
+          isResolved: true,
+          isOutdated: false,
+          path: "src/b.mjs",
+          url: discussionUrl("bot-resolved"),
+          login: "chatgpt-codex-connector[bot]",
+        }),
+        threadNode({
+          id: "t3",
+          isResolved: false,
+          isOutdated: true,
+          path: "src/c.mjs",
+          url: discussionUrl("human-open"),
+          login: "human-reviewer",
+        }),
+        threadNode({
+          id: "t4",
+          isResolved: true,
+          isOutdated: true,
+          path: "src/d.mjs",
+          url: discussionUrl("human-resolved"),
+          login: "human-reviewer",
+        }),
+        threadNode({
+          id: "t5",
+          isResolved: false,
+          isOutdated: false,
+          path: "src/e.mjs",
+          url: discussionUrl("author-open"),
+          login: "pr-author",
+        }),
+        threadNode({
+          id: "t6",
+          isResolved: true,
+          isOutdated: false,
+          path: "src/f.mjs",
+          url: discussionUrl("author-resolved"),
+          login: "pr-author",
+        }),
+      ]),
+    ),
   ]);
 
   const threads = new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24);
@@ -415,40 +422,57 @@ test("returns every unresolved review thread regardless of author or outdated st
   assert.ok(calls[0].includes("graphql"));
   const numberIndex = calls[0].indexOf("number=24");
   assert.ok(numberIndex > 0 && calls[0][numberIndex - 1] === "-F");
-  assert.equal(calls[0].some((value) => value.startsWith("cursor=")), false);
+  assert.equal(
+    calls[0].some((value) => value.startsWith("cursor=")),
+    false,
+  );
 });
 
 test("reads a two-page thread list in full", () => {
   const { calls, runner } = threadRunner([
-    okResponse(threadPageStdout(
-      [threadNode({
-        id: "t1",
-        isResolved: false,
-        isOutdated: false,
-        path: "src/a.mjs",
-        url: discussionUrl("page-one"),
-        login: "reviewer",
-      })],
-      { endCursor: "c1", hasNextPage: true },
-    )),
-    okResponse(threadPageStdout(
-      [threadNode({
-        id: "t2",
-        isResolved: false,
-        isOutdated: false,
-        path: "src/b.mjs",
-        url: discussionUrl("page-two"),
-        login: "reviewer",
-      })],
-      { endCursor: "c2", hasNextPage: false },
-    )),
+    okResponse(
+      threadPageStdout(
+        [
+          threadNode({
+            id: "t1",
+            isResolved: false,
+            isOutdated: false,
+            path: "src/a.mjs",
+            url: discussionUrl("page-one"),
+            login: "reviewer",
+          }),
+        ],
+        { endCursor: "c1", hasNextPage: true },
+      ),
+    ),
+    okResponse(
+      threadPageStdout(
+        [
+          threadNode({
+            id: "t2",
+            isResolved: false,
+            isOutdated: false,
+            path: "src/b.mjs",
+            url: discussionUrl("page-two"),
+            login: "reviewer",
+          }),
+        ],
+        { endCursor: "c2", hasNextPage: false },
+      ),
+    ),
   ]);
 
   const threads = new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24);
 
-  assert.deepEqual(threads.map((thread) => thread.id), ["t1", "t2"]);
+  assert.deepEqual(
+    threads.map((thread) => thread.id),
+    ["t1", "t2"],
+  );
   assert.equal(calls.length, 2);
-  assert.equal(calls[0].some((value) => value.startsWith("cursor=")), false);
+  assert.equal(
+    calls[0].some((value) => value.startsWith("cursor=")),
+    false,
+  );
   const cursorIndex = calls[1].indexOf("cursor=c1");
   assert.ok(cursorIndex > 0 && calls[1][cursorIndex - 1] === "-f");
 });
@@ -465,10 +489,13 @@ test("fails closed with review-threads-unavailable on every unreadable thread pa
     ["a top-level errors array", [okResponse(JSON.stringify({ errors: [{ message: "Something failed" }] }))]],
     ["a null pull request", [okResponse(JSON.stringify({ data: { repository: { pullRequest: null } } }))]],
     ["hasNextPage without an endCursor", [okResponse(threadPageStdout([], { endCursor: null, hasNextPage: true }))]],
-    ["a stuck endCursor", [
-      okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
-      okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
-    ]],
+    [
+      "a stuck endCursor",
+      [
+        okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
+        okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
+      ],
+    ],
     [
       "a pull request without reviewThreads",
       [okResponse(JSON.stringify({ data: { repository: { pullRequest: {} } } }))],
@@ -537,9 +564,8 @@ test("fails closed when a thread cursor repeats on a later page", () => {
   ];
   const { calls, runner } = threadRunner(responses);
 
-  assert.throws(
-    () => new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24),
-    { code: "review-threads-unavailable" },
-  );
+  assert.throws(() => new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24), {
+    code: "review-threads-unavailable",
+  });
   assert.equal(calls.length, responses.length);
 });

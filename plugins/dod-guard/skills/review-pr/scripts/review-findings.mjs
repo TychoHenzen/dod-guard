@@ -2,21 +2,11 @@
 // biome-ignore lint/correctness/noNodejsModules: This skill helper starts the quality-guard scanner.
 import { spawnSync } from "node:child_process";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import {
-  closeSync,
-  existsSync,
-  openSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import process from "node:process";
 import { parseArgs } from "../../../lib/args.mjs";
-import {
-  buildReview,
-  existingReview,
-  postedFindings,
-} from "./lib/review-findings.mjs";
+import { buildReview, existingReview, postedFindings } from "./lib/review-findings.mjs";
 import { pbiIssue, reviewSlots, subIssueList } from "./lib/review-slots.mjs";
 import { scannerPath } from "./lib/scanner-location.mjs";
 import { parseChangedLines } from "./lib/unified-diff.mjs";
@@ -71,20 +61,14 @@ function scan(args) {
     throw new Error(`quality-guard scanner not found at ${scanner}`);
   }
   const out = openSync(args.out, "w");
-  const result = spawnSync(
-    process.execPath,
-    [scanner, ".", `--root=${args.root}`, "--format=json"],
-    {
-      cwd: args.root,
-      stdio: ["ignore", out, "pipe"],
-      shell: false,
-    },
-  );
+  const result = spawnSync(process.execPath, [scanner, ".", `--root=${args.root}`, "--format=json"], {
+    cwd: args.root,
+    stdio: ["ignore", out, "pipe"],
+    shell: false,
+  });
   closeSync(out);
   if (result.error || result.status !== 0) {
-    throw new Error(
-      `quality-scan failed (${result.status}): ${result.error?.message ?? result.stderr}`,
-    );
+    throw new Error(`quality-scan failed (${result.status}): ${result.error?.message ?? result.stderr}`);
   }
   return {
     scanner,
@@ -121,24 +105,14 @@ const COMMANDS = {
       payload: args.out,
     };
   },
-  report: (args) =>
-    postedFindings(Number(args["review-id"]), flatJson(args.comments)),
+  report: (args) => postedFindings(Number(args["review-id"]), flatJson(args.comments)),
 };
 
 const REQUIRED = {
   scan: ["client", "registry", "root", "out"],
   existing: ["reviews"],
   slots: ["diff", "pbi", "sub-issues", "out"],
-  build: [
-    "head",
-    "scan",
-    "diff",
-    "pbi",
-    "sub-issues",
-    "plan",
-    "results",
-    "out",
-  ],
+  build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "out"],
   report: ["review-id", "comments"],
 };
 const FULL_SHA = /^[0-9a-f]{40}$/;

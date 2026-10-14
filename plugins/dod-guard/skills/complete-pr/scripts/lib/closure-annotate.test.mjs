@@ -1,22 +1,22 @@
-import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { annotateSnapshot } from "./closure-delivery.mjs";
 import {
+  completionComment,
   DELIVERIES,
   FOREIGN_REPOSITORY,
-  REPOSITORY,
-  completionComment,
   issue,
   item,
   pull,
+  REPOSITORY,
   recordedSnapshot,
   setField,
 } from "./closure.test-support.mjs";
+import { annotateSnapshot } from "./closure-delivery.mjs";
 
 function issueOf(snapshot, number) {
   return snapshot.issues.find((entry) => entry.number === number);
@@ -154,5 +154,8 @@ test("select-next holds issue 950 for a foreign parent its Project field carries
   const group = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 950);
   assert.equal(group?.kind, "hold");
   assert.ok(group.reasons.includes("cross-repository parent TychoHenzen/DeepSeekCustom#12"));
-  assert.equal(result.groups.some(({ rootIssueNumber }) => rootIssueNumber === 12), false);
+  assert.equal(
+    result.groups.some(({ rootIssueNumber }) => rootIssueNumber === 12),
+    false,
+  );
 });

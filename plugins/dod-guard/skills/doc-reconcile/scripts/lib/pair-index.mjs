@@ -191,11 +191,7 @@ function finalizeOrder(candidates) {
 // runs over the same input always produce the same array.
 export function buildPairs(
   claims,
-  {
-    threshold = DEFAULT_THRESHOLD,
-    maxPerClaim = DEFAULT_MAX_PER_CLAIM,
-    minTokens = DEFAULT_MIN_TOKENS,
-  } = {},
+  { threshold = DEFAULT_THRESHOLD, maxPerClaim = DEFAULT_MAX_PER_CLAIM, minTokens = DEFAULT_MIN_TOKENS } = {},
 ) {
   const filtered = filterByMinTokens(claims, minTokens);
   const tokenSets = buildTokenSets(filtered);

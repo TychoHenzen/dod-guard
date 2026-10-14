@@ -5,22 +5,9 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
-const SKIP_DIRECTORIES = new Set([
-  ".git",
-  ".next",
-  ".nyc_output",
-  "coverage",
-  "dist",
-  "node_modules",
-  "target",
-]);
+const SKIP_DIRECTORIES = new Set([".git", ".next", ".nyc_output", "coverage", "dist", "node_modules", "target"]);
 
-const INSTRUCTION_NAMES = new Set([
-  "AGENTS.md",
-  "AGENTS.override.md",
-  "CLAUDE.md",
-  "CLAUDE.local.md",
-]);
+const INSTRUCTION_NAMES = new Set(["AGENTS.md", "AGENTS.override.md", "CLAUDE.md", "CLAUDE.local.md"]);
 
 const CONFIG_NAMES = new Set([".mcp.json", "config.toml", "plugin.json"]);
 
@@ -49,7 +36,7 @@ async function collectFiles(root, current = root) {
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
     const fullPath = path.join(current, entry.name);
     if (entry.isDirectory()) {
-      if (!SKIP_DIRECTORIES.has(entry.name)) files.push(...await collectFiles(root, fullPath));
+      if (!SKIP_DIRECTORIES.has(entry.name)) files.push(...(await collectFiles(root, fullPath)));
       continue;
     }
 
@@ -62,12 +49,14 @@ async function collectFiles(root, current = root) {
 function relevantFile(file) {
   const name = path.basename(file);
   const normalized = file.split(path.sep).join("/");
-  return INSTRUCTION_NAMES.has(name)
-    || CONFIG_NAMES.has(name)
-    || normalized.includes("/.claude/")
-    || normalized.includes("/.codex/")
-    || normalized.includes("/.agents/skills/")
-    || normalized.includes("/skills/");
+  return (
+    INSTRUCTION_NAMES.has(name) ||
+    CONFIG_NAMES.has(name) ||
+    normalized.includes("/.claude/") ||
+    normalized.includes("/.codex/") ||
+    normalized.includes("/.agents/skills/") ||
+    normalized.includes("/skills/")
+  );
 }
 
 function lineNumber(text, index) {

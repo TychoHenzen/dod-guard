@@ -1,20 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applyClosures, recordCompletion } from "./closure-apply.mjs";
-import { planClosures } from "./closure-plan.mjs";
-import { parseCompletionRecord, recordComments, renderClosureEvidence } from "./closure-records.mjs";
 import {
-  DELIVERIES,
-  REPOSITORY,
   completionComment,
+  DELIVERIES,
   fakeGitHub,
   mergeResult,
   mutating,
   patchesTo,
   quotingComment,
+  REPOSITORY,
   recordedSnapshot,
   snapshotAfter,
 } from "./closure.test-support.mjs";
+import { applyClosures, recordCompletion } from "./closure-apply.mjs";
+import { planClosures } from "./closure-plan.mjs";
+import { parseCompletionRecord, recordComments, renderClosureEvidence } from "./closure-records.mjs";
 
 function evidenceCount(github, issue) {
   return recordComments(github.state.issues.get(issue).comments, "closure").length;
@@ -25,7 +25,10 @@ test("apply comments, closes, reads back, and sets Done for a replaced original"
   const github = fakeGitHub(snapshot);
   const result = applyClosures(snapshot, { runner: github.runner });
   assert.deepEqual(result.applied, [777]);
-  assert.deepEqual(result.steps.map(({ step }) => step), ["read", "comment", "close", "readback", "project-status"]);
+  assert.deepEqual(
+    result.steps.map(({ step }) => step),
+    ["read", "comment", "close", "readback", "project-status"],
+  );
   const closed = github.state.issues.get(777);
   assert.equal(closed.state, "closed");
   assert.equal(closed.state_reason, "completed");
@@ -50,8 +53,9 @@ test("apply makes no mutating call when every close is held", () => {
 test("apply stops before writing when the root no longer verifies live", () => {
   const snapshot = recordedSnapshot({ roots: [840] });
   const github = fakeGitHub(snapshot);
-  github.state.issues.get(840).comments[0].body =
-    github.state.issues.get(840).comments[0].body.replace("[]", '["AC-11"]');
+  github.state.issues.get(840).comments[0].body = github.state.issues
+    .get(840)
+    .comments[0].body.replace("[]", '["AC-11"]');
   assert.throws(() => applyClosures(snapshot, { runner: github.runner }), /root #840 no longer verifies/);
   assert.deepEqual(github.calls.filter(mutating), []);
 });
@@ -60,15 +64,24 @@ test("a rerun after a failed close posts no second comment and finishes the clos
   const snapshot = recordedSnapshot({ roots: [840] });
   const failClose = (args) => mutating(args) && args.includes("state=closed");
   const github = fakeGitHub(snapshot, { failOnce: failClose });
-  assert.throws(() => applyClosures(snapshot, { runner: github.runner }), (error) => {
-    assert.equal(error.code, "closure_stop");
-    assert.deepEqual(error.state.steps.map(({ step }) => step), ["read", "comment"]);
-    return true;
-  });
+  assert.throws(
+    () => applyClosures(snapshot, { runner: github.runner }),
+    (error) => {
+      assert.equal(error.code, "closure_stop");
+      assert.deepEqual(
+        error.state.steps.map(({ step }) => step),
+        ["read", "comment"],
+      );
+      return true;
+    },
+  );
   assert.equal(evidenceCount(github, 777), 1);
   assert.equal(github.state.issues.get(777).state, "open");
   const rerun = applyClosures(snapshot, { runner: github.runner });
-  assert.deepEqual(rerun.steps.map(({ step }) => step), ["read", "close", "readback", "project-status"]);
+  assert.deepEqual(
+    rerun.steps.map(({ step }) => step),
+    ["read", "close", "readback", "project-status"],
+  );
   assert.equal(evidenceCount(github, 777), 1);
   assert.equal(github.state.issues.get(777).state, "closed");
   assert.equal(github.state.statuses.get("PVTI_777"), "Done");
@@ -78,11 +91,17 @@ test("a rerun after a stopped Done write sets Done without another comment or cl
   const snapshot = recordedSnapshot({ roots: [840] });
   const failDone = (args) => mutating(args) && args.some((value) => String(value).startsWith("users/"));
   const github = fakeGitHub(snapshot, { failOnce: failDone });
-  assert.throws(() => applyClosures(snapshot, { runner: github.runner }), (error) => {
-    assert.equal(error.code, "closure_stop");
-    assert.deepEqual(error.state.steps.map(({ step }) => step), ["read", "comment", "close", "readback"]);
-    return true;
-  });
+  assert.throws(
+    () => applyClosures(snapshot, { runner: github.runner }),
+    (error) => {
+      assert.equal(error.code, "closure_stop");
+      assert.deepEqual(
+        error.state.steps.map(({ step }) => step),
+        ["read", "comment", "close", "readback"],
+      );
+      return true;
+    },
+  );
   assert.equal(github.state.issues.get(777).state, "closed");
   assert.equal(github.state.statuses.get("PVTI_777"), "Backlog");
 
@@ -106,11 +125,17 @@ test("a status repair stops when the issue was reopened", () => {
   const snapshot = recordedSnapshot({ roots: [840] });
   const failDone = (args) => mutating(args) && args.some((value) => String(value).startsWith("users/"));
   const github = fakeGitHub(snapshot, { failOnce: failDone });
-  assert.throws(() => applyClosures(snapshot, { runner: github.runner }), (error) => {
-    assert.equal(error.code, "closure_stop");
-    assert.deepEqual(error.state.steps.map(({ step }) => step), ["read", "comment", "close", "readback"]);
-    return true;
-  });
+  assert.throws(
+    () => applyClosures(snapshot, { runner: github.runner }),
+    (error) => {
+      assert.equal(error.code, "closure_stop");
+      assert.deepEqual(
+        error.state.steps.map(({ step }) => step),
+        ["read", "comment", "close", "readback"],
+      );
+      return true;
+    },
+  );
   const after = snapshotAfter(snapshot, github);
   github.state.issues.get(777).state = "open";
   const mark = github.calls.length;
@@ -121,12 +146,15 @@ test("a status repair stops when the issue was reopened", () => {
 test("a readback that disagrees stops with the actual state and no further mutation", () => {
   const snapshot = recordedSnapshot({ roots: [840] });
   const github = fakeGitHub(snapshot, { ignoreClose: true });
-  assert.throws(() => applyClosures(snapshot, { runner: github.runner }), (error) => {
-    assert.match(error.message, /issue #777 readback disagrees/);
-    assert.equal(error.state.state, "open");
-    assert.equal(error.state.evidenceComments, 1);
-    return true;
-  });
+  assert.throws(
+    () => applyClosures(snapshot, { runner: github.runner }),
+    (error) => {
+      assert.match(error.message, /issue #777 readback disagrees/);
+      assert.equal(error.state.state, "open");
+      assert.equal(error.state.evidenceComments, 1);
+      return true;
+    },
+  );
   const lastMutation = github.calls.filter(mutating).at(-1);
   assert.ok(lastMutation.includes("state=closed"));
   assert.equal(github.state.statuses.get("PVTI_777"), "Backlog");
@@ -144,13 +172,22 @@ test("record posts one completion record per closing issue and child, then updat
   const snapshot = recordedSnapshot();
   const github = fakeGitHub(snapshot);
   const result = mergeResult([683]);
-  const matrix = [{ id: "AC-01", status: "pass" }, { id: "AC-11", status: "unverified" }];
+  const matrix = [
+    { id: "AC-01", status: "pass" },
+    { id: "AC-11", status: "unverified" },
+  ];
   const first = recordCompletion({ repository: REPOSITORY, result, matrix, children: [777], runner: github.runner });
-  assert.deepEqual(first.records, [{ issue: 683, action: "posted" }, { issue: 777, action: "posted" }]);
+  assert.deepEqual(first.records, [
+    { issue: 683, action: "posted" },
+    { issue: 777, action: "posted" },
+  ]);
   const marked = recordComments(github.state.issues.get(683).comments, "completion");
   assert.equal(marked.length, 1);
   assert.match(marked[0].body, /"pendingRows": \[\n {4}"AC-11"\n {2}\]/);
-  const settled = [{ id: "AC-01", status: "pass" }, { id: "AC-11", status: "pass" }];
+  const settled = [
+    { id: "AC-01", status: "pass" },
+    { id: "AC-11", status: "pass" },
+  ];
   const second = recordCompletion({ repository: REPOSITORY, result, matrix: settled, runner: github.runner });
   assert.deepEqual(second.records, [{ issue: 683, action: "updated" }]);
   const again = recordCompletion({ repository: REPOSITORY, result, matrix: settled, runner: github.runner });
@@ -240,7 +277,10 @@ test("apply posts real closure evidence when the only marker text is a quote", (
   const quote = github.state.issues.get(777).comments[0].body;
   const result = applyClosures(snapshot, { runner: github.runner });
   assert.deepEqual(result.applied, [777]);
-  assert.deepEqual(result.steps.map(({ step }) => step), ["read", "comment", "close", "readback", "project-status"]);
+  assert.deepEqual(
+    result.steps.map(({ step }) => step),
+    ["read", "comment", "close", "readback", "project-status"],
+  );
   const closed = github.state.issues.get(777);
   assert.equal(closed.state, "closed");
   assert.equal(evidenceCount(github, 777), 1);
@@ -259,7 +299,10 @@ test("apply is not stopped as duplicate by a quote beside real closure evidence"
   const quote = github.state.issues.get(777).comments[1].body;
   const result = applyClosures(snapshot, { runner: github.runner });
   assert.deepEqual(result.applied, [777]);
-  assert.deepEqual(result.steps.map(({ step }) => step), ["read", "close", "readback", "project-status"]);
+  assert.deepEqual(
+    result.steps.map(({ step }) => step),
+    ["read", "close", "readback", "project-status"],
+  );
   assert.equal(evidenceCount(github, 777), 1);
   const posts = github.calls.filter(
     (args) => args.includes("POST") && args.includes(`repos/${REPOSITORY}/issues/777/comments`),

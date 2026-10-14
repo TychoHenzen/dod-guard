@@ -1,9 +1,6 @@
-import { REVIEWERS } from "./reviewer-results.mjs";
 import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
-import {
-  API_REPOSITORY_URL,
-  urlRepository,
-} from "../../../../lib/repository-identity.mjs";
+import { API_REPOSITORY_URL, urlRepository } from "../../../../lib/repository-identity.mjs";
+import { REVIEWERS } from "./reviewer-results.mjs";
 
 function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -29,8 +26,7 @@ function pbiIssue(value, source) {
   const body = value?.body;
   if (!isPbiShape(value, repository)) {
     throw new Error(
-      `${source}: the PBI issue JSON needs a repository_url, ` +
-        "a positive integer number, and a string or null body",
+      `${source}: the PBI issue JSON needs a repository_url, ` + "a positive integer number, and a string or null body",
     );
   }
   return { repository, number: value.number, body: body ?? "" };
@@ -56,17 +52,14 @@ function subIssueList(value, source) {
     const repository = urlRepository(child?.repository_url, API_REPOSITORY_URL);
     if (!isSubIssueShape(child, repository)) {
       throw new Error(
-        `${source}: sub-issue ${index + 1} needs a repository_url, ` +
-          "a positive integer number, and a title",
+        `${source}: sub-issue ${index + 1} needs a repository_url, ` + "a positive integer number, and a title",
       );
     }
     const reference = `${repository}#${child.number}`;
     // ASSUMPTION: GitHub lists each sub-issue once, so a repeat means a corrupt
     // listing; two equal slot ids would make the plan ambiguous.
     if (seen.has(reference)) {
-      throw new Error(
-        `${source}: sub-issue ${reference} appears more than once`,
-      );
+      throw new Error(`${source}: sub-issue ${reference} appears more than once`);
     }
     seen.add(reference);
     return { repository, number: child.number, title: child.title.trim() };
@@ -83,10 +76,7 @@ function reviewSlots({ changedLines, pbi, subIssues }) {
   }
   const criteria = acceptanceCriteria(pbi.body);
   if (criteria.length === 0) {
-    throw new Error(
-      `PBI ${pbi.repository}#${pbi.number} has no checkbox item ` +
-        "under ## Acceptance criteria",
-    );
+    throw new Error(`PBI ${pbi.repository}#${pbi.number} has no checkbox item ` + "under ## Acceptance criteria");
   }
   return [
     ...[...changedLines]
@@ -116,17 +106,12 @@ function oneLine(value) {
 
 // Text that contains HTML could close the details block early.
 function escapeHtml(value) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
 function namesFiles(question) {
   return (
-    Array.isArray(question?.files) &&
-    question.files.length > 0 &&
-    question.files.every((file) => oneLine(file) !== "")
+    Array.isArray(question?.files) && question.files.length > 0 && question.files.every((file) => oneLine(file) !== "")
   );
 }
 
@@ -157,14 +142,9 @@ function requireEntryShape(entry) {
     throw new Error(`Slot ${slot} has neither questions nor an exclusion`);
   }
   if (excluded && !isCompleteExclusion(entry.excluded)) {
-    throw new Error(
-      `The exclusion for slot ${slot} needs a reviewer lens and a reason`,
-    );
+    throw new Error(`The exclusion for slot ${slot} needs a reviewer lens and a reason`);
   }
-  if (
-    asked &&
-    !(Array.isArray(entry.questions) && entry.questions.length > 0)
-  ) {
+  if (asked && !(Array.isArray(entry.questions) && entry.questions.length > 0)) {
     throw new Error(`Slot ${slot} needs a non-empty questions array`);
   }
 }
@@ -185,9 +165,7 @@ function requireQuestion(question, slot, ids) {
 }
 
 function entryLenses(entry) {
-  return entry.excluded
-    ? [entry.excluded.lens]
-    : entry.questions.map((question) => question.lens);
+  return entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
 }
 
 function requirePlanEntries(plan, generated) {
@@ -196,10 +174,7 @@ function requirePlanEntries(plan, generated) {
   for (const entry of plan) {
     const slot = entry?.slot;
     if (!generated.has(slot)) {
-      throw new Error(
-        `Plan slot ${JSON.stringify(slot ?? null)} was not generated ` +
-          "from the diff and the PBI",
-      );
+      throw new Error(`Plan slot ${JSON.stringify(slot ?? null)} was not generated ` + "from the diff and the PBI");
     }
     // ASSUMPTION: one plan entry per slot; two entries would leave the slot
     // block and the lens assignment ambiguous.
@@ -217,9 +192,7 @@ function requirePlanEntries(plan, generated) {
 
 function requireEveryLens(plan) {
   // Each judge needs at least one assigned slot to rule on.
-  const idle = REVIEWERS.filter(
-    (lens) => !plan.some((entry) => entryLenses(entry).includes(lens)),
-  );
+  const idle = REVIEWERS.filter((lens) => !plan.some((entry) => entryLenses(entry).includes(lens)));
   if (idle.length > 0) {
     throw new Error(`No question or exclusion for ${idle.join(", ")}`);
   }
@@ -231,13 +204,8 @@ function requirePlan(plan, slots) {
   if (!Array.isArray(plan)) {
     throw new Error("The review plan must be a JSON array");
   }
-  const planned = requirePlanEntries(
-    plan,
-    new Set(slots.map((item) => item.slot)),
-  );
-  const missing = slots
-    .map((item) => item.slot)
-    .filter((slot) => !planned.has(slot));
+  const planned = requirePlanEntries(plan, new Set(slots.map((item) => item.slot)));
+  const missing = slots.map((item) => item.slot).filter((slot) => !planned.has(slot));
   if (missing.length > 0) {
     throw new Error(`Slots missing from the plan: ${missing.join(", ")}`);
   }
@@ -246,9 +214,7 @@ function requirePlan(plan, slots) {
 
 function slotHeading(item) {
   const id = escapeHtml(item.slot);
-  return item.kind === "file"
-    ? `**${id}**`
-    : `**${id}**: ${escapeHtml(oneLine(item.text))}`;
+  return item.kind === "file" ? `**${id}**` : `**${id}**: ${escapeHtml(oneLine(item.text))}`;
 }
 
 function entryLines(entry) {
@@ -267,10 +233,7 @@ function entryLines(entry) {
 // exclusion. Call only after requirePlan.
 function slotsBlock(plan, slots) {
   const bySlot = new Map(plan.map((entry) => [entry.slot, entry]));
-  const lines = [
-    "<details>",
-    `<summary>Review plan slots (${slots.length})</summary>`,
-  ];
+  const lines = ["<details>", `<summary>Review plan slots (${slots.length})</summary>`];
   for (const item of slots) {
     lines.push("", slotHeading(item), "", ...entryLines(bySlot.get(item.slot)));
   }
@@ -290,11 +253,4 @@ function slotsByLens(plan) {
   return byLens;
 }
 
-export {
-  pbiIssue,
-  requirePlan,
-  reviewSlots,
-  slotsBlock,
-  slotsByLens,
-  subIssueList,
-};
+export { pbiIssue, requirePlan, reviewSlots, slotsBlock, slotsByLens, subIssueList };

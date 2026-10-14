@@ -2,15 +2,10 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { judgmentFindings } from "./reviewer-results.mjs";
 import { judgment as sharedJudgment } from "./review-pr.test-support.mjs";
+import { judgmentFindings } from "./reviewer-results.mjs";
 
-const REVIEWERS = [
-  "review-pr-feature",
-  "review-pr-design",
-  "review-pr-reliability",
-  "review-pr-hygiene",
-];
+const REVIEWERS = ["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"];
 const FILE = "src/review.js";
 const ASSIGNED = new Map([
   ["review-pr-feature", new Set(["file:src/review.js", "criterion:1"])],
@@ -52,9 +47,7 @@ test("a missing reviewer or envelope fails instead of reading as clean", () => {
     /Incomplete reviewer results[\s\S]*review-pr-feature: expected one result/,
   );
   const noRulings = complete([]).map((result) =>
-    result.reviewer === "review-pr-design"
-      ? { ...result, rulings: undefined }
-      : result,
+    result.reviewer === "review-pr-design" ? { ...result, rulings: undefined } : result,
   );
   assert.throws(
     () => judgmentFindings(noRulings, ASSIGNED),
@@ -76,9 +69,7 @@ test("a missing ruling names the reviewer and slot", () => {
   const results = [
     {
       reviewer: "review-pr-feature",
-      rulings: [
-        { slot: "file:src/review.js", status: "VERIFIED", evidence: "ok" },
-      ],
+      rulings: [{ slot: "file:src/review.js", status: "VERIFIED", evidence: "ok" }],
     },
   ];
   assert.throws(
@@ -91,10 +82,7 @@ test("a ruling for a slot not assigned to the lens is refused", () => {
   const results = [
     {
       reviewer: "review-pr-design",
-      rulings: [
-        ...rulings("review-pr-design"),
-        { slot: "criterion:1", status: "VERIFIED", evidence: "ok" },
-      ],
+      rulings: [...rulings("review-pr-design"), { slot: "criterion:1", status: "VERIFIED", evidence: "ok" }],
     },
   ];
   assert.throws(
@@ -107,10 +95,7 @@ test("a duplicate ruling is refused", () => {
   const results = [
     {
       reviewer: "review-pr-reliability",
-      rulings: [
-        ...rulings("review-pr-reliability"),
-        ...rulings("review-pr-reliability"),
-      ],
+      rulings: [...rulings("review-pr-reliability"), ...rulings("review-pr-reliability")],
     },
   ];
   assert.throws(
@@ -214,9 +199,7 @@ test("a FINDING ruling with no finding in its result is refused", () => {
   const results = [
     {
       reviewer: "review-pr-design",
-      rulings: [
-        { slot: "file:src/review.js", status: "FINDING", evidence: "ok" },
-      ],
+      rulings: [{ slot: "file:src/review.js", status: "FINDING", evidence: "ok" }],
     },
   ];
   assert.throws(
@@ -229,9 +212,7 @@ test("a FINDING ruling backed by a finding in its result is kept", () => {
   const results = [
     {
       reviewer: "review-pr-design",
-      rulings: [
-        { slot: "file:src/review.js", status: "FINDING", evidence: "ok" },
-      ],
+      rulings: [{ slot: "file:src/review.js", status: "FINDING", evidence: "ok" }],
       findings: [judgment()],
     },
   ];

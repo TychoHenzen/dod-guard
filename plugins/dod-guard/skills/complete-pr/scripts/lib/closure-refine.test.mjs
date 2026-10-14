@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { fakeGitHub, holdOf, recordedSnapshot, setField, snapshotAfter } from "./closure.test-support.mjs";
 import { applyClosures } from "./closure-apply.mjs";
 import { planClosures } from "./closure-plan.mjs";
-import { fakeGitHub, holdOf, recordedSnapshot, setField, snapshotAfter } from "./closure.test-support.mjs";
 
 // At refinement time #840 and #841 had not merged, so they carry no
 // completion record yet.
@@ -12,11 +12,14 @@ function atRefinement(options = {}) {
 
 test("refinement closes #683 as a pure hierarchy record while undelivered originals stay open", () => {
   const plan = planClosures(atRefinement(), { hierarchy: 683 });
-  assert.deepEqual(plan.closes.map(({ issue, rule, stateReason }) => [issue, rule, stateReason]), [
-    [775, "replaced-original", "completed"],
-    [776, "replaced-original", "completed"],
-    [683, "hierarchy", "not_planned"],
-  ]);
+  assert.deepEqual(
+    plan.closes.map(({ issue, rule, stateReason }) => [issue, rule, stateReason]),
+    [
+      [775, "replaced-original", "completed"],
+      [776, "replaced-original", "completed"],
+      [683, "hierarchy", "not_planned"],
+    ],
+  );
   assert.match(
     plan.closes.at(-1).comment,
     /Delivery moved to replacement roots: #818 \(for #775\), #820 \(for #776\), #840 \(for #777\), #841 \(for #778\)\./,
@@ -61,5 +64,8 @@ test("a hierarchy close stays verified on the next run", () => {
   const after = snapshotAfter(snapshot, github);
   const rerun = planClosures(after);
   assert.deepEqual(rerun.closes, []);
-  assert.equal(rerun.reports.find(({ issue }) => issue === 683), undefined);
+  assert.equal(
+    rerun.reports.find(({ issue }) => issue === 683),
+    undefined,
+  );
 });

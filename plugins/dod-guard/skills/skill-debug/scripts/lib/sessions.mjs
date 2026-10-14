@@ -30,9 +30,16 @@ function transcriptsIn(root, project) {
 function codexTranscripts(root) {
   return readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .flatMap((day) => readdirSync(join(root, day.name))
-      .filter((name) => name.endsWith(".jsonl"))
-      .map((name) => ({ path: join(root, day.name, name), session: basename(name, ".jsonl"), project: day.name, modified: statSync(join(root, day.name, name)).mtimeMs })));
+    .flatMap((day) =>
+      readdirSync(join(root, day.name))
+        .filter((name) => name.endsWith(".jsonl"))
+        .map((name) => ({
+          path: join(root, day.name, name),
+          session: basename(name, ".jsonl"),
+          project: day.name,
+          modified: statSync(join(root, day.name, name)).mtimeMs,
+        })),
+    );
 }
 
 // Newest first, because a skill is nearly always debugged right after it
@@ -43,9 +50,7 @@ export function listTranscripts(root, days = 30) {
   }
   const cutoff = Date.now() - days * DAY_MS;
   const entries = transcriptEntries(root);
-  return entries
-    .filter((entry) => entry.modified >= cutoff)
-    .sort((left, right) => right.modified - left.modified);
+  return entries.filter((entry) => entry.modified >= cutoff).sort((left, right) => right.modified - left.modified);
 }
 
 function transcriptEntries(root) {

@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   acceptanceMatrix,
   lensEvidence,
@@ -7,9 +10,6 @@ import {
   proof,
   recordsWithRequiredKeys,
 } from "./structured-workflow-fixtures.mjs";
-import { spawnSync } from "node:child_process";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 const proofScript = path.join(path.dirname(fileURLToPath(import.meta.url)), "structured-workflow-proof.mjs");
 

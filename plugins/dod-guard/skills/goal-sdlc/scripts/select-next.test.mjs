@@ -42,11 +42,7 @@ function snapshot() {
     repository: REPOSITORY,
     defaultBranch: "master",
     today: "2026-10-08",
-    items: [
-      item(31, "Backlog"),
-      item(517, "Todo"),
-      item(518, "Todo", { repository: REPOSITORY, number: 517 }),
-    ],
+    items: [item(31, "Backlog"), item(517, "Todo"), item(518, "Todo", { repository: REPOSITORY, number: 517 })],
     issues: [
       issue(31),
       issue(517, { children: [{ repository: REPOSITORY, number: 518 }] }),
@@ -94,10 +90,7 @@ test("selects the Todo parent and its child ahead of Backlog", async () => {
     status: "Todo",
     issueNumbers: [517, 518],
   });
-  const kinds = result.groups.map(({ rootIssueNumber, kind }) => [
-    rootIssueNumber,
-    kind,
-  ]);
+  const kinds = result.groups.map(({ rootIssueNumber, kind }) => [rootIssueNumber, kind]);
   assert.deepEqual(kinds, [
     [31, "eligible"],
     [517, "eligible"],
@@ -130,9 +123,7 @@ test("holds today's friction log while it collects entries", async () => {
   input.issues = [issue(900, { title: "Friction log 2026-10-08" })];
   const result = await selectNext(input);
   assert.equal(result.selected, null);
-  assert.deepEqual(result.groups[0].reasons, [
-    "friction log still collecting entries",
-  ]);
+  assert.deepEqual(result.groups[0].reasons, ["friction log still collecting entries"]);
 });
 
 test("excludes a merged delivery that carries its completion evidence", async () => {

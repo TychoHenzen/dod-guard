@@ -13,8 +13,8 @@ import test from "node:test";
 // biome-ignore lint/correctness/noNodejsModules: The test resolves the shipped command.
 import { fileURLToPath } from "node:url";
 import { createGitRunner } from "./lib/conflict-triage.mjs";
-import { runCommand } from "./lib/conflict-triage-command.mjs";
 import { BRANCH, createScenario, originHead, sh, writeFiles } from "./lib/conflict-triage.test-support.mjs";
+import { runCommand } from "./lib/conflict-triage-command.mjs";
 
 const COMMAND = fileURLToPath(new URL("./conflict-triage.mjs", import.meta.url));
 
@@ -68,10 +68,7 @@ test("aborts nothing and renders the record from an outside state file", () => {
   const workspace = createWorkspace();
   try {
     const state = join(workspace.scratch, "triage.json");
-    writeFileSync(
-      state,
-      JSON.stringify({ conflicts: [], recordedBase: "b".repeat(40), trustedHead: "c".repeat(40) }),
-    );
+    writeFileSync(state, JSON.stringify({ conflicts: [], recordedBase: "b".repeat(40), trustedHead: "c".repeat(40) }));
     const abort = run(workspace.work, ["abort", "--state", state]);
     assert.equal(abort.status, 0, abort.stderr);
     assert.deepEqual(JSON.parse(abort.stdout), { merge: "none" });

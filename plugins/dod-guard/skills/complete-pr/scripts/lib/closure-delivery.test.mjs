@@ -2,17 +2,17 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { indexSnapshot } from "../../../../lib/closure-index.mjs";
 import { classifyQueue } from "../../../../lib/queue-classifier.mjs";
-import { judgeDelivery } from "./closure-delivery.mjs";
 import {
-  DELIVERIES,
-  REPOSITORY,
   closedWithoutEvidence,
   completionComment,
+  DELIVERIES,
   issue,
   item,
+  REPOSITORY,
   recordedSnapshot,
   setField,
 } from "./closure.test-support.mjs";
+import { judgeDelivery } from "./closure-delivery.mjs";
 
 const CHECKPOINT_REASON = "active checkpoint for issue #832 is not explicitly false";
 

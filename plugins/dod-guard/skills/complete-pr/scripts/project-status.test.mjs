@@ -35,34 +35,43 @@ const IDENTITY_SHIFT = 1000;
 const MISSING_NUMERIC_ID = "999999999";
 
 function projectFields() {
-  return [{
-    id: STATUS_FIELD_ID,
-    node_id: STATUS_FIELD_NODE_ID,
-    name: "Status",
-    data_type: "single_select",
-    options: [
-      { id: "30a230f4", name: { raw: "Backlog" } },
-      { id: "f75ad846", name: { raw: "Todo" } },
-      { id: "47fc9ee4", name: { raw: "In Progress" } },
-      { id: STATUS_OPTION_ID, name: { raw: "Done" } },
-    ],
-  }];
+  return [
+    {
+      id: STATUS_FIELD_ID,
+      node_id: STATUS_FIELD_NODE_ID,
+      name: "Status",
+      data_type: "single_select",
+      options: [
+        { id: "30a230f4", name: { raw: "Backlog" } },
+        { id: "f75ad846", name: { raw: "Todo" } },
+        { id: "47fc9ee4", name: { raw: "In Progress" } },
+        { id: STATUS_OPTION_ID, name: { raw: "Done" } },
+      ],
+    },
+  ];
 }
 
 function projectItems(statuses) {
   return [...statuses].map(([nodeId, status]) => ({
     id: ITEM_NUMERIC_IDS.get(nodeId),
     node_id: nodeId,
-    fields: [{
-      id: STATUS_FIELD_ID,
-      name: "Status",
-      data_type: "single_select",
-      value: { id: STATUS_OPTION_ID, name: { raw: status } },
-    }],
+    fields: [
+      {
+        id: STATUS_FIELD_ID,
+        name: "Status",
+        data_type: "single_select",
+        value: { id: STATUS_OPTION_ID, name: { raw: status } },
+      },
+    ],
   }));
 }
 
-function createRunner({ projectId = PROJECT_ID, statuses = new Map(ITEM_IDS.map((itemId) => [itemId, "Backlog"])), splitItems = false, fields = projectFields() } = {}) {
+function createRunner({
+  projectId = PROJECT_ID,
+  statuses = new Map(ITEM_IDS.map((itemId) => [itemId, "Backlog"])),
+  splitItems = false,
+  fields = projectFields(),
+} = {}) {
   const calls = [];
   const runner = (args) => {
     calls.push(args);
@@ -136,30 +145,58 @@ test("writes REST single-select updates in child-before-parent order with readba
   const result = writeProjectStatuses({ ...writeOptions(), commandRunner: runner });
 
   assert.equal(result.projectId, PROJECT_ID);
-  assert.deepEqual(result.mutations, ITEM_IDS.map((itemId) => ({ itemId, status: "Done" })));
+  assert.deepEqual(
+    result.mutations,
+    ITEM_IDS.map((itemId) => ({ itemId, status: "Done" })),
+  );
   assert.deepEqual(
     calls.filter((args) => args.includes("PATCH")).map((args) => args[3].split("/").at(-1)),
     [...ITEM_NUMERIC_IDS.values()].map(String),
   );
-  assert.deepEqual(calls.filter((args) => args.includes("PATCH"))[0], buildProjectItemEditCommand({
-    owner: "TychoHenzen",
-    projectNumber: 2,
-    itemId: String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0])),
-    statusFieldId: String(STATUS_FIELD_ID),
-    statusOptionId: STATUS_OPTION_ID,
-  }));
-  assert.equal(calls.filter((args) => args.some((value) => String(value).includes("/items?"))).length, ITEM_IDS.length + 1);
-  assert.equal(calls.every((args) => args[0] === "api"), true);
-  assert.equal(calls.some((args) => args.some((value) => /graphql|project( |$)|item-edit|item-list|issue view/i.test(String(value)))), false);
+  assert.deepEqual(
+    calls.filter((args) => args.includes("PATCH"))[0],
+    buildProjectItemEditCommand({
+      owner: "TychoHenzen",
+      projectNumber: 2,
+      itemId: String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0])),
+      statusFieldId: String(STATUS_FIELD_ID),
+      statusOptionId: STATUS_OPTION_ID,
+    }),
+  );
+  assert.equal(
+    calls.filter((args) => args.some((value) => String(value).includes("/items?"))).length,
+    ITEM_IDS.length + 1,
+  );
+  assert.equal(
+    calls.every((args) => args[0] === "api"),
+    true,
+  );
+  assert.equal(
+    calls.some((args) =>
+      args.some((value) => /graphql|project( |$)|item-edit|item-list|issue view/i.test(String(value))),
+    ),
+    false,
+  );
   const itemReads = calls.filter((args) => args.some((value) => String(value).includes("/items?")));
-  assert.equal(itemReads.every((args) => args.includes("--paginate") && args.includes("--slurp")), true);
-  assert.equal(itemReads.every((args) => !args.some((value) => /[?&]page=/.test(String(value)))), true);
+  assert.equal(
+    itemReads.every((args) => args.includes("--paginate") && args.includes("--slurp")),
+    true,
+  );
+  assert.equal(
+    itemReads.every((args) => !args.some((value) => /[?&]page=/.test(String(value)))),
+    true,
+  );
 });
 
 test("consumes every Link-paginated item page before resolving target IDs", () => {
   const calls = [];
   const firstPage = projectItems(new Map([[ITEM_IDS[0], "Done"]]));
-  const secondPage = projectItems(new Map([[ITEM_IDS[1], "Done"], [ITEM_IDS[2], "Done"]]));
+  const secondPage = projectItems(
+    new Map([
+      [ITEM_IDS[1], "Done"],
+      [ITEM_IDS[2], "Done"],
+    ]),
+  );
   const runner = (args) => {
     calls.push(args);
     const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
@@ -183,8 +220,14 @@ test("consumes every Link-paginated item page before resolving target IDs", () =
 
   const itemReads = calls.filter((args) => args.some((value) => String(value).includes("/items?")));
   assert.equal(itemReads.length, 1);
-  assert.equal(itemReads.every((args) => args.includes("--paginate") && args.includes("--slurp")), true);
-  assert.equal(itemReads.every((args) => !args.some((value) => /[?&]page=/.test(String(value)))), true);
+  assert.equal(
+    itemReads.every((args) => args.includes("--paginate") && args.includes("--slurp")),
+    true,
+  );
+  assert.equal(
+    itemReads.every((args) => !args.some((value) => /[?&]page=/.test(String(value)))),
+    true,
+  );
 });
 
 test("does not PATCH a Project item already at the requested status", () => {
@@ -248,7 +291,10 @@ test("rejects malformed or partial initial readbacks before any PATCH", () => {
       () => writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0]] }), commandRunner: malformedRunner }),
       /Project item readback|Status field\/value|missing from readback/,
     );
-    assert.equal(calls.some((args) => args.includes("PATCH")), false);
+    assert.equal(
+      calls.some((args) => args.includes("PATCH")),
+      false,
+    );
   }
 });
 
@@ -268,10 +314,17 @@ test("rejects duplicate or missing Project item identities before any PATCH", ()
       return originalRunner(args);
     };
     assert.throws(
-      () => writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0], ITEM_IDS[1]] }), commandRunner: recordingRunner }),
+      () =>
+        writeProjectStatuses({
+          ...writeOptions({ itemIds: [ITEM_IDS[0], ITEM_IDS[1]] }),
+          commandRunner: recordingRunner,
+        }),
       /Project item|missing from readback|appeared more than once/,
     );
-    assert.equal(calls.some((args) => args.includes("PATCH")), false);
+    assert.equal(
+      calls.some((args) => args.includes("PATCH")),
+      false,
+    );
   }
 });
 
@@ -302,51 +355,78 @@ test("maps REST field and option IDs before issuing a PATCH", () => {
   writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0]] }), commandRunner: runner });
 
   const patch = calls.find((args) => args.includes("PATCH"));
-  assert.deepEqual(patch, buildProjectItemEditCommand({
-    owner: "TychoHenzen",
-    projectNumber: 2,
-    itemId: String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0])),
-    statusFieldId: String(STATUS_FIELD_ID),
-    statusOptionId: STATUS_OPTION_ID,
-  }));
+  assert.deepEqual(
+    patch,
+    buildProjectItemEditCommand({
+      owner: "TychoHenzen",
+      projectNumber: 2,
+      itemId: String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0])),
+      statusFieldId: String(STATUS_FIELD_ID),
+      statusOptionId: STATUS_OPTION_ID,
+    }),
+  );
 });
 
 test("rejects a numeric project response before any status write", () => {
   const { calls, runner } = createRunner({ projectId: "2" });
 
-  assert.throws(() => writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0]] }), commandRunner: runner }), NUMERIC_PROJECT_ID_ERROR);
-  assert.equal(calls.some((args) => args.includes("PATCH")), false);
+  assert.throws(
+    () => writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0]] }), commandRunner: runner }),
+    NUMERIC_PROJECT_ID_ERROR,
+  );
+  assert.equal(
+    calls.some((args) => args.includes("PATCH")),
+    false,
+  );
 });
 
 test("rejects duplicate item IDs before resolving or writing", () => {
   const { calls, runner } = createRunner();
 
-  assert.throws(() => writeProjectStatuses({
-    ...writeOptions({ itemIds: [ITEM_IDS[0], ITEM_IDS[0], ITEM_IDS[2]] }),
-    commandRunner: runner,
-  }), /unique item IDs/);
+  assert.throws(
+    () =>
+      writeProjectStatuses({
+        ...writeOptions({ itemIds: [ITEM_IDS[0], ITEM_IDS[0], ITEM_IDS[2]] }),
+        commandRunner: runner,
+      }),
+    /unique item IDs/,
+  );
   assert.equal(calls.length, 0);
 });
 
 test("rejects a missing or mismatched status option before any status write", () => {
   const { calls, runner } = createRunner();
 
-  assert.throws(() => writeProjectStatuses({
-    ...writeOptions({ statusOptionId: "missing-option", itemIds: [ITEM_IDS[0]] }),
-    commandRunner: runner,
-  }), /must map to Done/);
-  assert.equal(calls.some((args) => args.includes("PATCH")), false);
+  assert.throws(
+    () =>
+      writeProjectStatuses({
+        ...writeOptions({ statusOptionId: "missing-option", itemIds: [ITEM_IDS[0]] }),
+        commandRunner: runner,
+      }),
+    /must map to Done/,
+  );
+  assert.equal(
+    calls.some((args) => args.includes("PATCH")),
+    false,
+  );
 });
 
 test("rejects missing or ambiguous REST status fields before any status write", () => {
   for (const fields of [[], [...projectFields(), ...projectFields()]]) {
     const { calls, runner } = createRunner({ fields });
 
-    assert.throws(() => writeProjectStatuses({
-      ...writeOptions({ itemIds: [ITEM_IDS[0]] }),
-      commandRunner: runner,
-    }), STATUS_FIELD_ERROR);
-    assert.equal(calls.some((args) => args.includes("PATCH")), false);
+    assert.throws(
+      () =>
+        writeProjectStatuses({
+          ...writeOptions({ itemIds: [ITEM_IDS[0]] }),
+          commandRunner: runner,
+        }),
+      STATUS_FIELD_ERROR,
+    );
+    assert.equal(
+      calls.some((args) => args.includes("PATCH")),
+      false,
+    );
   }
 });
 
@@ -359,7 +439,10 @@ test("stops after a failed item readback and does not write the next item", () =
   const { calls, runner } = createRunner({ statuses });
   const failedRunner = (args) => {
     const result = runner(args);
-    if (args.includes("PATCH") && args.some((value) => String(value).endsWith(String(ITEM_NUMERIC_IDS.get(ITEM_IDS[1]))))) {
+    if (
+      args.includes("PATCH") &&
+      args.some((value) => String(value).endsWith(String(ITEM_NUMERIC_IDS.get(ITEM_IDS[1]))))
+    ) {
       statuses.set(ITEM_IDS[1], "Todo");
     }
     return result;
@@ -473,11 +556,7 @@ test("AC-01 numeric input writes one PATCH to its numeric endpoint and reports t
 });
 
 test("AC-01 mixed numeric and node inputs PATCH in the given order and report each input as given", () => {
-  const itemIds = [
-    String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0])),
-    String(ITEM_NUMERIC_IDS.get(ITEM_IDS[1])),
-    ITEM_IDS[2],
-  ];
+  const itemIds = [String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0])), String(ITEM_NUMERIC_IDS.get(ITEM_IDS[1])), ITEM_IDS[2]];
   const { calls, runner } = createRunner();
 
   const result = writeProjectStatuses({ ...writeOptions({ itemIds }), commandRunner: runner });
@@ -486,7 +565,10 @@ test("AC-01 mixed numeric and node inputs PATCH in the given order and report ea
     calls.filter((args) => args.includes("PATCH")).map((args) => args[3].split("/").at(-1)),
     ITEM_IDS.map((itemId) => String(ITEM_NUMERIC_IDS.get(itemId))),
   );
-  assert.deepEqual(result.mutations, itemIds.map((itemId) => ({ itemId, status: "Done" })));
+  assert.deepEqual(
+    result.mutations,
+    itemIds.map((itemId) => ({ itemId, status: "Done" })),
+  );
 });
 
 test("AC-02 numeric and node spellings of one item stop before any PATCH and name both inputs", () => {
@@ -525,10 +607,11 @@ test("AC-02 identity change after the write stops for every input form and chang
       const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
 
       assert.throws(
-        () => writeProjectStatuses({
-          ...writeOptions({ itemIds: [itemId] }),
-          commandRunner: alterTargetInLaterReads(runner, alterItem),
-        }),
+        () =>
+          writeProjectStatuses({
+            ...writeOptions({ itemIds: [itemId] }),
+            commandRunner: alterTargetInLaterReads(runner, alterItem),
+          }),
         IDENTITY_CHANGE_ERROR,
         label,
       );
@@ -547,14 +630,15 @@ test("AC-02 readback with both IDs changed after the write stops as missing afte
     const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
 
     assert.throws(
-      () => writeProjectStatuses({
-        ...writeOptions({ itemIds: [itemId] }),
-        commandRunner: alterTargetInLaterReads(runner, (item) => ({
-          ...item,
-          id: item.id + IDENTITY_SHIFT,
-          node_id: "PVTI_replaced",
-        })),
-      }),
+      () =>
+        writeProjectStatuses({
+          ...writeOptions({ itemIds: [itemId] }),
+          commandRunner: alterTargetInLaterReads(runner, (item) => ({
+            ...item,
+            id: item.id + IDENTITY_SHIFT,
+            node_id: "PVTI_replaced",
+          })),
+        }),
       MISSING_READBACK_ERROR,
       label,
     );
@@ -566,10 +650,11 @@ test("AC-03 rerun after an identity-change stop makes no PATCH once the item alr
   const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
   const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
   assert.throws(
-    () => writeProjectStatuses({
-      ...writeOptions({ itemIds: [numericId] }),
-      commandRunner: alterTargetInLaterReads(runner, (item) => ({ ...item, id: item.id + IDENTITY_SHIFT })),
-    }),
+    () =>
+      writeProjectStatuses({
+        ...writeOptions({ itemIds: [numericId] }),
+        commandRunner: alterTargetInLaterReads(runner, (item) => ({ ...item, id: item.id + IDENTITY_SHIFT })),
+      }),
     IDENTITY_CHANGE_ERROR,
   );
   assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);

@@ -27,7 +27,17 @@ function item(number, status, { id = `PVTI_${number}`, parent = null, linked = [
   };
 }
 
-function issue(number, { repository = REPOSITORY, state = "open", title = `Issue ${number}`, parent = null, children = [], activeCheckpoint } = {}) {
+function issue(
+  number,
+  {
+    repository = REPOSITORY,
+    state = "open",
+    title = `Issue ${number}`,
+    parent = null,
+    children = [],
+    activeCheckpoint,
+  } = {},
+) {
   const record = { number, repository, state, title, parent, children };
   if (activeCheckpoint !== undefined) record.activeCheckpoint = activeCheckpoint;
   return record;
@@ -74,11 +84,10 @@ test("AC-01: every record is keyed by owner/name and a foreign record never supp
   input.issues.push(issue(517, { repository: FOREIGN_REPOSITORY, state: "closed", title: `Friction log ${TODAY}` }));
   const result = classify(input);
   const records = result.groups.flatMap(({ records: group }) => group);
-  assert.deepEqual(records.map(({ key }) => key), [
-    "tychohenzen/dod-guard#31",
-    "tychohenzen/dod-guard#517",
-    "tychohenzen/dod-guard#518",
-  ]);
+  assert.deepEqual(
+    records.map(({ key }) => key),
+    ["tychohenzen/dod-guard#31", "tychohenzen/dod-guard#517", "tychohenzen/dod-guard#518"],
+  );
   assert.equal(result.selected.rootIssueNumber, 517);
   assert.equal(groupOf(result, 517).records[0].issue.title, "Issue 517");
   assert.equal(groupOf(result, 517).records[0].projectStatus, "Todo");
@@ -126,22 +135,29 @@ test("AC-02: a foreign item and issue numbered like a target root do not change 
 });
 
 test("AC-03: a foreign parent holds its issue and leaves the same-numbered target group eligible", () => {
-  const result = classify(snapshot({
-    items: [item(40, "Todo", { parent: ref(41, FOREIGN_REPOSITORY) }), item(41, "Todo")],
-    issues: [issue(40, { parent: ref(41, FOREIGN_REPOSITORY) }), issue(41)],
-  }));
+  const result = classify(
+    snapshot({
+      items: [item(40, "Todo", { parent: ref(41, FOREIGN_REPOSITORY) }), item(41, "Todo")],
+      issues: [issue(40, { parent: ref(41, FOREIGN_REPOSITORY) }), issue(41)],
+    }),
+  );
   assert.equal(groupOf(result, 40).decision.kind, "hold");
   assert.ok(groupOf(result, 40).decision.reasons.includes("cross-repository parent other/repo#41"));
   assert.deepEqual(groupOf(result, 41).decision, { kind: "eligible", eligible: true, status: "Todo", reasons: [] });
-  assert.deepEqual(groupOf(result, 41).records.map(({ issueNumber }) => issueNumber), [41]);
+  assert.deepEqual(
+    groupOf(result, 41).records.map(({ issueNumber }) => issueNumber),
+    [41],
+  );
   assert.equal(result.selected.rootIssueNumber, 41);
 });
 
 test("AC-03: a foreign sub-issue holds its issue and leaves the same-numbered target group eligible", () => {
-  const result = classify(snapshot({
-    items: [item(30, "Todo"), item(7, "Todo")],
-    issues: [issue(30, { children: [ref(7, FOREIGN_REPOSITORY)] }), issue(7)],
-  }));
+  const result = classify(
+    snapshot({
+      items: [item(30, "Todo"), item(7, "Todo")],
+      issues: [issue(30, { children: [ref(7, FOREIGN_REPOSITORY)] }), issue(7)],
+    }),
+  );
   assert.equal(groupOf(result, 30).decision.kind, "hold");
   assert.ok(groupOf(result, 30).decision.reasons.includes("cross-repository sub-issue other/repo#7"));
   assert.deepEqual(groupOf(result, 7).decision, { kind: "eligible", eligible: true, status: "Todo", reasons: [] });
@@ -149,10 +165,12 @@ test("AC-03: a foreign sub-issue holds its issue and leaves the same-numbered ta
 });
 
 test("AC-03: a foreign linked pull request holds its item and leaves the same-numbered target group eligible", () => {
-  const result = classify(snapshot({
-    items: [item(22, "Todo", { linked: [ref(9, FOREIGN_REPOSITORY)] }), item(9, "Todo")],
-    issues: [issue(22), issue(9)],
-  }));
+  const result = classify(
+    snapshot({
+      items: [item(22, "Todo", { linked: [ref(9, FOREIGN_REPOSITORY)] }), item(9, "Todo")],
+      issues: [issue(22), issue(9)],
+    }),
+  );
   assert.equal(groupOf(result, 22).decision.kind, "hold");
   assert.ok(groupOf(result, 22).decision.reasons.includes("cross-repository linked pull request other/repo#9"));
   assert.deepEqual(groupOf(result, 9).decision, { kind: "eligible", eligible: true, status: "Todo", reasons: [] });
@@ -183,10 +201,13 @@ test("localDate formats the local calendar day", () => {
 });
 
 test("an explicit today holds today's log and leaves an ordinary Backlog issue selectable", () => {
-  const result = classify(snapshot({
-    items: [item(900, "Backlog"), item(901, "Backlog")],
-    issues: [issue(900, { title: "Friction log 2026-09-05" }), issue(901)],
-  }), "2026-09-05");
+  const result = classify(
+    snapshot({
+      items: [item(900, "Backlog"), item(901, "Backlog")],
+      issues: [issue(900, { title: "Friction log 2026-09-05" }), issue(901)],
+    }),
+    "2026-09-05",
+  );
   assert.deepEqual(groupOf(result, 900).decision.reasons, ["friction log still collecting entries"]);
   assert.equal(result.selected.rootIssueNumber, 901);
 });
@@ -241,7 +262,11 @@ test("AC-05: foreign Done parent and child items are excluded from the Done coun
     items: [
       ...target.items,
       item(600, "Done", { id: "PVTI_foreign_600", repository: FOREIGN_REPOSITORY }),
-      item(601, "Done", { id: "PVTI_foreign_601", repository: FOREIGN_REPOSITORY, parent: ref(600, FOREIGN_REPOSITORY) }),
+      item(601, "Done", {
+        id: "PVTI_foreign_601",
+        repository: FOREIGN_REPOSITORY,
+        parent: ref(600, FOREIGN_REPOSITORY),
+      }),
     ],
     issues: target.issues,
   });
@@ -287,7 +312,10 @@ test("AC-09: a target item with no content number selects nothing and is named i
   const result = classify(input);
   assert.equal(result.selected, null);
   assert.deepEqual(result.groups, []);
-  assert.ok(result.missingEvidence.includes("issue number missing: Project item PVTI_nonumber"), result.missingEvidence.join("; "));
+  assert.ok(
+    result.missingEvidence.includes("issue number missing: Project item PVTI_nonumber"),
+    result.missingEvidence.join("; "),
+  );
   const healthyRoot = 517;
   assert.equal(classify(healthy()).selected.rootIssueNumber, healthyRoot);
 });
@@ -317,7 +345,12 @@ test("an overlay alone sets the checkpoint and trusted head that a decision read
   const settled = buildQueueRecords(index, {
     overlay: { checkpoints: new Map([[444, false]]), trustedHeads: new Map([[540, "head-540"]]) },
   });
-  assert.deepEqual(classifyDelivery(settled, deliveryRoot, context).decision, { kind: "complete", eligible: false, status: "Done", reasons: [] });
+  assert.deepEqual(classifyDelivery(settled, deliveryRoot, context).decision, {
+    kind: "complete",
+    eligible: false,
+    status: "Done",
+    reasons: [],
+  });
 });
 
 test("a linked pull request absent from pullRequests is missing evidence on its record and holds its group", () => {
@@ -335,33 +368,54 @@ test("a linked pull request absent from pullRequests is missing evidence on its 
 test("classifyDelivery and the queue judge an independently delivered root below Backlog separately", () => {
   const input = snapshot({
     items: [item(683, "Backlog"), item(840, "Done", { parent: ref(683), linked: [ref(901)] })],
-    issues: [issue(683, { children: [ref(840)] }), issue(840, { state: "closed", parent: ref(683), activeCheckpoint: false })],
+    issues: [
+      issue(683, { children: [ref(840)] }),
+      issue(840, { state: "closed", parent: ref(683), activeCheckpoint: false }),
+    ],
     pullRequests: [pull(901, { trustedHeadSha: "head-901" })],
   });
   const records = buildQueueRecords(indexSnapshot(input));
   const context = { repository: REPOSITORY, defaultBranch: "master" };
   const delivery = classifyDelivery(records, 840, context);
   assert.equal(delivery.decision.kind, "complete");
-  assert.deepEqual(delivery.records.map(({ issueNumber }) => issueNumber), [840]);
+  assert.deepEqual(
+    delivery.records.map(({ issueNumber }) => issueNumber),
+    [840],
+  );
   const parentRoot = 683;
-  const queueGroup = classifyQueue(input, { today: TODAY }).groups.find(({ rootIssueNumber }) => rootIssueNumber === parentRoot);
-  assert.deepEqual(queueGroup.records.map(({ issueNumber }) => issueNumber), [683]);
+  const queueGroup = classifyQueue(input, { today: TODAY }).groups.find(
+    ({ rootIssueNumber }) => rootIssueNumber === parentRoot,
+  );
+  assert.deepEqual(
+    queueGroup.records.map(({ issueNumber }) => issueNumber),
+    [683],
+  );
   assert.equal(queueGroup.decision.kind, "hold");
   assert.equal(groupOf(classify(input), 840).decision.kind, "complete");
 });
 
 test("completed independent siblings leave Todo roots and their nested children selectable", () => {
   const input = snapshot({
-    items: [item(239, "Backlog"), item(255, "Done", { parent: ref(239), linked: [ref(302)] }),
-      item(262, "Todo", { parent: ref(239) }), item(263, "Todo", { parent: ref(262) })],
-    issues: [issue(239, { children: [ref(255), ref(262)] }),
+    items: [
+      item(239, "Backlog"),
+      item(255, "Done", { parent: ref(239), linked: [ref(302)] }),
+      item(262, "Todo", { parent: ref(239) }),
+      item(263, "Todo", { parent: ref(262) }),
+    ],
+    issues: [
+      issue(239, { children: [ref(255), ref(262)] }),
       issue(255, { parent: ref(239), state: "closed", activeCheckpoint: false }),
-      issue(262, { parent: ref(239), children: [ref(263)] }), issue(263, { parent: ref(262) })],
+      issue(262, { parent: ref(239), children: [ref(263)] }),
+      issue(263, { parent: ref(262) }),
+    ],
     pullRequests: [pull(302, { trustedHeadSha: "head-302" })],
   });
   const result = classify(input);
   assert.equal(result.selected.rootIssueNumber, 262);
-  assert.deepEqual(result.selected.records.map(({ issueNumber }) => issueNumber), [262, 263]);
+  assert.deepEqual(
+    result.selected.records.map(({ issueNumber }) => issueNumber),
+    [262, 263],
+  );
   assert.equal(groupOf(result, 255).decision.kind, "complete");
   const context = { repository: REPOSITORY, defaultBranch: "master" };
   assert.equal(classifyDelivery(buildQueueRecords(indexSnapshot(input)), 239, context).decision.kind, "hold");
@@ -373,9 +427,16 @@ test("completed independent siblings leave Todo roots and their nested children 
 test("nested checklist children stay with their top delivery root", () => {
   const input = snapshot({
     items: [item(1, "Todo"), item(2, "Todo", { parent: ref(1) }), item(3, "Todo", { parent: ref(2) })],
-    issues: [issue(1, { children: [ref(2)] }), issue(2, { parent: ref(1), children: [ref(3)] }), issue(3, { parent: ref(2) })],
+    issues: [
+      issue(1, { children: [ref(2)] }),
+      issue(2, { parent: ref(1), children: [ref(3)] }),
+      issue(3, { parent: ref(2) }),
+    ],
   });
-  assert.deepEqual(classify(input).selected.records.map(({ issueNumber }) => issueNumber), [1, 2, 3]);
+  assert.deepEqual(
+    classify(input).selected.records.map(({ issueNumber }) => issueNumber),
+    [1, 2, 3],
+  );
 });
 
 test("cyclic ancestry cannot select independent children", () => {
@@ -410,12 +471,18 @@ test("a Backlog parent's own delivery checkpoint or pull request prevents a chil
     issues: [issue(1, { children: [ref(2)], activeCheckpoint: true }), issue(2, { parent: ref(1) })],
   });
   assert.equal(classify(input).selected, null);
-  assert.deepEqual(groupOf(classify(input), 1).records.map(({ issueNumber }) => issueNumber), [1, 2]);
+  assert.deepEqual(
+    groupOf(classify(input), 1).records.map(({ issueNumber }) => issueNumber),
+    [1, 2],
+  );
   input.issues[0].activeCheckpoint = false;
   input.items[0] = item(1, "Backlog", { linked: [ref(9)] });
   input.pullRequests = [pull(9, { state: "open", mergedAt: null })];
   assert.equal(classify(input).selected, null);
-  assert.deepEqual(groupOf(classify(input), 1).records.map(({ issueNumber }) => issueNumber), [1, 2]);
+  assert.deepEqual(
+    groupOf(classify(input), 1).records.map(({ issueNumber }) => issueNumber),
+    [1, 2],
+  );
 });
 
 test("classifyDelivery returns null for a number no record carries", () => {

@@ -6,6 +6,7 @@ import {
   proof,
   recordsWithRequiredKeys,
 } from "../../next-ticket/scripts/structured-workflow-fixtures.mjs";
+
 const validConvergenceInput = () => {
   const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
     id,

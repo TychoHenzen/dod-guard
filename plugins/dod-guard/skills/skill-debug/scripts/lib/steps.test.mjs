@@ -12,12 +12,8 @@ function user(content, extra = {}) {
 
 describe("stepsOf on tool calls", () => {
   it("digests a Bash call down to its command", () => {
-    const record = assistant([
-      { type: "tool_use", name: "Bash", input: { command: "npm test" } },
-    ]);
-    assert.deepEqual(stepsOf(record), [
-      { kind: "tool", name: "Bash", detail: "npm test", sidechain: false },
-    ]);
+    const record = assistant([{ type: "tool_use", name: "Bash", input: { command: "npm test" } }]);
+    assert.deepEqual(stepsOf(record), [{ kind: "tool", name: "Bash", detail: "npm test", sidechain: false }]);
   });
 
   it("digests an Agent call to the agent and the task", () => {
@@ -28,9 +24,7 @@ describe("stepsOf on tool calls", () => {
   });
 
   it("falls back to the whole input for an unknown tool", () => {
-    const record = assistant([
-      { type: "tool_use", name: "Weird", input: { a: 1 } },
-    ]);
+    const record = assistant([{ type: "tool_use", name: "Weird", input: { a: 1 } }]);
     assert.equal(stepsOf(record)[0].detail, '{"a":1}');
   });
 
@@ -48,9 +42,7 @@ describe("stepsOf on tool calls", () => {
 
 describe("stepsOf on results", () => {
   it("marks a failed tool result", () => {
-    const record = user([
-      { type: "tool_result", content: "boom", is_error: true },
-    ]);
+    const record = user([{ type: "tool_result", content: "boom", is_error: true }]);
     const [step] = stepsOf(record);
     assert.equal(step.name, "ERR");
     assert.equal(step.ok, false);
@@ -62,9 +54,7 @@ describe("stepsOf on results", () => {
   });
 
   it("reads a result delivered as content blocks", () => {
-    const content = [
-      { type: "tool_result", content: [{ type: "text", text: "hello" }] },
-    ];
+    const content = [{ type: "tool_result", content: [{ type: "text", text: "hello" }] }];
     assert.equal(stepsOf(user(content))[0].detail, "hello");
   });
 });

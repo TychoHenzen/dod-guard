@@ -161,9 +161,15 @@ function fieldPages({ withParent = true } = {}) {
   const linked = { id: 104, node_id: "PVTF_linked", name: "Linked pull requests", data_type: "pull_request" };
   const title = { id: 900, node_id: "PVTF_title", name: "Title", data_type: "title" };
   if (!withParent) {
-    return [[status, repository], [linked, title]];
+    return [
+      [status, repository],
+      [linked, title],
+    ];
   }
-  return [[status, repository], [parent, linked, title]];
+  return [
+    [status, repository],
+    [parent, linked, title],
+  ];
 }
 
 function checkRunsReply(sha) {
@@ -178,20 +184,20 @@ function commitStatusReply(sha) {
 
 export {
   BASE_SHA,
-  ENDPOINT,
-  FOREIGN,
-  MERGED_AT,
-  NOT_FOUND,
-  OWNER,
-  REPO,
-  REPO_URL,
-  SERVER_ERROR,
   checkRunsReply,
   commitStatusReply,
+  ENDPOINT,
+  FOREIGN,
   fakeRest,
   fieldPages,
   issueContent,
+  MERGED_AT,
+  NOT_FOUND,
+  OWNER,
   ok,
   projectItem,
   pull,
+  REPO,
+  REPO_URL,
+  SERVER_ERROR,
 };

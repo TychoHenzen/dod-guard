@@ -129,11 +129,11 @@ function renderClosureEvidence({ issue, stateReason, evidence }) {
 }
 
 export {
-  RECORD_KINDS,
   isRecord,
   parseCompletionRecord,
   parseSupersedes,
   pendingMatrixRows,
+  RECORD_KINDS,
   recordComments,
   renderClosureEvidence,
   renderCompletionRecord,

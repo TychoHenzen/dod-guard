@@ -1,7 +1,7 @@
-import { createRequire } from "node:module";
 import { existsSync, readFileSync } from "node:fs";
-import process from "node:process";
+import { createRequire } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
+import process from "node:process";
 
 const CODEX_WRITE_APPROVAL_FLAG = "--approve-for-me";
 const CODEX_OBSOLETE_APPROVAL_FLAG = "--ask-for-approval";
@@ -67,9 +67,10 @@ function nativePackagePath(packageRoot, packageName) {
 function resolveWindowsNativeExecutable(shimPath, architecture) {
   const packageRoot = shimPackageRoot(shimPath);
   if (!packageRoot) return undefined;
-  const target = architecture === "arm64"
-    ? { packageName: "@openai/codex-win32-arm64", triple: "aarch64-pc-windows-msvc" }
-    : { packageName: "@openai/codex-win32-x64", triple: "x86_64-pc-windows-msvc" };
+  const target =
+    architecture === "arm64"
+      ? { packageName: "@openai/codex-win32-arm64", triple: "aarch64-pc-windows-msvc" }
+      : { packageName: "@openai/codex-win32-x64", triple: "x86_64-pc-windows-msvc" };
   const packagePath = nativePackagePath(packageRoot, target.packageName);
   const candidate = packagePath
     ? join(packagePath, "vendor", target.triple, "bin", "codex.exe")
@@ -80,7 +81,11 @@ function resolveWindowsNativeExecutable(shimPath, architecture) {
   return undefined;
 }
 
-export function resolveCodexExecutable(platform = process.platform, environment = process.env, architecture = process.arch) {
+export function resolveCodexExecutable(
+  platform = process.platform,
+  environment = process.env,
+  architecture = process.arch,
+) {
   if (platform !== "win32") return "codex";
   const entries = windowsPathEntries(environment);
   for (const entry of entries) {

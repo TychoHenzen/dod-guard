@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 
-import { readFile } from "node:fs/promises";
-import { stat } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { readdir } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 function tokens(text) {
@@ -15,9 +13,7 @@ async function filesAt(path) {
   if (info.isFile()) return [path];
   const entries = await readdir(path, { withFileTypes: true });
   const nested = await Promise.all(
-    entries
-      .filter((entry) => !entry.name.startsWith("."))
-      .map((entry) => filesAt(join(path, entry.name))),
+    entries.filter((entry) => !entry.name.startsWith(".")).map((entry) => filesAt(join(path, entry.name))),
   );
   return nested.flat();
 }
@@ -197,10 +193,17 @@ export function scoreOverlap(original, rewrite, { mode = "code", whitelist = [],
       (metrics.run <= 15 && metrics.ngram <= 0.2 && metrics.sentences <= 0.4 && metrics.order <= 0.6);
   } else {
     metrics.lines = overlapRate(normalizedLines(cleanOriginal), normalizedLines(cleanRewrite));
-    metrics.shapeNgram = overlapRate(ngrams(codeShapeTokens(cleanOriginal), 4), ngrams(codeShapeTokens(cleanRewrite), 4));
+    metrics.shapeNgram = overlapRate(
+      ngrams(codeShapeTokens(cleanOriginal), 4),
+      ngrams(codeShapeTokens(cleanRewrite), 4),
+    );
     metrics.pass =
       metrics.sample < 40 ||
-      (metrics.run <= 60 && metrics.ngram <= 0.65 && metrics.shapeNgram <= 0.65 && metrics.lines <= 0.35 && metrics.order <= 0.5);
+      (metrics.run <= 60 &&
+        metrics.ngram <= 0.65 &&
+        metrics.shapeNgram <= 0.65 &&
+        metrics.lines <= 0.35 &&
+        metrics.order <= 0.5);
   }
   return metrics;
 }
@@ -218,12 +221,14 @@ async function main() {
     whitelist: options.whitelist,
     contract: loadContract(options["contract-file"]),
   });
-  console.log(JSON.stringify({
-    original: relative(process.cwd(), options.original),
-    rewrite: relative(process.cwd(), options.rewrite),
-    mode: options.mode,
-    ...metrics,
-  }));
+  console.log(
+    JSON.stringify({
+      original: relative(process.cwd(), options.original),
+      rewrite: relative(process.cwd(), options.rewrite),
+      mode: options.mode,
+      ...metrics,
+    }),
+  );
   process.exitCode = metrics.pass ? 0 : 1;
 }
 

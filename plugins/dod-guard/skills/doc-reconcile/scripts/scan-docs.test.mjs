@@ -31,14 +31,9 @@ describe("scan-docs CLI", () => {
     git(repo, "config", "user.name", "Test");
     writeFileSync(
       join(repo, "a.md"),
-      [
-        "# Setup",
-        "",
-        "The default port is 8080.",
-        "",
-        "Some unrelated sentence about widgets and gadgets.",
-        "",
-      ].join("\n"),
+      ["# Setup", "", "The default port is 8080.", "", "Some unrelated sentence about widgets and gadgets.", ""].join(
+        "\n",
+      ),
     );
     writeFileSync(
       join(repo, "b.md"),
