@@ -146,8 +146,7 @@ test("structural rules cover the whole touched file and line rules only the chan
 
 test("a changed file Git quotes in the diff still gets its scanner findings", () => {
   const { payload } = review([], scan);
-  const unicode = payload.comments.find((comment) => comment.path === UNICODE);
-  assert.deepEqual([unicode.line, unicode.body.split("\n")[0]], [1, "**MINOR** quality-guard structural findings (1)"]);
+  assert.match(payload.body, /`docs\/ü\.md:1`\n\*\*MINOR\*\* quality-guard structural findings \(1\)/);
 });
 
 test("a scanner group whose findings are all low is MINOR", () => {
@@ -163,8 +162,24 @@ test("a scanner group whose findings are all low is MINOR", () => {
     ],
   };
   const { payload } = review([], lowOnly);
-  const unicode = payload.comments.find((comment) => comment.path === UNICODE);
-  assert.equal(unicode.body.split("\n")[0], "**MINOR** quality-guard structural findings (1)");
+  assert.match(payload.body, /\*\*MINOR\*\* quality-guard structural findings \(1\)/);
+});
+
+test("MINOR findings are listed in the body, get no thread, and do not block", () => {
+  const results = [{ reviewer: "review-pr-design", findings: [judgment({ severity: "MINOR" })] }];
+  const { payload, recommendation, counts } = review(results);
+  assert.equal(recommendation, "APPROVE");
+  assert.deepEqual(counts, { BLOCKER: 0, MAJOR: 0, MINOR: 1 });
+  assert.deepEqual(payload.comments, []);
+  assert.match(payload.body, /### Minor notes\n\nThese do not block the merge and need no reply\./);
+});
+
+test("a MAJOR finding still requests changes and stays inline", () => {
+  const results = [{ reviewer: "review-pr-design", findings: [judgment({ severity: "MAJOR" })] }];
+  const { payload, recommendation } = review(results);
+  assert.equal(recommendation, "REQUEST_CHANGES");
+  assert.equal(payload.comments.length, 1);
+  assert.doesNotMatch(payload.body, /### Minor notes/);
 });
 
 test("a scanner severity outside high/medium/low fails the review build", () => {

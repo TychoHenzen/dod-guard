@@ -170,9 +170,11 @@ generated, a slot has neither questions nor an exclusion or has both, a
 question or exclusion is incomplete, a question id repeats, or a lens has no
 question or exclusion. It groups scanner findings into one comment per changed
 file, dedupes reviewer findings by file and root cause, and posts every
-finding as an inline comment with its own `GH-<id>`. When the diff adds no
-line, there is nothing to anchor a comment on, so the findings are listed in
-the review body without a `GH-<id>`. It lists every slot with its questions
+`BLOCKER` and `MAJOR` finding as an inline comment with its own `GH-<id>`.
+`MINOR` findings go in a "Minor notes" list in the review body: they get no
+thread, need no reply, and do not block. When the diff adds no line, there is
+nothing to anchor a comment on, so blocking findings are listed in the review
+body without a `GH-<id>`. It lists every slot with its questions
 and their statuses, or its exclusion lens and reason, in a collapsed
 `<details>` block in the review body. When the body would pass GitHub's
 65536-character limit, the build refuses before anything is posted; shorten
@@ -181,7 +183,7 @@ this PR did not add moves to the nearest added line, and its body names the
 cited location. Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A
 file's scanner findings are `MAJOR` when any is `high`, otherwise `MINOR`.
 Recommendation: any `BLOCKER` is `BLOCK`, any
-other finding is `REQUEST_CHANGES`, none is `APPROVE`.
+`MAJOR` is `REQUEST_CHANGES`, and only `MINOR` findings or none is `APPROVE`.
 
 It writes the review payload to `--out` and prints the recommendation and
 severity counts. Reread the PR head; stop if it moved. Post the payload as one

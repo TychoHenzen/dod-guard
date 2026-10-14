@@ -77,7 +77,9 @@ test("review-pr posts the slot block without changing its boundaries", () => {
   assert.match(skill, prose("never post a second review"));
   assert.match(skill, prose("Never edit files, approve, mark ready, merge, or close anything."));
   assert.doesNotMatch(skill, /questions\.json/);
-  assert.match(skill, prose("the findings are listed in the review body without a `GH-<id>`"));
+  assert.match(skill, prose("blocking findings are listed in the review body without a `GH-<id>`"));
+  assert.match(skill, prose('`MINOR` findings go in a "Minor notes" list in the review body'));
+  assert.match(skill, prose("only `MINOR` findings or none is `APPROVE`"));
   assert.doesNotMatch(skill, /so each gets a `GH-<id>`/);
 });
 

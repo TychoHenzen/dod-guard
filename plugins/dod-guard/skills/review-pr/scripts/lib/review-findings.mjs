@@ -14,11 +14,13 @@ function marker(headSha, recommendation) {
   return `<!-- dod-guard:review-pr head=${headSha} recommendation=${recommendation} -->`;
 }
 
+// MINOR findings never block: one review on PR #901 posted 21 of them, and
+// fixing and answering each one cost more than the findings were worth.
 function recommendationFor(severities) {
   if (severities.includes("BLOCKER")) {
     return "BLOCK";
   }
-  if (severities.length > 0) {
+  if (severities.includes("MAJOR")) {
     return "REQUEST_CHANGES";
   }
   return "APPROVE";
@@ -117,7 +119,7 @@ function countSeverities(findings) {
   return counts;
 }
 
-function reviewBody({ headSha, recommendation, counts, block, unanchored }) {
+function reviewBody({ headSha, recommendation, counts, block, unanchored, minor }) {
   const lines = [
     marker(headSha, recommendation),
     "## dod-guard review",
@@ -130,6 +132,12 @@ function reviewBody({ headSha, recommendation, counts, block, unanchored }) {
   for (const finding of unanchored) {
     const heading = `### \`${finding.file}:${finding.line}\` (no added line to anchor on)`;
     lines.push("", heading, finding.body);
+  }
+  if (minor.length > 0) {
+    lines.push("", "### Minor notes", "", "These do not block the merge and need no reply.");
+    for (const finding of minor) {
+      lines.push("", `\`${finding.file}:${finding.line}\``, finding.body);
+    }
   }
   return lines.join("\n");
 }
@@ -166,8 +174,12 @@ function buildReview({ headSha, scan, diff, results, plan, pbi, subIssues }) {
   const findings = anchoredFindings({ scan, changedLines, results, plan });
   const recommendation = recommendationFor(findings.map((finding) => finding.severity));
   const counts = countSeverities(findings);
-  const inline = findings.filter((finding) => finding.anchored);
-  const unanchored = findings.filter((finding) => !finding.anchored);
+  // Only blocking findings become inline threads, so only they get a GH-<id>
+  // that a caller can pass to /fix-pr-review.
+  const blocking = findings.filter((finding) => finding.severity !== "MINOR");
+  const inline = blocking.filter((finding) => finding.anchored);
+  const unanchored = blocking.filter((finding) => !finding.anchored);
+  const minor = findings.filter((finding) => finding.severity === "MINOR");
   const body = requirePostableBody(
     reviewBody({
       headSha,
@@ -175,6 +187,7 @@ function buildReview({ headSha, scan, diff, results, plan, pbi, subIssues }) {
       counts,
       block: slotsBlock(plan, slots),
       unanchored,
+      minor,
     }),
     slots.length,
   );
