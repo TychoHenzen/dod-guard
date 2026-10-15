@@ -2,140 +2,13 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { buildReview, existingReview, postedFindings } from "./review-findings.mjs";
-import { QUOTED_PATH_HUNK, judgment as sharedJudgment } from "./review-pr.test-support.mjs";
+import { existingReview, postedFindings } from "./review-findings.mjs";
+import { findingsFixture, judgment } from "./review-pr.test-support.mjs";
 
-const HEAD = "f522da2baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-const FIX = "plugins/dod-guard/skills/fix-pr-review/scripts/lib/fix-support.mjs";
-const OTHER = "packages/unrelated/src/index.ts";
-const UNICODE = "docs/\u00fc.md";
-
-// Violation shapes copied from a whole-repository quality_scan of PR #826
-// (Windows separators included).
-const scan = {
-  violations: [
-    {
-      file: FIX.replaceAll("/", "\\"),
-      line: 72,
-      rule: "line-length",
-      severity: "high",
-      message: "line is 132 chars",
-    },
-    {
-      file: FIX,
-      line: 5,
-      rule: "line-length",
-      severity: "medium",
-      message: "line is 85 chars",
-    },
-    {
-      file: FIX,
-      line: 58,
-      rule: "complexity",
-      severity: "medium",
-      message: "reviewThreadNodes() cyclomatic complexity 10",
-    },
-    {
-      file: OTHER,
-      line: 3,
-      rule: "dead-export",
-      severity: "high",
-      message: "x is exported but never referenced anywhere",
-    },
-    {
-      file: UNICODE,
-      line: 1,
-      rule: "file-length",
-      severity: "medium",
-      message: "file is 600 lines",
-    },
-  ],
-};
-// The second file arrives the way Git writes it with core.quotePath=true.
-const diff = [
-  `diff --git a/${FIX} b/${FIX}`,
-  `--- a/${FIX}`,
-  `+++ b/${FIX}`,
-  "@@ -70,0 +71,3 @@",
-  "+a",
-  "+b",
-  "+c",
-  ...QUOTED_PATH_HUNK,
-].join("\n");
-
-function judgment(overrides) {
-  return sharedJudgment({
-    file: FIX,
-    evidence: "fix-support.mjs:72 sets stale",
-    ...overrides,
-  });
-}
-
-const REVIEWERS = ["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"];
-const PBI = {
-  repository: "TychoHenzen/dod-guard",
-  number: 837,
-  body: "## Acceptance criteria\n\n- [ ] AC-01 The review posts once\n",
-};
-const SUB_ISSUES = [{ repository: "TychoHenzen/dod-guard", number: 900, title: "Child" }];
-const SUB_SLOT = "sub-issue:TychoHenzen/dod-guard#900";
-const question = (id, lens) => ({
-  id,
-  lens,
-  question: `Does ${lens} hold at the reviewed head?`,
-  files: [FIX],
-  status: "verified",
-});
-const PLAN = [
-  {
-    slot: `file:${FIX}`,
-    questions: [question("F1", "review-pr-feature"), question("D1", "review-pr-design")],
-  },
-  {
-    slot: `file:${UNICODE}`,
-    questions: [question("R1", "review-pr-reliability")],
-  },
-  { slot: "criterion:1", questions: [question("F2", "review-pr-feature")] },
-  {
-    slot: SUB_SLOT,
-    excluded: { lens: "review-pr-hygiene", reason: "Same work as criterion:1" },
-  },
-];
-const ASSIGNED = {
-  "review-pr-feature": [`file:${FIX}`, "criterion:1"],
-  "review-pr-design": [`file:${FIX}`],
-  "review-pr-reliability": [`file:${UNICODE}`],
-  "review-pr-hygiene": [SUB_SLOT],
-};
-const inputs = { plan: PLAN, pbi: PBI, subIssues: SUB_ISSUES };
-
-// Fills in the reviewers a test does not care about, each with a clean,
-// complete envelope.
-function complete(results) {
-  return REVIEWERS.map((reviewer) => ({
-    reviewer,
-    rulings: ASSIGNED[reviewer].map((slot) => ({
-      slot,
-      status: "VERIFIED",
-      evidence: "checked",
-    })),
-    findings: [],
-    ...results.find((result) => result.reviewer === reviewer),
-  }));
-}
-
-function review(results, scanInput = { violations: [] }) {
-  return buildReview({
-    headSha: HEAD,
-    scan: scanInput,
-    diff,
-    results: complete(results),
-    ...inputs,
-  });
-}
+const { HEAD, FIX, UNICODE, scan, diff, review } = findingsFixture;
 
 test("structural rules cover the whole touched file and line rules only the changed lines", () => {
-  const { payload } = review([], scan);
+  const { payload } = review([], { scan });
   const fix = payload.comments.find((comment) => comment.path === FIX);
   assert.match(fix.body, /^\*\*MAJOR\*\* quality-guard structural findings \(2\)/);
   assert.match(fix.body, /`complexity` line 58[\s\S]*`line-length` line 72/);
@@ -145,7 +18,7 @@ test("structural rules cover the whole touched file and line rules only the chan
 });
 
 test("a changed file Git quotes in the diff still gets its scanner findings", () => {
-  const { payload } = review([], scan);
+  const { payload } = review([], { scan });
   assert.match(payload.body, /`docs\/ü\.md:1`\n\*\*MINOR\*\* quality-guard structural findings \(1\)/);
 });
 
@@ -161,12 +34,13 @@ test("a scanner group whose findings are all low is MINOR", () => {
       },
     ],
   };
-  const { payload } = review([], lowOnly);
+  const { payload } = review([], { scan: lowOnly });
   assert.match(payload.body, /\*\*MINOR\*\* quality-guard structural findings \(1\)/);
 });
 
 test("MINOR findings are listed in the body, get no thread, and do not block", () => {
-  const results = [{ reviewer: "review-pr-design", findings: [judgment({ severity: "MINOR" })] }];
+  const findings = [judgment(FIX, { severity: "MINOR" })];
+  const results = [{ reviewer: "review-pr-design", findings }];
   const { payload, recommendation, counts } = review(results);
   assert.equal(recommendation, "APPROVE");
   assert.deepEqual(counts, { BLOCKER: 0, MAJOR: 0, MINOR: 1 });
@@ -175,7 +49,8 @@ test("MINOR findings are listed in the body, get no thread, and do not block", (
 });
 
 test("a MAJOR finding still requests changes and stays inline", () => {
-  const results = [{ reviewer: "review-pr-design", findings: [judgment({ severity: "MAJOR" })] }];
+  const findings = [judgment(FIX, { severity: "MAJOR" })];
+  const results = [{ reviewer: "review-pr-design", findings }];
   const { payload, recommendation } = review(results);
   assert.equal(recommendation, "REQUEST_CHANGES");
   assert.equal(payload.comments.length, 1);
@@ -194,19 +69,22 @@ test("a scanner severity outside high/medium/low fails the review build", () => 
       },
     ],
   };
-  assert.throws(() => review([], legacy), /unknown severity "error".*update the installed quality-guard plugin/);
+  assert.throws(
+    () => review([], { scan: legacy }),
+    /unknown severity "error".*update the installed quality-guard plugin/,
+  );
 });
 
 test("the same root cause dedupes within a file but stays separate across files", () => {
   const results = [
     {
       reviewer: "review-pr-feature",
-      findings: [judgment({ severity: "MINOR" })],
+      findings: [judgment(FIX, { severity: "MINOR" })],
     },
     {
       reviewer: "review-pr-reliability",
       findings: [
-        judgment({
+        judgment(FIX, {
           severity: "BLOCKER",
           rootCause: "outdated  treated as STALE",
         }),
@@ -214,7 +92,7 @@ test("the same root cause dedupes within a file but stays separate across files"
     },
     {
       reviewer: "review-pr-design",
-      findings: [judgment({ file: UNICODE, line: 1 })],
+      findings: [judgment(UNICODE, { line: 1 })],
     },
   ];
   const { payload, recommendation, counts } = review(results);
@@ -228,12 +106,9 @@ test("the same root cause dedupes within a file but stays separate across files"
 });
 
 test("every finding stays an inline comment so it gets a GH id", () => {
-  const results = [
-    {
-      reviewer: "review-pr-design",
-      findings: [judgment({ line: 5 }), judgment({ file: "README.md", line: 92, rootCause: "stale readme" })],
-    },
-  ];
+  const readme = judgment("README.md", { line: 92, rootCause: "stale readme" });
+  const findings = [judgment(FIX, { line: 5 }), readme];
+  const results = [{ reviewer: "review-pr-design", findings }];
   const { payload } = review(results);
   assert.deepEqual(
     payload.comments.map((comment) => [comment.path, comment.line]),
@@ -271,14 +146,7 @@ test("an empty diff or one written with other prefixes stops the build", () => {
     .replaceAll("b/plugins", "w/plugins")
     .replaceAll('"a/', '"c/')
     .replaceAll('"b/', '"w/');
-  const build = (text) =>
-    buildReview({
-      headSha: HEAD,
-      scan,
-      diff: text,
-      results: complete([]),
-      ...inputs,
-    });
+  const build = (text) => review([], { scan, diff: text });
   assert.throws(() => build(prefixed), /lacks the a\/ or b\/ prefix/);
   assert.throws(() => build(""), /names no changed files/);
 });
@@ -323,120 +191,5 @@ test("posted comments read back as GH ids with their severity", () => {
       ["GH-41", "MAJOR"],
       ["GH-42", "BLOCKER"],
     ],
-  );
-});
-
-test("the review body keeps the marker first and lists every slot in a collapsed block", () => {
-  const { payload } = buildReview({
-    headSha: HEAD,
-    scan,
-    diff,
-    results: complete([]),
-    ...inputs,
-  });
-  const lines = payload.body.split("\n");
-  assert.match(lines[0], /^<!-- dod-guard:review-pr head=/);
-  assert.equal(payload.event, "COMMENT");
-  assert.ok(lines.includes("<details>"));
-  assert.ok(lines.includes("<summary>Review plan slots (4)</summary>"));
-  assert.ok(lines.includes("</details>"));
-  assert.ok(lines.includes(`**file:${FIX}**`));
-  assert.ok(lines.includes("**file:docs/\u00fc.md**"));
-  assert.ok(lines.includes("**criterion:1**: AC-01 The review posts once"));
-  assert.ok(lines.includes(`**${SUB_SLOT}**: Child`));
-  assert.ok(lines.includes("- F1 review-pr-feature (verified): Does review-pr-feature hold at the reviewed head?"));
-  assert.ok(lines.includes("- excluded for review-pr-hygiene: Same work as criterion:1"));
-  assert.ok(lines.indexOf("<details>") > lines.findIndex((line) => line.startsWith("Findings:")));
-});
-
-test("the build regenerates the slots and refuses a plan that misses one", () => {
-  const plan = PLAN.filter((entry) => entry.slot !== `file:${UNICODE}`);
-  assert.throws(
-    () =>
-      buildReview({
-        headSha: HEAD,
-        scan,
-        diff,
-        results: complete([]),
-        ...inputs,
-        plan,
-      }),
-    /Slots missing from the plan: file:docs\/\u00fc\.md/,
-  );
-});
-
-test("the build refuses a plan slot it did not generate", () => {
-  const plan = [
-    ...PLAN,
-    {
-      slot: "file:README.md",
-      questions: [question("F9", "review-pr-feature")],
-    },
-  ];
-  assert.throws(
-    () =>
-      buildReview({
-        headSha: HEAD,
-        scan,
-        diff,
-        results: complete([]),
-        ...inputs,
-        plan,
-      }),
-    /Plan slot "file:README\.md" was not generated/,
-  );
-});
-
-test("a PBI without acceptance criteria stops the build", () => {
-  assert.throws(
-    () =>
-      buildReview({
-        headSha: HEAD,
-        scan,
-        diff,
-        results: complete([]),
-        ...inputs,
-        pbi: { ...PBI, body: "" },
-      }),
-    /PBI TychoHenzen\/dod-guard#837 has no checkbox item under ## Acceptance criteria/,
-  );
-});
-
-test("the build refuses a judge result missing a ruling for an assigned slot", () => {
-  assert.throws(
-    () =>
-      review([
-        {
-          reviewer: "review-pr-feature",
-          rulings: [{ slot: `file:${FIX}`, status: "VERIFIED", evidence: "checked" }],
-        },
-      ]),
-    /review-pr-feature: missing ruling for slot criterion:1/,
-  );
-});
-
-test("a body over the GitHub limit stops the build before posting", () => {
-  const long = {
-    ...question("F1", "review-pr-feature"),
-    question: "x".repeat(70000),
-  };
-  const plan = [
-    {
-      slot: `file:${FIX}`,
-      questions: [long, question("D1", "review-pr-design")],
-    },
-    ...PLAN.slice(1),
-  ];
-  assert.throws(
-    () =>
-      buildReview({
-        headSha: HEAD,
-        scan,
-        diff,
-        results: complete([]),
-        ...inputs,
-        plan,
-      }),
-    /over the 65536-character limit, with 4 slots/,
   );
 });
