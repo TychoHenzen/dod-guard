@@ -1,0 +1,85 @@
+// Markdown for the pull-request gate: a full log kept as a build artifact, and one short comment that points at it.
+
+export const COMMENT_MARKER = "<!-- quality-pr-gate -->";
+const MAX_COMMENT_FINDINGS = 25;
+
+const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 };
+
+function sortFindings(findings) {
+  return [...findings].sort(
+    (a, b) =>
+      SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || a.file.localeCompare(b.file) || a.line - b.line,
+  );
+}
+
+function bullet(finding) {
+  return `- \`${finding.file}:${finding.line}\` ${finding.rule} (${finding.severity}): ${finding.message}`;
+}
+
+function section(title, findings, limit = Number.POSITIVE_INFINITY) {
+  if (findings.length === 0) return [];
+  const more = findings.length > limit ? [`- ... and ${findings.length - limit} more in the full log`] : [];
+  return [`## ${title} (${findings.length})`, "", ...sortFindings(findings).slice(0, limit).map(bullet), ...more, ""];
+}
+
+function growth(finding) {
+  return `- \`${finding.file}:${finding.line}\` ${finding.rule}: ${finding.was.message} -> ${finding.message}`;
+}
+
+function requirement({ top, low }) {
+  return [top > 0 ? `${top} medium/high` : "", low > 0 ? `${low} low` : ""].filter(Boolean).join(" or ");
+}
+
+export function quotaText({ satisfied, available, fixed, required, targets }) {
+  if (targets.top === 0 && targets.low === 0) return "Pre-existing quota: off.";
+  if (available.top + available.low === 0) return "Pre-existing quota: nothing to pay down in the changed files.";
+  return (
+    `Pre-existing quota ${satisfied ? "met" : "NOT met"}: remove ${requirement(required)} finding(s) that were ` +
+    `already in the changed files (removed ${fixed.top} medium/high and ${fixed.low} low; ` +
+    `${available.top} medium/high and ${available.low} low were there).`
+  );
+}
+
+const verdict = (gate) => (gate.passed ? "PASS" : "FAIL");
+
+export function renderReport({ gate, classified, mergeBase, changedCount }) {
+  const header = [
+    "# Quality gate report",
+    "",
+    `**Result: ${verdict(gate)}**`,
+    "",
+    `Compared ${changedCount} changed file(s) with merge base \`${mergeBase}\`. Only findings that are new in this ` +
+      "pull request can block it; pre-existing ones are listed here and counted toward the quota.",
+    "",
+    quotaText(gate.quota),
+    "",
+  ];
+  const belowThreshold = classified.fresh.filter((finding) => !gate.blocking.includes(finding));
+  return [
+    ...header,
+    ...section("New findings that block", gate.blocking),
+    ...section("New findings below the blocking threshold", belowThreshold),
+    ...section("Pre-existing findings removed by this pull request", classified.resolved),
+    ...section("Pre-existing findings still open in the changed files", classified.existing),
+    ...(classified.worsened.length > 0
+      ? [`## Pre-existing findings that grew (${classified.worsened.length})`, "", ...classified.worsened.map(growth), ""]
+      : []),
+    ...section("Findings that moved between changed files (not new)", classified.moved),
+  ].join("\n");
+}
+
+export function renderComment({ gate, classified, link }) {
+  const log = link ? `[full log](${link})` : "the quality-gate-report build artifact";
+  const open = classified.existing.length;
+  return [
+    COMMENT_MARKER,
+    `### Quality gate: ${verdict(gate)}`,
+    "",
+    `- New blocking findings: ${gate.blocking.length}`,
+    `- ${quotaText(gate.quota)}`,
+    `- Pre-existing findings still open in the changed files: ${open}. Every one is listed in ${log}; they do not ` +
+      "need individual fixes.",
+    "",
+    ...section("New findings that block", gate.blocking, MAX_COMMENT_FINDINGS),
+  ].join("\n");
+}
