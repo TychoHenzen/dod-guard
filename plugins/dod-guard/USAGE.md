@@ -86,13 +86,17 @@ or closure evidence is not reported; a `completed` hand close without evidence
 still is. A parent that needs a user answer or is externally blocked stays in
 place while the queue moves on. Each stage runs in one fresh subagent on a
 model tier from
-`standards/model-routing.md`: the strong tier (Opus,
-`gpt-5.6-sol` in Codex) plans, decides, and judges, and the cheap tier (Haiku,
-`gpt-5.6-luna` in Codex) applies written plans, runs validations,
-and answers planned questions. The main thread checks cheap-tier output before
-anything relies on it and reads back each stage's commit. A stage whose owner
-splits its work, such as `/review-pr`, runs on the strong stage agent, which
-dispatches those split rows itself. The final report says how many parent and
+`standards/model-routing.md`: the standard tier (Sonnet, `gpt-5.6-terra` in
+Codex) is the default and plans, decides, and judges, the cheap tier (Haiku,
+`gpt-5.6-luna` in Codex) implements a task from a written step plan, runs
+validations, and answers planned questions, and the strong tier (Opus,
+`gpt-5.6-sol` in Codex) is reached only by escalation after a lower tier failed
+its check twice. The main thread checks cheap-tier output before anything
+relies on it and reads back each stage's commit. A stage whose owner splits its
+work, such as `/review-pr`, runs on the standard stage agent, which dispatches
+those split rows itself. Run the `/goal` session itself on a standard-tier
+model: the loop only sequences stages and checks their results. The final
+report says how many parent and
 child PBIs reached Done. That figure counts only the target repository's parent
 and child PBIs whose Project status reads Done, as select-next's `counts` report
 them, even when the linked Project spans several repositories.
@@ -310,12 +314,12 @@ The PR head must be checked out. The skill scans the whole repository with the
 installed quality-guard scanner and keeps the findings in changed files. Its
 script then generates fixed review slots from the diff and the PBI: one per
 changed file with added lines, one per acceptance criterion, and one per
-linked sub-issue. A strong planner fills every slot with questions for the
+linked sub-issue. A standard planner fills every slot with questions for the
 feature, design, reliability, and hygiene lenses or with an exclusion and its
 reason, cheap investigators answer each question with a cited path and line,
 and after the main thread verifies those answers, the four reviewer agents
-judge them on the strong tier against the PBI, ruling on every slot assigned
-to their lens. A strong-tier pass then merges findings that cite the same
+judge them on the standard tier against the PBI, ruling on every slot assigned
+to their lens. A standard-tier pass then merges findings that cite the same
 defect in one file and keeps or drops each scanner finding, citing a verified
 answer for every drop, and the build checks its output. The build refuses a
 plan or a set of rulings that leaves a slot empty. It posts one comment-only

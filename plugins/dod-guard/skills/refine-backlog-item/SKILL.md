@@ -49,10 +49,10 @@ work, read the affected instructions, their entry points, and existing
 validation. Record absent code or test coverage instead of assuming it exists.
 
 Run that research as the plan, investigate, and judge split in
-`standards/model-routing.md`. A strong planner writes the research questions
+`standards/model-routing.md`. A standard planner writes the research questions
 from the issue. Cheap investigators read the code, callers, tests, and history
 and answer each question with cited evidence. After the main thread verifies
-those answers, the strong tier decides the discovery triage, classification,
+those answers, the standard tier decides the discovery triage, classification,
 and acceptance criteria. Verified citations become `research-source` entries;
 the `discovery-triage` and `research-source` records keep their meaning.
 

@@ -2,32 +2,17 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 import { prose } from "../../../lib/skill-text.mjs";
+import {
+  assertPhrases,
+  frontmatterValue,
+  line,
+  pluginRoot,
+  repositoryRoot,
+  standard,
+  TIER_AGENTS,
+} from "./model-routing.test-support.mjs";
 
-// Codex ignores or caps spawn-time model overrides, so each tier is pinned in
-// its agent file. These tests pin both the Claude source and the generated
-// Codex registration.
-const pluginRoot = new URL("../../../", import.meta.url);
-const repositoryRoot = new URL("../../../../../", import.meta.url);
-
-// Each agent's frontmatter is the single source for its Claude Code effort and
-// for its Codex effort (`codex_effort`, falling back to `effort`). The model
-// tier and Codex model are fixed here; the efforts are read, not repeated.
-const TIER_AGENTS = [
-  { name: "stage-strong", model: "opus", codex: "gpt-5.6-sol", codexEffort: "medium", sandbox: "workspace-write" },
-  { name: "stage-cheap", model: "haiku", codex: "gpt-5.6-luna", codexEffort: "max", sandbox: "workspace-write" },
-  { name: "read-strong", model: "opus", codex: "gpt-5.6-sol", codexEffort: "medium", sandbox: "read-only" },
-  { name: "read-cheap", model: "haiku", codex: "gpt-5.6-luna", codexEffort: "max", sandbox: "read-only" },
-];
 const EFFORT_LEVELS = new Set(["low", "medium", "high", "xhigh", "max"]);
-
-function line(key, value, separator) {
-  return new RegExp(`^${key}${separator}${value}$`, "m");
-}
-
-function frontmatterValue(source, key) {
-  const match = source.match(new RegExp(`^${key}: (.+)$`, "m"));
-  return match ? match[1].trim() : undefined;
-}
 
 test("each tier agent pins its model and effort for Claude Code and Codex", async () => {
   for (const agent of TIER_AGENTS) {
@@ -47,16 +32,19 @@ test("each tier agent pins its model and effort for Claude Code and Codex", asyn
   }
 });
 
-const standard = await readFile(new URL("standards/model-routing.md", pluginRoot), "utf8");
-
 test("the routing standard defines the tiers, runtime rules, and verification once", () => {
   for (const phrase of [
-    "The strong tier is for judgement with modest reasoning effort",
+    "The standard tier is the default.",
+    "It is for judgement with modest reasoning effort",
     "The cheap tier is for mechanical, high-volume work:",
-    "| strong | `opus`; effort from frontmatter |",
+    "The strong tier is for escalation only. No stage starts on it",
+    "| standard | `sonnet`; effort from frontmatter |",
     "| cheap | `haiku`; effort from frontmatter |",
-    "`gpt-5.6-sol`; effort from frontmatter",
+    "| strong | `opus`, effort `high` |",
+    "`gpt-5.6-terra`; effort from frontmatter",
     "`gpt-5.6-luna`; `codex_effort`",
+    "`gpt-5.6-sol`, effort `high`",
+    "The strong tier has no agent of its own",
     "the Agent call's `model` and `effort` override the agent's frontmatter",
     "spawn-time model and effort values can be ignored or capped",
     "A Codex stage is pinned only when it runs through a registered agent",
@@ -80,23 +68,26 @@ test("the routing standard defines the tiers, runtime rules, and verification on
 
 // Only an owner's thread dispatches: the stage agent that owns a split stage
 // can spawn agents, and every row worker cannot.
-test("only the strong stage agent can dispatch subagents or use MCP connectors", async () => {
-  // stage-strong has no tools allowlist, so it inherits Agent and MCP tools;
+const DISPATCH_TITLE = "only the standard stage agent can dispatch or use MCP";
+
+test(DISPATCH_TITLE, async () => {
+  // stage-standard has no tools allowlist, so it inherits Agent and MCP tools;
   // every other tier agent keeps an allowlist without Agent.
   for (const agent of TIER_AGENTS) {
     const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
     const tools = source.match(/^tools: (.+)$/m)?.[1].split(", ");
-    if (agent.name === "stage-strong") {
-      assert.equal(tools, undefined, "stage-strong must inherit every tool");
-    } else {
-      assert.ok(tools && !tools.includes("Agent"), agent.name);
+    if (agent.name === "stage-standard") {
+      assert.equal(tools, undefined, "stage-standard must inherit every tool");
+      continue;
     }
+    assert.ok(tools && !tools.includes("Agent"), agent.name);
   }
   for (const phrase of [
     "Only the thread that owns a skill's procedure dispatches its subagents.",
     "A worker dispatched for one row never dispatches further",
     "goal-sdlc's main thread runs that owner's procedure itself",
-    "`/review-pr`, or the conflict triage in `standards/conflict-triage.md`), it runs that stage on `dod-guard:stage-strong`",
+    "or the conflict triage in `standards/conflict-triage.md`),",
+    "it runs that stage on `dod-guard:stage-standard`",
   ]) {
     assert.match(standard, prose(phrase), phrase);
   }
@@ -114,6 +105,7 @@ test("no skill or other standard restates the tier definitions", async () => {
     texts.push(await readFile(new URL(`standards/${file}`, pluginRoot), "utf8"));
   }
   for (const text of texts) {
+    assert.doesNotMatch(text, prose("The standard tier is the default"));
     assert.doesNotMatch(text, prose("The strong tier is for"));
     assert.doesNotMatch(text, prose("The cheap tier is for"));
   }
@@ -139,19 +131,13 @@ function agentText(name) {
   return readFile(new URL(`agents/${name}.md`, pluginRoot), "utf8");
 }
 
-function assertPhrases(text, phrases, label) {
-  for (const phrase of phrases) {
-    assert.match(text, prose(phrase), `${label}: ${phrase}`);
-  }
-}
-
 // Tool allowlists are the permission boundary: stage-cheap edits but holds no
 // Skill or Agent, and the read agents hold no Write or Edit, which also keeps
 // their Codex sandbox read-only.
 const TOOLS_LINES = {
   "stage-cheap": "Read, Grep, Glob, Bash, Edit, Write",
   "read-cheap": "Read, Grep, Glob, Bash",
-  "read-strong": "Read, Grep, Glob, Bash",
+  "read-standard": "Read, Grep, Glob, Bash",
 };
 
 const ALLOWLIST_TITLE = "the cheap and read-only agents keep their exact tool allowlists";
@@ -163,20 +149,22 @@ test(ALLOWLIST_TITLE, async () => {
 });
 
 // Capability follows the agent and cost follows the model, so a cheap stage
-// that needs a skill, a GitHub write, or MCP runs on stage-strong at the cheap
-// tier and is still verified as cheap output.
+// that needs a skill, a GitHub write, or MCP runs on stage-standard at the
+// cheap tier and is still verified as cheap output.
 const SKILL_CAPABLE = [
-  "A skill-capable stage runs on `dod-guard:stage-strong` at its own tier's " + "model and effort, cheap or strong.",
+  "A skill-capable stage runs on `dod-guard:stage-standard` at its own",
+  "tier's model and effort, cheap, standard, or strong.",
   "invokes a skill, writes issue, pull request, or Project state, or needs " + "an MCP connector",
   "In Claude Code, pass the tier's `model` and `effort` on the Agent call.",
   "spawn a cheap-tier skill-capable stage without that file, with " +
     "`gpt-5.6-luna` and `max` at spawn time, and record it as " +
     '"requested, not pinned".',
+  "Spawn a strong-tier stage the same way with `gpt-5.6-sol` and `high`.",
   "Cheap-output verification applies by model tier, not by agent type",
   "a readback of any issue, pull request, or Project state the step wrote",
 ];
 
-test("a skill-capable stage runs on stage-strong at its own tier", () => {
+test("a skill-capable stage runs on stage-standard at its own tier", () => {
   assertPhrases(standard, SKILL_CAPABLE, "model-routing.md");
 });
 
@@ -217,12 +205,12 @@ test(COMMIT_TITLE, async () => {
 // that step goes instead of letting it fall under the failed-check rule.
 const MISROUTED = [
   "A `dod-guard:stage-cheap` report that a step is misrouted is not a " + "failed check.",
-  "The main thread redispatches that step once on `dod-guard:stage-strong` " +
+  "The main thread redispatches that step once on `dod-guard:stage-standard` " +
     "at the same tier, as a skill-capable stage, and verifies the result as " +
     "cheap-tier output.",
 ];
 
-test("a misrouted cheap step is redispatched on stage-strong", () => {
+test("a misrouted cheap step is redispatched on stage-standard", () => {
   assertPhrases(standard, MISROUTED, "model-routing.md");
 });
 
@@ -247,7 +235,7 @@ test(HANDOFF_TITLE, async () => {
     ["Read-only agents return their output as text.", "The main thread writes any handoff file"],
     "model-routing.md",
   );
-  for (const name of ["read-cheap", "read-strong"]) {
+  for (const name of ["read-cheap", "read-standard"]) {
     assertPhrases(await agentText(name), READ_ONLY_RETURN, name);
   }
   const triageUrl = new URL("standards/conflict-triage.md", pluginRoot);
@@ -258,7 +246,7 @@ test(HANDOFF_TITLE, async () => {
 // Each workaround answers a tool failure a cheap worker hit in a friction log.
 const STAGE_CHEAP_WORKAROUNDS = [
   "When the step needs a skill, a GitHub write, or an MCP connector, stop " + "and report it as misrouted",
-  "That step belongs on `dod-guard:stage-strong` at the cheap tier.",
+  "That step belongs on `dod-guard:stage-standard` at the cheap tier.",
   "Write file content with the Write tool instead of heredocs or echo " + "redirection",
   "When Edit cannot match a line that holds a non-ASCII character",
   "use Write to create a small node script that builds the character from " +

@@ -1,7 +1,7 @@
 ---
 name: review-pr-reliability
 description: Review a final pull-request revision for failures, async state, security, performance, and resource safety. Returns only actionable finding records.
-model: opus
+model: sonnet
 tools: Read, Grep, Glob, Bash
 effort: medium
 ---

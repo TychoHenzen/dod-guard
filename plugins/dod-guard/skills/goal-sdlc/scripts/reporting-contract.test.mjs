@@ -34,8 +34,10 @@ test("goal-sdlc reports parent and child completions only in the final report", 
   );
   for (const phrase of [
     "on a model tier from `standards/model-routing.md`",
-    "the strong tier (Opus, `gpt-5.6-sol` in Codex) plans, decides, and judges",
-    "the cheap tier (Haiku, `gpt-5.6-luna` in Codex)",
+    "the standard tier (Sonnet, `gpt-5.6-terra` in Codex) is the default and plans, decides, and judges",
+    "the cheap tier (Haiku, `gpt-5.6-luna` in Codex) implements a task from a written step plan",
+    "the strong tier (Opus, `gpt-5.6-sol` in Codex) is reached only by escalation",
+    "Run the `/goal` session itself on a standard-tier model",
     `The final report says how many parent and child PBIs reached Done. That figure counts ${SCOPE}`,
   ]) {
     assert.match(usage, prose(phrase), phrase);

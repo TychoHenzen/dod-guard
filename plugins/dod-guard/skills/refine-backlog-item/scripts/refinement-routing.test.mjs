@@ -277,16 +277,16 @@ test("records replacement roots and closes only a pure hierarchy record", () => 
   }
 });
 
-test("plans research on the strong tier, investigates on the cheap tier, and decides on the strong tier", () => {
+test("plans research on the standard tier, investigates on the cheap tier, and decides on the standard tier", () => {
   assert.match(
     skill,
     prose("Run that research as the plan, investigate, and judge split in `standards/model-routing.md`."),
   );
-  assert.match(skill, prose("A strong planner writes the research questions"));
+  assert.match(skill, prose("A standard planner writes the research questions"));
   assert.match(skill, prose("Cheap investigators read the code, callers, tests, and history"));
   assert.match(
     skill,
-    prose("After the main thread verifies", "the strong tier decides the discovery triage, classification,"),
+    prose("After the main thread verifies", "the standard tier decides the discovery triage, classification,"),
   );
   assert.match(skill, prose("the `discovery-triage` and `research-source` records keep their meaning"));
 });

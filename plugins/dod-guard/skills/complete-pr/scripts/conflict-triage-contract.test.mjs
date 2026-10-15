@@ -28,10 +28,10 @@ test("complete-pr hands a merge conflict on the PBI head to the triage", () => {
 
 test("the triage runs each stage at its routed tier", () => {
   assertPhrases(standard, [
-    "that thread is the `dod-guard:stage-strong` stage worker",
-    "**Plan** (strong tier, `dod-guard:read-strong`)",
+    "that thread is the `dod-guard:stage-standard` stage worker",
+    "**Plan** (standard tier, `dod-guard:read-standard`)",
     "**Investigate** (cheap tier, `dod-guard:read-cheap`). Only questions that need reads beyond the conflicted hunks go to investigators.",
-    "**Judge** (strong tier, `dod-guard:read-strong`)",
+    "**Judge** (standard tier, `dod-guard:read-standard`)",
     "**Apply** (cheap tier, `dod-guard:stage-cheap`)",
     "name the stage, tier, model, and effort in every progress message",
   ]);

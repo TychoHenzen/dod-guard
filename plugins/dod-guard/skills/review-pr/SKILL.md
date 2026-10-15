@@ -111,7 +111,7 @@ URL, base and head SHAs, the slots file, the diff file path, the violations
 file, the PBI acceptance criteria and sub-issues verbatim, and the governing
 `AGENTS.md` and `CLAUDE.md` paths.
 
-1. **Plan.** One `dod-guard:read-strong` planner fills every slot in the slots
+1. **Plan.** One `dod-guard:read-standard` planner fills every slot in the slots
    file and returns the plan as a JSON array with one entry per slot, either
    `{ "slot", "questions" }` or `{ "slot", "excluded": { "lens", "reason" } }`.
    Each question has an `id`, its `lens`, the `question`, the `files` to read,
@@ -134,6 +134,8 @@ file, the PBI acceptance criteria and sub-issues verbatim, and the governing
 3. **Verify.** Before judging, the main thread checks every answer under the
    cheap-output rule in that standard, with the reviewed head as the accepted
    head. Send a failed batch back once with the exact gap; if it fails again,
+   run that batch once on `dod-guard:read-standard` with the failure record, as
+   "Escalation" in that standard says, and if it fails the same check there,
    stop without posting and name the batch. Save the plan JSON with a
    `status` on each question: `verified`, `repaired` (verified after that one
    repair), or `unanswered` (the investigator reported that the repository
@@ -151,7 +153,7 @@ file, the PBI acceptance criteria and sub-issues verbatim, and the governing
    not hold.
 
 - In Claude Code, use the Agent tool with the model and effort of each
-  stage's tier: `dod-guard:read-strong` plans, `dod-guard:read-cheap`
+  stage's tier: `dod-guard:read-standard` plans, `dod-guard:read-cheap`
   investigates, and `dod-guard:review-pr-feature`, `dod-guard:review-pr-design`,
   `dod-guard:review-pr-reliability`, and `dod-guard:review-pr-hygiene` judge.
 - In Codex, use the matching `dod_guard_*` agents when the project registers
@@ -164,8 +166,9 @@ Each returns one JSON object with `reviewer`, `rulings`, and `findings`.
 assigned to that reviewer's lens, with a `status` of `VERIFIED` or `FINDING`.
 Save the four objects as one JSON array. When an agent returns malformed JSON,
 send it one correction request for the same review in the exact format. If it
-fails again, stop without posting and name the reviewer: a review is posted
-once per PR, so a missing angle cannot be filled in later. The build step
+fails again, stop without posting and name the reviewer; a format failure is not
+escalated to another tier. A review is posted once per PR, so a missing angle
+cannot be filled in later. The build step
 refuses results that lack any of the four reviewers, and names the reviewer and
 slot for a missing, duplicate, or unassigned ruling or an unknown status.
 It also refuses a result whose reviewer is not one of the four, and a
@@ -178,9 +181,9 @@ It also refuses a result whose reviewer is not one of the four, and a
    ```
 
    It numbers every judged finding `J1..Jn` and repeats the `S` ids. Then one
-   `dod-guard:read-strong` pass reads the candidates file and the saved plan.
+   `dod-guard:read-standard` pass reads the candidates file and the saved plan.
    In Claude Code, use the Agent tool with that tier's model and effort; in
-   Codex, use the registered `dod_guard_read_strong` agent. The pass returns
+   Codex, use the registered `dod_guard_read_standard` agent. The pass returns
    one JSON object:
 
    ```json
@@ -205,7 +208,8 @@ It also refuses a result whose reviewer is not one of the four, and a
 
    If the build refuses the pass output, send the pass one correction request
    with the build's exact error. If the corrected output is refused again,
-   stop without posting and name the merge pass.
+   stop without posting and name the merge pass; a refused build is not
+   escalated to another tier.
 
 ## 6. Build and post
 

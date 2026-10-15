@@ -132,7 +132,10 @@ edit for it.
 
 Apply the smallest coherent fix batch. Add a user-path or edge-case test when
 the finding exposed missing behavioral proof. Follow every repository
-instruction that applies to touched files.
+instruction that applies to touched files. When you have written a per-finding
+fix plan (file, edit, test, validation command, expected result), you may
+dispatch applying it on the cheap tier, as `standards/model-routing.md` defines.
+Verify that output as cheap-tier output, then commit and push yourself.
 
 For code shape, prefer small pure functions with explicit inputs and outputs,
 keep external I/O at boundaries, and use ordinary loops or mutation when that

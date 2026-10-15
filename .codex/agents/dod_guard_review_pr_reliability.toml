@@ -2,7 +2,7 @@
 # Source tools: Read, Grep, Glob, Bash
 name = "dod_guard_review_pr_reliability"
 description = "Review a final pull-request revision for failures, async state, security, performance, and resource safety. Returns only actionable finding records."
-model = "gpt-5.6-sol"
+model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = '''
