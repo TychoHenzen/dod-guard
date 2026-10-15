@@ -79,6 +79,7 @@ test("a per-rule override lets a new line-length finding through", (t) => {
   assert.equal(blocked.status, 1);
   const allowed = runGate(repo, "--rule-block-on=line-length:high", "--fix-medium-high=0", "--fix-low=0");
   assert.equal(allowed.status, 0, allowed.stderr);
+  assert.match(readFileSync(allowed.comment, "utf8"), /below the blocking threshold: 1/);
 });
 
 test("an unchanged tree reports no changed files and writes nothing", (t) => {

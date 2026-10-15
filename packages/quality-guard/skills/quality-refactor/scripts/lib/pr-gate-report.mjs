@@ -46,6 +46,10 @@ export function quotaText({ satisfied, available, fixed, required, targets }) {
 
 const verdict = (gate) => (gate.passed ? "PASS" : "FAIL");
 
+// New findings under the blocking threshold (for example medium ones at --block-on=high). They never block, but they
+// are counted and listed so the debt a pull request adds stays visible.
+const nonBlocking = (gate, classified) => classified.fresh.filter((finding) => !gate.blocking.includes(finding));
+
 export function renderReport({ gate, classified, mergeBase, changedCount }) {
   const header = [
     "# Quality gate report",
@@ -58,11 +62,10 @@ export function renderReport({ gate, classified, mergeBase, changedCount }) {
     quotaText(gate.quota),
     "",
   ];
-  const belowThreshold = classified.fresh.filter((finding) => !gate.blocking.includes(finding));
   return [
     ...header,
     ...section("New findings that block", gate.blocking),
-    ...section("New findings below the blocking threshold", belowThreshold),
+    ...section("New findings below the blocking threshold", nonBlocking(gate, classified)),
     ...section("Pre-existing findings removed by this pull request", classified.resolved),
     ...section("Pre-existing findings still open in the changed files", classified.existing),
     ...grownSection(classified.worsened),
@@ -78,6 +81,7 @@ export function renderComment({ gate, classified, link }) {
     `### Quality gate: ${verdict(gate)}`,
     "",
     `- New blocking findings: ${gate.blocking.length}`,
+    `- New findings below the blocking threshold: ${nonBlocking(gate, classified).length} (listed in ${log})`,
     `- ${quotaText(gate.quota)}`,
     `- Pre-existing findings still open in the changed files: ${open}. Every one is listed in ${log}; they do not ` +
       "need individual fixes.",

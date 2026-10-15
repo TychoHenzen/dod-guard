@@ -23,6 +23,14 @@ test("a per-rule threshold replaces the default for that rule only", () => {
   assert.deepEqual(gate.blocking.map((f) => f.message), ["line is 130 chars", "Add() takes 5 parameters"]);
 });
 
+test("at block-on high, medium findings still count: removing one pays the quota, adding one does not block", () => {
+  const atHigh = { ...options, blockOn: "high" };
+  const paidDown = evaluateGate(classify([], [longLine]), atHigh);
+  assert.equal(paidDown.quota.fixed.top, 1);
+  assert.equal(paidDown.passed, true);
+  assert.deepEqual(evaluateGate(classify([longLine, params], [longLine]), atHigh).blocking, []);
+});
+
 test("the quota is met by removing one medium/high pre-existing finding", () => {
   const base = [longLine, params];
   assert.equal(evaluateGate(classify(base, base), options).quota.satisfied, false);
