@@ -1,0 +1,71 @@
+[
+  {
+    "reviewer": "review-pr-feature",
+    "rulings": [
+      {
+        "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
+        "status": "FINDING",
+        "evidence": "F1: line 90 compares the whole result object"
+      },
+      { "slot": "criterion:1", "status": "VERIFIED", "evidence": "F2: line 92 names the record" }
+    ],
+    "findings": [
+      {
+        "severity": "MAJOR",
+        "file": "plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
+        "line": 90,
+        "problem": "The parse-error case asserts the whole result object, so any new output field fails it",
+        "impact": "Unrelated output changes break the AC-1 test and hide whether the record is named",
+        "requirement": "AC-1",
+        "correction": "Assert the status and the remainder entry that names the record",
+        "rootCause": "Whole-object deepEqual on command output",
+        "evidence": "line 90: assert.deepEqual(run(...), { status: 2, json: {...} })"
+      }
+    ]
+  },
+  {
+    "reviewer": "review-pr-design",
+    "rulings": [
+      {
+        "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
+        "status": "VERIFIED",
+        "evidence": "D1: lines 89-94 repeat the shape of lines 82-87"
+      }
+    ],
+    "findings": []
+  },
+  {
+    "reviewer": "review-pr-reliability",
+    "rulings": [
+      {
+        "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
+        "status": "VERIFIED",
+        "evidence": "R1: withTempFile removes the file in a finally block"
+      }
+    ],
+    "findings": []
+  },
+  {
+    "reviewer": "review-pr-hygiene",
+    "rulings": [
+      {
+        "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
+        "status": "FINDING",
+        "evidence": "H1: line 90 pins the full JSON shape"
+      }
+    ],
+    "findings": [
+      {
+        "severity": "MINOR",
+        "file": "plugins\\dod-guard\\skills\\next-ticket\\scripts\\handoff-proof.test.mjs",
+        "line": 90,
+        "problem": "The test pins every field of the JSON the command prints",
+        "impact": "The assertion is brittle and its intent is hard to read",
+        "requirement": "Test readability",
+        "correction": "Check only the fields the case is about",
+        "rootCause": "Over-specified assertion",
+        "evidence": "line 90 deepEqual over status and json"
+      }
+    ]
+  }
+]

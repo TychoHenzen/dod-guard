@@ -1,0 +1,53 @@
+[
+  {
+    "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
+    "questions": [
+      {
+        "id": "F1",
+        "lens": "review-pr-feature",
+        "question": "Does the added assertion check the record name the refinement command prints?",
+        "files": ["plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs"],
+        "risk": "The test passes without naming the missing record.",
+        "status": "verified"
+      },
+      {
+        "id": "D1",
+        "lens": "review-pr-design",
+        "question": "Does S1 (duplicate-block at line 89) show at the reviewed head, is the path generated or excluded, and do lines 89-94 repeat lines 82-87?",
+        "files": ["plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs"],
+        "risk": "A scanner violation posts without a check.",
+        "scanner": ["S1"],
+        "status": "verified"
+      },
+      {
+        "id": "R1",
+        "lens": "review-pr-reliability",
+        "question": "Is the temporary body file removed when the assertion fails?",
+        "files": ["plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs"],
+        "risk": "A failed run leaves a temporary file behind.",
+        "status": "verified"
+      },
+      {
+        "id": "H1",
+        "lens": "review-pr-hygiene",
+        "question": "Does the added block match the style of the neighbouring parse-error cases?",
+        "files": ["plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs"],
+        "risk": "The new case reads differently from its siblings.",
+        "status": "verified"
+      }
+    ]
+  },
+  {
+    "slot": "criterion:1",
+    "questions": [
+      {
+        "id": "F2",
+        "lens": "review-pr-feature",
+        "question": "Does a body without the acceptance-evidence record exit 2 and name that record?",
+        "files": ["plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.mjs"],
+        "risk": "The criterion has no test at the reviewed head.",
+        "status": "verified"
+      }
+    ]
+  }
+]

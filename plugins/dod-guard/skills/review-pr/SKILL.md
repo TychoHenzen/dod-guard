@@ -94,13 +94,22 @@ and dead or test-only exports cover each whole changed file, including what it
 had before this PR: a touched file's design debt is in scope. Line-level rules
 such as `line-length` and the comment rules cover only the lines this PR adds.
 
-## 5. Plan, investigate, judge
+Then number the violations in scope:
+
+```text
+node "<skill-dir>/scripts/review-findings.mjs" violations --scan=<scan.json> --diff=<unified0.diff> --out=<violations.json>
+```
+
+It numbers every in-scope violation `S1..Sn` in file, line, rule, and message
+order, so the planner can name each one.
+
+## 5. Plan, investigate, judge, merge
 
 Run the review as the plan, investigate, and judge split in
 `standards/model-routing.md`. Every stage gets one shared brief: PR number and
-URL, base and head SHAs, the slots file, the diff file path, the scanner
-results for the changed files, the PBI acceptance criteria and sub-issues
-verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
+URL, base and head SHAs, the slots file, the diff file path, the violations
+file, the PBI acceptance criteria and sub-issues verbatim, and the governing
+`AGENTS.md` and `CLAUDE.md` paths.
 
 1. **Plan.** One `dod-guard:read-strong` planner fills every slot in the slots
    file and returns the plan as a JSON array with one entry per slot, either
@@ -112,7 +121,12 @@ verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
    all four lenses, for example with the lens prefixes `F`, `D`, `R`, and `H`.
    A slot that needs no question gets one exclusion that names the lens that
    owns it and the reason; a slot never has both. The planner copies every
-   slot id exactly and adds none.
+   slot id exactly and adds none. In each `file:` slot that has in-scope
+   violations, the planner writes scanner check questions that list the `S`
+   ids they cover in a `scanner` array. Each asks whether the violation shows
+   at the reviewed head, whether the path is generated or excluded, and
+   whether the rule's own condition holds. Investigators answer them like any
+   other question, and the main thread verifies them.
 2. **Investigate.** `dod-guard:read-cheap` investigators answer every
    question, batched by slot with at most eight questions per investigator.
    Each answer gives the slot, the question id, the cited path and line, and
@@ -157,19 +171,67 @@ slot for a missing, duplicate, or unassigned ruling or an unknown status.
 It also refuses a result whose reviewer is not one of the four, and a
 `FINDING` ruling from a reviewer that returned no findings.
 
+5. **Merge.** Write the candidates file from the saved results:
+
+   ```text
+   node "<skill-dir>/scripts/review-findings.mjs" candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --out=<candidates.json>
+   ```
+
+   It numbers every judged finding `J1..Jn` and repeats the `S` ids. Then one
+   `dod-guard:read-strong` pass reads the candidates file and the saved plan.
+   In Claude Code, use the Agent tool with that tier's model and effort; in
+   Codex, use the registered `dod_guard_read_strong` agent. The pass returns
+   one JSON object:
+
+   ```json
+   {
+     "groups": [{ "members": ["J1", "J3"], "representative": "J1" }],
+     "scanner": [{ "ids": ["S1"], "status": "KEEP" },
+       { "ids": ["S2"], "status": "DROP", "reason": "rule-misfire", "answer": "D4" }]
+   }
+   ```
+
+   Every `J` id is in exactly one group, and a finding no other lens repeated
+   is a one-member group. The pass groups only findings that cite the same
+   defect in the same file, and the representative is one of the group's
+   members. Every `S` id is in exactly one scanner ruling. A ruling is `KEEP`
+   unless one of `not-at-head`, `excluded-path`, or `rule-misfire` holds and a
+   `verified` or `repaired` scanner check question listing that `S` id shows
+   it; a `DROP` names that reason and cites the question id as `answer`. The
+   pass never sets a severity, and pre-existing or unchanged at base is never
+   a reason. Save its output as the merge file. When the candidates file lists
+   no finding and no violation, save `{ "groups": [], "scanner": [] }` as the
+   merge file without dispatching the pass.
+
+   If the build refuses the pass output, send the pass one correction request
+   with the build's exact error. If the corrected output is refused again,
+   stop without posting and name the merge pass.
+
 ## 6. Build and post
 
 ```text
-node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --out=<payload.json>
+node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --out=<payload.json>
 ```
+
+The build regenerates the `J` and `S` ids from its own inputs and never reads
+them from a file. It refuses the merge output, naming the id, when a `J` id is
+missing, duplicated, or unknown; a representative is not a member of its
+group; a group spans files; an `S` ruling is missing or duplicated or has a
+status other than `KEEP` or `DROP`; a `DROP` reason is not `not-at-head`,
+`excluded-path`, or `rule-misfire`; a `DROP` cites a question that is not
+`verified` or `repaired` in the saved plan or does not list that `S` id; or
+the output carries any severity field.
 
 It regenerates the slots from `--diff`, `--pbi`, and `--sub-issues`, never
 from a slot list the planner returns. It refuses the plan, naming the slot or
 question id, when a generated slot is missing, a planned slot was not
 generated, a slot has neither questions nor an exclusion or has both, a
 question or exclusion is incomplete, a question id repeats, or a lens has no
-question or exclusion. It groups scanner findings into one comment per changed
-file, dedupes reviewer findings by file and root cause, and posts every
+question or exclusion. It posts one finding per group with the
+representative's text, the highest member severity, and every member lens. It
+groups only kept scanner violations into one comment per changed file, and
+lists dropped violations by file and rule in a collapsed block in the review
+body with their `S` ids, lines, reasons, and answer ids. It posts every
 `BLOCKER` and `MAJOR` finding as an inline comment with its own `GH-<id>`.
 `MINOR` findings go in a "Minor notes" list in the review body: they get no
 thread, need no reply, and do not block. When the diff adds no line, there is
