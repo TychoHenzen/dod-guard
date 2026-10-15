@@ -172,14 +172,20 @@ named `quality-guard` that runs only on `pull_request`, checks out with `fetch-d
 node <dod-guard-checkout>/packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs --base=<base sha> --root=<source root>
 ```
 
-The gate fails when a file the pull request changes has a high-severity quality-guard finding. Check
-out dod-guard at a pinned commit beside the project; do not copy the scanner. Do not register a
-quality-guard PostToolUse hook. Step 9 requires this job on the default branch.
+The gate scans the files the pull request changes at the merge base and at HEAD. It fails when the
+pull request adds a medium or high quality-guard finding, or when it removes fewer than one
+medium/high (or three low) of the findings that were already in those files. Pass `--report=<file>`
+and upload it as a build artifact; pass `--comment=<file>` and `--report-link=<run url>` and run
+`quality-pr-gate-comment.mjs --repo=<owner/name> --pr=<number> --body=<file>` with `pull-requests: write`
+on that job to keep one gate comment per pull request. Use `--block-on` and `--rule-block-on=<rule>:<severity>`
+when a rule's default limit does not fit the project. Check out dod-guard at a pinned commit beside the
+project; do not copy the scanner. Do not register a quality-guard PostToolUse hook. Step 9 requires
+this job on the default branch.
 
 Run every generated command locally before accepting its workflow form. If a strict applicable
-check exposes existing debt, stop. Setup does not weaken the check or fix unrelated debt. Existing
-high-severity findings in a file block the pull requests that change it, so report them as debt
-before enabling the requirement.
+check exposes existing debt, stop. Setup does not weaken the check or fix unrelated debt. The quality
+gate blocks only findings a pull request adds, so existing findings do not stop setup; they are
+listed in the gate report and paid down a few at a time.
 
 ## 4. Merge ignore rules and repository instructions
 
