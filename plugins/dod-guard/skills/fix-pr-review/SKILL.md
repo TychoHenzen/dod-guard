@@ -1,6 +1,6 @@
 ---
 name: fix-pr-review
-description: Use when selected findings from a GitHub pull request review need the smallest verified fixes. Revalidates each finding against the current head, fixes it, and replies to and resolves only findings proven fixed.
+description: Use when selected findings from a GitHub pull request review need the smallest verified fixes or an evidence-backed decline. Revalidates each finding against the current head, fixes the actionable ones, and replies to and resolves the thread of every finding it fixed or declined with evidence.
 argument-hint: [GitHub PR URL or #number] [GH-<id> finding IDs]
 ---
 
@@ -8,8 +8,9 @@ argument-hint: [GitHub PR URL or #number] [GH-<id> finding IDs]
 
 Fix selected findings from a GitHub pull request review, usually the `GH-<id>`
 findings that `/dod-guard:review-pr` posted. Revalidate
-each finding against the current head before editing. Keep stale, unsupported,
-and unresolved findings visible.
+each finding against the current head before editing. Fix the actionable ones.
+Decline the rest with evidence in the finding's own thread, then resolve that
+thread, so no declined finding leaves an open thread behind.
 
 Read and apply `standards/working-defaults.md` and
 `standards/github-request-discipline.md` from the plugin root. Stricter
@@ -28,7 +29,9 @@ boundaries in this skill win.
 - Fix one coherent batch at the code boundary that owns the behavior.
 - Do not add compatibility paths, speculative abstractions, or unrelated cleanup.
 - Do not approve, mark ready, merge, or close the parent PBI.
-- Reply to or resolve a finding only after its fix commit is pushed.
+- Reply to a fixed finding or resolve its thread only after its fix commit is
+  pushed. Reply to and resolve a declined finding under "Decline
+  non-actionable findings"; that path needs no push and no confirmation.
 
 The skill directory is `${CLAUDE_PLUGIN_ROOT}/skills/fix-pr-review` in Claude
 Code and the directory containing this `SKILL.md` in Codex.
@@ -126,7 +129,7 @@ not stale by itself. A missing current location is stale only after searching
 the current tree for the moved or renamed code. A claim disproved by current
 code is already fixed. A claim that conflicts with the PBI or lacks evidence is
 unsupported. Record exact evidence for every non-actionable selection. Do not
-edit for it.
+edit for it; decline it under "Decline non-actionable findings".
 
 ## Implement and verify
 
@@ -192,6 +195,50 @@ thread unchanged.
 If a provider update fails, keep the pushed fix and report the exact remaining
 comment. Do not roll back verified code.
 
-Report the PBI, original and pushed heads, fixed finding IDs, skipped IDs with
-reasons, changed files, commit, checks, and provider updates. Confirm the parent
-PBI remains open.
+## Decline non-actionable findings
+
+Decline every selection classified `unsupported`, `already-fixed`, or `stale`
+whose thread is still open. Reply to it with evidence, then resolve its thread.
+The repository owner decided on 2026-10-11 that this skill closes the thread of
+every declined finding itself, so ask for no per-PR confirmation. A decline
+needs no pushed commit. A `stale` selection whose thread is already resolved is
+a no-op with no write. Never resolve by this path an `actionable` finding whose
+fix is not pushed, or any thread that could not be read back.
+
+Head handling:
+
+- A run that pushed nothing revalidated the findings against the PR head SHA
+  it fetched under "Revalidate every finding". Read the PR head once before
+  the first reply and the resolve. When it differs, stop with the expected and
+  observed SHAs, post no reply, and make no resolution claim. Otherwise set the
+  reply's `commit_id` to that revalidated head.
+- A run that also pushed a fix keeps the three-ref convergence wait under
+  "Update proven findings" and uses the converged pushed head as `commit_id`.
+
+Reply through the same endpoint and request shape as a fix reply, with `body`,
+`commit_id`, and `in_reply_to` set to the selected root comment's database ID.
+The body states the classification, the exact evidence (path and line, or the
+command and its output), and the head SHA. A thread that mixes fixed and
+declined items (a scanner group) gets one reply that lists the fixed items with
+the commit and the verification command and gives a reason for each declined
+item.
+
+Then read back the exact review thread, verify the reply belongs to the
+selected root comment and the head, issue exactly one `resolveReviewThread`
+mutation for that thread, and read the same thread back with one narrow
+`node(id: $threadId)` query. The write budget and stops under "Update proven
+findings" apply unchanged. A failed or unreadable thread read, an ambiguous
+write, a rate limit, an authentication error, a malformed response, a missing
+thread, a mismatched head, or an unresolved readback stops the workflow with
+actionable evidence, no resolution claim, and the thread unchanged.
+
+A rerun after a failed resolve reads the thread back first. It treats an
+already-resolved thread as a no-op and never posts a duplicate reply.
+
+## Report
+
+Report the PBI, original and pushed heads (the revalidated head when nothing was
+pushed), fixed finding IDs, declined finding IDs each with its classification
+and evidence, other skipped IDs with reasons, the resolved thread IDs, changed
+files, commit, checks, and provider updates. Confirm the parent PBI remains
+open.
