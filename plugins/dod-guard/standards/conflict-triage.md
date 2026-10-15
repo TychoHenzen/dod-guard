@@ -102,7 +102,7 @@ Run each stage at its tier as `standards/model-routing.md` says, and name the
 stage, tier, model, and effort in every progress message. One repair is
 allowed when verification fails and a clear contract shows what is stale:
 repair, stage, run `commit --amend`, and verify again. A second failure stops
-the run; it is never escalated to another tier, because the stop guards git
+the run. It is never escalated to another tier, because the stop guards git
 state and push provenance.
 
 ## Stop rules

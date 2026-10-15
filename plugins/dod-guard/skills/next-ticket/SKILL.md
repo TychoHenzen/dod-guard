@@ -193,10 +193,17 @@ when its requirement is contradicted or its evidence is missing.
 When the task list has more than one task, run each task in order as one step
 of [dod-guard:step-by-step](../step-by-step/SKILL.md), passing the task list
 as a calling-skill plan with a commit per step: one fresh subagent per task.
-Implementing the task uses the strong tier, and running its validations or
+Before dispatching a task, write its step plan to a scratch file outside the
+repository: for each step the file, the edit (symbol and intent), the test to
+add or change (name and assertion), the validation command, and the expected
+result. Use fenced code blocks only, and keep each batch small. Implementing
+the task from that plan uses the cheap tier, and running its validations or
 regenerating artifacts uses the cheap tier, as `standards/model-routing.md`
-defines them. step-by-step's per-step commit makes every verified task a
-durable checkpoint before the next task starts.
+defines them. Writing the plan uses the standard tier, and so does implementing
+a task that cannot be reduced to a written plan, on this thread. You may apply
+a small exact edit yourself instead of dispatching it. step-by-step's per-step
+commit makes every verified task a durable checkpoint before the next task
+starts.
 
 For code shape, prefer small pure functions with explicit inputs and outputs,
 keep external I/O at boundaries, and use ordinary loops or mutation when that
