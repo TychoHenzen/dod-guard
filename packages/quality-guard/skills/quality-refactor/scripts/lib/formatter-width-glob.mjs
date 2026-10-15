@@ -4,7 +4,7 @@
 
 const NEGATION = /^!!?/;
 const EXOTIC_SYNTAX = /[?[\]{}\\!]/;
-const REGEX_SPECIAL = /[.+^$()|]/g;
+const REGEX_SPECIAL = /[.+^$()|\\]/g;
 const DOT_SEGMENTS = new Set(["", ".", ".."]);
 
 function patternBody(pattern) {
