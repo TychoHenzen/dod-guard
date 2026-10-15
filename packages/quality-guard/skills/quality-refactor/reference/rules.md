@@ -70,7 +70,8 @@ happens to be exported, not dead code.
 
 **Uses inside its own module.** In the file that declares the symbol, a whole-word
 occurrence of its name (in code, or in a string interpolation capture) counts
-as a production use unless it is one of these self-references:
+as a production use unless it is one of these self-references or shadowed
+names:
 
 - (a) the declaration itself;
 - (b) a name inside an `export { ... }` list;
@@ -80,18 +81,28 @@ as a production use unless it is one of these self-references:
 - (d) anything inside the symbol's own declaration: a function's extent from
   the function parser, a class, interface, enum, struct or record body from
   the type parser (an indented block for a Python `class`), or a `const`,
-  `let`, `var` or `type` statement up to the end of its initializer.
+  `let`, `var` or `type` statement up to the end of its initializer;
+- (e) anything inside a function from the function parser that has a
+  parameter of that name, the parameter included, because there the name
+  means the parameter.
 
-So recursion, a constructor, a self-typed member and an `export { f }` line
-leave a symbol unused, while a `main()` in the same file that calls it makes
+So recursion, a constructor, a self-typed member, a same-named parameter and
+an `export { f }` line leave a symbol unused, while a `main()` in the same file that calls it makes
 it used. When the symbol's own declaration cannot be found, same-file
 occurrences do not count at all, which keeps the earlier file-blind result
 rather than guessing. This applies to every language except Rust, which has
 its own same-file rule (below).
 
-Known limits: a parameter or other binding of the same name that no keyword
-introduces (`function f(x, name)`) counts as a use, because rule (c) only
-recognizes keyword declarations. An interpolation capture records only its
+Known limits: rule (e) sees only parameters of functions the function parser
+finds. Declarations, methods, assigned arrows (`const f = (name) => ...`),
+`function` expressions, Python `def`, and C#, Java, Kotlin, C++, Go and Rust
+functions are covered. A same-named binding still counts as a use when it is
+a destructured parameter (`f({ name })`), a parenthesis-free arrow parameter
+(`name => ...`), an arrow passed inline as an argument (`xs.map((name) =>
+...)`), a `catch (name)` clause, a `for (const name of ...)` loop variable or
+a Go receiver. A keyword-declared local of that name inside another function
+(`const name = ...`) is also not a scope: rule (c) drops only its declaration,
+and its later mentions count as uses. An interpolation capture records only its
 line, so one on any line the declaration touches is treated as inside it. A
 top-level comma in a `const` type annotation (`Record<string, X>`) ends the
 statement extent early, so a self-reference after that comma counts as a use.

@@ -1,6 +1,7 @@
 // Uses of an export inside its own module. Self-references (the declaration,
-// an export list, a binding, the symbol's own body) are not uses: recursion,
-// constructors and re-export lines would otherwise hide a test-only symbol.
+// an export list, a binding, the symbol's own body) and names a parameter
+// shadows are not uses: recursion, constructors, re-export lines and a
+// same-named parameter would otherwise hide a test-only symbol.
 import { lineAt } from "./offsets.mjs";
 import { EXPORT_BLOCK } from "./rules-reachability-exports.mjs";
 import {
@@ -8,6 +9,7 @@ import {
   isBinding,
   ownExtent,
 } from "./rules-reachability-own-extent.mjs";
+import { shadowingRanges } from "./rules-reachability-shadows.mjs";
 
 const listsByScan = new WeakMap();
 
@@ -29,19 +31,27 @@ function declarationOffset(code, occurrences, own) {
   return occurrences.find((offset) => isBinding(code, offset)) ?? -1;
 }
 
+// `ranges` holds the symbol's own extent and every function whose parameter
+// shadows its name: an occurrence in either refers to something else.
 function isUse(offset, context) {
-  const { code, own, extent, lists } = context;
-  if (offset === own.offset || inside(extent, offset)) return false;
+  const { code, own, ranges, lists } = context;
+  if (offset === own.offset) return false;
+  if (ranges.some((range) => inside(range, offset))) return false;
   if (lists.some((list) => inside(list, offset))) return false;
   return !isBinding(code, offset);
 }
 
-// ASSUMPTION: a capture records only its line, so one on any line the
-// extent touches is treated as inside it. Erring that way keeps reporting.
-function captureUses(captures, scan, extent) {
-  const first = lineAt(scan.starts, extent.start);
-  const last = lineAt(scan.starts, extent.end);
-  return captures.filter((id) => id.line < first || id.line > last).length;
+function touchesLine(scan, range, line) {
+  const first = lineAt(scan.starts, range.start);
+  return first <= line && line <= lineAt(scan.starts, range.end);
+}
+
+// ASSUMPTION: a capture records only its line, so one on any line a range
+// touches is treated as inside it. Erring that way keeps reporting.
+function captureUses(captures, scan, ranges) {
+  return captures.filter(
+    (id) => !ranges.some((range) => touchesLine(scan, range, id.line)),
+  ).length;
 }
 
 /**
@@ -58,8 +68,9 @@ export function sameModuleUses({ pattern, entry, own, captures }) {
   if (at < 0) return 0;
   const extent = ownExtent({ file, scan, name: own.name, at });
   if (extent === null) return 0;
-  const lists = exportLists(scan);
-  const context = { code: scan.code, own, extent, lists };
+  const shadows = shadowingRanges(scan, file.lang, own.name);
+  const ranges = [extent, ...shadows];
+  const context = { code: scan.code, own, ranges, lists: exportLists(scan) };
   const codeUses = occurrences.filter((offset) => isUse(offset, context));
-  return codeUses.length + captureUses(captures, scan, extent);
+  return codeUses.length + captureUses(captures, scan, ranges);
 }
