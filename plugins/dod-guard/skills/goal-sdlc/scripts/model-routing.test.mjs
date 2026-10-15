@@ -13,7 +13,13 @@ const repositoryRoot = new URL("../../../../../", import.meta.url);
 // for its Codex effort (`codex_effort`, falling back to `effort`). The model
 // tier and Codex model are fixed here; the efforts are read, not repeated.
 const TIER_AGENTS = [
-  { name: "stage-standard", model: "sonnet", codex: "gpt-5.6-terra", codexEffort: "medium", sandbox: "workspace-write" },
+  {
+    name: "stage-standard",
+    model: "sonnet",
+    codex: "gpt-5.6-terra",
+    codexEffort: "medium",
+    sandbox: "workspace-write",
+  },
   { name: "stage-cheap", model: "haiku", codex: "gpt-5.6-luna", codexEffort: "max", sandbox: "workspace-write" },
   { name: "read-standard", model: "sonnet", codex: "gpt-5.6-terra", codexEffort: "medium", sandbox: "read-only" },
   { name: "read-cheap", model: "haiku", codex: "gpt-5.6-luna", codexEffort: "max", sandbox: "read-only" },
@@ -353,16 +359,22 @@ test("each tier has a stated verification rule", () => {
 // every registered Codex name must exist in .codex/agents.
 test("every tier agent a skill or standard names exists", async () => {
   const agentNames = new Set(
-    (await readdir(new URL("agents/", pluginRoot))).filter((file) => file.endsWith(".md")).map((file) => file.slice(0, -3)),
+    (await readdir(new URL("agents/", pluginRoot)))
+      .filter((file) => file.endsWith(".md"))
+      .map((file) => file.slice(0, -3)),
   );
   const codexNames = new Set(
-    (await readdir(new URL(".codex/agents/", repositoryRoot))).filter((file) => file.endsWith(".toml")).map((file) => file.slice(0, -5)),
+    (await readdir(new URL(".codex/agents/", repositoryRoot)))
+      .filter((file) => file.endsWith(".toml"))
+      .map((file) => file.slice(0, -5)),
   );
   const skillsRoot = new URL("skills/", pluginRoot);
   const skillDirs = (await readdir(skillsRoot, { withFileTypes: true })).filter((entry) => entry.isDirectory());
   const texts = await Promise.all([
     ...skillDirs.map((entry) => readFile(new URL(`${entry.name}/SKILL.md`, skillsRoot), "utf8")),
-    ...["model-routing.md", "conflict-triage.md"].map((file) => readFile(new URL(`standards/${file}`, pluginRoot), "utf8")),
+    ...["model-routing.md", "conflict-triage.md"].map((file) =>
+      readFile(new URL(`standards/${file}`, pluginRoot), "utf8"),
+    ),
   ]);
   for (const text of texts) {
     for (const [, name] of text.matchAll(/dod-guard:((?:stage|read)-[a-z]+)/g)) {

@@ -219,7 +219,9 @@ test("goal-sdlc starts no stage on the strong tier", () => {
   assert.ok(!routingRows(skill).some(([, tier]) => tier === "strong"), "no row routes to the strong tier");
   assert.match(
     skill,
-    prose('No row starts on the strong tier: a stage that fails its check climbs one tier under "Escalation" in that standard.'),
+    prose(
+      'No row starts on the strong tier: a stage that fails its check climbs one tier under "Escalation" in that standard.',
+    ),
   );
 });
 
