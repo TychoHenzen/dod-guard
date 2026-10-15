@@ -1,20 +1,9 @@
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
-import { readFile } from "node:fs/promises";
-// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
+import { assertInOrder, skill } from "./lib/contract-text.mjs";
 
-const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
-
-function assertInOrder(text, patterns) {
-  let previous = -1;
-  for (const pattern of patterns) {
-    const position = text.search(pattern);
-    assert.ok(position > previous, `${pattern} must follow the preceding step`);
-    previous = position;
-  }
-}
 test("documents supported GitHub review-comment request shapes", () => {
   const updateSection = skill.slice(skill.indexOf("## Update proven findings"));
   const replySection = updateSection.match(/Otherwise reply through([\s\S]*?)Do\s+not use the legacy/)?.[1] ?? "";

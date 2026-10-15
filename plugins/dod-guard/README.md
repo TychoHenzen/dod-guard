@@ -106,9 +106,11 @@ review with a recommendation. After review, `/complete-pr` treats its invocation
 acceptance of the current head and completes the guarded merge. `/complete-pr`
 stops with `unresolved-review-threads` while any review thread is open, whoever
 opened it.
-`/fix-pr-review` revalidates and fixes selected review findings before that
-acceptance. Each delivery skill resolves the current repository and requires
-exactly one open GitHub Project explicitly linked to it.
+`/fix-pr-review` revalidates selected review findings before that acceptance.
+It fixes the actionable ones and declines the rest with evidence, resolving the
+thread of each, so a declined finding leaves no open thread behind.
+Each delivery skill resolves the current repository and requires exactly one
+open GitHub Project explicitly linked to it.
 
 `/quick-pbi` runs those delivery stages in order for a user request. It asks
 questions only when `/refine-backlog-item` needs material clarification.
@@ -183,7 +185,7 @@ GitHub-backed skills share the request policy in
 | `/step-by-step` | Run one explicit ordered plan through fresh bounded subagents. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
 | `/review-pr` | Scan a GitHub pull request's changed files and review them with four agents into one comment-only review. |
-| `/fix-pr-review` | Revalidate and fix selected GitHub review findings. |
+| `/fix-pr-review` | Revalidate selected GitHub review findings, fix the actionable ones, and decline the rest with evidence, resolving each thread. |
 | `/complete-pr` | Complete an explicitly accepted draft through guarded REST merge and branch deletion, stopping while any review thread is unresolved. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
