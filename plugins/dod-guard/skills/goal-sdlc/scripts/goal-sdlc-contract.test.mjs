@@ -86,7 +86,7 @@ test("goal-sdlc keeps its sections short and its own", () => {
     "## Reporting",
     "## Stop condition",
   ]);
-  assert.ok(skill.split("\n").length <= 162, "goal-sdlc grew past an orchestrator");
+  assert.ok(skill.split("\n").length <= 167, "goal-sdlc grew past an orchestrator");
   // Rules that belong to an owner must not come back here.
   for (const owned of [
     "## Acceptance matrix",
@@ -94,6 +94,7 @@ test("goal-sdlc keeps its sections short and its own", () => {
     "pre-review checkpoint",
     "validation cadence",
     "Record a compact checkpoint",
+    "The standard tier is the default",
     "The strong tier is for",
     "The cheap tier is for",
   ]) {
@@ -157,18 +158,20 @@ test("goal-sdlc keeps one daily friction log and a strict stop", () => {
 
 const ROUTES = [
   ["Queue snapshot read", "cheap"],
-  ["Refinement: plan research questions", "strong"],
+  ["Refinement: plan research questions", "standard"],
   ["Refinement: investigate code, callers, and tests", "cheap"],
-  ["Refinement: decide classification and criteria", "strong"],
-  ["`/next-ticket`: implement one task", "strong"],
+  ["Refinement: decide classification and criteria", "standard"],
+  ["`/next-ticket`: write the step plan for one task", "standard"],
+  ["`/next-ticket`: implement one task from its plan", "cheap"],
   ["`/next-ticket`: run validations and regenerate artifacts", "cheap"],
-  ["`/submit-draft-pr`", "strong"],
-  ["`/review-pr`: plan", "strong"],
+  ["`/submit-draft-pr`", "standard"],
+  ["`/review-pr`: plan", "standard"],
   ["`/review-pr`: investigate", "cheap"],
-  ["`/review-pr`: judge", "strong"],
-  ["`/fix-pr-review`", "strong"],
-  ["`/complete-pr`: guarded merge and Project finalization", "strong"],
-  ["`/add-backlog-idea`, including the friction log", "strong"],
+  ["`/review-pr`: judge", "standard"],
+  ["`/fix-pr-review`", "standard"],
+  ["`/fix-pr-review`: apply a written per-finding fix", "cheap"],
+  ["`/complete-pr`: guarded merge and Project finalization", "standard"],
+  ["`/add-backlog-idea`, including the friction log", "cheap"],
 ];
 // Effort is not repeated here: each tier agent's frontmatter owns it.
 function routingRows(text) {
@@ -203,10 +206,20 @@ test("goal-sdlc routes every stage to one tier", () => {
   assert.match(skill, prose("or use the registered tier agent in Codex"));
   assert.match(skill, prose("name the stage, tier, model, and effort in the progress message"));
   assert.match(skill, prose("user's model or effort override is applied and recorded as that standard says."));
-  assert.match(skill, prose("Verify cheap-tier output before anything relies on it"));
+  assert.match(skill, prose("Verify each stage's output as that standard says for its tier"));
   assert.match(
     skill,
     prose("read back the commit of any stage that changed tracked files before the next stage starts"),
+  );
+});
+
+// The strong tier is a recovery path: no row names it, and a failed stage climbs
+// one tier under the routing standard's Escalation section.
+test("goal-sdlc starts no stage on the strong tier", () => {
+  assert.ok(!routingRows(skill).some(([, tier]) => tier === "strong"), "no row routes to the strong tier");
+  assert.match(
+    skill,
+    prose('No row starts on the strong tier: a stage that fails its check climbs one tier under "Escalation" in that standard.'),
   );
 });
 

@@ -29,8 +29,8 @@ const STAGE_RETURN_RULES = [
   "leave pre-existing and unrelated user work unchanged: never stash, reset, or revert work you did not introduce.",
 ];
 
-// Only stage-strong can dispatch, so only it needs the terminal-child rule.
-const STRONG_CHILD_WAIT = [
+// Only stage-standard can dispatch, so only it needs the terminal-child rule.
+const STANDARD_CHILD_WAIT = [
   "do not return any stage report until every child you dispatched reaches a terminal result",
   'An interim statement such as "waiting for the worker" is not a valid return.',
   "dispatch each child in the foreground (`run_in_background: false`) or wait for its completion notification",
@@ -38,10 +38,10 @@ const STRONG_CHILD_WAIT = [
 ];
 
 test("stage agents return only after owned work and proofs finish", async () => {
-  const [strong, cheap] = await Promise.all([agentText("stage-strong"), agentText("stage-cheap")]);
-  assert.deepEqual(missingPhrases(strong, STAGE_RETURN_RULES), [], "stage-strong.md");
+  const [standard, cheap] = await Promise.all([agentText("stage-standard"), agentText("stage-cheap")]);
+  assert.deepEqual(missingPhrases(standard, STAGE_RETURN_RULES), [], "stage-standard.md");
   assert.deepEqual(missingPhrases(cheap, STAGE_RETURN_RULES), [], "stage-cheap.md");
-  assert.deepEqual(missingPhrases(strong, STRONG_CHILD_WAIT), [], "stage-strong.md");
+  assert.deepEqual(missingPhrases(standard, STANDARD_CHILD_WAIT), [], "stage-standard.md");
   // An exit status alone hid unfinished proofs, so it must not be the whole return.
   assert.doesNotMatch(cheap, prose("Return the commands you ran with their exit status"));
 });

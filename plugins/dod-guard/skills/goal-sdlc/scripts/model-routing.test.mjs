@@ -183,7 +183,7 @@ const SKILL_CAPABLE = [
   "a readback of any issue, pull request, or Project state the step wrote",
 ];
 
-test("a skill-capable stage runs on stage-strong at its own tier", () => {
+test("a skill-capable stage runs on stage-standard at its own tier", () => {
   assertPhrases(standard, SKILL_CAPABLE, "model-routing.md");
 });
 
@@ -229,7 +229,7 @@ const MISROUTED = [
     "cheap-tier output.",
 ];
 
-test("a misrouted cheap step is redispatched on stage-strong", () => {
+test("a misrouted cheap step is redispatched on stage-standard", () => {
   assertPhrases(standard, MISROUTED, "model-routing.md");
 });
 
@@ -298,8 +298,9 @@ test("the cheap agents carry the tool-failure workarounds", async () => {
 // and no Claude Code tier agent runs at effort max.
 test("the strong tier has no agent and no Claude tier agent runs at effort max", async () => {
   const agentFiles = await readdir(new URL("agents/", pluginRoot));
-  assert.ok(!agentFiles.includes("stage-strong.md"), "stage-strong must not exist");
-  assert.ok(!agentFiles.includes("read-strong.md"), "read-strong must not exist");
+  for (const kind of ["stage", "read"]) {
+    assert.ok(!agentFiles.includes(`${kind}-strong.md`), `${kind}-strong must not exist`);
+  }
   for (const agent of TIER_AGENTS) {
     const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
     assert.notEqual(frontmatterValue(source, "effort"), "max", `${agent.name} Claude effort`);
@@ -345,4 +346,30 @@ const TIER_VERIFICATION = [
 
 test("each tier has a stated verification rule", () => {
   assertPhrases(standard, TIER_VERIFICATION, "model-routing.md");
+});
+
+// A renamed or removed agent breaks every brief that still names it, so every
+// tier agent a skill or standard dispatches by name must exist as a file, and
+// every registered Codex name must exist in .codex/agents.
+test("every tier agent a skill or standard names exists", async () => {
+  const agentNames = new Set(
+    (await readdir(new URL("agents/", pluginRoot))).filter((file) => file.endsWith(".md")).map((file) => file.slice(0, -3)),
+  );
+  const codexNames = new Set(
+    (await readdir(new URL(".codex/agents/", repositoryRoot))).filter((file) => file.endsWith(".toml")).map((file) => file.slice(0, -5)),
+  );
+  const skillsRoot = new URL("skills/", pluginRoot);
+  const skillDirs = (await readdir(skillsRoot, { withFileTypes: true })).filter((entry) => entry.isDirectory());
+  const texts = await Promise.all([
+    ...skillDirs.map((entry) => readFile(new URL(`${entry.name}/SKILL.md`, skillsRoot), "utf8")),
+    ...["model-routing.md", "conflict-triage.md"].map((file) => readFile(new URL(`standards/${file}`, pluginRoot), "utf8")),
+  ]);
+  for (const text of texts) {
+    for (const [, name] of text.matchAll(/dod-guard:((?:stage|read)-[a-z]+)/g)) {
+      assert.ok(agentNames.has(name), `dod-guard:${name} is not an agent file`);
+    }
+    for (const [, name] of text.matchAll(/`(dod_guard_(?:stage|read)_[a-z]+)`/g)) {
+      assert.ok(codexNames.has(name), `${name} is not a registered Codex agent`);
+    }
+  }
 });

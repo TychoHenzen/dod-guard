@@ -13,7 +13,7 @@ test("review-pr plans, investigates, verifies, then judges in that order", () =>
   const order = [
     "## 3. Diff and slots",
     "## 5. Plan, investigate, judge",
-    "One `dod-guard:read-strong` planner",
+    "One `dod-guard:read-standard` planner",
     "`dod-guard:read-cheap` investigators answer every",
     "Before judging, the main thread checks every answer",
     "Dispatch the four reviewers at once",
@@ -83,10 +83,10 @@ test("review-pr posts the slot block without changing its boundaries", () => {
   assert.doesNotMatch(skill, /so each gets a `GH-<id>`/);
 });
 
-test("the four reviewers judge on the strong tier in Claude Code and Codex", async () => {
+test("the four reviewers judge on the standard tier in Claude Code and Codex", async () => {
   for (const name of REVIEWERS) {
     const source = await readFile(new URL(`agents/${name}.md`, pluginRoot), "utf8");
-    assert.match(source, /^model: opus$/m, name);
+    assert.match(source, /^model: sonnet$/m, name);
     assert.match(source, /^effort: medium$/m, name);
     assert.match(source, prose("Judge from that evidence instead of re-reading the whole diff."), name);
     assert.match(source, prose("The brief gives you the slots assigned to this lens"), name);
@@ -94,7 +94,7 @@ test("the four reviewers judge on the strong tier in Claude Code and Codex", asy
       new URL(`.codex/agents/dod_guard_${name.replaceAll("-", "_")}.toml`, repositoryRoot),
       "utf8",
     );
-    assert.match(toml, /^model = "gpt-5\.6-sol"$/m, name);
+    assert.match(toml, /^model = "gpt-5\.6-terra"$/m, name);
     assert.match(toml, /^model_reasoning_effort = "medium"$/m, name);
     assert.match(toml, /^sandbox_mode = "read-only"$/m, name);
     for (const [label, text] of [
@@ -119,7 +119,7 @@ test("the four reviewers judge on the strong tier in Claude Code and Codex", asy
 test("USAGE describes the planner, investigators, and judges", () => {
   assert.match(usage, prose("generates fixed review slots from the diff and the PBI"));
   assert.match(usage, prose("cheap investigators answer each question with a cited path and line"));
-  assert.match(usage, prose("the four reviewer agents judge them on the strong tier"));
+  assert.match(usage, prose("the four reviewer agents judge them on the standard tier"));
   assert.match(usage, prose("with every slot and its questions in a collapsed block"));
   assert.match(usage, prose("ruling on every slot assigned to their lens"));
   assert.match(usage, prose("blocking findings are listed in the review body without a `GH-<id>`"));
@@ -161,14 +161,14 @@ test("review-pr numbers violations before planning and asks scanner check questi
   assert.match(skill, prose("whether the rule's own condition holds"));
 });
 
-test("review-pr merges judged findings in one read-strong pass", () => {
+test("review-pr merges judged findings in one read-standard pass", () => {
   const candidates =
     "candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> " +
     "--sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> " +
     "--out=<candidates.json>";
   assert.match(skill, prose(candidates));
-  assert.match(skill, prose("one `dod-guard:read-strong` pass reads the candidates file"));
-  assert.match(skill, prose("the registered `dod_guard_read_strong` agent"));
+  assert.match(skill, prose("one `dod-guard:read-standard` pass reads the candidates file"));
+  assert.match(skill, prose("the registered `dod_guard_read_standard` agent"));
   const groups = ['"groups": [{ "members":', '"representative":'];
   const rulings = ['"scanner": [{ "ids":', '"status": "DROP", "reason":', '"answer":'];
   assert.match(skill, prose(...groups, ...rulings));
@@ -180,6 +180,15 @@ test("review-pr merges judged findings in one read-strong pass", () => {
   assert.match(skill, prose("pre-existing or unchanged at base is never a reason"));
   const empty = 'save `{ "groups": [], "scanner": [] }`';
   assert.match(skill, prose(empty, "without dispatching the pass"));
+});
+
+// A failed investigator batch climbs one tier once; a format failure or a refused
+// build is not a capability failure, so those stops are never escalated.
+test("review-pr escalates a failed investigator batch once and never a format failure", () => {
+  assert.match(skill, prose("run that batch once on `dod-guard:read-standard` with the failure record"));
+  assert.match(skill, prose("if it fails the same check there, stop without posting and name the batch"));
+  assert.match(skill, prose("a format failure is not escalated to another tier"));
+  assert.match(skill, prose("a refused build is not escalated to another tier"));
 });
 
 test("review-pr allows the merge pass one correction, then stops", () => {
@@ -209,7 +218,7 @@ test("the build checks the merge output instead of deduping by root cause", () =
 });
 
 test("USAGE describes the merge pass and kept scanner findings", () => {
-  const merges = "A strong-tier pass then merges findings that cite the same defect";
+  const merges = "A standard-tier pass then merges findings that cite the same defect";
   assert.match(usage, prose(merges, "in one file"));
   assert.match(usage, prose("keeps or drops each scanner finding, citing a verified answer"));
   assert.match(usage, prose("the build checks its output"));
