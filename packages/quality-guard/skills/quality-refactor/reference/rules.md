@@ -14,7 +14,7 @@ scanner remains advisory when a source pattern cannot prove intent.
 
 | Rule | Source contract | Configured signal or disposition |
 | --- | --- | --- |
-| `line-length` | `formatting/vertical-structure.md`; `emergence/pragmatic-size.md` | 80 preferred / 120 hard diagnostic signals; wrap or rename when it improves intent, not to satisfy a number blindly. |
+| `line-length` | `formatting/vertical-structure.md`; `emergence/pragmatic-size.md` | JS/TS files are judged against their Biome formatter width W (medium above W, high above the larger of W and 120); everything else, and any file the resolver cannot judge, uses 80 / 120. Wrap or rename when it improves intent, not to satisfy a number blindly. |
 | `file-length` | `classes/srp-and-class-size.md`; `emergence/pragmatic-size.md` | 100 preferred / 300 hard diagnostic signals; split at a real responsibility boundary. |
 | `partial-type-length` | `classes/srp-and-class-size.md`; `successive-refinement/polymorphic-parsing-and-errors.md` | 100 preferred / 300 hard combined lines of a C# partial type split across hand-written files; a partial split is not a responsibility boundary. |
 | `function-length` | `functions/small-and-focused.md`; `emergence/pragmatic-size.md` | 30 preferred / 60 hard diagnostic signals; extract a named concept when cohesion or verification suffers. |
@@ -26,7 +26,7 @@ scanner remains advisory when a source pattern cannot prove intent.
 | `comment-bloat` | `comments/intent-and-limits.md`; `comments/bad-comments.md` | 2x preferred / 4x hard comment-to-code ratios are review signals; retain context a reader cannot derive. |
 | `else-branch` | `functions/polymorphism-and-names.md`; `dispositions.md` | Syntax-only preferred signal; a genuine two-way branch is legitimate and remains reviewable. Non-if `else` forms (Rust let-else, Python loop and try else, C/C++/C# `#else`, Kotlin `when` `else ->`) are quiet. |
 | `unnamed-tuple` | `meaningful-names/intent-and-disinformation.md` | Declared tuples are naming signals; local destructuring is not a finding. |
-| `dead-export` | `smells-and-heuristics/functions-and-duplication.md` | Reference-graph evidence; reflection, dependency injection, dynamic imports, and manifests remain explicit review cases. |
+| `dead-export` | `smells-and-heuristics/functions-and-duplication.md` | Reference-graph evidence, including uses elsewhere in the symbol's own module; reflection, dependency injection, dynamic imports, and manifests remain explicit review cases. |
 | `unused-local` | `smells-and-heuristics/functions-and-duplication.md` | Static same-file reference evidence; dynamic TypeScript lookups, reflection, and string dispatch can still trigger a false positive and require human review. |
 | `test-only-export` | `smells-and-heuristics/functions-and-duplication.md` | Test-only reachability is advisory because fixtures and production seams share the same graph shape. |
 | `commented-out-code` | `comments/bad-comments.md` | Comment syntax is a removal signal; version control retains historical code. |
@@ -61,9 +61,51 @@ the source-linked entries.
 
 ## `dead-export` - exported, never referenced
 
-**Detects:** a public symbol with zero references anywhere in the scan outside
-its own file. Entry-point files (`index`, `main`, `mod`, `lib`, `cli`,
-`program`, `app`, `server`, `setup`, `conftest`, `__init__.py`) are exempt.
+**Detects:** a public symbol with zero references anywhere in the scan,
+counting uses elsewhere in its own module (see "Uses inside its own module"
+below). Entry-point files (`index`, `main`, `mod`, `lib`, `cli`, `program`,
+`app`, `server`, `setup`, `conftest`, `__init__.py`) are exempt. An export
+that only its own module uses is therefore not reported: it is live code that
+happens to be exported, not dead code.
+
+**Uses inside its own module.** In the file that declares the symbol, a whole-word
+occurrence of its name (in code, or in a string interpolation capture) counts
+as a production use unless it is one of these self-references or shadowed
+names:
+
+- (a) the declaration itself;
+- (b) a name inside an `export { ... }` list;
+- (c) a binding declaration of that name: `function`, `class`, `interface`,
+  `type`, `enum`, `const`, `let`, `var`, `def`, `struct` or `record` followed
+  by the name;
+- (d) anything inside the symbol's own declaration: a function's extent from
+  the function parser, a class, interface, enum, struct or record body from
+  the type parser (an indented block for a Python `class`), or a `const`,
+  `let`, `var` or `type` statement up to the end of its initializer;
+- (e) anything inside a function from the function parser that has a
+  parameter of that name, the parameter included, because there the name
+  means the parameter.
+
+So recursion, a constructor, a self-typed member, a same-named parameter and
+an `export { f }` line leave a symbol unused, while a `main()` in the same file that calls it makes
+it used. When the symbol's own declaration cannot be found, same-file
+occurrences do not count at all, which keeps the earlier file-blind result
+rather than guessing. This applies to every language except Rust, which has
+its own same-file rule (below).
+
+Known limits: rule (e) sees only parameters of functions the function parser
+finds. Declarations, methods, assigned arrows (`const f = (name) => ...`),
+`function` expressions, Python `def`, and C#, Java, Kotlin, C++, Go and Rust
+functions are covered. A same-named binding still counts as a use when it is
+a destructured parameter (`f({ name })`), a parenthesis-free arrow parameter
+(`name => ...`), an arrow passed inline as an argument (`xs.map((name) =>
+...)`), a `catch (name)` clause, a `for (const name of ...)` loop variable or
+a Go receiver. A keyword-declared local of that name inside another function
+(`const name = ...`) is also not a scope: rule (c) drops only its declaration,
+and its later mentions count as uses. An interpolation capture records only its
+line, so one on any line the declaration touches is treated as inside it. A
+top-level comma in a `const` type annotation (`Record<string, X>`) ends the
+statement extent early, so a self-reference after that comma counts as a use.
 
 **Why hard:** dead code is read, maintained, refactored, and reasoned about by
 every future reader, and pays back nothing. It also lies - a reader assumes an
@@ -98,10 +140,10 @@ appears in a decorator or in a file type the manifest list does not cover.
 sits in the same file as the code it tests. A reference from inside one is
 test evidence, not production evidence, and a reference from outside one in
 that same file is production evidence, the same as a reference from any other
-file. Both directions used to be invisible: the reachability check used to
-skip a symbol's own file outright, so a `pub fn` referenced only by its
-file's own `#[cfg(test)]` module looked entirely unreferenced and reported as
-`dead-export` instead of `test-only-export`.
+file. For Rust only the declaration occurrence itself is excluded; the
+self-reference rules (b) to (d) above do not apply. Because the test module
+is counted, a `pub fn` referenced only by its file's own `#[cfg(test)]`
+module reports as `test-only-export`, not `dead-export`.
 
 ---
 
@@ -137,7 +179,12 @@ left as-is rather than fixed.
 ## `test-only-export` - production code that only tests use
 
 **Detects:** an export with zero references from non-test files and at least
-one from a test file.
+one from a test file. A use elsewhere in the export's own module is a
+non-test reference, by the same rule and with the same self-reference
+exclusions as `dead-export` ("Uses inside its own module"). A function that
+its own file's `main()` calls is therefore production code even when only a
+test imports it, while a symbol whose only same-file mentions are its own
+recursion, constructor or `export { ... }` entry is still reported.
 
 **Why it matters:** this is the most expensive kind of dead code, because it
 comes with tests that make it look alive. The tests pass, the coverage number
@@ -163,8 +210,8 @@ that module lives inside the same file as production code, not in a
 separate test file or directory `--test-path` could point at. A `#[cfg(test)]`
 or `#[cfg(all(test, ...))]` block is recognized directly: a reference from
 inside one counts as test evidence for this rule, the same way a whole test
-file's reference does everywhere else. See `dead-export` above for how the
-symbol's own file stopped being skipped for this.
+file's reference does everywhere else. See `dead-export` above for how Rust
+counts the symbol's own file.
 
 **Fix:** delete the symbol and its tests together. If the logic is genuinely
 needed but only reachable through a larger unit, test it through that unit
@@ -623,17 +670,92 @@ the repository root rather than guessed commands.
 
 ---
 
-## `line-length` - 80 preferred, 120 hard
+## `line-length` - longer than the formatter width W
 
-**Detects:** characters per line.
+**Detects:** characters per line (`text.length`, with no tab expansion and no
+grapheme-aware width), judged against a width W:
 
-**Why 80 is a preferred diagnostic signal:** side-by-side diffs, split editor
-panes, and terminal review often assume it. It can also act as a complexity
-signal - a line past 80 characters may be doing two things.
+- medium when the line is longer than W;
+- high when it is longer than the larger of W and 120.
 
-**Why 120 is a stronger diagnostic signal:** past that, wrapping is often
-unavoidable somewhere. It still points to review rather than proving that a
-line is incorrect or that reformatting alone is useful.
+The message is `line is N chars (width W)`. Each finding also carries a
+`widthSource` field: the Biome config that decided W, relative to `--root`
+with forward slashes, or `default` for the fallback. The source stays out of
+the message on purpose. The pull-request gate identifies a finding by rule
+plus message (digit runs normalized), so a config path in the message would
+re-pair every long line as resolved plus new whenever the deciding config
+moved between the base and the head, and the new high copy would block.
+
+**Where W comes from.** For `.ts`, `.tsx`, `.mts`, `.cts`, `.js`, `.jsx`,
+`.mjs` and `.cjs` files, W is the line width the repository's Biome formatter
+applies to that file. The scanner reads the config itself (it never runs
+Biome), following the layering Biome 2.5.3 was observed to use:
+
+- The governing config is the nearest `biome.json` or `biome.jsonc`, searched
+  from the file's directory up to `--root` inclusive and never above it.
+  `biome.json` wins when a directory has both. The pull-request gate's base
+  side therefore reads the base worktree's own config.
+- A nested config with `"extends": "//"` is layered over the next config up.
+  A nested config with no `extends` below another config is one Biome
+  refuses, so its files fall back, unless it sets `"root": false`, in which
+  case it stands alone.
+- The file must be matched by `files.includes` and by `formatter.includes`
+  (a missing list matches everything). Patterns apply in order and the last
+  match decides; a leading `!` or `!!` excludes; a pattern that matches one
+  of the file's ancestor directories matches the file. Under `extends`, the
+  two configs' lists concatenate, ancestor first, and are all read relative
+  to the nested config's directory; the ancestor's own `files.includes` also
+  has to admit the file from the ancestor's directory.
+- Settings layer in this order, later winning: ancestor settings, nested
+  settings, the ancestor's matching `overrides`, then the nested config's
+  matching `overrides` (override globs are also read from the nested
+  config's directory). Within a layer, `javascript.formatter.lineWidth` beats
+  `formatter.lineWidth`.
+- A config that applies but sets no width gives W = 80, Biome's default, with
+  that config as the `widthSource`.
+
+**Fallback.** Every other language, and any JS/TS file the resolver cannot
+judge, uses medium above 80 and high above 120, with `widthSource` `default`
+and `(width 80)` in the message. A JS/TS file falls back when:
+
+- no Biome config sits at or below `--root` on its path, or the file is
+  outside `--root`;
+- Biome would not format it (an include list leaves it out);
+- the last layer to set `formatter.enabled` or
+  `javascript.formatter.enabled` sets it to `false`;
+- a config in its chain uses an `extends` other than `"//"`, or extends
+  `"//"` with no usable config above it at or below `--root`;
+- an include list anywhere in the chain, including an override that does not
+  match the file, uses glob syntax beyond `*`, `**` and literal segments;
+- a `lineWidth` anywhere in the chain is not an integer from 1 to 320;
+- the governing config, or the config it extends, will not parse as JSON or
+  JSONC, or cannot be read.
+
+None of these throws or writes to stderr; a fixed config takes effect on the
+next scan. Configs are cached for one scan only.
+
+In this repository, packages with a `lineWidth` 80 override in `biome.json`
+are judged at 80, most other JS/TS at 120, and paths Biome does not format
+(for example `packages/quality-guard/skills/`) fall back. The CI gate passes the
+checkout directory as the scan `--root`, so the root `biome.json` and each
+package override are visible there and widths resolve per path as above.
+
+**Why the formatter width:** the formatter already decides how long a line in
+that file may be. Judging the file against a different, fixed number reports
+lines the formatter itself produced, which can only be declined. Lines over
+120 stay high wherever W is 120 or less, so a `--block-on=high` gate sees the
+same high findings as before; a W above 120 deliberately raises the high bound
+to W.
+
+**Why 80 / 120 as the fallback:** side-by-side diffs, split editor panes, and
+terminal review often assume 80, and a line past it may be doing two things.
+Past 120, wrapping is often unavoidable somewhere. Both still point to review
+rather than proving that a line is incorrect or that reformatting alone is
+useful.
+
+**Not width sources:** `pyproject.toml` (ruff, black), rustfmt,
+`.editorconfig` and prettier configs are not read; those files use the
+fallback.
 
 **Fix:** *Extract Variable* for a long expression - the name is documentation.
 Break long parameter lists one per line. Never fix this by reformatting alone

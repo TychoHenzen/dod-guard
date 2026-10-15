@@ -46,7 +46,7 @@ export function checkStatelessMethod({ file, config, fn, context, out }) {
     severity,
     message:
       `${fn.name}() never touches instance state ` +
-      "\u2014 make it a free function",
+      "- make it a free function",
     metric: 1,
   });
 }

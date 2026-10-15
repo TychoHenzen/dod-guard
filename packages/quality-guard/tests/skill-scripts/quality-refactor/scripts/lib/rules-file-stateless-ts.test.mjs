@@ -5,9 +5,6 @@ import { scanViolations, tsFile } from "./rules-file-fixtures.test.mjs";
 const BUILD_MESSAGE = /^build\(\) /;
 const REAL_BODY_LINES = 35;
 const GREET_LINE = 3;
-// The rule message separates its parts with a long dash, U+2014.
-const DASH_CODE_POINT = 0x20_14;
-const DASH = String.fromCharCode(DASH_CODE_POINT);
 
 function violationsOf(rule, source) {
   return scanViolations(tsFile("src/sample.ts", source)).filter(
@@ -90,7 +87,7 @@ test("a method that never touches state is reported (AC-03)", () => {
   assert.equal(found[0].severity, "medium");
   assert.equal(
     found[0].message,
-    `greet() never touches instance state ${DASH} make it a free function`,
+    "greet() never touches instance state - make it a free function",
   );
   assert.equal(
     found[0].suggestion,

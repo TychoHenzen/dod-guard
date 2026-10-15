@@ -9,7 +9,7 @@ export function renderText(result, top) {
   const lines = [];
   const counts = `${summary.high} high, ${summary.medium} medium, ${summary.low} low`;
   lines.push(
-    `Scanned ${result.fileCount} files \u2014 ${summary.total} violations ` +
+    `Scanned ${result.fileCount} files - ${summary.total} violations ` +
       `(${counts})`,
   );
   lines.push("");

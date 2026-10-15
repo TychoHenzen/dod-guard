@@ -1,9 +1,11 @@
 import { isEntryPath } from "./config.mjs";
 import { lineAt } from "./offsets.mjs";
 import { referenceCounts } from "./rules-reachability-evidence.mjs";
-import { EXPORT_PATTERNS } from "./rules-reachability-exports.mjs";
+import {
+  EXPORT_BLOCK,
+  EXPORT_PATTERNS,
+} from "./rules-reachability-exports.mjs";
 import { suggestionFor } from "./rule-suggestions.mjs";
-const EXPORT_BLOCK = /export\s*\{([^}]*)\}/g;
 function namesFromBlock(code) {
   const names = [];
   EXPORT_BLOCK.lastIndex = 0;
@@ -62,7 +64,7 @@ function violationForSymbol({ file, corpus, config, symbol }) {
   const message =
     test > 0
       ? `${symbol.name} is only referenced by tests ` +
-        "\u2014 delete it and its tests"
+        "- delete it and its tests"
       : `${symbol.name} is exported but never referenced anywhere`;
   return {
     file: file.rel,
