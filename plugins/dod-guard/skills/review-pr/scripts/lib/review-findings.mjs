@@ -1,7 +1,9 @@
+import { droppedBlock } from "./dropped-block.mjs";
 import { judgedCandidates, scannerCandidates } from "./finding-ids.mjs";
 import { mergedFindings } from "./merge-groups.mjs";
 import { requireMergeOutput } from "./merge-output.mjs";
 import { requirePlan, reviewSlots, slotsBlock, slotsByLens } from "./review-slots.mjs";
+import { splitRulings } from "./scanner-rulings.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
 const MARKER = /<!-- dod-guard:review-pr head=([0-9a-f]{7,40}) recommendation=(APPROVE|REQUEST_CHANGES|BLOCK) -->/;
@@ -139,14 +141,20 @@ function checkedInputs({ scan, diff, results, plan, pbi, subIssues, merge }) {
   const judged = judgedCandidates(results, slotsByLens(plan));
   const scanner = scannerCandidates(scan, changedLines);
   requireMergeOutput(merge, { judged, scanner, plan });
-  return { changedLines, slots, judged, scanner };
+  return { changedLines, slots, judged, ...splitRulings(merge.scanner, scanner) };
 }
 
-function anchoredFindings({ changedLines, judged, scanner }, merge) {
+// Only kept violations reach the unchanged scannerFinding, so a dropped one
+// never sets a file's severity or shows in the counts.
+function anchoredFindings({ changedLines, judged, kept }, merge) {
   const fallback = firstAnchor(changedLines);
-  const groups = [...scannerGroups(scanner)].map(([file, group]) => scannerFinding(file, group));
+  const groups = [...scannerGroups(kept)].map(([file, group]) => scannerFinding(file, group));
   const findings = [...mergedFindings(merge.groups, judged), ...groups];
   return findings.map((finding) => anchor(finding, changedLines, fallback));
+}
+
+function planBlocks(plan, { slots, dropped }) {
+  return [slotsBlock(plan, slots), droppedBlock(dropped)].filter(Boolean).join("\n\n");
 }
 
 function inlineComments(blocking) {
@@ -166,7 +174,7 @@ function buildReview(input) {
     headSha: input.headSha,
     recommendation,
     counts,
-    block: slotsBlock(input.plan, checked.slots),
+    block: planBlocks(input.plan, checked),
     unanchored: blocking.filter((finding) => !finding.anchored),
     minor: findings.filter((finding) => finding.severity === "MINOR"),
   });

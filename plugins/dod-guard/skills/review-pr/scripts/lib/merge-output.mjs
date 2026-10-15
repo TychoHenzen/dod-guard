@@ -1,4 +1,5 @@
 import { groupProblems } from "./merge-groups.mjs";
+import { rulingProblems } from "./scanner-rulings.mjs";
 
 function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -29,7 +30,8 @@ function mergeProblems(output, candidates) {
     return [...arrays.map((key) => `${key} is not an array`), ...severity];
   }
   // Each check returns its own problem list, so one refusal names them all.
-  return [...severity, ...groupProblems(output.groups, candidates.judged)];
+  const groups = groupProblems(output.groups, candidates.judged);
+  return [...severity, ...groups, ...rulingProblems(output.scanner, candidates)];
 }
 
 // The whole output is checked before anything is built, so a malformed pass

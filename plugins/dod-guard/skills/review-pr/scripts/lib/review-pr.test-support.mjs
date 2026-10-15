@@ -203,9 +203,29 @@ function review(results, overrides = {}) {
   return buildReview({ ...inputs, merge });
 }
 
+// A one-line added hunk, so a test can put a changed line exactly where its
+// finding or violation sits.
+const hunk = (file, line) => [
+  `diff --git a/${file} b/${file}`,
+  `--- a/${file}`,
+  `+++ b/${file}`,
+  `@@ -${line - 1},0 +${line} @@`,
+  "+x",
+];
+
+// Matches only the merge refusal, so an earlier input refusal cannot pass a
+// test that means to reach the merge check.
+const REFUSED = "The merge pass output is refused; do not post: ";
+const refuses =
+  (named) =>
+  ({ message }) =>
+    message.startsWith(REFUSED) && message.includes(named);
+
 // The review-findings test files share one diff, plan, and PBI. One object
 // keeps the shared surface to a single test-only export.
 export const findingsFixture = {
+  hunk,
+  refuses,
   HEAD,
   FIX,
   UNICODE,

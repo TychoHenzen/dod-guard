@@ -5,19 +5,12 @@ import test from "node:test";
 import { buildReview } from "./review-findings.mjs";
 import { complete, findingsFixture, judgment } from "./review-pr.test-support.mjs";
 
-const { HEAD, PBI, question } = findingsFixture;
+const { HEAD, PBI, question, hunk, refuses } = findingsFixture;
 
 // PR #909: the feature and hygiene lenses both cited line 90 of this test, in
 // different words and at different severities.
 const PROOF = "plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs";
 const SOURCE = "plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.mjs";
-const hunk = (file, line) => [
-  `diff --git a/${file} b/${file}`,
-  `--- a/${file}`,
-  `+++ b/${file}`,
-  `@@ -${line - 1},0 +${line} @@`,
-  "+x",
-];
 const DIFF = [...hunk(PROOF, 90), ...hunk(SOURCE, 12)].join("\n");
 const PLAN = [
   {
@@ -72,13 +65,6 @@ function build(merge) {
   return buildReview({ ...inputs, results: RESULTS, merge });
 }
 
-// Matches only the merge refusal, so an earlier input refusal cannot pass a
-// test that means to reach the merge check.
-const REFUSED = "The merge pass output is refused; do not post: ";
-const refuses =
-  (named) =>
-  ({ message }) =>
-    message.startsWith(REFUSED) && message.includes(named);
 const output = (groups) => ({ groups, scanner: [] });
 const one = (id) => ({ members: [id], representative: id });
 

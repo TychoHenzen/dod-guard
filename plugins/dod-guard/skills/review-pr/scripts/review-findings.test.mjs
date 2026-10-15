@@ -218,6 +218,21 @@ test("build refuses a merge output naming an unknown J id and writes nothing", (
   });
 });
 
+test("build refuses a scanner DROP for a pre-existing reason and writes nothing", () => {
+  withDir((dir) => {
+    const where = { file: "src/a.mjs", line: 1, rule: "line-length" };
+    const violation = { ...where, severity: "high", message: "line is 121 chars" };
+    const scanner = [{ ids: ["S1"], status: "DROP", reason: "pre-existing", answer: "D1" }];
+    const scan = write(dir, "violation-scan.json", { violations: [violation] });
+    const merge = write(dir, "drop-merge.json", { groups: [], scanner });
+    const paths = { ...buildFlags(dir), scan, merge };
+    const result = run(["build", ...buildArgs(paths)]);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /do not post: .*S1 DROP reason "pre-existing"/);
+    assert.equal(existsSync(paths.out), false);
+  });
+});
+
 test("build without --merge prints usage", () => {
   withDir((dir) => {
     const flags = buildArgs(buildFlags(dir)).filter((flag) => !flag.startsWith("--merge="));
