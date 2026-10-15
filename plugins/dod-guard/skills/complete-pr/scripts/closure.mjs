@@ -35,7 +35,8 @@ close as read, comment, close, readback, Project Done, and it also sets Done on
 each status repair. --hierarchy asks to close that issue as a pure hierarchy
 record (not_planned). annotate prints the snapshot with activeCheckpoint and
 trustedHeadSha taken from the completion records, ready for select-next.mjs.
-snapshot builds that closure snapshot for one repository from GitHub REST GET requests only. The
+snapshot builds that closure snapshot for one repository from GitHub REST GET requests and the one
+read-only GraphQL read that resolves the explicitly linked Project, as linked-project.mjs does. The
 command removes any earlier output first and writes the new one in one step, so a failed read
 leaves no file at that path.`;
 

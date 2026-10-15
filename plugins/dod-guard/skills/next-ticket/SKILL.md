@@ -38,8 +38,10 @@ boundaries in this skill win.
 
 Resolve the repository, its linked Project, and the `Todo` and `In Progress`
 statuses as described under "Resolve the repository and Project" in
-`standards/github-request-discipline.md`. Report the Project's owner, number,
-and title, then use it for ticket lookup.
+`standards/github-request-discipline.md`. For the Project, run
+`node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`
+and stop on outcome `none` or `several` or on exit 2. Report the Project's
+owner, number, and title, then use it for ticket lookup.
 
 ## Select a ticket
 
@@ -159,7 +161,9 @@ Perform these actions in order:
    uses the numeric project number as the REST path identifier, and reads the
    item back before the ticket-start sequence can continue. The item id may be
    the Project item's numeric REST id or its `PVTI_` global node id; the runner
-   resolves either form to the same item.
+   resolves either form to the same item. Pass the numeric id: the runner reads
+   it through the single-item endpoint, while a `PVTI_` id is found only through
+   the items list, which can lag behind a newly added item.
 
 Do not create or switch to an existing branch. Report the exact completed
 actions if a later mutation fails. Keep the successfully created branch and

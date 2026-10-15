@@ -51,7 +51,10 @@ feature.
 3. For the selected target, resolve access, the linked Project, and its
    `Backlog` status as described under "Resolve the repository and Project" in
    `standards/github-request-discipline.md`. For a supplied or chosen target,
-   pass it to `gh repo view <target>`.
+   pass it to `gh repo view <target>`. For the Project, run
+   `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`
+   with the target's `nameWithOwner`, and stop on outcome `none` or `several`
+   or on exit 2.
 
 ## Create the idea
 
@@ -64,7 +67,9 @@ and a short body containing:
 - `## Open questions`: unresolved decisions, if any.
 
 After creating each issue, add it to the resolved Project and set Status to
-`Backlog`. Reuse the repository, Project, Status field, and Backlog option
+`Backlog`. The add follows the Project add-item rules under "Write plan" in
+`standards/github-request-discipline.md`, which name the request and treat an
+existing item as success. Reuse the repository, Project, Status field, and Backlog option
 resolved before creation. The issue's Repository field is its target
 repository. Do not create a draft issue. GitHub draft issues cannot populate
 that field. Do not add acceptance criteria, implementation notes, labels,

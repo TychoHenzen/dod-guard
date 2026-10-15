@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { isLinkedProjectRead } from "../../../lib/linked-project-read.mjs";
 import { runGh } from "./lib/gh-runner.mjs";
 import { verifyLiveLifecycleReadback } from "./lifecycle-live-readback.mjs";
 
@@ -128,7 +129,10 @@ test("verifies issue and Project state with five read-only REST requests", () =>
   });
   assert.equal(calls.length, 5);
   assert.equal(
-    calls.every((args) => args[0] === "api" && !args.includes("--method") && !args.includes("graphql")),
+    calls.every(
+      (args) =>
+        args[0] === "api" && !args.includes("--method") && (!args.includes("graphql") || isLinkedProjectRead(args)),
+    ),
     true,
   );
 });

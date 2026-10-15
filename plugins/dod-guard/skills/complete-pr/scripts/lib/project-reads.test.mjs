@@ -5,7 +5,6 @@ import test from "node:test";
 import { CompletionError } from "./completion-error.mjs";
 import {
   contentRepository,
-  linkedProject,
   ProjectReadError,
   readIssueProjectStatuses,
   readSlurpedPages,
@@ -104,10 +103,9 @@ test("readIssueProjectStatuses maps each flattener rejection to its own github_r
   assert.deepEqual(readIssueProjectStatuses("owner/repo", 24, read), ["Done"]);
 });
 
-test("readIssueProjectStatuses stops on an item with no repository, where linkedProject passes over it", () => {
+test("readIssueProjectStatuses stops on an item with no repository, because it could be the issue's own", () => {
   const listing = okResponse(JSON.stringify([[{ number: 2, state: "open" }]]));
   const rows = [{ id: 1, node_id: "PVTI_1", content: { number: 24 } }, repositoryItem("owner/repo")];
-  // The issue read takes newline-delimited --jq rows; linkedProject takes slurped pages of the same rows.
   const issueRead = tableRunner({
     [LISTING]: listing,
     [membership(2)]: okResponse(rows.map((row) => JSON.stringify(row)).join("\n")),
@@ -123,113 +121,6 @@ test("readIssueProjectStatuses stops on an item with no repository, where linked
       );
       return true;
     },
-  );
-
-  const repositoryRead = tableRunner({ [LISTING]: listing, [membership(2)]: okResponse(JSON.stringify([rows])) });
-  assert.deepEqual(linkedProject(repositoryRead.runner, "owner", "owner/repo"), {
-    basePath: "users/owner",
-    project: { number: 2, state: "open" },
-  });
-});
-
-test("linkedProject returns the one open Project holding an item of the repository", () => {
-  const { calls, runner } = tableRunner({
-    [LISTING]: okResponse(
-      JSON.stringify([
-        [
-          { number: 2, state: "open" },
-          { number: 3, state: "closed" },
-          { number: 4, state: "Open" },
-        ],
-      ]),
-    ),
-    [membership(2)]: okResponse(
-      JSON.stringify([[{ content: {} }, repositoryItem("other/repo")], [repositoryItem("Owner/Repo")]]),
-    ),
-    [membership(4)]: okResponse(JSON.stringify([[repositoryItem("other/repo")]])),
-  });
-
-  assert.deepEqual(linkedProject(runner, "owner", "owner/repo"), {
-    basePath: "users/owner",
-    project: { number: 2, state: "open" },
-  });
-  assert.deepEqual(calls, [
-    ["api", "--paginate", "--slurp", LISTING],
-    ["api", "--paginate", "--slurp", membership(2)],
-    ["api", "--paginate", "--slurp", membership(4)],
-  ]);
-});
-
-test("linkedProject names how many open Projects it found when that is not exactly one", () => {
-  const listing = okResponse(
-    JSON.stringify([
-      [
-        { number: 2, state: "open" },
-        { number: 4, state: "open" },
-      ],
-    ]),
-  );
-  const none = tableRunner({
-    [LISTING]: listing,
-    [membership(2)]: okResponse(JSON.stringify([[]])),
-    [membership(4)]: okResponse(JSON.stringify([[repositoryItem("other/repo")]])),
-  });
-  assertProjectReadError(
-    () => linkedProject(none.runner, "owner", "owner/repo"),
-    "users/owner/projectsV2",
-    "expected exactly one open linked Project, found none",
-  );
-
-  const two = tableRunner({
-    [LISTING]: listing,
-    [membership(2)]: okResponse(JSON.stringify([[repositoryItem("owner/repo")]])),
-    [membership(4)]: okResponse(JSON.stringify([[repositoryItem("owner/repo")]])),
-  });
-  assertProjectReadError(
-    () => linkedProject(two.runner, "owner", "owner/repo"),
-    "users/owner/projectsV2",
-    "expected exactly one open linked Project, found 2 (#2, #4)",
-  );
-});
-
-test("linkedProject stops on a listed Project without a positive-integer number or a state", () => {
-  for (const project of [{ number: "2", state: "open" }, { number: 0, state: "open" }, { number: 2 }]) {
-    const { runner } = tableRunner({ [LISTING]: okResponse(JSON.stringify([[project]])) });
-    assertProjectReadError(
-      () => linkedProject(runner, "owner", "owner/repo"),
-      "users/owner/projectsV2",
-      "every Project must carry a number and a state",
-    );
-  }
-});
-
-test("linkedProject restates a listing failure at the listing endpoint and keeps it as the cause", () => {
-  const failure = new Error("gh: Server Error (HTTP 500)");
-  const runner = () => {
-    throw failure;
-  };
-  assert.throws(
-    () => linkedProject(runner, "owner", "owner/repo"),
-    (error) => {
-      assert.ok(error instanceof ProjectReadError);
-      assert.equal(error.message, "users/owner/projectsV2: gh: Server Error (HTTP 500)");
-      assert.equal(error.cause, failure);
-      return true;
-    },
-  );
-});
-
-test("linkedProject lets a failure the runner throws for an item read pass through unchanged", () => {
-  const failure = new Error("item read failed");
-  const runner = (args) => {
-    if (args.at(-1) === LISTING) {
-      return okResponse(JSON.stringify([[{ number: 2, state: "open" }]]));
-    }
-    throw failure;
-  };
-  assert.throws(
-    () => linkedProject(runner, "owner", "owner/repo"),
-    (error) => error === failure,
   );
 });
 

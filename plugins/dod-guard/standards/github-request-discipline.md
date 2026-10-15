@@ -38,7 +38,12 @@ only alternate-transport decisions are:
   resolution state. It runs before any ready, auto-merge, CI dispatch, or merge
   mutation and again before each merge request, and it stops with
   `review-threads-unavailable` on a failed, malformed, or incompletely paginated
-  read. All three exceptions preserve redacted transport evidence, stop on
+  read. The fourth exception is the linked-Project read of step 3 under
+  "Resolve the repository and Project": one read-only `repository.projectsV2`
+  query made by `skills/complete-pr/scripts/linked-project.mjs`, because REST
+  has no endpoint for a repository's explicit Project link. It reads at most
+  100 links and exits 2 on a failed, malformed, or incompletely paginated
+  read. All four exceptions preserve redacted transport evidence, stop on
   failure or ambiguity, and never serve as quota fallbacks.
 
 The executable boundary is `<plugin-root>/lib/transport-policy.mjs`: call the
@@ -73,13 +78,21 @@ from an earlier run.
 2. Access: verify the connected identity can read and write the repository and
    its Project. Without MCP, run `gh auth status` and require the `repo` and
    `project` scopes. Stop if access is missing.
-3. Project: read the repository's linked Projects once through the typed
-   connector or the REST ProjectsV2 endpoints and keep only open ones. Exactly
-   one must remain. With none, stop and explain that an administrator must link
-   a Project to the repository. With more than one, stop and list each owner,
-   number, and title; never pick one by name. This explicit link is the only
-   supported repository-to-Project mapping, for personal and organization
-   Projects alike.
+3. Project: read the repository's explicitly linked Projects once and keep
+   only open ones. Use the typed connector when it exposes that link;
+   otherwise run
+   `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`.
+   Both read the same explicit link. The command prints JSON: exit 0 is
+   outcome `resolved` with the Project's `ownerLogin`, `ownerType`,
+   `basePath`, `number`, `title`, and `id`; exit 1 is outcome `none` or
+   `several` with each open linked Project's owner, number, and title; exit 2
+   is a usage, read, or response failure, which stops with its message and
+   allows no other read in its place. Exactly one open Project must remain.
+   With `none`, stop and explain that an administrator must link a Project to
+   the repository. With `several`, stop and list each owner, number, and
+   title; never pick one by name. This explicit link is the only supported
+   repository-to-Project mapping, for personal and organization Projects
+   alike.
 4. Status: find exactly one `Status` field and, case-insensitively, exactly one
    option for each status the skill needs. Stop if any is absent or ambiguous.
 
@@ -106,11 +119,18 @@ from an earlier run.
 - A numeric Project number is the REST path identifier. Resolve the live
   Project, Status field, item ids, and scalar single-select option ids from the
   same REST snapshot before writing.
-- Use the global item and Status-field ids from that snapshot, and use the
-  scalar single-select option id for the requested value.
+- Pass each item's numeric REST item `id` (from the add response or the
+  membership read), the Status-field id from that snapshot, and the scalar
+  single-select option id for the requested value.
+- `project-status.mjs` reads a numeric item id through the single-item endpoint
+  `users/{owner}/projectsV2/{number}/items/{id}`, within its bounded attempts,
+  because that endpoint sees a newly added item before the items list does. A
+  `PVTI_` global node id can only be found through the items list, which can
+  lag behind a newly added item, so use it only for an item that is already
+  listed.
 - Run status mutations sequentially. For a structured parent, write every child
-  before the parent, then read each item from the REST Project items endpoint
-  before the next mutation. A missing or unexpected readback stops the sequence.
+  before the parent, then read each item back the same way before the next
+  mutation. A missing or unexpected readback stops the sequence.
 - The shared `skills/complete-pr/scripts/project-status.mjs` runner performs
   this resolution and readback without invoking Git or inspecting worktrees.
 
@@ -125,11 +145,23 @@ from an earlier run.
   Create only when it is absent. If a create fails or is ambiguous, read back
   before any retry; an existing resource is success, an unresolved readback
   stops, and no duplicate create is allowed.
+- Read Project membership before adding an issue or pull request. The
+  repository's auto-add may or may not have fired already; an existing item is
+  success, and no add is sent.
 - For every `add_project_item` operation, set `item_type` explicitly:
   `issue` for issue items and `pull_request` for pull requests. If the
   operation returns `missing required parameter: item_type`, read back the
   Project before retrying once with the matching type. Do not retry if the item
   already exists.
+- Over REST, add with `POST {users|orgs}/{owner}/projectsV2/{number}/items`
+  and `-f type=Issue|PullRequest -F id=<numeric REST id>`, taking
+  `{users|orgs}/{owner}` from the linked-project command's `basePath`. The `id`
+  is the issue's or pull request's numeric REST `id`, not its `node_id` and not
+  its number. A 422 `Content already exists` means the item is present: read
+  membership back and count it as success.
+- Pass the item id from a successful add, or from the membership read, to
+  `skills/complete-pr/scripts/project-status.mjs`. Pass the Project item's
+  numeric REST `id`, not its `node_id`, as "ProjectV2 status writes" explains.
 - Re-read only the mutated resource for safety. Do not rebuild the whole
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.
@@ -150,9 +182,13 @@ only for a capability with no connector or REST equivalent, limited to the
 documented exceptions: draft-to-ready via
 `markPullRequestReadyForReview` when REST has no supported draft field,
 selected review-thread operations after connector/REST review-comment
-operations have been attempted and the selected thread has been read back, and
+operations have been attempted and the selected thread has been read back,
 complete-pr's unresolved-review-thread check (a field-limited,
 cursor-paginated, read-only `reviewThreads` read, because REST exposes no
-thread resolution state). Do not use any of these exceptions for rate limits
-or other transport stops, and do not use `gh pr view --json` for repeated
-metadata reads when the REST endpoint provides the required fields.
+thread resolution state), and the step 3 linked-Project read (one read-only
+`repository.projectsV2` query made by
+`skills/complete-pr/scripts/linked-project.mjs`, because REST has no endpoint
+for a repository's explicit Project link). Do not use any of these exceptions
+for rate limits or other transport stops, and do not use `gh pr view --json`
+for repeated metadata reads when the REST endpoint provides the required
+fields.

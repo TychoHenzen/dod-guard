@@ -9,6 +9,8 @@ const githubDiscipline = await readFile(
   new URL("../../../standards/github-request-discipline.md", import.meta.url),
   "utf8",
 );
+const addBacklog = await readFile(new URL("../../add-backlog-idea/SKILL.md", import.meta.url), "utf8");
+const REJECTED_ADD_ITEM_FIELDS = /content_id|content_type/;
 
 test("requires explicit Project item types and safe recovery", () => {
   assert.match(
@@ -28,6 +30,30 @@ test("requires explicit Project item types and safe recovery", () => {
   assert.match(githubDiscipline, /If the desired state is already\s+present, record the no-op and issue no mutation/);
   assert.match(githubDiscipline, /For create-like writes, read the exact resource or Project membership first/);
   assert.match(githubDiscipline, /A desired readback confirms success/);
+});
+
+// The live API answered content_id/content_type with a 422 and accepted type with a numeric id.
+test("names the live REST add-item request with membership read first and readback on conflict", () => {
+  const writePlan = githubDiscipline.slice(
+    githubDiscipline.indexOf("## Write plan"),
+    githubDiscipline.indexOf("## CLI fallback"),
+  );
+  assert.match(
+    writePlan,
+    prose(
+      "Read Project membership before adding an issue or pull request.",
+      "auto-add may or may not have fired already; an existing item is success, and no add is sent.",
+      "Over REST, add with `POST {users|orgs}/{owner}/projectsV2/{number}/items` " +
+        "and `-f type=Issue|PullRequest -F id=<numeric REST id>`",
+      "the linked-project command's `basePath`",
+      "The `id` is the issue's or pull request's numeric REST `id`, not its `node_id` and not its number.",
+      "A 422 `Content already exists` means the item is present: read membership back and count it as success.",
+      "Pass the item id from a successful add, or from the membership read, to " +
+        "`skills/complete-pr/scripts/project-status.mjs`.",
+    ),
+  );
+  assert.doesNotMatch(writePlan, REJECTED_ADD_ITEM_FIELDS);
+  assert.match(addBacklog, prose('add-item rules under "Write plan" in', "`standards/github-request-discipline.md`"));
 });
 
 test("routes discovery after repository and issue research", () => {

@@ -118,6 +118,123 @@ test("shares the global ProjectV2 resolution and sequential readback contract", 
   assert.match(standard, /skills\/complete-pr\/scripts\/project-status\.mjs/);
 });
 
+const STALE_ITEM_IDS = /global item and Status-field ids/;
+const STALE_ITEM_READ = /REST Project items endpoint/;
+const SINGLE_ITEM_PATH = "`users/{owner}/projectsV2/{number}/items/{id}`";
+const SINGLE_ITEM = "single-item endpoint";
+const ITEM_ID = "Pass each item's numeric REST item `id`";
+const ITEM_ID_SOURCE = "(from the add response or the membership read)";
+const NOT_NODE_ID = "numeric REST `id`, not its `node_id`";
+const NODE_ID_LIST = "A `PVTI_` global node id can only be found through";
+
+test("status writes pass numeric item ids", async () => {
+  const section = sectionOf(standard, "## ProjectV2 status writes", "\n## ");
+  assert.match(section, prose(ITEM_ID, ITEM_ID_SOURCE));
+  const singleItem = prose(
+    "reads a numeric item id through the single-item endpoint",
+    SINGLE_ITEM_PATH,
+    "within its bounded attempts",
+  );
+  assert.match(section, singleItem);
+  const lag = "lag behind a newly added item";
+  const nodeId = prose(`${NODE_ID_LIST} the items list`, "which can", lag);
+  assert.match(section, nodeId);
+  assert.doesNotMatch(section, STALE_ITEM_IDS);
+  assert.doesNotMatch(section, STALE_ITEM_READ);
+  const writePlan = sectionOf(standard, "## Write plan", "\n## ");
+  assert.match(writePlan, prose("Pass the Project item's", NOT_NODE_ID));
+  const skillId = prose("Pass numeric ids: the runner reads them", SINGLE_ITEM);
+  assert.match(skill, skillId);
+  const ticketId = prose("Pass the numeric id: the runner reads", SINGLE_ITEM);
+  assert.match(await readSkill("next-ticket"), ticketId);
+});
+
+const LINKED_PROJECT_COMMAND =
+  "node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>";
+
+const THREE_EXCEPTIONS = /three exceptions/;
+const STOP_SKILLS = ["add-backlog-idea", "refine-backlog-item", "next-ticket", "submit-draft-pr"];
+const SEVERAL_STOP = "With `several`, stop and list each owner, number, and title; never pick one by name.";
+const READ_ONLY_QUERY =
+  "one read-only `repository.projectsV2` query made by `skills/complete-pr/scripts/linked-project.mjs`";
+const NO_REST_LINK = "because REST has no endpoint for a repository's explicit Project link";
+const STEP_5 = "## 5. Resolve one linked GitHub Project";
+
+// Slicing by heading makes each pin prove where the text sits, not only that it
+// exists somewhere.
+function sectionOf(text, start, end) {
+  const from = text.indexOf(start);
+  let to = text.length;
+  if (end !== undefined) {
+    to = text.indexOf(end, from);
+  }
+  if (from === -1 || to === -1) {
+    throw new Error(`missing section ${start} .. ${end}`);
+  }
+  return text.slice(from, to);
+}
+
+function readSkill(name) {
+  return readFile(new URL(`../../${name}/SKILL.md`, import.meta.url), "utf8");
+}
+
+test("standard step 3 names the linked-Project command and each outcome", () => {
+  const step3 = sectionOf(standard, "3. Project:", "4. Status:");
+  assert.ok(step3.includes(LINKED_PROJECT_COMMAND));
+  const typed = "Use the typed connector when it exposes that link";
+  assert.match(step3, prose(typed, "Both read the same explicit link"));
+  const exit0 = "exit 0 is outcome `resolved`";
+  const fields = "`number`, `title`, and `id`";
+  assert.match(step3, prose(exit0, "`ownerLogin`, `ownerType`", fields));
+  const exit1 = "exit 1 is outcome `none` or `several`";
+  assert.match(step3, prose(exit1, "owner, number, and title"));
+  const exit2 = "exit 2 is a usage, read, or response failure";
+  assert.match(step3, prose(exit2, "allows no other read in its place"));
+  const none = "With `none`, stop and explain that an administrator";
+  assert.match(step3, prose(`${none} must link a Project`));
+  assert.match(step3, prose(SEVERAL_STOP));
+  const only = "This explicit link is the only supported";
+  assert.match(step3, prose(`${only} repository-to-Project mapping`));
+});
+
+test("both GraphQL exception lists name the linked-Project read as the fourth exception", () => {
+  const transport = sectionOf(standard, "## Transport decision", "\n## ");
+  const fallback = sectionOf(standard, "## CLI fallback");
+  const fourth = "The fourth exception is the linked-Project read";
+  assert.match(transport, prose(`${fourth} of step 3`));
+  const evidence = "preserve redacted transport evidence";
+  assert.match(transport, prose(`All four exceptions ${evidence}`));
+  assert.doesNotMatch(standard, THREE_EXCEPTIONS);
+  for (const section of [transport, fallback]) {
+    assert.match(section, prose(READ_ONLY_QUERY, NO_REST_LINK));
+  }
+});
+
+test("the five Project-resolving skills name the linked-Project command", async () => {
+  const names = [...STOP_SKILLS, "setup-repository"];
+  const texts = await Promise.all(names.map(readSkill));
+  const stop = prose("stop on outcome `none` or `several` or on exit 2");
+  names.forEach((name, index) => {
+    assert.ok(texts[index].includes(LINKED_PROJECT_COMMAND), name);
+    if (STOP_SKILLS.includes(name)) {
+      assert.match(texts[index], stop, name);
+    }
+  });
+});
+
+test("setup-repository branches on each linked-Project outcome", async () => {
+  const skillText = await readSkill("setup-repository");
+  const step5 = sectionOf(skillText, STEP_5, "\n## 6.");
+  assert.ok(step5.includes(LINKED_PROJECT_COMMAND));
+  const several = "`several` (exit 1): stop and list each owner";
+  assert.match(step5, prose(`${several}, number, and title`));
+  assert.match(step5, prose("`resolved` (exit 0): preserve that Project"));
+  const link = "link it with `gh project link`";
+  const rerun = "rerun the command as the readback";
+  assert.match(step5, prose("`none` (exit 1): create one", link, rerun));
+  assert.match(step5, prose("Exit 2: stop with its message."));
+});
+
 test("finalization relies on executable functional convergence proof", () => {
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
   const passing = proof.evaluateConvergence(validConvergenceInput());

@@ -17,7 +17,9 @@ boundaries in this skill win.
 
 1. Resolve the repository, its linked Project, and the `Backlog` and `Todo`
    statuses as described under "Resolve the repository and Project" in
-   `standards/github-request-discipline.md`.
+   `standards/github-request-discipline.md`. For the Project, run
+   `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`
+   and stop on outcome `none` or `several` or on exit 2.
 2. Verify the specified issue belongs to the repository, appears in that
    Project, and has Status `Backlog`.
 3. Query all live labels in the target repository, including descriptions:

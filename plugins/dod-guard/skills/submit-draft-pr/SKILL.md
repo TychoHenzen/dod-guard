@@ -17,7 +17,9 @@ boundaries in this skill win.
 
 1. Resolve the repository, its default branch, its linked Project, and the
    `In Progress` status as described under "Resolve the repository and
-   Project" in `standards/github-request-discipline.md`.
+   Project" in `standards/github-request-discipline.md`. For the Project, run
+   `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`
+   and stop on outcome `none` or `several` or on exit 2.
 2. Verify the supplied parent issue belongs to that repository, is in that
    Project, and has Status `In Progress`.
 3. Inspect `git status --short` and classify pending paths. A dirty worktree is

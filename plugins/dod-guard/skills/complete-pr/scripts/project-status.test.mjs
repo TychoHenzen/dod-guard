@@ -8,8 +8,12 @@ import process from "node:process";
 import test from "node:test";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { fileURLToPath } from "node:url";
+import { runGh } from "./lib/gh-runner.mjs";
 import {
   buildProjectItemEditCommand,
+  buildProjectItemReadCommand,
+  PROJECT_ITEM_READ_ATTEMPTS,
+  PROJECT_ITEM_RETRY_DELAY_MS,
   writeProjectStatuses,
   writeProjectStatusesWithFallback,
 } from "./project-status.mjs";
@@ -33,6 +37,22 @@ const SCRIPT_PATH = fileURLToPath(new URL("./project-status.mjs", import.meta.ur
 const USAGE_EXIT_CODE = 2;
 const IDENTITY_SHIFT = 1000;
 const MISSING_NUMERIC_ID = "999999999";
+const ITEM_LIST_PREFIX = "users/TychoHenzen/projectsV2/2/items?";
+const ITEM_READ_PREFIX = "users/TychoHenzen/projectsV2/2/items/";
+// The stderr gh prints for a REST 404, as the live read of a missing item
+// returned on 2026-10-14.
+const NOT_FOUND_RESULT = {
+  status: 1,
+  stderr: "gh: Not Found (HTTP 404)",
+  stdout: "",
+};
+const SERVER_ERROR = /HTTP 502/;
+// Issue #869 clarification C6 fixes the bound at three reads; the constant must
+// not drift silently.
+const CLARIFIED_READ_ATTEMPTS = 3;
+// One 404, the read that resolves the item, and the readback after the write.
+const TRANSIENT_404_RUN_READS = 3;
+const NODE_ID_REMEDY_ERROR = /PVTI_child-one was missing from readback\. Pass its numeric item id instead/;
 
 function projectFields() {
   return [
@@ -83,7 +103,7 @@ function createRunner({
     if (endpoint === "users/TychoHenzen/projectsV2/2/fields?per_page=100") {
       return { status: 0, stderr: "", stdout: JSON.stringify([fields]) };
     }
-    if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items?") === true) {
+    if (endpoint?.startsWith(ITEM_LIST_PREFIX) === true) {
       const items = projectItems(statuses);
       const pages = splitItems ? [items.slice(0, 1), items.slice(1)] : [items];
       return { status: 0, stderr: "", stdout: JSON.stringify(pages) };
@@ -95,12 +115,99 @@ function createRunner({
       statuses.set(itemId, status);
       return { status: 0, stderr: "", stdout: "" };
     }
-    if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items/") === true) {
-      return { status: 200, stderr: "", stdout: "" };
+    if (endpoint?.startsWith(ITEM_READ_PREFIX) === true) {
+      return singleItemReply(statuses, endpoint);
     }
     throw new Error(`Unexpected command: ${args.join(" ")}`);
   };
   return { calls, runner };
+}
+
+function isUserPath(value) {
+  return typeof value === "string" && value.startsWith("users/");
+}
+
+function endpointOf(args) {
+  return args.find(isUserPath);
+}
+
+// A runner whose Project holds only the first item, in Backlog.
+function backlogRunner() {
+  return createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+}
+
+// The items list omits the first item, as it can right after an add.
+function omitFirst() {
+  return { listOmits: new Set([ITEM_IDS[0]]) };
+}
+
+function writeItems(itemIds, commandRunner, sleep) {
+  const options = writeOptions({ itemIds });
+  return writeProjectStatuses({ ...options, commandRunner, sleep });
+}
+
+function isListRead(args) {
+  return endpointOf(args)?.startsWith(ITEM_LIST_PREFIX) === true;
+}
+
+function isSingleItemRead(args) {
+  const read = endpointOf(args)?.startsWith(ITEM_READ_PREFIX) === true;
+  return read && !args.includes("PATCH");
+}
+
+// Applies change to every item on every page of a list read's reply.
+function mapListedItems(result, change) {
+  const pages = JSON.parse(result.stdout).map((page) => page.flatMap(change));
+  return { ...result, stdout: JSON.stringify(pages) };
+}
+
+// listOmits models the items list lagging behind the single-item endpoint;
+// notFoundReads makes that many single-item reads answer 404 first, as the
+// endpoint does right after an item is added.
+function laggingRunner(fixture, lag) {
+  const { calls, runner } = fixture;
+  const { listOmits = new Set(), notFoundReads = 0 } = lag;
+  let pendingNotFound = notFoundReads;
+  const kept = ({ node_id: nodeId }) => !listOmits.has(nodeId);
+  const omit = (item) => [item].filter(kept);
+  const lagged = (args) => {
+    const result = runner(args);
+    if (isListRead(args)) {
+      return mapListedItems(result, omit);
+    }
+    if (isSingleItemRead(args) && pendingNotFound > 0) {
+      pendingNotFound -= 1;
+      return NOT_FOUND_RESULT;
+    }
+    return result;
+  };
+  return { calls, runner: lagged };
+}
+
+function singleItemReply(statuses, endpoint) {
+  const [numericId] = endpoint.slice(ITEM_READ_PREFIX.length).split("?", 1);
+  const entries = [...ITEM_NUMERIC_IDS.entries()];
+  const nodeId = entries.find(([, id]) => String(id) === numericId)?.[0];
+  if (!statuses.has(nodeId)) {
+    return NOT_FOUND_RESULT;
+  }
+  const [item] = projectItems(new Map([[nodeId, statuses.get(nodeId)]]));
+  return { status: 0, stderr: "", stdout: JSON.stringify(item) };
+}
+
+function singleItemReads(calls) {
+  const isRead = (value) => String(value).startsWith(ITEM_READ_PREFIX);
+  return calls.filter((args) => !args.includes("PATCH") && args.some(isRead));
+}
+
+function listReads(calls) {
+  const isList = (value) => String(value).startsWith(ITEM_LIST_PREFIX);
+  return calls.filter((args) => args.some(isList));
+}
+
+function recordingSleep() {
+  const delays = [];
+  return { delays, sleep: (milliseconds) => delays.push(milliseconds) };
 }
 
 function writeOptions(overrides = {}) {
@@ -115,27 +222,34 @@ function writeOptions(overrides = {}) {
   };
 }
 
-// The first readback keeps the true identity so the identity change shows up only after the PATCH.
+// The first readback keeps the true identity so the identity change shows up
+// only after the PATCH. A numeric input is read through the single-item
+// endpoint and a node input through the list, so both reads count.
+function alterIfTarget(item, alterItem) {
+  if (item.node_id !== ITEM_IDS[0]) {
+    return item;
+  }
+  return alterItem(item);
+}
+
 function alterTargetInLaterReads(runner, alterItem) {
   let itemReads = 0;
+  const alterTarget = (item) => alterIfTarget(item, alterItem);
   return (args) => {
     const result = runner(args);
-    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
-    if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items?") !== true) {
+    const singleRead = isSingleItemRead(args);
+    if (!(isListRead(args) || singleRead)) {
       return result;
     }
     itemReads += 1;
     if (itemReads === 1) {
       return result;
     }
-    const [items] = JSON.parse(result.stdout);
-    const alteredItems = items.map((item) => {
-      if (item.node_id !== ITEM_IDS[0]) {
-        return item;
-      }
-      return alterItem(item);
-    });
-    return { ...result, stdout: JSON.stringify([alteredItems]) };
+    if (singleRead) {
+      const item = alterTarget(JSON.parse(result.stdout));
+      return { ...result, stdout: JSON.stringify(item) };
+    }
+    return mapListedItems(result, (item) => [alterTarget(item)]);
   };
 }
 
@@ -241,7 +355,7 @@ test("does not PATCH a Project item already at the requested status", () => {
 });
 
 test("reads back after an ambiguous status write and never retries it", () => {
-  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+  const { calls, runner } = backlogRunner();
   const ambiguousRunner = (args) => {
     if (args.includes("PATCH")) {
       runner(args);
@@ -257,7 +371,7 @@ test("reads back after an ambiguous status write and never retries it", () => {
 });
 
 test("stops after an ambiguous status write lacks the desired readback", () => {
-  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+  const { calls, runner } = backlogRunner();
   const failedRunner = (args) => {
     if (args.includes("PATCH")) {
       calls.push([...args]);
@@ -279,7 +393,7 @@ test("rejects malformed or partial initial readbacks before any PATCH", () => {
     JSON.stringify([[]]),
     JSON.stringify([[{ id: ITEM_NUMERIC_IDS.get(ITEM_IDS[0]), node_id: ITEM_IDS[0] }]]),
   ]) {
-    const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+    const { calls, runner } = backlogRunner();
     const malformedRunner = (args) => {
       const result = runner(args);
       const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
@@ -464,7 +578,7 @@ test("routes MCP rate-limit writes through guarded REST readback without duplica
       headers: { "X-RateLimit-Reset": "1700000000" },
     }),
   ]) {
-    const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+    const { calls, runner } = backlogRunner();
     const evidence = [];
     let primaryCalls = 0;
     const result = await writeProjectStatusesWithFallback({
@@ -545,7 +659,7 @@ test("routes an interactive status form only after a no-op readback", async () =
 
 test("AC-01 numeric input writes one PATCH to its numeric endpoint and reports the input as given", () => {
   const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
-  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+  const { calls, runner } = backlogRunner();
 
   const result = writeProjectStatuses({ ...writeOptions({ itemIds: [numericId] }), commandRunner: runner });
 
@@ -573,7 +687,7 @@ test("AC-01 mixed numeric and node inputs PATCH in the given order and report ea
 
 test("AC-02 numeric and node spellings of one item stop before any PATCH and name both inputs", () => {
   const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
-  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+  const { calls, runner } = backlogRunner();
 
   assert.throws(
     () => writeProjectStatuses({ ...writeOptions({ itemIds: [numericId, ITEM_IDS[0]] }), commandRunner: runner }),
@@ -584,12 +698,134 @@ test("AC-02 numeric and node spellings of one item stop before any PATCH and nam
 
 test("AC-02 numeric ID matching no readback item stops as missing before any PATCH", () => {
   const { calls, runner } = createRunner();
+  const { sleep } = recordingSleep();
 
-  assert.throws(
-    () => writeProjectStatuses({ ...writeOptions({ itemIds: [MISSING_NUMERIC_ID] }), commandRunner: runner }),
-    MISSING_READBACK_ERROR,
-  );
+  const write = () => writeItems([MISSING_NUMERIC_ID], runner, sleep);
+  assert.throws(write, MISSING_READBACK_ERROR);
   assert.equal(calls.filter((args) => args.includes("PATCH")).length, 0);
+});
+
+test("R10 numeric input absent from the items list is written and read back through the single-item endpoint", () => {
+  const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
+  const fixture = backlogRunner();
+  const { calls, runner } = laggingRunner(fixture, omitFirst());
+  const { delays, sleep } = recordingSleep();
+
+  const result = writeItems([numericId], runner, sleep);
+
+  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done" }]);
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
+  assert.equal(listReads(calls).length, 0);
+  const expectedRead = buildProjectItemReadCommand({
+    owner: "TychoHenzen",
+    projectNumber: 2,
+    itemId: numericId,
+    statusFieldId: String(STATUS_FIELD_ID),
+  });
+  assert.deepEqual(singleItemReads(calls), [expectedRead, expectedRead]);
+  assert.deepEqual(delays, []);
+});
+
+test("R10 a transient single-item 404 is read again and the write succeeds within the attempt bound", () => {
+  const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
+  const fixture = backlogRunner();
+  const { calls, runner } = laggingRunner(fixture, { notFoundReads: 1 });
+  const { delays, sleep } = recordingSleep();
+
+  const result = writeItems([numericId], runner, sleep);
+
+  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done" }]);
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
+  assert.equal(singleItemReads(calls).length, TRANSIENT_404_RUN_READS);
+  assert.deepEqual(delays, [PROJECT_ITEM_RETRY_DELAY_MS]);
+});
+
+test("R11 a single-item 404 on every bounded read stops as missing with no PATCH", () => {
+  const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
+  const fixture = backlogRunner();
+  const lag = { notFoundReads: PROJECT_ITEM_READ_ATTEMPTS };
+  const { calls, runner } = laggingRunner(fixture, lag);
+  const { delays, sleep } = recordingSleep();
+
+  assert.throws(() => writeItems([numericId], runner, sleep), {
+    message: `Project item ${numericId} was missing from readback.`,
+  });
+  assert.equal(PROJECT_ITEM_READ_ATTEMPTS, CLARIFIED_READ_ATTEMPTS);
+  assert.equal(singleItemReads(calls).length, PROJECT_ITEM_READ_ATTEMPTS);
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 0);
+  const delay = PROJECT_ITEM_RETRY_DELAY_MS;
+  assert.deepEqual(delays, [delay, 2 * delay]);
+});
+
+test("R11 a readback that answers 404 on every bounded read after the write stops as missing", () => {
+  const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
+  const statuses = new Map([[ITEM_IDS[0], "Backlog"]]);
+  const { calls, runner } = createRunner({ statuses });
+  const vanishingRunner = (args) => {
+    const result = runner(args);
+    if (args.includes("PATCH")) {
+      statuses.delete(ITEM_IDS[0]);
+    }
+    return result;
+  };
+  const { sleep } = recordingSleep();
+
+  assert.throws(() => writeItems([numericId], vanishingRunner, sleep), {
+    message: `Project item ${numericId} was missing from readback.`,
+  });
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
+  assert.equal(singleItemReads(calls).length, 1 + PROJECT_ITEM_READ_ATTEMPTS);
+});
+
+// The fakes above ignore the accepted exit codes; the real runner throws on any
+// exit it was not told to accept, so this pins that a 404 reaches the retry
+// instead of escaping as gh's raw text.
+test("R11 a 404 through the real gh runner is retried to the bound and stops as missing", () => {
+  const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
+  const { calls, runner } = backlogRunner();
+  const notFoundSpawn = () => NOT_FOUND_RESULT;
+  const ghRunner = (args, acceptedExitCodes) => {
+    if (isSingleItemRead(args)) {
+      calls.push(args);
+      return runGh(args, acceptedExitCodes, notFoundSpawn);
+    }
+    return runner(args);
+  };
+  const { sleep } = recordingSleep();
+
+  assert.throws(() => writeItems([numericId], ghRunner, sleep), {
+    message: `Project item ${numericId} was missing from readback.`,
+  });
+  assert.equal(singleItemReads(calls).length, PROJECT_ITEM_READ_ATTEMPTS);
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 0);
+});
+
+test("R11 a non-404 single-item failure stops at once without another read or a PATCH", () => {
+  const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
+  const { calls, runner } = backlogRunner();
+  const failingRunner = (args) => {
+    if (isSingleItemRead(args)) {
+      calls.push(args);
+      return { status: 1, stderr: "gh: Server Error (HTTP 502)", stdout: "" };
+    }
+    return runner(args);
+  };
+  const { delays, sleep } = recordingSleep();
+
+  const write = () => writeItems([numericId], failingRunner, sleep);
+  assert.throws(write, SERVER_ERROR);
+  assert.equal(singleItemReads(calls).length, 1);
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 0);
+  assert.deepEqual(delays, []);
+});
+
+test("R11 a node-id input absent from the items list names the numeric-id remedy before any PATCH", () => {
+  const fixture = backlogRunner();
+  const { calls, runner } = laggingRunner(fixture, omitFirst());
+
+  assert.throws(() => writeItems([ITEM_IDS[0]], runner), NODE_ID_REMEDY_ERROR);
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 0);
+  assert.equal(singleItemReads(calls).length, 0);
 });
 
 test("AC-02 identity change after the write stops for every input form and changed ID", () => {
@@ -604,7 +840,7 @@ test("AC-02 identity change after the write stops for every input form and chang
   for (const [inputForm, itemId] of inputForms) {
     for (const [changedId, alterItem] of changes) {
       const label = `${inputForm} input, ${changedId} changed`;
-      const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+      const { calls, runner } = backlogRunner();
 
       assert.throws(
         () =>
@@ -627,7 +863,7 @@ test("AC-02 readback with both IDs changed after the write stops as missing afte
   ];
   for (const [inputForm, itemId] of inputForms) {
     const label = `${inputForm} input, both IDs changed`;
-    const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+    const { calls, runner } = backlogRunner();
 
     assert.throws(
       () =>
@@ -648,7 +884,7 @@ test("AC-02 readback with both IDs changed after the write stops as missing afte
 
 test("AC-03 rerun after an identity-change stop makes no PATCH once the item already holds Done", () => {
   const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
-  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+  const { calls, runner } = backlogRunner();
   assert.throws(
     () =>
       writeProjectStatuses({

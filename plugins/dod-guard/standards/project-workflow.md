@@ -184,7 +184,10 @@ their place.
 
 Each caller builds one closure snapshot with
 `node <plugin-root>/skills/complete-pr/scripts/closure.mjs snapshot --repository=<owner/name> --output=<file>`.
-That command makes GitHub REST reads only. It removes any earlier file at
+That command makes GitHub REST reads plus the one read-only GraphQL read that
+resolves the explicitly linked Project, as
+`skills/complete-pr/scripts/linked-project.mjs` does (see
+`github-request-discipline.md`). It removes any earlier file at
 `--output` before the read starts and writes the new snapshot in one step, so a
 failed or incomplete read exits non-zero, names the endpoint, and leaves no file
 at that path. If snapshot exits non-zero, stop and report its error; never plan,

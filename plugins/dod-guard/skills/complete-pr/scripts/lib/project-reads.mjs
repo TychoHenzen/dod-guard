@@ -1,18 +1,25 @@
-// Every REST read of a GitHub Project that complete-pr's scripts make: the owned-Project listing, the
-// open-Project loop, the Status-value flattener, and the two linked-Project resolvers built on them.
-// The resolvers keep different membership rules on purpose. readIssueProjectStatuses wants the open
-// Project holding exactly one item for one issue and stops on an item it cannot place. linkedProject
-// wants the open Project holding any item of a repository and passes over an item with no repository.
-// Each keeps its own request form and stop texts, and every read goes through an injected runner in
-// gh-runner's convention.
+// Every REST read of a GitHub Project that complete-pr's scripts make: the
+// owned-Project listing, the open-Project loop, the Status-value flattener, and
+// the issue-item resolver built on them. readIssueProjectStatuses wants the
+// open Project holding exactly one item for one issue and stops on an item it
+// cannot place. Which Project a repository is linked to is a different rule,
+// read from the explicit link by plugins/dod-guard/lib/linked-project.mjs.
+// Every read goes through an injected runner in gh-runner's convention.
 import { API_REPOSITORY_URL, isRepositoryName, urlRepository } from "../../../../lib/repository-identity.mjs";
 import { ghJson, ghJsonArrayPages, githubResponseContractError, githubResponseError } from "./gh-runner.mjs";
 
 const HTTP_NOT_FOUND = /HTTP 404/;
 const JSON_LINE_SEPARATOR = /\r?\n/u;
 const PROJECT_REPOSITORY_IDENTITY_KEYS = ["full_name", "fullName"];
+const API_REPOSITORY_PATH = /^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)$/i;
 const PROJECT_ITEM_IDENTITY_JQ =
   ".[] | {id: .id, node_id: .node_id, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
+
+// gh reports a REST 404 only in stderr, with the same exit code as every other
+// API failure, so a caller that reads a 404 as absence has to look there.
+export function isNotFoundResult(result) {
+  return HTTP_NOT_FOUND.test(String(result?.stderr ?? ""));
+}
 
 // A failed read that names the endpoint it came from. A caller with its own error convention restates
 // it from endpoint and detail.
@@ -23,13 +30,6 @@ export class ProjectReadError extends Error {
     this.endpoint = endpoint;
     this.detail = detail;
   }
-}
-
-function messageOf(error) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error);
 }
 
 // REST spells a Status name as a bare string, as {name: "..."}, or as {name: {raw, html}}, and the
@@ -125,7 +125,7 @@ function listOwnedProjects(owner, commandRunner) {
     }
     return { basePath: `users/${owner}`, projects: pages.flat() };
   }
-  if (!HTTP_NOT_FOUND.test(userResponse.result.stderr)) {
+  if (!isNotFoundResult(userResponse.result)) {
     throw new Error(userResponse.result.stderr.trim() || "Failed to list user-owned Projects.");
   }
   const orgEndpoint = `orgs/${owner}/projectsV2?per_page=100`;
@@ -135,8 +135,9 @@ function listOwnedProjects(owner, commandRunner) {
   };
 }
 
-// The loop both resolvers share. checkEntry runs on every listed Project, closed ones included, so a
-// malformed entry stops the read wherever it is; visit runs on each open one, in listing order.
+// checkEntry runs on every listed Project, closed ones included, so a malformed
+// entry stops the read wherever it is; visit runs on each open one, in listing
+// order.
 function forEachOpenProject(projects, checkEntry, visit) {
   for (const project of projects) {
     checkEntry(project);
@@ -166,34 +167,59 @@ function ghJsonLines(endpoint, filter, commandRunner) {
   }
 }
 
-function projectItemRepository(item, endpoint) {
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isPresent(value) {
+  return value !== undefined && value !== null;
+}
+
+// The item's content, once both it and its repository are objects to read.
+function itemContent(item, endpoint) {
   const content = item?.content;
-  if (!content || typeof content !== "object" || Array.isArray(content)) {
+  if (!isPlainObject(content)) {
     throw githubResponseContractError(endpoint, "Project items with content identity");
   }
-  const repository = content.repository;
-  if (!repository || typeof repository !== "object" || Array.isArray(repository)) {
+  if (!isPlainObject(content.repository)) {
     throw githubResponseContractError(endpoint, "Project items with repository identity");
   }
-  const url = content.repository_url;
-  const identities = [];
-  for (const key of PROJECT_REPOSITORY_IDENTITY_KEYS) {
-    const fullName = repository[key];
-    if (fullName !== undefined && fullName !== null) {
-      const normalized = repositoryName(fullName);
-      if (normalized === null) {
-        throw githubResponseContractError(endpoint, "a non-blank repository identity");
-      }
-      identities.push(normalized);
+  return content;
+}
+
+// Each full-name spelling the repository carries, normalized; a present but
+// blank spelling is a contract error rather than a missing one.
+function fullNameIdentities(repository, endpoint) {
+  const present = PROJECT_REPOSITORY_IDENTITY_KEYS.map((key) => repository[key]).filter(isPresent);
+  return present.map((fullName) => {
+    const normalized = repositoryName(fullName);
+    if (normalized === null) {
+      throw githubResponseContractError(endpoint, "a non-blank repository identity");
     }
+    return normalized;
+  });
+}
+
+// owner/name from repository_url, or nothing when the item carries no URL.
+function urlIdentities(url, endpoint) {
+  if (!isPresent(url)) {
+    return [];
   }
-  if (url !== undefined && url !== null) {
-    const match = typeof url === "string" && url.match(/^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)$/i);
-    if (!match) {
-      throw githubResponseContractError(endpoint, "a canonical repository URL");
-    }
-    identities.push(repositoryName(match[1]));
+  const match = typeof url === "string" && url.match(API_REPOSITORY_PATH);
+  if (!match) {
+    throw githubResponseContractError(endpoint, "a canonical repository URL");
   }
+  return [repositoryName(match[1])];
+}
+
+// Every spelling must agree, so an item cannot be counted under two
+// repositories; full names are checked before the URL, as callers expect.
+function projectItemRepository(item, endpoint) {
+  const content = itemContent(item, endpoint);
+  const identities = [
+    ...fullNameIdentities(content.repository, endpoint),
+    ...urlIdentities(content.repository_url, endpoint),
+  ];
   if (identities.length === 0) {
     throw githubResponseContractError(endpoint, "a non-blank repository identity");
   }
@@ -379,58 +405,4 @@ export function contentRepository(content, endpoint) {
     throw new ProjectReadError(endpoint, "content repository_url must name a repository");
   }
   return repository;
-}
-
-function holdsRepository(read, endpoint, repository) {
-  return readSlurpedPages(read, endpoint).some((item) =>
-    sameRepository(contentRepository(item?.content, endpoint), repository),
-  );
-}
-
-function isProjectEntry(project) {
-  const number = project?.number;
-  const state = project?.state;
-  return Number.isInteger(number) && number > 0 && typeof state === "string" && state.trim().length > 0;
-}
-
-function describeFound(projects) {
-  if (projects.length === 0) {
-    return "none";
-  }
-  const numbers = projects.map(({ number }) => `#${number}`).join(", ");
-  return `${projects.length} (${numbers})`;
-}
-
-// A listing failure is restated at the listing endpoint, keeping the original error as its cause.
-function listedProjects(owner, read) {
-  try {
-    return listOwnedProjects(owner, read);
-  } catch (error) {
-    throw new ProjectReadError(`users/${owner}/projectsV2`, messageOf(error), { cause: error });
-  }
-}
-
-// The one open Project that holds an item of the repository. A Project item with no derivable
-// repository cannot be a member, so it is passed over rather than failing the read. Closed Projects
-// are never read. Every stop is a ProjectReadError naming its endpoint, except a failure the runner
-// itself throws for an item read, which passes through unchanged.
-export function linkedProject(read, owner, repository) {
-  const { basePath, projects } = listedProjects(owner, read);
-  const listing = `${basePath}/projectsV2`;
-  const linked = [];
-  const checkEntry = (project) => {
-    if (!isProjectEntry(project)) {
-      throw new ProjectReadError(listing, "every Project must carry a number and a state");
-    }
-  };
-  forEachOpenProject(projects, checkEntry, (project) => {
-    const endpoint = `${listing}/${project.number}/items?per_page=100`;
-    if (holdsRepository(read, endpoint, repository)) {
-      linked.push(project);
-    }
-  });
-  if (linked.length !== 1) {
-    throw new ProjectReadError(listing, `expected exactly one open linked Project, found ${describeFound(linked)}`);
-  }
-  return { basePath, project: linked[0] };
 }
