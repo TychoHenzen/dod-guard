@@ -1,4 +1,5 @@
 import { inTestRegion } from "./rules-file-rust-tests.mjs";
+import { sameModuleUses } from "./rules-reachability-same-module.mjs";
 
 function manifestHits(pattern, manifests) {
   let hits = 0;
@@ -49,9 +50,17 @@ function plainFileEvidence(pattern, entry, own) {
   return file.isTest ? { prod: 0, test: total } : { prod: total, test: 0 };
 }
 
+// The defining file is never a test file (reachability skips those), so a
+// use inside it is production use.
+function ownFileEvidence(pattern, entry, own) {
+  const captures = capturesNamed(entry.scan, own.name);
+  const prod = sameModuleUses({ pattern, entry, own, captures });
+  return { prod, test: 0 };
+}
+
 function fileEvidence(pattern, entry, own) {
   if (entry.file.lang === "rs") return rustFileEvidence(pattern, entry, own);
-  if (entry.file.rel === own.file) return { prod: 0, test: 0 };
+  if (entry.file.rel === own.file) return ownFileEvidence(pattern, entry, own);
   return plainFileEvidence(pattern, entry, own);
 }
 

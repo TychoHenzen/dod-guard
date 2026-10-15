@@ -11,6 +11,8 @@ const CS_EXPORT = new RegExp(
   "g",
 );
 
+export const EXPORT_BLOCK = /export\s*\{([^}]*)\}/g;
+
 export const EXPORT_PATTERNS = {
   ts: [TS_EXPORT],
   cs: [CS_EXPORT],
