@@ -492,14 +492,10 @@ if (entrypoint === modulePath) {
 }
 
 export {
-  buildProjectFieldsCommand,
   buildProjectItemEditCommand,
-  buildProjectItemListCommand,
   buildProjectItemReadCommand,
-  buildProjectViewCommand,
   PROJECT_ITEM_READ_ATTEMPTS,
   PROJECT_ITEM_RETRY_DELAY_MS,
-  resolveProjectNodeId,
   writeProjectStatuses,
   writeProjectStatusesWithFallback,
 };
