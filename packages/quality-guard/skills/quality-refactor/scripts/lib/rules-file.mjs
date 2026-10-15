@@ -13,7 +13,11 @@ import { strip } from "./strip.mjs";
 
 export { inTestRegion };
 
-export function scanFile(file, config) {
+/**
+ * `widthFor` is optional: a caller without a scan root gets the fixed
+ * line-length thresholds.
+ */
+export function scanFile(file, config, widthFor) {
   const { code, comments, interpolations } = strip(file.source, file.lang);
   const starts = lineIndex(code);
   const functions = findFunctions(code, file.lang, starts, file.source);
@@ -21,7 +25,7 @@ export function scanFile(file, config) {
   const spans = file.lang === "py" ? [] : classSpans(code, types, file.lang);
   const testRegions = file.lang === "rs" ? findRustTestRegions(code) : [];
   const out = [];
-  checkLines(file, config, out);
+  checkLines({ file, config, out, widthFor });
   checkTypes({ file, config, types, code, starts, spans, out });
   checkPartialTypes({ file, config, code, types, out });
   checkTuples({ file, config, code, starts, out });
