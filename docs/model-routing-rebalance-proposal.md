@@ -2,8 +2,9 @@
 
 Status: design record for TychoHenzen/dod-guard#944, 2026-10-15; decision N1
 (rename the agents) made the same day. It was drafted before the work and is
-delivered by the pull request for #944. Nothing here is published: the overlay
-stays until the release is out. It changes `standards/model-routing.md`,
+delivered by the pull request for #944, which releases dod-guard 5.7.0 (a minor:
+the skills' commands are unchanged, the agent names are internal to the skills).
+The local overlay stays until that release is installed. It changes `standards/model-routing.md`,
 the tier agents, the `goal-sdlc` delegation table, and a few skills; it also
 retires the local `goal-sdlc-next` overlay.
 
