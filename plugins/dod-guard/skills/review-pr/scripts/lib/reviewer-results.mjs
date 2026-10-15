@@ -20,7 +20,6 @@ const JUDGMENT_FIELDS = Object.freeze([
   "rootCause",
   "evidence",
 ]);
-const NON_ALPHANUMERIC = /[^a-z0-9]+/g;
 
 function requireJudgment(finding, reviewer) {
   const missing = JUDGMENT_FIELDS.filter(
@@ -120,53 +119,18 @@ function requireResults(results, assigned) {
   }
 }
 
-// Same cause in two files is two places to fix, so the file is part of the
-// identity.
-function judgmentKey(finding) {
-  return `${slashPath(finding.file)}\n${finding.rootCause.toLowerCase().replace(NON_ALPHANUMERIC, " ").trim()}`;
-}
-
-function keepHighest(byKey, finding, reviewer) {
-  requireJudgment(finding, reviewer);
-  const key = judgmentKey(finding);
-  const kept = byKey.get(key);
-  if (!kept || SEVERITY_RANK[finding.severity] > SEVERITY_RANK[kept.severity]) {
-    byKey.set(key, { ...finding, file: slashPath(finding.file), reviewer });
-  }
-}
-
-function dedupeJudgments(results, assigned) {
+// Every finding reaches the merge pass, which alone may judge that two lenses
+// worded one defect differently; no wording key can decide that.
+function judgedFindings(results, assigned) {
   requireResults(results, assigned);
-  const byKey = new Map();
-  for (const result of results) {
-    for (const finding of result.findings) {
-      keepHighest(byKey, finding, result.reviewer);
-    }
-  }
-  return [...byKey.values()];
+  return REVIEWERS.flatMap((reviewer) =>
+    results
+      .find((result) => result.reviewer === reviewer)
+      .findings.map((finding) => {
+        requireJudgment(finding, reviewer);
+        return { ...finding, file: slashPath(finding.file), reviewer };
+      }),
+  );
 }
 
-function judgmentFinding(finding) {
-  return {
-    severity: finding.severity,
-    file: finding.file,
-    line: finding.line,
-    body: [
-      `**${finding.severity}** ${finding.problem}`,
-      "",
-      `Impact: ${finding.impact}`,
-      `Correction: ${finding.correction}`,
-      `Evidence: ${finding.evidence}`,
-      `Requirement: ${finding.requirement} (${finding.reviewer})`,
-    ].join("\n"),
-  };
-}
-
-// Validates all four reviewer envelopes and their rulings against the slots
-// assigned to each lens, then returns one finding per file and root cause,
-// ready to anchor.
-function judgmentFindings(results, assigned) {
-  return dedupeJudgments(results, assigned).map(judgmentFinding);
-}
-
-export { judgmentFindings, REVIEWERS };
+export { judgedFindings, REVIEWERS, SEVERITY_RANK };

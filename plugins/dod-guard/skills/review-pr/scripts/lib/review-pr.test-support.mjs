@@ -1,7 +1,9 @@
 // Shared by the review-pr test files. The name does not match the test glob
 // (*.test.mjs), so the runner never loads it as a test file.
 
+import { judgedCandidates, scannerCandidates } from "./finding-ids.mjs";
 import { buildReview } from "./review-findings.mjs";
+import { parseChangedLines } from "./unified-diff.mjs";
 
 export const REPO_URL = "https://api.github.com/repos/TychoHenzen/dod-guard";
 
@@ -170,12 +172,35 @@ const ASSIGNED = new Map([
   ["review-pr-hygiene", new Set([SUB_SLOT])],
 ]);
 
+// The merge output that changes nothing: each judged finding its own group and
+// every scanner violation kept. Built from the production candidates, so the
+// ids are the ones the build regenerates.
+function identityMerge(inputs) {
+  const judged = judgedCandidates(inputs.results, inputs.assigned);
+  const scanner = scannerCandidates(inputs.scan, parseChangedLines(inputs.diff));
+  const ids = scanner.map(({ id }) => id);
+  const groups = judged.map(({ id }) => ({ members: [id], representative: id }));
+  return { groups, scanner: ids.length > 0 ? [{ ids, status: "KEEP" }] : [] };
+}
+
+// Inputs the build must refuse have no candidates; an empty output then lets
+// the build raise its own refusal, which is the one the test asserts.
+function defaultMerge(inputs) {
+  try {
+    return identityMerge({ ...inputs, assigned: ASSIGNED });
+  } catch {
+    return { groups: [], scanner: [] };
+  }
+}
+
 // Every build starts from the clean fixture with no violations; a test
 // overrides only the input it is about, so a refusal traces to that input.
 function review(results, overrides = {}) {
   const clean = { headSha: HEAD, scan: { violations: [] }, diff, plan: PLAN, pbi: PBI };
   const reviewed = { ...clean, subIssues: SUB_ISSUES, results: complete(results, ASSIGNED) };
-  return buildReview({ ...reviewed, ...overrides });
+  const inputs = { ...reviewed, ...overrides };
+  const merge = "merge" in overrides ? overrides.merge : defaultMerge(inputs);
+  return buildReview({ ...inputs, merge });
 }
 
 // The review-findings test files share one diff, plan, and PBI. One object

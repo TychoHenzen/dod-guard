@@ -75,33 +75,24 @@ test("a scanner severity outside high/medium/low fails the review build", () => 
   );
 });
 
-test("the same root cause dedupes within a file but stays separate across files", () => {
+test("two findings in one file stay two unless a merge group joins them", () => {
   const results = [
-    {
-      reviewer: "review-pr-feature",
-      findings: [judgment(FIX, { severity: "MINOR" })],
-    },
+    { reviewer: "review-pr-feature", findings: [judgment(FIX, { severity: "MINOR" })] },
+    { reviewer: "review-pr-design", findings: [judgment(UNICODE, { line: 1 })] },
     {
       reviewer: "review-pr-reliability",
-      findings: [
-        judgment(FIX, {
-          severity: "BLOCKER",
-          rootCause: "outdated  treated as STALE",
-        }),
-      ],
-    },
-    {
-      reviewer: "review-pr-design",
-      findings: [judgment(UNICODE, { line: 1 })],
+      findings: [judgment(FIX, { severity: "BLOCKER", rootCause: "Stale filter reads outdated" })],
     },
   ];
-  const { payload, recommendation, counts } = review(results);
-  assert.equal(recommendation, "BLOCK");
+  assert.deepEqual(review(results).counts, { BLOCKER: 1, MAJOR: 1, MINOR: 1 });
+  const groups = [
+    { members: ["J1", "J3"], representative: "J1" },
+    { members: ["J2"], representative: "J2" },
+  ];
+  const { payload, counts } = review(results, { merge: { groups, scanner: [] } });
   assert.deepEqual(counts, { BLOCKER: 1, MAJOR: 1, MINOR: 0 });
-  assert.match(
-    payload.comments[0].body,
-    /^\*\*BLOCKER\*\* Outdated threads are skipped[\s\S]*\(review-pr-reliability\)/,
-  );
+  assert.match(payload.comments[0].body, /^\*\*BLOCKER\*\* Outdated threads are skipped/);
+  assert.match(payload.comments[0].body, /\(review-pr-feature, review-pr-reliability\)$/);
   assert.equal(payload.comments[1].path, UNICODE);
 });
 

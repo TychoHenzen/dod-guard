@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { spawnSync } from "node:child_process";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { tmpdir } from "node:os";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { join } from "node:path";
+import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
@@ -168,7 +169,7 @@ const PLAN = [
 ];
 
 // build takes the slot inputs plus the scan, the reviewer results, the plan,
-// and the head.
+// the merge pass output, and the head.
 function buildFlags(dir) {
   return {
     ...inputs(dir),
@@ -176,6 +177,7 @@ function buildFlags(dir) {
     scan: write(dir, "scan.json", { violations: [] }),
     results: write(dir, "results.json", RESULTS),
     plan: write(dir, "plan.json", PLAN),
+    merge: write(dir, "merge.json", { groups: [], scanner: [] }),
   };
 }
 
@@ -188,6 +190,7 @@ function buildArgs(paths) {
     `--sub-issues=${paths.subs}`,
     `--plan=${paths.plan}`,
     `--results=${paths.results}`,
+    `--merge=${paths.merge}`,
     `--out=${paths.out}`,
   ];
 }
@@ -200,6 +203,27 @@ test("build writes a COMMENT payload with the slot block", () => {
     const payload = JSON.parse(readFileSync(paths.out, "utf8"));
     assert.equal(payload.event, "COMMENT");
     assert.ok(payload.body.includes("<summary>Review plan slots (3)</summary>"), payload.body);
+  });
+});
+
+test("build refuses a merge output naming an unknown J id and writes nothing", () => {
+  withDir((dir) => {
+    const groups = [{ members: ["J9"], representative: "J9" }];
+    const merge = write(dir, "unknown-merge.json", { groups, scanner: [] });
+    const paths = { ...buildFlags(dir), merge };
+    const result = run(["build", ...buildArgs(paths)]);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /merge pass output is refused; do not post: .*unknown J id "J9"/);
+    assert.equal(existsSync(paths.out), false);
+  });
+});
+
+test("build without --merge prints usage", () => {
+  withDir((dir) => {
+    const flags = buildArgs(buildFlags(dir)).filter((flag) => !flag.startsWith("--merge="));
+    const result = run(["build", ...flags]);
+    assert.equal(result.status, 3);
+    assert.match(result.stderr, /--merge=<merge\.json>/);
   });
 });
 

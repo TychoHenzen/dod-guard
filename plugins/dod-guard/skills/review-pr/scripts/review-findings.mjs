@@ -17,7 +17,8 @@ const USAGE = [
   "  review-findings.mjs existing --reviews=<reviews.json>",
   "  review-findings.mjs slots --diff=<unified0.diff> --pbi=<issue.json> --sub-issues=<sub-issues.json> --out=<slots.json>",
   "  review-findings.mjs build --head=<sha> --scan=<scan.json> --diff=<unified0.diff>",
-  "    --pbi=<issue.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --out=<payload.json>",
+  "    --pbi=<issue.json> --sub-issues=<sub-issues.json> --plan=<plan.json>",
+  "    --results=<results.json> --merge=<merge.json> --out=<payload.json>",
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
 ].join("\n");
 
@@ -95,6 +96,7 @@ const COMMANDS = {
       diff: readFileSync(args.diff, "utf8"),
       results: json(args.results),
       plan: json(args.plan),
+      merge: json(args.merge),
       ...pbiInputs(args),
     });
     writeFileSync(args.out, JSON.stringify(review.payload));
@@ -112,7 +114,7 @@ const REQUIRED = {
   scan: ["client", "registry", "root", "out"],
   existing: ["reviews"],
   slots: ["diff", "pbi", "sub-issues", "out"],
-  build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "out"],
+  build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "merge", "out"],
   report: ["review-id", "comments"],
 };
 const FULL_SHA = /^[0-9a-f]{40}$/;
