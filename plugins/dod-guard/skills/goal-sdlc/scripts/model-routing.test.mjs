@@ -13,9 +13,9 @@ const repositoryRoot = new URL("../../../../../", import.meta.url);
 // for its Codex effort (`codex_effort`, falling back to `effort`). The model
 // tier and Codex model are fixed here; the efforts are read, not repeated.
 const TIER_AGENTS = [
-  { name: "stage-strong", model: "opus", codex: "gpt-5.6-sol", codexEffort: "medium", sandbox: "workspace-write" },
+  { name: "stage-standard", model: "sonnet", codex: "gpt-5.6-terra", codexEffort: "medium", sandbox: "workspace-write" },
   { name: "stage-cheap", model: "haiku", codex: "gpt-5.6-luna", codexEffort: "max", sandbox: "workspace-write" },
-  { name: "read-strong", model: "opus", codex: "gpt-5.6-sol", codexEffort: "medium", sandbox: "read-only" },
+  { name: "read-standard", model: "sonnet", codex: "gpt-5.6-terra", codexEffort: "medium", sandbox: "read-only" },
   { name: "read-cheap", model: "haiku", codex: "gpt-5.6-luna", codexEffort: "max", sandbox: "read-only" },
 ];
 const EFFORT_LEVELS = new Set(["low", "medium", "high", "xhigh", "max"]);
@@ -51,12 +51,16 @@ const standard = await readFile(new URL("standards/model-routing.md", pluginRoot
 
 test("the routing standard defines the tiers, runtime rules, and verification once", () => {
   for (const phrase of [
-    "The strong tier is for judgement with modest reasoning effort",
+    "The standard tier is the default. It is for judgement with modest reasoning effort",
     "The cheap tier is for mechanical, high-volume work:",
-    "| strong | `opus`; effort from frontmatter |",
+    "The strong tier is for escalation only. No stage starts on it",
+    "| standard | `sonnet`; effort from frontmatter |",
     "| cheap | `haiku`; effort from frontmatter |",
-    "`gpt-5.6-sol`; effort from frontmatter",
+    "| strong | `opus`, effort `high` |",
+    "`gpt-5.6-terra`; effort from frontmatter",
     "`gpt-5.6-luna`; `codex_effort`",
+    "`gpt-5.6-sol`, effort `high`",
+    "The strong tier has no agent of its own",
     "the Agent call's `model` and `effort` override the agent's frontmatter",
     "spawn-time model and effort values can be ignored or capped",
     "A Codex stage is pinned only when it runs through a registered agent",
@@ -80,14 +84,14 @@ test("the routing standard defines the tiers, runtime rules, and verification on
 
 // Only an owner's thread dispatches: the stage agent that owns a split stage
 // can spawn agents, and every row worker cannot.
-test("only the strong stage agent can dispatch subagents or use MCP connectors", async () => {
-  // stage-strong has no tools allowlist, so it inherits Agent and MCP tools;
+test("only the standard stage agent can dispatch subagents or use MCP connectors", async () => {
+  // stage-standard has no tools allowlist, so it inherits Agent and MCP tools;
   // every other tier agent keeps an allowlist without Agent.
   for (const agent of TIER_AGENTS) {
     const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
     const tools = source.match(/^tools: (.+)$/m)?.[1].split(", ");
-    if (agent.name === "stage-strong") {
-      assert.equal(tools, undefined, "stage-strong must inherit every tool");
+    if (agent.name === "stage-standard") {
+      assert.equal(tools, undefined, "stage-standard must inherit every tool");
     } else {
       assert.ok(tools && !tools.includes("Agent"), agent.name);
     }
@@ -96,7 +100,7 @@ test("only the strong stage agent can dispatch subagents or use MCP connectors",
     "Only the thread that owns a skill's procedure dispatches its subagents.",
     "A worker dispatched for one row never dispatches further",
     "goal-sdlc's main thread runs that owner's procedure itself",
-    "`/review-pr`, or the conflict triage in `standards/conflict-triage.md`), it runs that stage on `dod-guard:stage-strong`",
+    "`/review-pr`, or the conflict triage in `standards/conflict-triage.md`), it runs that stage on `dod-guard:stage-standard`",
   ]) {
     assert.match(standard, prose(phrase), phrase);
   }
@@ -114,6 +118,7 @@ test("no skill or other standard restates the tier definitions", async () => {
     texts.push(await readFile(new URL(`standards/${file}`, pluginRoot), "utf8"));
   }
   for (const text of texts) {
+    assert.doesNotMatch(text, prose("The standard tier is the default"));
     assert.doesNotMatch(text, prose("The strong tier is for"));
     assert.doesNotMatch(text, prose("The cheap tier is for"));
   }
@@ -151,7 +156,7 @@ function assertPhrases(text, phrases, label) {
 const TOOLS_LINES = {
   "stage-cheap": "Read, Grep, Glob, Bash, Edit, Write",
   "read-cheap": "Read, Grep, Glob, Bash",
-  "read-strong": "Read, Grep, Glob, Bash",
+  "read-standard": "Read, Grep, Glob, Bash",
 };
 
 const ALLOWLIST_TITLE = "the cheap and read-only agents keep their exact tool allowlists";
@@ -163,15 +168,17 @@ test(ALLOWLIST_TITLE, async () => {
 });
 
 // Capability follows the agent and cost follows the model, so a cheap stage
-// that needs a skill, a GitHub write, or MCP runs on stage-strong at the cheap
-// tier and is still verified as cheap output.
+// that needs a skill, a GitHub write, or MCP runs on stage-standard at the
+// cheap tier and is still verified as cheap output.
 const SKILL_CAPABLE = [
-  "A skill-capable stage runs on `dod-guard:stage-strong` at its own tier's " + "model and effort, cheap or strong.",
+  "A skill-capable stage runs on `dod-guard:stage-standard` at its own tier's " +
+    "model and effort, cheap, standard, or strong.",
   "invokes a skill, writes issue, pull request, or Project state, or needs " + "an MCP connector",
   "In Claude Code, pass the tier's `model` and `effort` on the Agent call.",
   "spawn a cheap-tier skill-capable stage without that file, with " +
     "`gpt-5.6-luna` and `max` at spawn time, and record it as " +
     '"requested, not pinned".',
+  "Spawn a strong-tier stage the same way with `gpt-5.6-sol` and `high`.",
   "Cheap-output verification applies by model tier, not by agent type",
   "a readback of any issue, pull request, or Project state the step wrote",
 ];
@@ -217,7 +224,7 @@ test(COMMIT_TITLE, async () => {
 // that step goes instead of letting it fall under the failed-check rule.
 const MISROUTED = [
   "A `dod-guard:stage-cheap` report that a step is misrouted is not a " + "failed check.",
-  "The main thread redispatches that step once on `dod-guard:stage-strong` " +
+  "The main thread redispatches that step once on `dod-guard:stage-standard` " +
     "at the same tier, as a skill-capable stage, and verifies the result as " +
     "cheap-tier output.",
 ];
@@ -247,7 +254,7 @@ test(HANDOFF_TITLE, async () => {
     ["Read-only agents return their output as text.", "The main thread writes any handoff file"],
     "model-routing.md",
   );
-  for (const name of ["read-cheap", "read-strong"]) {
+  for (const name of ["read-cheap", "read-standard"]) {
     assertPhrases(await agentText(name), READ_ONLY_RETURN, name);
   }
   const triageUrl = new URL("standards/conflict-triage.md", pluginRoot);
@@ -258,7 +265,7 @@ test(HANDOFF_TITLE, async () => {
 // Each workaround answers a tool failure a cheap worker hit in a friction log.
 const STAGE_CHEAP_WORKAROUNDS = [
   "When the step needs a skill, a GitHub write, or an MCP connector, stop " + "and report it as misrouted",
-  "That step belongs on `dod-guard:stage-strong` at the cheap tier.",
+  "That step belongs on `dod-guard:stage-standard` at the cheap tier.",
   "Write file content with the Write tool instead of heredocs or echo " + "redirection",
   "When Edit cannot match a line that holds a non-ASCII character",
   "use Write to create a small node script that builds the character from " +
@@ -285,4 +292,57 @@ test("the cheap agents carry the tool-failure workarounds", async () => {
   const readCheap = await agentText("read-cheap");
   assertPhrases(readCheap, READ_CHEAP_WORKAROUNDS, "read-cheap.md");
   assert.doesNotMatch(readCheap, prose("filter its output in a separate step"));
+});
+
+// The strong tier is reached only by escalation, so it has no agent of its own,
+// and no Claude Code tier agent runs at effort max.
+test("the strong tier has no agent and no Claude tier agent runs at effort max", async () => {
+  const agentFiles = await readdir(new URL("agents/", pluginRoot));
+  assert.ok(!agentFiles.includes("stage-strong.md"), "stage-strong must not exist");
+  assert.ok(!agentFiles.includes("read-strong.md"), "read-strong must not exist");
+  for (const agent of TIER_AGENTS) {
+    const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
+    assert.notEqual(frontmatterValue(source, "effort"), "max", `${agent.name} Claude effort`);
+  }
+});
+
+test("the four review lens agents default to the standard tier", async () => {
+  for (const lens of ["feature", "design", "reliability", "hygiene"]) {
+    const source = await readFile(new URL(`agents/review-pr-${lens}.md`, pluginRoot), "utf8");
+    assert.match(source, line("model", "sonnet", ": "), lens);
+  }
+});
+
+const ESCALATION = [
+  "The strong tier is a recovery path. A stage never starts on it",
+  "one rung at a time. Each stage climbs a given rung at most once.",
+  "Send the stage back once at the same tier with the exact gap.",
+  "Ask `/codex-advisor` one question",
+  "Run the stage again one rung up, with the failure record in the brief",
+  "A failure on the strong rung stops the parent as a blocker",
+  "a security, authority, credential, provider, head-mismatch, destructive, or missing-evidence stop",
+  "The escalating thread never changes its own model.",
+  "the owner, already a standard-tier thread that holds the plan and the failure record, carries out the task itself",
+  "with `model: opus` and the strong effort",
+  "The failed-check rule above and the investigator-batch rule in `dod-guard:review-pr` escalate once and then stop.",
+  "Malformed judge output, a refused merge pass, and the verification stop in `standards/conflict-triage.md` stay stops",
+  "append it to that day's friction log as an occurrence",
+];
+
+test("the routing standard defines the escalation ladder, its limits, and its record", () => {
+  assertPhrases(standard, ESCALATION, "model-routing.md");
+});
+
+// Each tier has its own verification rule: cheap output gets the per-answer
+// check, standard and strong output get the readback and the named proof.
+const TIER_VERIFICATION = [
+  "## Verify cheap-tier output",
+  "## Verify standard-tier and strong-tier output",
+  "A standard worker returns judgements, not citations, so the per-answer check above does not apply.",
+  "every commit the stage reports exists, is pushed, and matches the diff the stage describes",
+  "the stage's own named proof passes, and was run at the accepted head",
+];
+
+test("each tier has a stated verification rule", () => {
+  assertPhrases(standard, TIER_VERIFICATION, "model-routing.md");
 });
