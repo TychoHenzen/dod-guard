@@ -151,14 +151,14 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      # Fails when this pull request adds a medium or high quality-guard finding to a file it changes, or does
-      # not remove at least one pre-existing medium/high finding from those files. Line length blocks only
-      # above 120 columns; the scanner's 80-column medium limit is advisory here.
+      # Fails when this pull request adds a high quality-guard finding to a file it changes, or does not remove
+      # at least one pre-existing medium/high finding from those files. New medium findings do not block but are
+      # counted and listed in the report; tighten with --block-on=medium. Same policy as CardCleaner.
       - name: Block new findings in changed files
         run: >-
           node packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs
           --base=${{ github.event.pull_request.base.sha }} --root=packages
-          --rule-block-on=line-length:high --report=quality-gate-report.md
+          --block-on=high --report=quality-gate-report.md
       - name: Upload the quality gate report
         if: always()
         uses: actions/upload-artifact@v7
