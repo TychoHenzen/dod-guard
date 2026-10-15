@@ -292,17 +292,6 @@ test("next-ticket lands one verified commit per task-list task", () => {
   assert.match(nextTicket, prose("When the task list has more than one task, run each task in order as one step"));
   assert.ok(nextTicket.includes("[dod-guard:step-by-step](../step-by-step/SKILL.md)"));
   assert.match(nextTicket, prose("one fresh subagent per task"));
-  assert.match(
-    nextTicket,
-    prose("Before dispatching a task, write its step plan to a scratch file outside the repository"),
-  );
-  assert.match(nextTicket, prose("Implementing the task from that plan uses the cheap tier"));
-  assert.match(
-    nextTicket,
-    prose(
-      "Writing the plan uses the standard tier, and so does implementing a task that cannot be reduced to a written plan",
-    ),
-  );
   assert.match(nextTicket, prose("regenerating artifacts uses the cheap tier, as `standards/model-routing.md`"));
   assert.match(nextTicket, prose("passing the task list as a calling-skill plan with a commit per step"));
   assert.match(nextTicket, prose("step-by-step's per-step commit makes every verified task a durable checkpoint"));

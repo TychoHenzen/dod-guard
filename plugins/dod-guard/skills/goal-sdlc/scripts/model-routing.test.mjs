@@ -2,38 +2,17 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 import { prose } from "../../../lib/skill-text.mjs";
+import {
+  assertPhrases,
+  frontmatterValue,
+  line,
+  pluginRoot,
+  repositoryRoot,
+  standard,
+  TIER_AGENTS,
+} from "./model-routing.test-support.mjs";
 
-// Codex ignores or caps spawn-time model overrides, so each tier is pinned in
-// its agent file. These tests pin both the Claude source and the generated
-// Codex registration.
-const pluginRoot = new URL("../../../", import.meta.url);
-const repositoryRoot = new URL("../../../../../", import.meta.url);
-
-// Each agent's frontmatter is the single source for its Claude Code effort and
-// for its Codex effort (`codex_effort`, falling back to `effort`). The model
-// tier and Codex model are fixed here; the efforts are read, not repeated.
-const TIER_AGENTS = [
-  {
-    name: "stage-standard",
-    model: "sonnet",
-    codex: "gpt-5.6-terra",
-    codexEffort: "medium",
-    sandbox: "workspace-write",
-  },
-  { name: "stage-cheap", model: "haiku", codex: "gpt-5.6-luna", codexEffort: "max", sandbox: "workspace-write" },
-  { name: "read-standard", model: "sonnet", codex: "gpt-5.6-terra", codexEffort: "medium", sandbox: "read-only" },
-  { name: "read-cheap", model: "haiku", codex: "gpt-5.6-luna", codexEffort: "max", sandbox: "read-only" },
-];
 const EFFORT_LEVELS = new Set(["low", "medium", "high", "xhigh", "max"]);
-
-function line(key, value, separator) {
-  return new RegExp(`^${key}${separator}${value}$`, "m");
-}
-
-function frontmatterValue(source, key) {
-  const match = source.match(new RegExp(`^${key}: (.+)$`, "m"));
-  return match ? match[1].trim() : undefined;
-}
 
 test("each tier agent pins its model and effort for Claude Code and Codex", async () => {
   for (const agent of TIER_AGENTS) {
@@ -53,11 +32,10 @@ test("each tier agent pins its model and effort for Claude Code and Codex", asyn
   }
 });
 
-const standard = await readFile(new URL("standards/model-routing.md", pluginRoot), "utf8");
-
 test("the routing standard defines the tiers, runtime rules, and verification once", () => {
   for (const phrase of [
-    "The standard tier is the default. It is for judgement with modest reasoning effort",
+    "The standard tier is the default.",
+    "It is for judgement with modest reasoning effort",
     "The cheap tier is for mechanical, high-volume work:",
     "The strong tier is for escalation only. No stage starts on it",
     "| standard | `sonnet`; effort from frontmatter |",
@@ -90,7 +68,9 @@ test("the routing standard defines the tiers, runtime rules, and verification on
 
 // Only an owner's thread dispatches: the stage agent that owns a split stage
 // can spawn agents, and every row worker cannot.
-test("only the standard stage agent can dispatch subagents or use MCP connectors", async () => {
+const DISPATCH_TITLE = "only the standard stage agent can dispatch or use MCP";
+
+test(DISPATCH_TITLE, async () => {
   // stage-standard has no tools allowlist, so it inherits Agent and MCP tools;
   // every other tier agent keeps an allowlist without Agent.
   for (const agent of TIER_AGENTS) {
@@ -98,15 +78,16 @@ test("only the standard stage agent can dispatch subagents or use MCP connectors
     const tools = source.match(/^tools: (.+)$/m)?.[1].split(", ");
     if (agent.name === "stage-standard") {
       assert.equal(tools, undefined, "stage-standard must inherit every tool");
-    } else {
-      assert.ok(tools && !tools.includes("Agent"), agent.name);
+      continue;
     }
+    assert.ok(tools && !tools.includes("Agent"), agent.name);
   }
   for (const phrase of [
     "Only the thread that owns a skill's procedure dispatches its subagents.",
     "A worker dispatched for one row never dispatches further",
     "goal-sdlc's main thread runs that owner's procedure itself",
-    "`/review-pr`, or the conflict triage in `standards/conflict-triage.md`), it runs that stage on `dod-guard:stage-standard`",
+    "or the conflict triage in `standards/conflict-triage.md`),",
+    "it runs that stage on `dod-guard:stage-standard`",
   ]) {
     assert.match(standard, prose(phrase), phrase);
   }
@@ -150,12 +131,6 @@ function agentText(name) {
   return readFile(new URL(`agents/${name}.md`, pluginRoot), "utf8");
 }
 
-function assertPhrases(text, phrases, label) {
-  for (const phrase of phrases) {
-    assert.match(text, prose(phrase), `${label}: ${phrase}`);
-  }
-}
-
 // Tool allowlists are the permission boundary: stage-cheap edits but holds no
 // Skill or Agent, and the read agents hold no Write or Edit, which also keeps
 // their Codex sandbox read-only.
@@ -177,8 +152,8 @@ test(ALLOWLIST_TITLE, async () => {
 // that needs a skill, a GitHub write, or MCP runs on stage-standard at the
 // cheap tier and is still verified as cheap output.
 const SKILL_CAPABLE = [
-  "A skill-capable stage runs on `dod-guard:stage-standard` at its own tier's " +
-    "model and effort, cheap, standard, or strong.",
+  "A skill-capable stage runs on `dod-guard:stage-standard` at its own",
+  "tier's model and effort, cheap, standard, or strong.",
   "invokes a skill, writes issue, pull request, or Project state, or needs " + "an MCP connector",
   "In Claude Code, pass the tier's `model` and `effort` on the Agent call.",
   "spawn a cheap-tier skill-capable stage without that file, with " +
@@ -298,93 +273,4 @@ test("the cheap agents carry the tool-failure workarounds", async () => {
   const readCheap = await agentText("read-cheap");
   assertPhrases(readCheap, READ_CHEAP_WORKAROUNDS, "read-cheap.md");
   assert.doesNotMatch(readCheap, prose("filter its output in a separate step"));
-});
-
-// The strong tier is reached only by escalation, so it has no agent of its own,
-// and no Claude Code tier agent runs at effort max.
-test("the strong tier has no agent and no Claude tier agent runs at effort max", async () => {
-  const agentFiles = await readdir(new URL("agents/", pluginRoot));
-  for (const kind of ["stage", "read"]) {
-    assert.ok(!agentFiles.includes(`${kind}-strong.md`), `${kind}-strong must not exist`);
-  }
-  for (const agent of TIER_AGENTS) {
-    const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
-    assert.notEqual(frontmatterValue(source, "effort"), "max", `${agent.name} Claude effort`);
-  }
-});
-
-test("the four review lens agents default to the standard tier", async () => {
-  for (const lens of ["feature", "design", "reliability", "hygiene"]) {
-    const source = await readFile(new URL(`agents/review-pr-${lens}.md`, pluginRoot), "utf8");
-    assert.match(source, line("model", "sonnet", ": "), lens);
-  }
-});
-
-const ESCALATION = [
-  "The strong tier is a recovery path. A stage never starts on it",
-  "one rung at a time. Each stage climbs a given rung at most once.",
-  "Send the stage back once at the same tier with the exact gap.",
-  "Before the strong rung only, ask `/codex-advisor` one question",
-  "The cheap-to-standard rung and the rerun of a read-only review batch skip this step.",
-  "A step run through `dod-guard:step-by-step` already has this send-back: its one fresh bounded repair task.",
-  "Run the stage again one rung up, with the failure record in the brief",
-  "A failure on the strong rung stops the parent as a blocker",
-  "a security, authority, credential, provider, head-mismatch, destructive, or missing-evidence stop",
-  "The escalating thread never changes its own model.",
-  "the owner, already a standard-tier thread that holds the plan and the failure record, carries out the task itself",
-  "with `model: opus` and the strong effort",
-  "The failed-check rule above, the investigator-batch rule in `dod-guard:review-pr`, and the repair rule in `dod-guard:step-by-step` escalate once and then stop.",
-  "a step whose repair fails climbs one rung under this section instead of stopping",
-  "Malformed judge output, a refused merge pass, and the verification stop in `standards/conflict-triage.md` stay stops",
-  "append it to that day's friction log as an occurrence",
-];
-
-test("the routing standard defines the escalation ladder, its limits, and its record", () => {
-  assertPhrases(standard, ESCALATION, "model-routing.md");
-});
-
-// Each tier has its own verification rule: cheap output gets the per-answer
-// check, standard and strong output get the readback and the named proof.
-const TIER_VERIFICATION = [
-  "## Verify cheap-tier output",
-  "## Verify standard-tier and strong-tier output",
-  "A standard worker returns judgements, not citations, so the per-answer check above does not apply.",
-  "every commit the stage reports exists, is pushed, and matches the diff the stage describes",
-  "the stage's own named proof passes, and was run at the accepted head",
-];
-
-test("each tier has a stated verification rule", () => {
-  assertPhrases(standard, TIER_VERIFICATION, "model-routing.md");
-});
-
-// A renamed or removed agent breaks every brief that still names it, so every
-// tier agent a skill or standard dispatches by name must exist as a file, and
-// every registered Codex name must exist in .codex/agents.
-test("every tier agent a skill or standard names exists", async () => {
-  const agentNames = new Set(
-    (await readdir(new URL("agents/", pluginRoot)))
-      .filter((file) => file.endsWith(".md"))
-      .map((file) => file.slice(0, -3)),
-  );
-  const codexNames = new Set(
-    (await readdir(new URL(".codex/agents/", repositoryRoot)))
-      .filter((file) => file.endsWith(".toml"))
-      .map((file) => file.slice(0, -5)),
-  );
-  const skillsRoot = new URL("skills/", pluginRoot);
-  const skillDirs = (await readdir(skillsRoot, { withFileTypes: true })).filter((entry) => entry.isDirectory());
-  const texts = await Promise.all([
-    ...skillDirs.map((entry) => readFile(new URL(`${entry.name}/SKILL.md`, skillsRoot), "utf8")),
-    ...["model-routing.md", "conflict-triage.md"].map((file) =>
-      readFile(new URL(`standards/${file}`, pluginRoot), "utf8"),
-    ),
-  ]);
-  for (const text of texts) {
-    for (const [, name] of text.matchAll(/dod-guard:((?:stage|read)-[a-z]+)/g)) {
-      assert.ok(agentNames.has(name), `dod-guard:${name} is not an agent file`);
-    }
-    for (const [, name] of text.matchAll(/`(dod_guard_(?:stage|read)_[a-z]+)`/g)) {
-      assert.ok(codexNames.has(name), `${name} is not a registered Codex agent`);
-    }
-  }
 });

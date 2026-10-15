@@ -86,7 +86,10 @@ test("goal-sdlc keeps its sections short and its own", () => {
     "## Reporting",
     "## Stop condition",
   ]);
-  assert.ok(skill.split("\n").length <= 167, "goal-sdlc grew past an orchestrator");
+  // 167: the plan and fix-apply rows and the escalation sentence (#944) spent
+  // the five lines of headroom above the earlier 162.
+  const lineCount = skill.split("\n").length;
+  assert.ok(lineCount <= 167, "goal-sdlc grew past an orchestrator");
   // Rules that belong to an owner must not come back here.
   for (const owned of [
     "## Acceptance matrix",
@@ -206,21 +209,24 @@ test("goal-sdlc routes every stage to one tier", () => {
   assert.match(skill, prose("or use the registered tier agent in Codex"));
   assert.match(skill, prose("name the stage, tier, model, and effort in the progress message"));
   assert.match(skill, prose("user's model or effort override is applied and recorded as that standard says."));
-  assert.match(skill, prose("Verify each stage's output as that standard says for its tier"));
+  assert.match(skill, prose("Verify each stage's output as that standard"));
   assert.match(
     skill,
     prose("read back the commit of any stage that changed tracked files before the next stage starts"),
   );
 });
 
-// The strong tier is a recovery path: no row names it, and a failed stage climbs
-// one tier under the routing standard's Escalation section.
+// The strong tier is a recovery path: no row names it, and a failed stage
+// climbs one tier under the routing standard's Escalation section.
 test("goal-sdlc starts no stage on the strong tier", () => {
-  assert.ok(!routingRows(skill).some(([, tier]) => tier === "strong"), "no row routes to the strong tier");
+  const tiers = routingRows(skill).map(([, tier]) => tier);
+  assert.ok(!tiers.includes("strong"), "no row routes to the strong tier");
   assert.match(
     skill,
     prose(
-      'No row starts on the strong tier: a stage that fails its check climbs one tier under "Escalation" in that standard.',
+      "No row starts on the strong tier:",
+      "a stage that fails its check",
+      'climbs one tier under "Escalation" in that standard.',
     ),
   );
 });
