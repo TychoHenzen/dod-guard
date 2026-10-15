@@ -2,16 +2,9 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import {
-  classifyLinkedProjects,
-  classifyOpenProjects,
-  describeLinkedProjects,
-  isLinkedProjectRead,
-  LINKED_PROJECT_QUERY,
-  LinkedProjectError,
-  linkedProjectReadArgs,
-  resolveLinkedProject,
-} from "./linked-project.mjs";
+import { describeLinkedProjects, resolveLinkedProject } from "./linked-project.mjs";
+import { isLinkedProjectRead, LinkedProjectError, linkedProjectReadArgs } from "./linked-project-read.mjs";
+import { classifyLinkedProjects, classifyOpenProjects } from "./linked-project-response.mjs";
 
 const MUTATION = /mutation/i;
 const QUERY_OPERATION = /^query\(/;
@@ -28,6 +21,12 @@ const NOT_JSON = /did not return JSON/;
 const SOMETHING_WRONG = /returned errors: Something went wrong/;
 const GH_SPAWN = /gh failed: spawn/;
 const OWNER_NAME = /owner\/name/;
+const QUERY_PREFIX = "query=";
+// The query is private to the read, so the tests take it from the one query=
+// argument the read sends rather than from a test-only export.
+const LINKED_PROJECT_QUERY = linkedProjectReadArgs("o/r")
+  .find((arg) => arg.startsWith(QUERY_PREFIX))
+  .slice(QUERY_PREFIX.length);
 
 // The node shape the live read returned for TychoHenzen/dod-guard on 2026-10-14.
 function node(number, { closed = false, typename = "User", login = "TychoHenzen", title } = {}) {

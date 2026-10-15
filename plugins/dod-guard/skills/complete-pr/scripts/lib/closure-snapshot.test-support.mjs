@@ -2,7 +2,7 @@
 // the builder reads (Project items, fields, issues, pull requests, check runs), and the ENDPOINT
 // path builders. fakeRest takes its routes as a parameter, and each test file builds its own route
 // table from these. The *.test-support.mjs name keeps the test glob from running it as a test.
-import { isLinkedProjectRead, LINKED_PROJECT_READ } from "../../../../lib/linked-project.mjs";
+import { isLinkedProjectRead, LINKED_PROJECT_READ } from "../../../../lib/linked-project-read.mjs";
 
 const OWNER = "TychoHenzen";
 const REPO = `${OWNER}/dod-guard`;

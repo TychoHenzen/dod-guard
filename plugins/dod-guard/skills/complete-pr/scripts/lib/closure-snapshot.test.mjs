@@ -3,7 +3,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { isLinkedProjectRead } from "../../../../lib/linked-project.mjs";
+import { isLinkedProjectRead } from "../../../../lib/linked-project-read.mjs";
 import { runCli } from "../closure.mjs";
 import { planClosures } from "./closure-plan.mjs";
 import { buildClosureSnapshot } from "./closure-snapshot.mjs";

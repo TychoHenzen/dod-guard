@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isLinkedProjectRead, linkedProjectReadArgs } from "../../../lib/linked-project.mjs";
+import { isLinkedProjectRead, linkedProjectReadArgs } from "../../../lib/linked-project-read.mjs";
 import { runTransport } from "../../../lib/transport-policy.mjs";
 import { GitHubClient } from "./lib/github-client.mjs";
 import {

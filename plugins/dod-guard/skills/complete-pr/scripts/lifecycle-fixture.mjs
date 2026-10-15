@@ -1,4 +1,4 @@
-import { isLinkedProjectRead } from "../../../lib/linked-project.mjs";
+import { isLinkedProjectRead } from "../../../lib/linked-project-read.mjs";
 
 export const REPOSITORY = "owner/repo";
 export const OWNER = "owner";

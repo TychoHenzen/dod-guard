@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isLinkedProjectRead } from "../../../lib/linked-project.mjs";
+import { isLinkedProjectRead } from "../../../lib/linked-project-read.mjs";
 import { runGh } from "./lib/gh-runner.mjs";
 import { verifyLiveLifecycleReadback } from "./lifecycle-live-readback.mjs";
 

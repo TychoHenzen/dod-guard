@@ -8,13 +8,8 @@
 import { renameSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command reads its process id for the partial file.
 import process from "node:process";
-import {
-  describeLinkedProjects,
-  isLinkedProjectRead,
-  LINKED_PROJECT_READ,
-  LinkedProjectError,
-  resolveLinkedProject,
-} from "../../../../lib/linked-project.mjs";
+import { describeLinkedProjects, resolveLinkedProject } from "../../../../lib/linked-project.mjs";
+import { isLinkedProjectRead, LINKED_PROJECT_READ, LinkedProjectError } from "../../../../lib/linked-project-read.mjs";
 import {
   API_ISSUE_URL,
   API_PULL_URL,

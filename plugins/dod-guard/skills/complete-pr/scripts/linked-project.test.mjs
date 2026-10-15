@@ -2,18 +2,18 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: A Node test file.
 import test from "node:test";
-import { isLinkedProjectRead } from "../../../lib/linked-project.mjs";
-import { linkedProjectNode, linkedProjectsReply } from "./lib/closure-snapshot.test-support.mjs";
+import { isLinkedProjectRead } from "../../../lib/linked-project-read.mjs";
+import * as support from "./lib/closure-snapshot.test-support.mjs";
 import { runGh } from "./lib/gh-runner.mjs";
 import { runCli } from "./linked-project.mjs";
 
-const node = linkedProjectNode;
-const reply = linkedProjectsReply;
+const node = support.linkedProjectNode;
+const reply = support.linkedProjectsReply;
 const REPOSITORY = "TychoHenzen/dod-guard";
 const REPOSITORY_ARG = `--repository=${REPOSITORY}`;
 const WRITE_OR_MUTATION = /mutation|--method/;
 const REST_PROJECTS_READ = /^(?:users|orgs|repos)\/.*projectsV2/;
-const FAILURE_PREFIX = /^linked-project failed: graphql repository\.projectsV2: /;
+const FAILED = /^linked-project failed: graphql repository\.projectsV2: /;
 const USAGE_LINE = /^usage: linked-project\.mjs --repository=<owner\/name>/;
 const GH_FAILED = /gh failed/;
 const GH_502 = /gh failed: gh: HTTP 502/;
@@ -72,7 +72,7 @@ function assertOneDocumentedRead(calls) {
   assert.ok(!restRead, "a REST projectsV2 read");
 }
 
-test("R1: one open linked Project prints resolved with every Project field and exits 0", () => {
+test("R1: one open link prints resolved, every field, exit 0", () => {
   const nodes = [TITLED, node(7, { closed: true })];
   const result = run([REPOSITORY_ARG], reply(nodes));
   assert.equal(result.code, 0, result.err);
@@ -94,7 +94,7 @@ test("R2: zero open links, or only closed ones, print none and exit 1", () => {
   }
 });
 
-test("R2: two open links print several with each owner, number, and title, and exit 1", () => {
+test("R2: two links print several, with owner, number, title; exit 1", () => {
   const acme = { typename: "Organization", login: "acme" };
   const nodes = [TITLED, node(4, acme)];
   const result = run([REPOSITORY_ARG], reply(nodes));
@@ -110,7 +110,9 @@ test("R2: two open links print several with each owner, number, and title, and e
   assertOneDocumentedRead(result.calls);
 });
 
-test("R2: a gh failure, GraphQL errors, a null repository, a malformed node, or a further page exit 2", () => {
+// gh failure, GraphQL errors, a null repository, a malformed node, and a
+// further page are each a read that cannot be trusted.
+test("R2: every untrusted read exits 2 with no output", () => {
   const graphqlErrors = {
     status: 1,
     stderr: MISSING_REPOSITORY,
@@ -133,13 +135,13 @@ test("R2: a gh failure, GraphQL errors, a null repository, a malformed node, or 
     const result = run([REPOSITORY_ARG], answer);
     assert.equal(result.code, 2, result.err);
     assert.equal(result.out, "");
-    assert.match(result.err, FAILURE_PREFIX);
+    assert.match(result.err, FAILED);
     assert.match(result.err, message);
     assertOneDocumentedRead(result.calls);
   }
 });
 
-test("a missing, malformed, or extra flag is a usage error with no read", () => {
+test("a missing, malformed, or extra flag is a usage error, no read", () => {
   for (const argv of [
     [],
     ["--repository=not-a-repository"],

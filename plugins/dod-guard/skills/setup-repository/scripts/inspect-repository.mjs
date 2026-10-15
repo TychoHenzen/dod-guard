@@ -6,7 +6,7 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { classifyOpenProjects } from "../../../lib/linked-project.mjs";
+import { classifyOpenProjects } from "../../../lib/linked-project-response.mjs";
 
 const execFileAsync = promisify(execFile);
 
