@@ -26,6 +26,25 @@ const normalizeRow = ({ path, basePath }) => ({
   basePath: basePath === null ? null : normalizePath(basePath),
 });
 
+// Where a root that did not exist at the merge base used to live, read from the old paths of the files renamed into it.
+function renamedFrom(root, files) {
+  const prefix = `${normalizePath(root).replace(/\/$/, "")}/`;
+  const depth = prefix.split("/").length - 1;
+  return files
+    .filter((file) => file.basePath && file.path.startsWith(prefix) && !file.basePath.startsWith(prefix))
+    .map((file) => file.basePath.split("/").slice(0, depth).join("/"));
+}
+
+/**
+ * The roots to scan at the merge base. A root that exists there is scanned as is; one that does not (the pull request
+ * renamed the source directory) is scanned through the old directories its files came from, so their findings still
+ * count as pre-existing instead of new.
+ */
+export function baseRoots(roots, files, existsAtBase) {
+  const found = roots.flatMap((root) => (existsAtBase(root) ? [root] : renamedFrom(root, files)));
+  return [...new Set(found)];
+}
+
 /** Turn `git diff --name-status -M` output into `{ path, basePath }` rows. */
 export function parseNameStatus(output) {
   const lines = output.split("\n").map((line) => line.trim());

@@ -153,3 +153,32 @@ test("a base that cannot be resolved is an error, not a pass", (t) => {
   );
   assert.equal(result.status, 2);
 });
+
+test("deleting a file that carried a finding pays the cleanup quota", (t) => {
+  const repo = pullRequest(t, {
+    base: `${LONG_LINE}\n`,
+    head: `${SHORT_LINE}\n`,
+  });
+  git(repo, "rm", "-q", "src/a.js");
+  git(repo, "commit", "-q", "-m", "delete");
+  const result = runGate(repo);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /quota met/);
+});
+
+test("renaming the source directory does not turn its old findings into new ones", (t) => {
+  const repo = pullRequest(t, {
+    base: `${LONG_LINE}\n`,
+    head: `${LONG_LINE}\n// edit\n`,
+  });
+  git(repo, "mv", "src", "lib");
+  git(repo, "commit", "-q", "-m", "rename");
+  const result = runGate(
+    repo,
+    "--root=lib",
+    "--fix-medium-high=0",
+    "--fix-low=0",
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /line-length/);
+});

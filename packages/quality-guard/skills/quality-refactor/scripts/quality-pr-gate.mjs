@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 import { classifyChanges, severityRank } from "./lib/pr-gate-compare.mjs";
 import { evaluateGate } from "./lib/pr-gate-evaluate.mjs";
-import { GENERATED_PATHS, parseNameStatus } from "./lib/pr-gate-paths.mjs";
+import { GENERATED_PATHS, baseRoots, parseNameStatus } from "./lib/pr-gate-paths.mjs";
 import { quotaText, renderComment, renderReport } from "./lib/pr-gate-report.mjs";
 
 const SCAN = fileURLToPath(new URL("./quality-scan.mjs", import.meta.url));
@@ -96,12 +96,13 @@ function git(args, cwd) {
 }
 
 function changedFiles(base, cwd) {
-  const output = git(["diff", "--name-status", "-M", "--diff-filter=ACMR", `${base}...HEAD`], cwd);
+  // Deleted files are included so removing a file that carried findings pays down the cleanup quota.
+  const output = git(["diff", "--name-status", "-M", "--diff-filter=ACDMR", `${base}...HEAD`], cwd);
   return parseNameStatus(output);
 }
 
-function scanViolations(options, dir) {
-  const roots = options.roots.filter((root) => existsSync(join(dir, root)));
+function scanViolations(options, dir, wanted = options.roots) {
+  const roots = wanted.filter((root) => existsSync(join(dir, root)));
   if (roots.length === 0) return [];
   const args = [SCAN, ...roots, "--format=json", `--root=${dir}`, ...options.excludes.map((x) => `--exclude=${x}`)];
   const result = spawnSync(process.execPath, args, { cwd: dir, encoding: "utf8", maxBuffer: 512 * 1024 * 1024 });
@@ -112,12 +113,13 @@ function scanViolations(options, dir) {
 }
 
 // The merge base is checked out in a throwaway detached worktree so the scan sees exactly the upstream files.
-function scanMergeBase(options, cwd) {
+function scanMergeBase(options, files, cwd) {
   const mergeBase = git(["merge-base", options.base, "HEAD"], cwd).trim();
   const dir = mkdtempSync(join(tmpdir(), "quality-pr-gate-base-"));
   git(["worktree", "add", "--detach", dir, mergeBase], cwd);
   try {
-    return { mergeBase, violations: scanViolations(options, dir) };
+    const roots = baseRoots(options.roots, files, (root) => existsSync(join(dir, root)));
+    return { mergeBase, violations: scanViolations(options, dir, roots) };
   } finally {
     spawnSync("git", ["worktree", "remove", "--force", dir], { cwd, encoding: "utf8" });
   }
@@ -151,7 +153,7 @@ function main(argv, { cwd = process.cwd(), out = process.stdout, err = process.s
       out.write("quality-pr-gate: no changed files\n");
       return 0;
     }
-    const base = scanMergeBase(options, cwd);
+    const base = scanMergeBase(options, files, cwd);
     const head = scanViolations(options, cwd);
     const classified = classifyChanges({ files, head, base: base.violations, excludes: options.excludes });
     const gate = evaluateGate(classified, options);

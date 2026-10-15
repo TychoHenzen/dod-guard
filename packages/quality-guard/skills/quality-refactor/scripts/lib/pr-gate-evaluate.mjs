@@ -12,8 +12,9 @@ const countTiers = (findings) => ({
 
 const noTarget = ({ top, low }) => top === 0 && low === 0;
 
-function quotaMet({ available, fixed, required, targets }) {
-  if (noTarget(targets) || noTarget(available)) return true;
+function quotaMet({ fixed, required, targets }) {
+  // `required` is each target capped at what exists, so zero in both tiers means nothing eligible to pay down.
+  if (noTarget(targets) || noTarget(required)) return true;
   const meets = (tier) => required[tier] > 0 && fixed[tier] >= required[tier];
   return meets("top") || meets("low");
 }

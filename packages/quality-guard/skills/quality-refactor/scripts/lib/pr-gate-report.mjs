@@ -75,7 +75,8 @@ export function renderReport({ gate, classified, mergeBase, changedCount }) {
 
 export function renderComment({ gate, classified, link }) {
   const log = link ? `[full log](${link})` : "the quality-gate-report build artifact";
-  const open = classified.existing.length;
+  // Moved findings are still open debt; they just changed files.
+  const open = classified.existing.length + classified.moved.length;
   return [
     COMMENT_MARKER,
     `### Quality gate: ${verdict(gate)}`,

@@ -92,6 +92,12 @@ test("the quota is capped at what exists and switches off when both targets are 
   );
 });
 
+test("with one quota tier switched off, low-only changed files have nothing to pay down", () => {
+  const lows = [note("a"), note("b")];
+  const gate = evaluateGate(classify(lows, lows), { ...options, fixLow: 0 });
+  assert.equal(gate.quota.satisfied, true);
+});
+
 test("a new finding fails the gate even when the quota is met", () => {
   const classified = classify([params], [longLine]);
   const gate = evaluateGate(classified, options);
