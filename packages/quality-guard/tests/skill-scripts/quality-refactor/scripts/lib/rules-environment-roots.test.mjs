@@ -68,7 +68,8 @@ test("reports unsupported and directory-shaped roots through the scan", () => {
             file: "<repository root>",
             rule: "build-entrypoint",
             message:
-              "E1: no supported root entry point declaration found; inspected package.json, " +
+              "E1: no supported root entry point declaration found; " +
+              "inspected package.json, " +
               "Cargo.toml, pyproject.toml, .sln, or .csproj - " +
               "add one documented root build entry point",
           },
@@ -76,7 +77,8 @@ test("reports unsupported and directory-shaped roots through the scan", () => {
             file: "<repository root>",
             rule: "test-entrypoint",
             message:
-              "E2: no supported root entry point declaration found; inspected package.json, " +
+              "E2: no supported root entry point declaration found; " +
+              "inspected package.json, " +
               "Cargo.toml, pyproject.toml, .sln, or .csproj - " +
               "add one documented root test entry point",
           },
