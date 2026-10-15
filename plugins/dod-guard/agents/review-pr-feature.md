@@ -1,7 +1,7 @@
 ---
 name: review-pr-feature
 description: Review a final pull-request revision for PBI completeness, entrypoint reachability, and effective user-path tests. Returns only actionable finding records.
-model: opus
+model: sonnet
 tools: Read, Grep, Glob, Bash
 effort: medium
 ---

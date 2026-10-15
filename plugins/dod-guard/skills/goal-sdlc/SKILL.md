@@ -78,26 +78,30 @@ owner, as `standards/model-routing.md` says. Each row runs at this tier:
 | Stage | Tier |
 |---|---|
 | Queue snapshot read | cheap |
-| Refinement: plan research questions | strong |
+| Refinement: plan research questions | standard |
 | Refinement: investigate code, callers, and tests | cheap |
-| Refinement: decide classification and criteria | strong |
-| `/next-ticket`: implement one task | strong |
+| Refinement: decide classification and criteria | standard |
+| `/next-ticket`: write the step plan for one task | standard |
+| `/next-ticket`: implement one task from its plan | cheap |
 | `/next-ticket`: run validations and regenerate artifacts | cheap |
-| `/submit-draft-pr` | strong |
-| `/review-pr`: plan | strong |
+| `/submit-draft-pr` | standard |
+| `/review-pr`: plan | standard |
 | `/review-pr`: investigate | cheap |
-| `/review-pr`: judge | strong |
-| `/fix-pr-review` | strong |
-| `/complete-pr`: guarded merge and Project finalization | strong |
-| `/add-backlog-idea`, including the friction log | strong |
+| `/review-pr`: judge | standard |
+| `/fix-pr-review` | standard |
+| `/fix-pr-review`: apply a written per-finding fix | cheap |
+| `/complete-pr`: guarded merge and Project finalization | standard |
+| `/add-backlog-idea`, including the friction log | cheap |
 | Merge conflict on a PBI head | per `standards/conflict-triage.md`; unresolvable conflicts stop and report, and a verified push re-enters at `/submit-draft-pr` |
 
 Dispatch each row as `standards/model-routing.md` says: pass its model and
 effort to the Agent call in Claude Code, or use the registered tier agent in
 Codex, and name the stage, tier, model, and effort in the progress message. A
 user's model or effort override is applied and recorded as that standard says.
-Verify cheap-tier output before anything relies on it, and read back the commit
-of any stage that changed tracked files before the next stage starts. A stage
+Verify each stage's output as that standard says for its tier, and read back the
+commit of any stage that changed tracked files before the next stage starts. No
+row starts on the strong tier: a stage that fails its check climbs one tier
+under "Escalation" in that standard. A stage
 report that names a live child, a pending named proof, or a still-applied
 temporary probe is incomplete: resume the same stage at its current checkpoint,
 and do not advance or launch a replacement stage. Use the Agent tool in Claude

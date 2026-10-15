@@ -1,0 +1,131 @@
+// The escalation, verification, and agent-name contracts of the routing
+// standard, kept apart so model-routing.test.mjs stays within the file-size
+// lint.
+import assert from "node:assert/strict";
+import { readdir, readFile } from "node:fs/promises";
+import test from "node:test";
+import { prose } from "../../../lib/skill-text.mjs";
+
+const pluginRoot = new URL("../../../", import.meta.url);
+const repositoryRoot = new URL("../../../../../", import.meta.url);
+const STANDARD = new URL("standards/model-routing.md", pluginRoot);
+const standard = await readFile(STANDARD, "utf8");
+
+function assertPhrases(text, phrases) {
+  for (const phrase of phrases) {
+    assert.match(text, prose(phrase), phrase);
+  }
+}
+
+// The strong tier is reached only by escalation, so it has no agent of its
+// own, and no Claude Code tier agent runs at effort max.
+const TIER_AGENT = /^(stage|read)-(standard|cheap)\.md$/;
+const NO_STRONG_TITLE = "the strong tier has no agent and no tier agent is max";
+
+test(NO_STRONG_TITLE, async () => {
+  const files = await readdir(new URL("agents/", pluginRoot));
+  for (const kind of ["stage", "read"]) {
+    assert.ok(!files.includes(`${kind}-strong.md`), `${kind}-strong exists`);
+  }
+  const tierFiles = files.filter((file) => TIER_AGENT.test(file));
+  assert.equal(tierFiles.length, 4, "the four tier agents");
+  for (const file of tierFiles) {
+    const url = new URL(`agents/${file}`, pluginRoot);
+    const source = await readFile(url, "utf8");
+    assert.doesNotMatch(source, /^effort: max$/m, `${file} Claude effort`);
+  }
+});
+
+test("the four review lens agents default to the standard tier", async () => {
+  for (const lens of ["feature", "design", "reliability", "hygiene"]) {
+    const url = new URL(`agents/review-pr-${lens}.md`, pluginRoot);
+    assert.match(await readFile(url, "utf8"), /^model: sonnet$/m, lens);
+  }
+});
+
+const ESCALATION = [
+  "The strong tier is a recovery path. A stage never starts on it",
+  "one rung at a time. Each stage climbs a given rung at most once.",
+  "Send the stage back once at the same tier with the exact gap.",
+  "Before the strong rung only, ask `/codex-advisor` one question",
+  "The cheap-to-standard rung and the rerun of a read-only review batch",
+  "skip this step.",
+  "already has this send-back: its one fresh bounded repair task.",
+  "Run the stage again one rung up, with the failure record in the brief",
+  "A failure on the strong rung stops the parent as a blocker",
+  "a security, authority, credential, provider, head-mismatch, destructive,",
+  "or missing-evidence stop",
+  "The escalating thread never changes its own model.",
+  "the owner, already a standard-tier thread that holds the plan and the",
+  "failure record, carries out the task itself",
+  "with `model: opus` and the strong effort",
+  "The failed-check rule above, the investigator-batch rule in",
+  "and the repair rule in `dod-guard:step-by-step` escalate once and then",
+  "a step whose repair fails climbs one rung under this section",
+  "instead of stopping",
+  "Malformed judge output, a refused merge pass, and the verification stop",
+  "in `standards/conflict-triage.md` stay stops",
+  "append it to that day's friction log as an occurrence",
+];
+
+test("the standard defines the escalation ladder", () => {
+  assertPhrases(standard, ESCALATION);
+});
+
+// Each tier has its own verification rule: cheap output gets the per-answer
+// check, standard and strong output get the readback and the named proof.
+const TIER_VERIFICATION = [
+  "## Verify cheap-tier output",
+  "## Verify standard-tier and strong-tier output",
+  "A standard worker returns judgements, not citations, so the per-answer",
+  "check above does not apply.",
+  "every commit the stage reports exists, is pushed, and matches the diff",
+  "the stage's own named proof passes, and was run at the accepted head",
+];
+
+test("each tier has a stated verification rule", () => {
+  assertPhrases(standard, TIER_VERIFICATION);
+});
+
+// A renamed or removed agent breaks every brief that still names it, so every
+// tier agent a skill or standard dispatches by name must exist as a file, and
+// every registered Codex name must exist in .codex/agents.
+async function namesIn(directory, extension) {
+  const files = await readdir(directory);
+  const matching = files.filter((file) => file.endsWith(extension));
+  const trim = -extension.length;
+  return new Set(matching.map((file) => file.slice(0, trim)));
+}
+
+async function textsThatNameAgents() {
+  const skillsRoot = new URL("skills/", pluginRoot);
+  const entries = await readdir(skillsRoot, { withFileTypes: true });
+  const skills = entries.filter((entry) => entry.isDirectory());
+  const standards = ["model-routing.md", "conflict-triage.md"];
+  return Promise.all([
+    ...skills.map((entry) => {
+      return readFile(new URL(`${entry.name}/SKILL.md`, skillsRoot), "utf8");
+    }),
+    ...standards.map((file) => {
+      return readFile(new URL(`standards/${file}`, pluginRoot), "utf8");
+    }),
+  ]);
+}
+
+const AGENT_REFERENCE = /dod-guard:((?:stage|read)-[a-z]+)/g;
+const CODEX_REFERENCE = /`(dod_guard_(?:stage|read)_[a-z]+)`/g;
+const NAMES_TITLE = "every tier agent a skill or standard names exists";
+
+test(NAMES_TITLE, async () => {
+  const agentNames = await namesIn(new URL("agents/", pluginRoot), ".md");
+  const codexDirectory = new URL(".codex/agents/", repositoryRoot);
+  const codexNames = await namesIn(codexDirectory, ".toml");
+  for (const text of await textsThatNameAgents()) {
+    for (const [, name] of text.matchAll(AGENT_REFERENCE)) {
+      assert.ok(agentNames.has(name), `dod-guard:${name} is not an agent file`);
+    }
+    for (const [, name] of text.matchAll(CODEX_REFERENCE)) {
+      assert.ok(codexNames.has(name), `${name} is not a Codex agent`);
+    }
+  }
+});

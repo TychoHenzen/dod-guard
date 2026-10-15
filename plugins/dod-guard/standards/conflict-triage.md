@@ -12,7 +12,7 @@ The triage runs when the `/complete-pr` helper stops with `merge_conflict` on
 an open pull request whose head is the trusted PBI head. It never runs for a
 fork head, a base other than the default branch, or a pull request that is not
 open. The thread that runs `/complete-pr` owns the triage. When
-`dod-guard:goal-sdlc` runs it, that thread is the `dod-guard:stage-strong`
+`dod-guard:goal-sdlc` runs it, that thread is the `dod-guard:stage-standard`
 stage worker, as "Who dispatches" in `standards/model-routing.md` says.
 
 The git steps run through `scripts/conflict-triage.mjs` in the complete-pr
@@ -67,7 +67,7 @@ neither a content conflict nor a modify-delete conflict, for example when both
 sides deleted or renamed it, or when it is a symlink or submodule entry, which
 holds no text to merge.
 
-1. **Plan** (strong tier, `dod-guard:read-strong`). For each conflicted path,
+1. **Plan** (standard tier, `dod-guard:read-standard`). For each conflicted path,
    return questions as text; the owning thread writes them to a scratch file
    outside the repository. Each question has an id, the paths and hunks, the
    intent sources to read, and a risk note.
@@ -78,7 +78,7 @@ holds no text to merge.
    cites a path and line and gives no verdict. A question the hunks answer
    goes straight to the judge. Verify the answers as
    `standards/model-routing.md` says before the judge reads them.
-3. **Judge** (strong tier, `dod-guard:read-strong`). Return one decision per
+3. **Judge** (standard tier, `dod-guard:read-standard`). Return one decision per
    path: `take-branch`, `take-base`, `combine`, `regenerate`, or `stop`, each
    with its basis and question ids. A decision with no basis is `stop`. The
    owning thread writes the decisions to the decisions file that `verify`
@@ -102,7 +102,8 @@ Run each stage at its tier as `standards/model-routing.md` says, and name the
 stage, tier, model, and effort in every progress message. One repair is
 allowed when verification fails and a clear contract shows what is stale:
 repair, stage, run `commit --amend`, and verify again. A second failure stops
-the run.
+the run. It is never escalated to another tier, because the stop guards git
+state and push provenance.
 
 ## Stop rules
 

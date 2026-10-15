@@ -1,6 +1,6 @@
 ---
 name: read-cheap
-description: Investigate planned questions on the cheap tier. Reads files, history, and command output and answers each question with cited evidence, without verdicts or changes. Use when a strong planner has written the questions.
+description: Investigate planned questions on the cheap tier. Reads files, history, and command output and answers each question with cited evidence, without verdicts or changes. Use when a standard planner has written the questions.
 model: haiku
 tools: Read, Grep, Glob, Bash
 effort: medium

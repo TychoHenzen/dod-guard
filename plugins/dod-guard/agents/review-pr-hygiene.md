@@ -1,7 +1,7 @@
 ---
 name: review-pr-hygiene
 description: Review a final pull-request revision for consistency, code smells, test readability, and LLM artifacts. Returns only actionable finding records.
-model: opus
+model: sonnet
 tools: Read, Grep, Glob, Bash
 effort: medium
 ---

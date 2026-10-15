@@ -75,7 +75,10 @@ worker at the current checkpoint, for example by messaging it to finish, and
 dispatches nothing else, including a replacement, until that worker returns a
 terminal result.
 Do not skip forward or restart completed steps. If repair cannot establish the step's
-acceptance condition, stop with the checkpoint and the precise missing evidence.
+acceptance condition, stop with the checkpoint and the precise missing evidence,
+unless the calling skill routes its steps by tier: then the step climbs one tier
+under "Escalation" in `standards/model-routing.md` first, and stops only when
+that escalated run also fails or when it already ran on the strong tier.
 
 ## Finish
 
