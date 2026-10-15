@@ -28,7 +28,13 @@ test("generated output is recognised by path fragment", () => {
 });
 
 test("parseNameStatus maps each changed file to where it lived at the merge base", () => {
-  const rows = ["M\tsrc\\a.cs", "A\tsrc/b.cs", "R087\tsrc/old.cs\tsrc/new.cs", "C100\tsrc/orig.cs\tsrc/copy.cs", ""];
+  const rows = [
+    "M\tsrc\\a.cs",
+    "A\tsrc/b.cs",
+    "R087\tsrc/old.cs\tsrc/new.cs",
+    "C100\tsrc/orig.cs\tsrc/copy.cs",
+    "",
+  ];
   assert.deepEqual(parseNameStatus(rows.join("\n")), [
     { path: "src/a.cs", basePath: "src/a.cs" },
     { path: "src/b.cs", basePath: null },
@@ -45,7 +51,12 @@ test("parseArgs requires a base ref and at least one root", () => {
 });
 
 test("parseArgs keeps every root and exclude, plus the generated defaults", () => {
-  const options = parseArgs(["--base=main", "--root=Scripts", "--root=addons", "--exclude=/gen/"]);
+  const options = parseArgs([
+    "--base=main",
+    "--root=Scripts",
+    "--root=addons",
+    "--exclude=/gen/",
+  ]);
   assert.deepEqual(options.roots, ["Scripts", "addons"]);
   assert.ok(options.excludes.includes("/gen/"));
   assert.ok(options.excludes.includes("/dist-test/"));
@@ -78,14 +89,26 @@ test("parseArgs accepts the policy and output flags", () => {
 });
 
 test("parseArgs rejects bad policy values", () => {
-  assert.match(parseArgs([...required, "--block-on=severe"]).error, /--block-on/);
-  assert.match(parseArgs([...required, "--fix-low=many"]).error, /whole number/);
+  assert.match(
+    parseArgs([...required, "--block-on=severe"]).error,
+    /--block-on/,
+  );
+  assert.match(
+    parseArgs([...required, "--fix-low=many"]).error,
+    /whole number/,
+  );
 });
 
 test("parseArgs collects per-rule blocking thresholds and rejects malformed ones", () => {
   const options = parseArgs([...required, "--rule-block-on=line-length:high"]);
   assert.equal(options.error, undefined);
   assert.deepEqual(options.ruleBlockOn, { "line-length": "high" });
-  assert.match(parseArgs([...required, "--rule-block-on=line-length"]).error, /--rule-block-on/);
-  assert.match(parseArgs([...required, "--rule-block-on=line-length:loud"]).error, /--rule-block-on/);
+  assert.match(
+    parseArgs([...required, "--rule-block-on=line-length"]).error,
+    /--rule-block-on/,
+  );
+  assert.match(
+    parseArgs([...required, "--rule-block-on=line-length:loud"]).error,
+    /--rule-block-on/,
+  );
 });

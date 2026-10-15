@@ -14,4 +14,5 @@ export const finding = (overrides = {}) => ({
 export const modified = (path) => ({ path, basePath: path });
 
 /** Classify findings for one modified file (a.cs) unless `files` says otherwise. */
-export const classify = (head, base, files = [modified("a.cs")]) => classifyChanges({ files, head, base });
+export const classify = (head, base, files = [modified("a.cs")]) =>
+  classifyChanges({ files, head, base });
