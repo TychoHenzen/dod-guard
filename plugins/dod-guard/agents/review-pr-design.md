@@ -1,7 +1,7 @@
 ---
 name: review-pr-design
 description: Review a final pull-request revision for localized complexity, ownership, composition, and justified design. Returns only actionable finding records.
-model: opus
+model: sonnet
 tools: Read, Grep, Glob, Bash
 effort: medium
 ---
