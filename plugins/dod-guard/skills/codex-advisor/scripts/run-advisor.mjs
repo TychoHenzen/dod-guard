@@ -242,6 +242,169 @@ function oneTurnViolation(events) {
   return undefined;
 }
 
+// A step is one process invocation: the run it belongs to, its arguments, and its result.
+function stageFailure(step, stage, message) {
+  return failure(message, step.result, step.run.executable, step.args, stage, step.run.prefixArgs);
+}
+
+function processOptions(run) {
+  return { cwd: run.workdir, env: { ...process.env, ...run.env } };
+}
+
+function invalidOptionMessage({ prefixArgs, model, reasoningEffort }) {
+  const options = [
+    ["model", model],
+    ["reasoning effort", reasoningEffort],
+    ...(Array.isArray(prefixArgs) ? prefixArgs.map((value, index) => [`prefix argument ${index + 1}`, value]) : []),
+  ];
+  const invalid = options.find(([name, value]) => value !== undefined && optionError(name, value));
+  return invalid ? optionError(...invalid) : undefined;
+}
+
+const UNAVAILABLE_MESSAGE =
+  "Codex advisor installation is unavailable: no existing Codex executable was found on the Windows PATH " +
+  "or behind a codex.cmd shim";
+
+// The arguments are built before any validation so a throw from them escapes runAdvisor, as it always has.
+function describeAttempt(options) {
+  return { ...options, attemptedArgs: attemptedExecArgs({ mode: "read-only", ...options }) };
+}
+
+function launcherRejection(attempt) {
+  const message = attempt.executable ? invalidOptionMessage(attempt) : UNAVAILABLE_MESSAGE;
+  if (!message) return undefined;
+  const { executable, attemptedArgs, prefixArgs } = attempt;
+  return failure(message, undefined, executable, attemptedArgs, "launcher-contract", prefixArgs);
+}
+
+function launcherCrash(attempt, error) {
+  const { executable, attemptedArgs, prefixArgs } = attempt;
+  const message = `Codex advisor could not start: ${error.message}`;
+  return failure(message, undefined, executable, attemptedArgs, "launcher-contract", prefixArgs);
+}
+
+function preflightMessage(stage, result) {
+  if (result.outputLimitExceeded) return `Codex advisor ${stage} capability probe exceeded ${MAX_OUTPUT_BYTES} bytes`;
+  if (result.startError) return `Codex advisor executable is missing or cannot start (${result.startError.message})`;
+  if (result.cancelled) return "Codex advisor capability probe cancelled by operator";
+  if (result.code !== 0) return `Codex advisor ${stage} capability probe exits non-zero with code ${result.code}`;
+  return undefined;
+}
+
+async function runPreflight(run) {
+  const preflightArgs = buildCodexPreflightArgs({ mode: "read-only", prefixArgs: run.prefixArgs });
+  const probes = {};
+  for (const [stage, args] of Object.entries(preflightArgs)) {
+    const result = await runProcess(run.executable, args, processOptions(run), "", run.signal, run.spawnImpl);
+    const message = preflightMessage(stage, result);
+    if (message) return { failure: stageFailure({ run, args, result }, stage, message) };
+    probes[stage] = processEvidence(run.executable, args, result);
+  }
+  return { probes };
+}
+
+function launchFailure(step) {
+  const { result } = step;
+  if (result.outputLimitExceeded) {
+    return stageFailure(step, "reviewer-process", `Codex advisor output exceeded ${MAX_OUTPUT_BYTES} bytes`);
+  }
+  if (result.startError) {
+    const message = `Codex advisor executable is missing or cannot start (${result.startError.message})`;
+    return stageFailure(step, "reviewer-launch", message);
+  }
+  if (result.stdinError) {
+    const message = `Codex advisor prompt could not be written (${result.stdinError.message})`;
+    return stageFailure(step, "reviewer-launch", message);
+  }
+  if (result.cancelled) return stageFailure(step, "reviewer-process", "Codex advisor cancelled by operator");
+  return undefined;
+}
+
+function outcomeFailure(step) {
+  const { result } = step;
+  const events = jsonEvents(result.stdout, result.stderr);
+  const fallback = modelMetadataFallback(events, step.run.model);
+  if (fallback) {
+    const failed = stageFailure(step, "reviewer-process", fallback.message);
+    failed.execution.fallbackEvent = fallback.event;
+    return failed;
+  }
+  if (result.code !== 0) {
+    return stageFailure(step, "reviewer-process", `Codex advisor exits non-zero with code ${result.code}`);
+  }
+  const violation = oneTurnViolation(events);
+  return violation ? stageFailure(step, "reviewer-process", violation) : undefined;
+}
+
+async function readReport(outputPath) {
+  try {
+    const raw = await readFile(outputPath, "utf8");
+    return raw.trim() ? { raw } : { error: "Codex advisor output file is empty" };
+  } catch {
+    return { error: "Codex advisor output file is missing or unreadable" };
+  }
+}
+
+function parseReport(raw, parseResponse) {
+  try {
+    return { parsed: parseResponse(raw) };
+  } catch (error) {
+    return { error: `Codex advisor output could not be parsed (${error.message})` };
+  }
+}
+
+// A parser that returns nothing makes `parse.parsed.error` throw, which the outer catch reports as before.
+async function readAdvice(step) {
+  const report = await readReport(step.outputPath);
+  const parse = report.error ? report : parseReport(report.raw, step.run.parseResponse);
+  const error = parse.error ?? parse.parsed.error;
+  if (error) return { failure: stageFailure(step, "reviewer-report", error) };
+  return { value: parse.parsed.value };
+}
+
+async function launchReviewer(run) {
+  const outputPath = join(run.workdir, "last-message.json");
+  const args = buildCodexExecArgs({
+    mode: "read-only",
+    prefixArgs: run.prefixArgs,
+    model: run.model,
+    reasoningEffort: run.reasoningEffort,
+    schemaPath: run.schemaPath,
+    outputPath,
+    workdir: run.workdir,
+  });
+  const result = await runProcess(run.executable, args, processOptions(run), run.prompt, run.signal, run.spawnImpl);
+  return { run, args, result, outputPath };
+}
+
+function adviceSuccess(step, preflight, advice) {
+  const { executable, prefixArgs } = step.run;
+  return {
+    ok: true,
+    ...(advice.value ?? {}),
+    capability: { executable, probes: preflight.probes },
+    execution: completedExecutionEvidence(executable, step.args, step.result, prefixArgs),
+  };
+}
+
+async function runExec(run) {
+  const step = await launchReviewer(run);
+  const failed = launchFailure(step) ?? outcomeFailure(step);
+  if (failed) return { failure: failed };
+  return { ...(await readAdvice(step)), step };
+}
+
+async function runReviewer(run) {
+  const preflight = await runPreflight(run);
+  if (preflight.failure) return preflight.failure;
+  const exec = await runExec(run);
+  return exec.failure ?? adviceSuccess(exec.step, preflight, exec);
+}
+
+function removeWorkdir(workdir) {
+  return workdir ? rm(workdir, { recursive: true, force: true }).catch(() => {}) : undefined;
+}
+
 export async function runAdvisor({
   prompt,
   executable,
@@ -257,211 +420,17 @@ export async function runAdvisor({
   spawnImpl = spawn,
 }) {
   executable = executable ?? resolveCodexExecutable(platform, { ...process.env, ...env });
-  const attemptedArgs = attemptedExecArgs({ mode: "read-only", prefixArgs, model, reasoningEffort });
-  if (!executable) {
-    return failure(
-      "Codex advisor installation is unavailable: no existing Codex executable was found on the Windows PATH or behind a codex.cmd shim",
-      undefined,
-      executable,
-      attemptedArgs,
-      "launcher-contract",
-      prefixArgs,
-    );
-  }
-  const invalidOption = [
-    ["model", model],
-    ["reasoning effort", reasoningEffort],
-    ...(Array.isArray(prefixArgs) ? prefixArgs.map((value, index) => [`prefix argument ${index + 1}`, value]) : []),
-  ].find(([name, value]) => value !== undefined && optionError(name, value));
-  if (invalidOption) {
-    return failure(
-      optionError(...invalidOption),
-      undefined,
-      executable,
-      attemptedArgs,
-      "launcher-contract",
-      prefixArgs,
-    );
-  }
-
+  const attempt = describeAttempt({ executable, prefixArgs, model, reasoningEffort });
+  const rejected = launcherRejection(attempt);
+  if (rejected) return rejected;
   let workdir;
   try {
     workdir = await mkdtemp(join(tempRoot, "dod-guard-codex-advisor-"));
-    const outputPath = join(workdir, "last-message.json");
-    const preflightArgs = buildCodexPreflightArgs({ mode: "read-only", prefixArgs });
-    const capability = {};
-    for (const [stage, preflight] of Object.entries(preflightArgs)) {
-      const result = await runProcess(
-        executable,
-        preflight,
-        { cwd: workdir, env: { ...process.env, ...env } },
-        "",
-        signal,
-        spawnImpl,
-      );
-      if (result.outputLimitExceeded) {
-        return failure(
-          `Codex advisor ${stage} capability probe exceeded ${MAX_OUTPUT_BYTES} bytes`,
-          result,
-          executable,
-          preflight,
-          stage,
-          prefixArgs,
-        );
-      }
-      if (result.startError) {
-        return failure(
-          `Codex advisor executable is missing or cannot start (${result.startError.message})`,
-          result,
-          executable,
-          preflight,
-          stage,
-          prefixArgs,
-        );
-      }
-      if (result.cancelled) {
-        return failure(
-          "Codex advisor capability probe cancelled by operator",
-          result,
-          executable,
-          preflight,
-          stage,
-          prefixArgs,
-        );
-      }
-      if (result.code !== 0) {
-        return failure(
-          `Codex advisor ${stage} capability probe exits non-zero with code ${result.code}`,
-          result,
-          executable,
-          preflight,
-          stage,
-          prefixArgs,
-        );
-      }
-      capability[stage] = processEvidence(executable, preflight, result);
-    }
-    const args = buildCodexExecArgs({
-      mode: "read-only",
-      prefixArgs,
-      model,
-      reasoningEffort,
-      schemaPath,
-      outputPath,
-      workdir,
-    });
-    const result = await runProcess(
-      executable,
-      args,
-      { cwd: workdir, env: { ...process.env, ...env } },
-      prompt,
-      signal,
-      spawnImpl,
-    );
-    if (result.outputLimitExceeded) {
-      return failure(
-        `Codex advisor output exceeded ${MAX_OUTPUT_BYTES} bytes`,
-        result,
-        executable,
-        args,
-        "reviewer-process",
-        prefixArgs,
-      );
-    }
-    if (result.startError) {
-      return failure(
-        `Codex advisor executable is missing or cannot start (${result.startError.message})`,
-        result,
-        executable,
-        args,
-        "reviewer-launch",
-        prefixArgs,
-      );
-    }
-    if (result.stdinError) {
-      return failure(
-        `Codex advisor prompt could not be written (${result.stdinError.message})`,
-        result,
-        executable,
-        args,
-        "reviewer-launch",
-        prefixArgs,
-      );
-    }
-    if (result.cancelled) {
-      return failure("Codex advisor cancelled by operator", result, executable, args, "reviewer-process", prefixArgs);
-    }
-    const events = jsonEvents(result.stdout, result.stderr);
-    const fallback = modelMetadataFallback(events, model);
-    if (fallback) {
-      const failed = failure(fallback.message, result, executable, args, "reviewer-process", prefixArgs);
-      failed.execution.fallbackEvent = fallback.event;
-      return failed;
-    }
-    if (result.code !== 0) {
-      return failure(
-        `Codex advisor exits non-zero with code ${result.code}`,
-        result,
-        executable,
-        args,
-        "reviewer-process",
-        prefixArgs,
-      );
-    }
-    const violation = oneTurnViolation(events);
-    if (violation) {
-      return failure(violation, result, executable, args, "reviewer-process", prefixArgs);
-    }
-
-    let raw;
-    try {
-      raw = await readFile(outputPath, "utf8");
-    } catch {
-      return failure(
-        "Codex advisor output file is missing or unreadable",
-        result,
-        executable,
-        args,
-        "reviewer-report",
-        prefixArgs,
-      );
-    }
-    if (!raw.trim()) {
-      return failure("Codex advisor output file is empty", result, executable, args, "reviewer-report", prefixArgs);
-    }
-    let parsed;
-    try {
-      parsed = parseResponse(raw);
-    } catch (error) {
-      return failure(
-        `Codex advisor output could not be parsed (${error.message})`,
-        result,
-        executable,
-        args,
-        "reviewer-report",
-        prefixArgs,
-      );
-    }
-    if (parsed.error) {
-      return failure(parsed.error, result, executable, args, "reviewer-report", prefixArgs);
-    }
-    return {
-      ok: true,
-      ...(parsed.value ?? {}),
-      capability: { executable, probes: capability },
-      execution: completedExecutionEvidence(executable, args, result, prefixArgs),
-    };
+    return await runReviewer({ ...attempt, schemaPath, signal, env, parseResponse, spawnImpl, prompt, workdir });
   } catch (error) {
-    return failure(
-      `Codex advisor could not start: ${error.message}`,
-      undefined,
-      executable,
-      attemptedArgs,
-      "launcher-contract",
-      prefixArgs,
-    );
+    return launcherCrash(attempt, error);
   } finally {
-    if (workdir) await rm(workdir, { recursive: true, force: true }).catch(() => {});
+    await removeWorkdir(workdir);
   }
 }
 
