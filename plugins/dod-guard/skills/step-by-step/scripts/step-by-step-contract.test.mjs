@@ -61,6 +61,21 @@ test("every dispatch brief carries the terminal-wait, proof, and cleanup rules",
   }
 });
 
+// A routed task that fails its one repair used to stop the parent, so the escalation ladder never ran
+// for the tasks next-ticket sends through this skill (review GH-4286212964).
+test("a step routed by tier climbs one tier before step-by-step stops", () => {
+  const repair = skill.slice(skill.indexOf("## Failures and repair"), skill.indexOf("## Finish"));
+  assert.match(
+    repair,
+    prose(
+      "stop with the checkpoint and the precise missing evidence,",
+      "unless the calling skill routes its steps by tier:",
+      'then the step climbs one tier under "Escalation" in `standards/model-routing.md` first,',
+      "and stops only when that escalated run also fails or when it already ran on the strong tier.",
+    ),
+  );
+});
+
 // A generic "incomplete step" repair once launched a replacement beside a worker that was still running.
 test("a report naming unfinished owned work resumes that same worker instead of repairing", () => {
   const repair = skill.slice(skill.indexOf("## Failures and repair"), skill.indexOf("## Finish"));

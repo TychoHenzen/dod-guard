@@ -181,13 +181,17 @@ them.
 
 A stalled stage proceeds in this order:
 
-1. Send the stage back once at the same tier with the exact gap.
-2. Ask `/codex-advisor` one question, as `standards/working-defaults.md`
-   requires for a confirmed blocker. When its advice names a repair, apply it
-   at the current tier and verify.
+1. Send the stage back once at the same tier with the exact gap. A step run
+   through `dod-guard:step-by-step` already has this send-back: its one fresh
+   bounded repair task.
+2. Before the strong rung only, ask `/codex-advisor` one question, as
+   `standards/working-defaults.md` requires for a confirmed blocker. When its
+   advice names a repair, apply it at the standard tier and verify. The
+   cheap-to-standard rung and the rerun of a read-only review batch skip this
+   step.
 3. Run the stage again one rung up, with the failure record in the brief: the
-   attempts, the errors, the files touched, and the advisor's advice. Verify the
-   new run by the rules for its tier.
+   attempts, the errors, the files touched, and the advisor's advice when step 2
+   ran. Verify the new run by the rules for its tier.
 4. A failure on the strong rung stops the parent as a blocker, under the
    Blockers rule of `dod-guard:goal-sdlc`.
 
@@ -198,11 +202,14 @@ thread that dispatched the stage runs it again on `dod-guard:stage-standard`
 with `model: opus` and the strong effort.
 
 A skill that says to stop on a repeated failure keeps that rule unless this
-section names it. The failed-check rule above and the investigator-batch rule
-in `dod-guard:review-pr` escalate once and then stop. Malformed judge output, a
-refused merge pass, and the verification stop in `standards/conflict-triage.md`
-stay stops, because a stronger model does not repair a format failure or git
-state.
+section names it. The failed-check rule above, the investigator-batch rule in
+`dod-guard:review-pr`, and the repair rule in `dod-guard:step-by-step` escalate
+once and then stop. The one fresh repair task of `dod-guard:step-by-step` is the
+same-tier send-back, and when the calling skill routes its steps by tier, a step
+whose repair fails climbs one rung under this section instead of stopping.
+Malformed judge output, a refused merge pass, and the verification stop in
+`standards/conflict-triage.md` stay stops, because a stronger model does not
+repair a format failure or git state.
 
 Name every escalation in the progress message, with the stage, the tier it left,
 the tier it reached, and the trigger, and append it to that day's friction log
@@ -214,4 +221,4 @@ tier higher.
 The Codex advisor is not a lifecycle stage. It is the strong tier's
 advice-only role: `gpt-5.6-sol` at `max` effort, one turn, read-only, with the
 full context supplied by the caller. `dod-guard:codex-advisor` owns that
-contract. In an escalation it runs before a stage climbs a rung.
+contract. In an escalation it runs before a stage climbs to the strong rung.

@@ -202,13 +202,16 @@ model does not fix them.
 
 Order inside a stalled stage:
 
-1. Same tier, one send-back with the exact gap (existing).
-2. `/codex-advisor`: one read-only turn, as `working-defaults.md` already
-   requires for a confirmed blocker. If its advice names a repair, apply it at
-   the current tier.
+1. Same tier, one send-back with the exact gap (existing). A `step-by-step`
+   step already has it: its one fresh bounded repair task.
+2. Before the strong rung only, `/codex-advisor`: one read-only turn, as
+   `working-defaults.md` already requires for a confirmed blocker. If its advice
+   names a repair, apply it at the standard tier. The cheap-to-standard rung and
+   the rerun of a read-only review batch skip this step (review finding on the
+   advisor order).
 3. Re-dispatch the stage one rung up with the failure record: the attempts,
-   errors, files touched, and the advisor's advice. The new run verifies by the
-   same rules; verification applies by model tier.
+   errors, files touched, and the advisor's advice when step 2 ran. The new run
+   verifies by the same rules; verification applies by model tier.
 4. A failure at the strong rung stops the parent as a blocker under the
    existing Blockers rule.
 
@@ -235,6 +238,7 @@ them, and the change must say which it replaces:
 | Rule today | Where | Proposed |
 |---|---|---|
 | A failed check is sent back once, a second failure stops the stage | `model-routing.md` "Verify cheap-tier output" | escalate, then stop (this section) |
+| A step gets one fresh bounded repair, then stops with the checkpoint | `step-by-step` "Failures and repair", used for every `next-ticket` task | escalate, then stop: the repair is the same-tier send-back, and a step routed by tier climbs one tier before it stops (review finding GH-4286212964) |
 | A failed investigator batch is sent back once, then stop without posting | `review-pr` section 5, Verify | escalate the batch to standard once, then stop. A review is posted once per PR, so a missed angle cannot be filled in later |
 | A judge returns malformed JSON twice, stop without posting | `review-pr` section 5, Judge | stays stop. A format failure is not a capability failure |
 | The merge pass output is refused twice, stop without posting | `review-pr` section 5, merge pass | stays stop, same reason |
