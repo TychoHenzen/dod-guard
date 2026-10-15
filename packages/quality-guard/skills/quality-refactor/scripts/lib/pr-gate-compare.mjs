@@ -41,12 +41,14 @@ function compareGroup(now, before, result) {
   result.resolved.push(...before.slice(paired));
 }
 
+const groupAt = (groups, key) => groups.get(key) ?? [];
+
 function compareFindings(head, base) {
   const result = { fresh: [], existing: [], resolved: [], worsened: [] };
   const headGroups = groupBy(head, findingKey);
   const baseGroups = groupBy(base, findingKey);
   for (const key of new Set([...headGroups.keys(), ...baseGroups.keys()])) {
-    compareGroup(headGroups.get(key) ?? [], baseGroups.get(key) ?? [], result);
+    compareGroup(groupAt(headGroups, key), groupAt(baseGroups, key), result);
   }
   return result;
 }
@@ -67,9 +69,9 @@ function byFile(violations, excludes) {
   return groupBy(kept, (violation) => normalizePath(violation.file));
 }
 
+// An added file has basePath null, which is never a key, so it compares against nothing.
 function compareFile({ path, basePath }, headByFile, baseByFile) {
-  const before = basePath === null ? [] : (baseByFile.get(basePath) ?? []);
-  return compareFindings(headByFile.get(path) ?? [], before);
+  return compareFindings(groupAt(headByFile, path), groupAt(baseByFile, basePath));
 }
 
 /**

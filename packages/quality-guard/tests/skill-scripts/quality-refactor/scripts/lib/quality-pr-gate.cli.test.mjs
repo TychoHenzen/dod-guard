@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import process from "node:process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -23,9 +23,10 @@ function git(cwd, ...args) {
   assert.equal(result.status, 0, `git ${args.join(" ")}: ${result.stderr}`);
 }
 
-function write(repo, path, content) {
-  mkdirSync(dirname(join(repo, path)), { recursive: true });
-  writeFileSync(join(repo, path), content);
+function commitSource(repo, content, message) {
+  writeFileSync(join(repo, "src", "a.js"), content);
+  git(repo, "add", "-A");
+  git(repo, "commit", "-q", "-m", message);
 }
 
 // A repo whose main branch holds src/a.js, then a feature branch that rewrites it.
@@ -33,13 +34,10 @@ function pullRequest(t, { base, head }) {
   const repo = mkdtempSync(join(tmpdir(), "quality-pr-gate-test-"));
   t.after(() => rmSync(repo, { recursive: true, force: true }));
   git(repo, "init", "-q", "-b", "main");
-  write(repo, "src/a.js", base);
-  git(repo, "add", "-A");
-  git(repo, "commit", "-q", "-m", "base");
+  mkdirSync(join(repo, "src"));
+  commitSource(repo, base, "base");
   git(repo, "checkout", "-q", "-b", "feature");
-  write(repo, "src/a.js", head);
-  git(repo, "add", "-A");
-  git(repo, "commit", "-q", "-m", "head");
+  commitSource(repo, head, "head");
   return repo;
 }
 

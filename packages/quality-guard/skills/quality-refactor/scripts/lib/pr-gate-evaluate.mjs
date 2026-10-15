@@ -10,9 +10,10 @@ const countTiers = (findings) => ({
   low: findings.filter((finding) => !isTopTier(finding)).length,
 });
 
+const noTarget = ({ top, low }) => top === 0 && low === 0;
+
 function quotaMet({ available, fixed, required, targets }) {
-  if (targets.top === 0 && targets.low === 0) return true;
-  if (available.top + available.low === 0) return true;
+  if (noTarget(targets) || noTarget(available)) return true;
   const meets = (tier) => required[tier] > 0 && fixed[tier] >= required[tier];
   return meets("top") || meets("low");
 }
