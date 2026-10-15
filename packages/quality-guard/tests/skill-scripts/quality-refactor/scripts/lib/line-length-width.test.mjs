@@ -79,7 +79,12 @@ test("a null high bound stays disabled when a formatter width applies", () => {
   config.thresholds["line-length"].high = null;
   const file = { rel: "src/a.ts", lines: [lineOf(90), lineOf(200)] };
   const out = [];
-  checkLines({ file, config, out, widthFor: () => ({ width: 80, source: "x" }) });
+  checkLines({
+    file,
+    config,
+    out,
+    widthFor: () => ({ width: 80, source: "x" }),
+  });
   const found = out.filter((v) => v.rule === "line-length");
   assert.deepEqual(
     found.map((f) => f.severity),
