@@ -24,7 +24,7 @@ test("reports every candidate in an ambiguous solution layout", () => {
           rule: "build-entrypoint",
           severity: "medium",
           message:
-            "E1: multiple root .NET solution files (first.sln, second.sln) — " +
+            "E1: multiple root .NET solution files (first.sln, second.sln) - " +
             "add one root build entry point",
           metric: 1,
         },
@@ -34,7 +34,7 @@ test("reports every candidate in an ambiguous solution layout", () => {
           rule: "test-entrypoint",
           severity: "medium",
           message:
-            "E2: multiple root .NET solution files (first.sln, second.sln) — " +
+            "E2: multiple root .NET solution files (first.sln, second.sln) - " +
             "add one root test entry point",
           metric: 1,
         },
@@ -69,16 +69,16 @@ test("reports unsupported and directory-shaped roots through the scan", () => {
             rule: "build-entrypoint",
             message:
               "E1: no supported root entry point declaration found; inspected package.json, " +
-              "Cargo.toml, pyproject.toml, .sln, or .csproj — add one documented " +
-              "root build entry point",
+              "Cargo.toml, pyproject.toml, .sln, or .csproj - " +
+              "add one documented root build entry point",
           },
           {
             file: "<repository root>",
             rule: "test-entrypoint",
             message:
               "E2: no supported root entry point declaration found; inspected package.json, " +
-              "Cargo.toml, pyproject.toml, .sln, or .csproj — add one documented " +
-              "root test entry point",
+              "Cargo.toml, pyproject.toml, .sln, or .csproj - " +
+              "add one documented root test entry point",
           },
         ],
       );

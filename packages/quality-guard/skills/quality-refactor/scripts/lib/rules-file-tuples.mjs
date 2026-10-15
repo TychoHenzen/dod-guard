@@ -31,7 +31,7 @@ export function checkTuples({ file, config, code, starts, out }) {
   while (match !== null) {
     const line = lineAt(starts, match.index);
     const message =
-      `tuple ${match[0].trim()} ` + "\u2014 replace it with a named type";
+      `tuple ${match[0].trim()} ` + "- replace it with a named type";
     push({
       out,
       file,

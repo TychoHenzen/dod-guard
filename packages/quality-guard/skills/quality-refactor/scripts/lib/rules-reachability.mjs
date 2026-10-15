@@ -62,7 +62,7 @@ function violationForSymbol({ file, corpus, config, symbol }) {
   const message =
     test > 0
       ? `${symbol.name} is only referenced by tests ` +
-        "\u2014 delete it and its tests"
+        "- delete it and its tests"
       : `${symbol.name} is exported but never referenced anywhere`;
   return {
     file: file.rel,
