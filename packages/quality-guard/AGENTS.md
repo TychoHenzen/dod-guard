@@ -7,13 +7,16 @@ Shared agent guidance for work in `packages/quality-guard`.
 An advisory structural and test-quality diagnostic package with current-state
 reports, plaintext readability checks, a pull-request gate, and an MCP server.
 Quality Guard output is evidence for human review; the pull-request gate is the
-one place it decides a merge, and it decides only on high-severity findings in
-files the pull request changed. It does not persist a quality decision.
+one place it decides a merge, and it decides only on findings the pull request
+adds to files it changed (medium or higher by default), plus a small quota of
+pre-existing findings the pull request must remove from those files. It does
+not persist a quality decision.
 
 | Part | Where | Role |
 |------|-------|------|
 | Scanner | `skills/quality-refactor/scripts/` | Zero-dependency structural scanner. The single implementation. |
-| Pull-request gate | `skills/quality-refactor/scripts/quality-pr-gate.mjs` | CI check. Fails when a changed file has a high-severity finding. Runs in CI, never on writes. |
+| Pull-request gate | `skills/quality-refactor/scripts/quality-pr-gate.mjs` | CI check. Scans changed files at the merge base and at HEAD. Fails on new medium/high findings, or when the pull request removes fewer than one medium/high (or three low) pre-existing findings. Writes one full report and one comment body. Runs in CI, never on writes. |
+| Gate comment | `skills/quality-refactor/scripts/quality-pr-gate-comment.mjs` | Best-effort: posts the gate's comment body once per pull request and updates it on later pushes. |
 | Script entrypoint | `scripts/quality-guard.mjs` | File-local feedback script. Not registered as a hook. |
 | Reports | `src/` and `scripts/` | Current-state structural, test-quality, and readability evidence. |
 | MCP server | `src/` | Three advisory tools: `quality_scan`, `quality_report`, and `quality_test_quality`. |
@@ -70,8 +73,10 @@ cannot enter the shipped `dist/` bundle or skill paths.
 
 Structural, test-quality, coverage, audit, and readability results are
 diagnostic evidence. They should be current and understandable. Only the
-pull-request gate turns a result into a check, and only for high-severity
-findings in files the pull request changed. Do not create or consume
+pull-request gate turns a result into a check, and only for findings the pull
+request adds to files it changed, plus its pre-existing-cleanup quota. Findings
+that were already there never block on their own and are listed in the gate
+report. Do not create or consume
 stored acceptance state as part of this package.
 
 Correctness still matters. Build and test failures, plugin configuration,
