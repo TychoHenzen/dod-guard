@@ -69,7 +69,7 @@ test("review-pr plans, investigates, verifies, then judges in that order", () =>
 });
 
 test("review-pr posts the slot block without changing its boundaries", () => {
-  assert.match(skill, prose("--plan=<plan.json> --results=<results.json> --out=<payload.json>"));
+  assert.match(skill, prose("--results=<results.json> --merge=<merge.json> --out=<payload.json>"));
   assert.match(skill, prose("never from a slot list the planner returns"));
   assert.match(skill, prose("collapsed `<details>` block in the review body"));
   assert.match(skill, prose("The review event is always `COMMENT`"));
@@ -128,4 +128,90 @@ test("USAGE describes the planner, investigators, and judges", () => {
     usage,
     prose("`REQUEST_CHANGES` for any `MAJOR`, and `APPROVE` when only `MINOR` findings or none remain"),
   );
+});
+
+// The scanner scope and severity rule is an open owner decision (#870
+// unresolved-decision), so this PBI must leave its text exactly as it was at
+// b9bcc760.
+const SCOPE_RULE = [
+  "Structural rules such as complexity, length, duplication, nesting, parameters,",
+  "and dead or test-only exports cover each whole changed file, including what it",
+  "had before this PR: a touched file's design debt is in scope. Line-level rules",
+  "such as `line-length` and the comment rules cover only the lines this PR adds.",
+].join("\n");
+const SEVERITY_RULE = [
+  "cited location. Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A",
+  "file's scanner findings are `MAJOR` when any is `high`, otherwise `MINOR`.",
+].join("\n");
+
+test("review-pr keeps the scanner scope and severity rule byte-identical", () => {
+  assert.equal(skill.split("\n").slice(91, 95).join("\n"), SCOPE_RULE);
+  assert.ok(skill.includes(SEVERITY_RULE));
+});
+
+test("review-pr numbers violations before planning and asks scanner check questions", () => {
+  const command = "violations --scan=<scan.json> --diff=<unified0.diff> --out=<violations.json>";
+  assert.match(skill, prose(command));
+  assert.match(skill, prose("numbers every in-scope violation `S1..Sn` in file, line, rule"));
+  assert.match(skill, prose("the diff file path, the violations file"));
+  const asked = "the planner writes scanner check questions that list the `S` ids";
+  assert.match(skill, prose(asked, "they cover in a `scanner` array"));
+  assert.match(skill, prose("whether the violation shows at the reviewed head"));
+  assert.match(skill, prose("whether the path is generated or excluded"));
+  assert.match(skill, prose("whether the rule's own condition holds"));
+});
+
+test("review-pr merges judged findings in one read-strong pass", () => {
+  const candidates =
+    "candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> " +
+    "--sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> " +
+    "--out=<candidates.json>";
+  assert.match(skill, prose(candidates));
+  assert.match(skill, prose("one `dod-guard:read-strong` pass reads the candidates file"));
+  assert.match(skill, prose("the registered `dod_guard_read_strong` agent"));
+  const groups = ['"groups": [{ "members":', '"representative":'];
+  const rulings = ['"scanner": [{ "ids":', '"status": "DROP", "reason":', '"answer":'];
+  assert.match(skill, prose(...groups, ...rulings));
+  assert.match(skill, prose("Every `J` id is in exactly one group"));
+  assert.match(skill, prose("findings that cite the same defect in the same file"));
+  assert.match(skill, prose("Every `S` id is in exactly one scanner ruling."));
+  assert.match(skill, prose("one of `not-at-head`, `excluded-path`, or `rule-misfire` holds"));
+  assert.match(skill, prose("The pass never sets a severity"));
+  assert.match(skill, prose("pre-existing or unchanged at base is never a reason"));
+  const empty = 'save `{ "groups": [], "scanner": [] }`';
+  assert.match(skill, prose(empty, "without dispatching the pass"));
+});
+
+test("review-pr allows the merge pass one correction, then stops", () => {
+  assert.match(skill, prose("send the pass one correction request with the build's exact error"));
+  assert.match(skill, prose("refused again, stop without posting and name the merge pass"));
+});
+
+test("the build checks the merge output instead of deduping by root cause", () => {
+  assert.doesNotMatch(skill, prose("dedupes reviewer findings by file and root cause"));
+  assert.match(skill, prose("--results=<results.json> --merge=<merge.json> --out=<payload.json>"));
+  assert.match(skill, prose("regenerates the `J` and `S` ids from its own inputs"));
+  const refusals = [
+    "a `J` id is missing, duplicated, or unknown",
+    "a representative is not a member",
+    "a group spans files",
+    "an `S` ruling is missing or duplicated or has a status other than `KEEP` or `DROP`",
+    "a `DROP` reason is not `not-at-head`, `excluded-path`, or `rule-misfire`",
+    "a `DROP` cites a question that is not `verified` or `repaired`",
+    "does not list that `S` id",
+    "the output carries any severity field",
+  ];
+  assert.match(skill, prose("It refuses the merge output, naming the id", ...refusals));
+  assert.match(skill, prose("one finding per group with the representative's text"));
+  assert.match(skill, prose("the highest member severity, and every member lens"));
+  assert.match(skill, prose("groups only kept scanner violations into one comment per changed"));
+  assert.match(skill, prose("lists dropped violations by file and rule in a collapsed block"));
+});
+
+test("USAGE describes the merge pass and kept scanner findings", () => {
+  const merges = "A strong-tier pass then merges findings that cite the same defect";
+  assert.match(usage, prose(merges, "in one file"));
+  assert.match(usage, prose("keeps or drops each scanner finding, citing a verified answer"));
+  assert.match(usage, prose("the build checks its output"));
+  assert.match(usage, prose("kept scanner findings are grouped into one comment per changed file"));
 });

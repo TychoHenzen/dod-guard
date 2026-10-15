@@ -315,17 +315,19 @@ feature, design, reliability, and hygiene lenses or with an exclusion and its
 reason, cheap investigators answer each question with a cited path and line,
 and after the main thread verifies those answers, the four reviewer agents
 judge them on the strong tier against the PBI, ruling on every slot assigned
-to their lens. The build refuses a plan or a set of rulings that leaves a slot
-empty. It posts one comment-only review, with every slot and its questions in
-a collapsed block. Each `BLOCKER` or `MAJOR` finding gets its own inline
-comment with a `GH-<id>`; scanner findings are grouped into one comment per
-changed file. `MINOR` findings are listed under "Minor notes" in the review
-body, with no `GH-<id>` and no reply needed. The recommendation is `BLOCK` for
-any `BLOCKER`, `REQUEST_CHANGES` for any `MAJOR`, and `APPROVE` when only
-`MINOR` findings or none remain. When the diff adds no line, there is nothing
-to anchor a comment on, so blocking findings are listed in the review body
-without a `GH-<id>`. It posts at
-most one review per pull request. quality-guard must be installed and enabled.
+to their lens. A strong-tier pass then merges findings that cite the same
+defect in one file and keeps or drops each scanner finding, citing a verified
+answer for every drop, and the build checks its output. The build refuses a
+plan or a set of rulings that leaves a slot empty. It posts one comment-only
+review, with every slot and its questions in a collapsed block. Each `BLOCKER`
+or `MAJOR` finding gets its own inline comment with a `GH-<id>`; kept scanner
+findings are grouped into one comment per changed file. `MINOR` findings are
+listed under "Minor notes" in the review body, with no `GH-<id>` and no reply
+needed. The recommendation is `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES`
+for any `MAJOR`, and `APPROVE` when only `MINOR` findings or none remain.
+When the diff adds no line, there is nothing to anchor a comment on, so
+blocking findings are listed in the review body without a `GH-<id>`. It posts
+at most one review per pull request. quality-guard must be installed and enabled.
 
 Fix selected GitHub review findings:
 

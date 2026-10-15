@@ -1,0 +1,9 @@
+{
+  "url": "https://api.github.com/repos/TychoHenzen/dod-guard/issues/909",
+  "repository_url": "https://api.github.com/repos/TychoHenzen/dod-guard",
+  "html_url": "https://github.com/TychoHenzen/dod-guard/issues/909",
+  "number": 909,
+  "title": "handoff-proof names the missing refinement record",
+  "state": "open",
+  "body": "## Outcome\n\nhandoff-proof names the record it cannot find.\n\n## Acceptance criteria\n\n- [ ] AC-1 A body without the acceptance-evidence record exits 2 and names that record.\n"
+}

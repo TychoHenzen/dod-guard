@@ -6,43 +6,34 @@ import { closeSync, existsSync, openSync, readFileSync, writeFileSync } from "no
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import process from "node:process";
 import { parseArgs } from "../../../lib/args.mjs";
+import { candidates, json, pbiInputs, violations } from "./lib/candidate-commands.mjs";
 import { buildReview, existingReview, postedFindings } from "./lib/review-findings.mjs";
-import { pbiIssue, reviewSlots, subIssueList } from "./lib/review-slots.mjs";
+import { reviewSlots } from "./lib/review-slots.mjs";
 import { scannerPath } from "./lib/scanner-location.mjs";
 import { parseChangedLines } from "./lib/unified-diff.mjs";
 
 const USAGE = [
   "Usage:",
-  "  review-findings.mjs scan --client=claude|codex --registry=<plugin-list.json> --root=<repo> --out=<scan.json>",
+  "  review-findings.mjs scan --client=claude|codex --registry=<plugin-list.json>",
+  "    --root=<repo> --out=<scan.json>",
   "  review-findings.mjs existing --reviews=<reviews.json>",
-  "  review-findings.mjs slots --diff=<unified0.diff> --pbi=<issue.json> --sub-issues=<sub-issues.json> --out=<slots.json>",
+  "  review-findings.mjs slots --diff=<unified0.diff> --pbi=<issue.json>",
+  "    --sub-issues=<sub-issues.json> --out=<slots.json>",
+  "  review-findings.mjs violations --scan=<scan.json> --diff=<unified0.diff>",
+  "    --out=<violations.json>",
+  "  review-findings.mjs candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<issue.json>",
+  "    --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json>",
+  "    --out=<candidates.json>",
   "  review-findings.mjs build --head=<sha> --scan=<scan.json> --diff=<unified0.diff>",
   "    --pbi=<issue.json> --sub-issues=<sub-issues.json> --plan=<plan.json>",
   "    --results=<results.json> --merge=<merge.json> --out=<payload.json>",
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
 ].join("\n");
 
-function json(path) {
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch (error) {
-    throw new Error(`Cannot read JSON from ${path}: ${error.message}`);
-  }
-}
-
 // `gh api --paginate --slurp` writes an array of pages; a plain read writes one
 // array.
 function flatJson(path) {
   return json(path).flat();
-}
-
-// Reads the saved PBI issue and sub-issue listing, naming the file on any
-// fault.
-function pbiInputs(args) {
-  return {
-    pbi: pbiIssue(json(args.pbi), args.pbi),
-    subIssues: subIssueList(json(args["sub-issues"]), args["sub-issues"]),
-  };
 }
 
 function slotCounts(slots) {
@@ -89,6 +80,8 @@ const COMMANDS = {
     writeFileSync(args.out, `${JSON.stringify(slots, null, 2)}\n`);
     return { out: args.out, slots: slots.length, ...slotCounts(slots) };
   },
+  violations,
+  candidates,
   build: (args) => {
     const review = buildReview({
       headSha: args.head,
@@ -114,6 +107,8 @@ const REQUIRED = {
   scan: ["client", "registry", "root", "out"],
   existing: ["reviews"],
   slots: ["diff", "pbi", "sub-issues", "out"],
+  violations: ["scan", "diff", "out"],
+  candidates: ["scan", "diff", "pbi", "sub-issues", "plan", "results", "out"],
   build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "merge", "out"],
   report: ["review-id", "comments"],
 };

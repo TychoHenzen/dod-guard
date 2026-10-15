@@ -1,0 +1,18 @@
+{
+  "violations": [
+    {
+      "file": "plugins\\dod-guard\\skills\\next-ticket\\scripts\\handoff-proof.test.mjs",
+      "line": 89,
+      "rule": "duplicate-block",
+      "severity": "medium",
+      "message": "lines 89-94 duplicate lines 82-87"
+    },
+    {
+      "file": "plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.mjs",
+      "line": 12,
+      "rule": "line-length",
+      "severity": "high",
+      "message": "line is 104 chars"
+    }
+  ]
+}

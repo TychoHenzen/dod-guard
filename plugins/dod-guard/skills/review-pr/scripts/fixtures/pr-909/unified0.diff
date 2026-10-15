@@ -1,0 +1,8 @@
+diff --git a/plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs b/plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs
+index 1111111..2222222 100644
+--- a/plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs
++++ b/plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs
+@@ -88,0 +89,3 @@ test("exits 2 and names the record on a body it cannot parse", async () => {
++  await withTempFile("body.md", withoutEvidence, (file) => {
++    assert.deepEqual(run("refinement", `--body-file=${file}`), {
++      status: 2,
