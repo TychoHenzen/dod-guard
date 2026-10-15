@@ -349,6 +349,19 @@ test("rejects a malformed source branch ref", () => {
   });
 });
 
+test("reads the live base branch tip from its branch ref and returns null when the ref is absent", () => {
+  const calls = [];
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    calls.push(args);
+    return { status: 0, stderr: "", stdout: JSON.stringify({ object: { sha: "base-2" } }) };
+  });
+  const absent = new GitHubClient("owner/repo", 24, () => ({ status: 1, stderr: "HTTP 404: Not Found", stdout: "" }));
+
+  assert.deepEqual(client.getBaseBranchRef("master"), { sha: "base-2" });
+  assert.deepEqual(calls, [["api", "repos/owner/repo/git/ref/heads/master"]]);
+  assert.equal(absent.getBaseBranchRef("master"), null);
+});
+
 test("returns every unresolved review thread regardless of author or outdated state", () => {
   const { calls, runner } = threadRunner([
     okResponse(

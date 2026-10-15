@@ -150,6 +150,7 @@ function unresolvedThread(overrides = {}) {
 const mutationCallNames = ["markReady", "enableRepositoryAutoMerge", "dispatch", "mergePullRequest"];
 const discussionUrlPattern = /https:\/\/github\.com\/owner\/repo\/pull\/24#discussion_r1/;
 const sourcePathPattern = /src\/a\.mjs/;
+const liveBaseMergePattern = /guarded merge of head-1 and base-2/;
 
 function nextValue(values) {
   if (values.length > 1) {
@@ -175,8 +176,10 @@ class FixtureClient {
     this.projectStatuses = [...(options.projectStatuses ?? [["Done"]])];
     this.refs = [...(options.refs ?? [{ sha: "head-1" }, null])];
     this.sourceRefs = options.sourceRefs ? [...options.sourceRefs] : null;
+    this.baseRefs = options.baseRefs && [...options.baseRefs];
     this.pullRefs = options.pullRefs ? [...options.pullRefs] : null;
     this.lastPullHeadSha = "head-1";
+    this.lastPullBaseSha = "base-1";
     this.workflowRuns = options.workflowRuns ?? null;
     this.workflowDispatchError = options.workflowDispatchError;
     this.enableRepositoryError = options.enableRepositoryError;
@@ -195,6 +198,7 @@ class FixtureClient {
   getPullRequest() {
     const value = nextValue(this.pulls);
     this.lastPullHeadSha = value.headSha;
+    this.lastPullBaseSha = value.baseSha;
     this.calls.push(["getPullRequest", value.headSha, value.state]);
     return value;
   }
@@ -268,6 +272,15 @@ class FixtureClient {
   getSourceBranchRef(branchName) {
     this.calls.push(["getSourceBranchRef", branchName]);
     return this.sourceRefs ? nextValue(this.sourceRefs) : { sha: this.lastPullHeadSha };
+  }
+
+  // Without scripted base tips the live base branch matches the last pull request read.
+  getBaseBranchRef(branchName) {
+    this.calls.push(["getBaseBranchRef", branchName]);
+    if (this.baseRefs) {
+      return nextValue(this.baseRefs);
+    }
+    return { sha: this.lastPullBaseSha };
   }
 
   getPullRequestRefs(number) {
@@ -1941,19 +1954,21 @@ test("accepts an already-ready pull request without marking it ready again", asy
 });
 
 test("accepts repeated guarded base updates and merges the final trusted head", async () => {
+  // Each BEHIND read still shows the previous base; only the live base branch tip names the new one.
   const client = new FixtureClient({
+    baseRefs: [{ sha: "base-1" }, { sha: "base-2" }],
     checks: [pendingChecks, pendingChecks, passingChecks],
     commits: {
       "head-2": { parents: ["head-1", "base-1"], sha: "head-2" },
       "head-3": { parents: ["head-2", "base-2"], sha: "head-3" },
     },
     pulls: [
-      pull(),
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-      pull({ isDraft: false, mergeState: "BEHIND" }),
+      pull({ baseSha: "base-0" }),
+      pull({ baseSha: "base-0", isDraft: false }),
+      pull({ baseSha: "base-0", isDraft: false }),
+      pull({ baseSha: "base-0", isDraft: false, mergeState: "BEHIND" }),
       pull({ baseSha: "base-1", headSha: "head-2", isDraft: false }),
-      pull({ baseSha: "base-2", headSha: "head-2", isDraft: false, mergeState: "BEHIND" }),
+      pull({ baseSha: "base-1", headSha: "head-2", isDraft: false, mergeState: "BEHIND" }),
       pull({ baseSha: "base-2", headSha: "head-3", isDraft: false }),
       pull({ baseSha: "base-2", headSha: "head-3", isDraft: false }),
       pull({ headSha: "head-3", isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
@@ -1965,15 +1980,82 @@ test("accepts repeated guarded base updates and merges the final trusted head", 
 
   assert.equal(result.trustedHead, "head-3");
   assert.deepEqual(
-    client.calls.filter(([name]) => name === "updateBranch"),
+    client.calls.filter(([name]) => name === "updateBranch" || name === "getBaseBranchRef"),
     [
+      ["getBaseBranchRef", "master"],
       ["updateBranch", 24, "head-1"],
+      ["getBaseBranchRef", "master"],
       ["updateBranch", 24, "head-2"],
     ],
   );
   assert.deepEqual(
     client.calls.filter(([name]) => name === "mergePullRequest"),
     [["mergePullRequest", 24, "head-3"]],
+  );
+});
+
+// The PR read before the update still reports base-1 while the base branch already points at base-2.
+function laggingBaseClient(overrides = {}) {
+  return new FixtureClient({
+    baseRefs: [{ sha: "base-2" }],
+    checks: [pendingChecks, passingChecks],
+    commits: { "head-2": { parents: ["head-1", "base-2"], sha: "head-2" } },
+    pulls: [
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeState: "BEHIND" }),
+      pull({ baseSha: "base-2", headSha: "head-2", isDraft: false }),
+      pull({ baseSha: "base-2", headSha: "head-2", isDraft: false }),
+      pull({ headSha: "head-2", isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+    ],
+    refs: [{ sha: "head-2" }, null],
+    ...overrides,
+  });
+}
+
+test("accepts a guarded update against the live base tip when the pull request base lags", async () => {
+  const client = laggingBaseClient();
+
+  const result = await completePullRequest(client, immediateOptions);
+
+  assert.equal(result.trustedHead, "head-2");
+  assert.equal(result.mergeCommitSha, "merge-1");
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "updateBranch" || name === "getBaseBranchRef"),
+    [
+      ["getBaseBranchRef", "master"],
+      ["updateBranch", 24, "head-1"],
+    ],
+  );
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "mergePullRequest"),
+    [["mergePullRequest", 24, "head-2"]],
+  );
+});
+
+test("rejects an update commit whose base parent is only the lagging pull request base", async () => {
+  const client = laggingBaseClient({
+    commits: { "head-2": { parents: ["head-1", "base-1"], sha: "head-2" } },
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), {
+    code: "untrusted_base_update",
+    message: liveBaseMergePattern,
+  });
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
+});
+
+test("stops before a branch update when the base branch ref is missing", async () => {
+  const client = laggingBaseClient({ baseRefs: [null] });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "base_branch_missing" });
+  assert.equal(
+    client.calls.some(([name]) => name === "updateBranch" || name === "mergePullRequest"),
+    false,
   );
 });
 

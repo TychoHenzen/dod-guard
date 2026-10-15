@@ -510,6 +510,10 @@ export class GitHubClient {
     return this.getBranchRef(branchName);
   }
 
+  getBaseBranchRef(branchName) {
+    return this.getBranchRef(branchName);
+  }
+
   deleteBranchRef(branchName) {
     const encodedBranch = encodeBranch(branchName);
     this.#commandRunner(["api", "--method", "DELETE", `repos/${this.repository}/git/refs/heads/${encodedBranch}`]);

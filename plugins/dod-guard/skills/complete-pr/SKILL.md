@@ -123,7 +123,8 @@ it ready. If it is already ready, it preserves that state. It then:
   statuses or a run plus a status for one context;
 - updates a stale branch only with its trusted head SHA;
 - accepts an update commit only when its parents are the prior trusted head and
-  the observed base head;
+  the base branch tip read just before the update, and stops with
+  `base_branch_missing` when that base branch ref is absent;
 - repeats guarded updates if the base advances again;
 - stops with `merge_conflict` on conflicts, which the triage below handles,
   and stops on unexpected pushes, permission failures, or bounded waits;
