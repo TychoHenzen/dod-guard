@@ -438,6 +438,15 @@ function requireCiWorkflowTimeout(headSha, sawPendingRun) {
   stop("ci_workflow_run_timeout", message);
 }
 
+// The pull request's base SHA advances only after GitHub applies the update, so the guard reads the branch ref itself.
+async function readBaseBranchTip(client, defaultBranch) {
+  const baseRef = await client.getBaseBranchRef(defaultBranch);
+  if (!baseRef) {
+    stop("base_branch_missing", `The base branch ${defaultBranch} has no remote ref to guard a branch update against.`);
+  }
+  return baseRef.sha;
+}
+
 async function waitForGuardedUpdate(client, update) {
   const { baseHead, defaultBranch, options, previousHead, pullNumber, repository } = update;
   for (let attempt = 0; attempt < options.updatePollLimit; attempt += 1) {
@@ -619,7 +628,7 @@ async function waitForMerge(client, completion) {
 
     if (pullRequest.mergeState === "BEHIND") {
       const previousHead = trustedHead;
-      const baseHead = pullRequest.baseSha;
+      const baseHead = await readBaseBranchTip(client, defaultBranch);
       await client.updateBranch(pullNumber, previousHead);
       pullRequest = await waitForGuardedUpdate(client, {
         baseHead,
