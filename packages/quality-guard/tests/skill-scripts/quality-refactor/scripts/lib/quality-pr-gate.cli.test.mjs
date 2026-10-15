@@ -15,11 +15,10 @@ const GATE = fileURLToPath(
 const LONG_LINE = `const label = "${"x".repeat(90)}";`;
 const SHORT_LINE = 'const label = "short";';
 
+const IDENTITY = ["-c", "user.email=t@example.test", "-c", "user.name=t"];
+
 function git(cwd, ...args) {
-  const result = spawnSync("git", ["-c", "user.email=t@example.test", "-c", "user.name=t", ...args], {
-    cwd,
-    encoding: "utf8",
-  });
+  const result = spawnSync("git", [...IDENTITY, ...args], { cwd, encoding: "utf8" });
   assert.equal(result.status, 0, `git ${args.join(" ")}: ${result.stderr}`);
 }
 
@@ -29,7 +28,6 @@ function commitSource(repo, content, message) {
   git(repo, "commit", "-q", "-m", message);
 }
 
-// A repo whose main branch holds src/a.js, then a feature branch that rewrites it.
 function pullRequest(t, { base, head }) {
   const repo = mkdtempSync(join(tmpdir(), "quality-pr-gate-test-"));
   t.after(() => rmSync(repo, { recursive: true, force: true }));
@@ -44,12 +42,8 @@ function pullRequest(t, { base, head }) {
 function runGate(repo, ...extra) {
   const report = join(repo, "report.md");
   const comment = join(repo, "comment.md");
-  const result = spawnSync(
-    process.execPath,
-    [GATE, "--base=main", "--root=src", `--report=${report}`, `--comment=${comment}`, ...extra],
-    { cwd: repo, encoding: "utf8" },
-  );
-  return { ...result, report, comment };
+  const args = [GATE, "--base=main", "--root=src", `--report=${report}`, `--comment=${comment}`, ...extra];
+  return { ...spawnSync(process.execPath, args, { cwd: repo, encoding: "utf8" }), report, comment };
 }
 
 test("a pull request that adds a medium finding is blocked", (t) => {

@@ -1,6 +1,6 @@
 // Markdown for the pull-request gate: a full log kept as a build artifact, and one short comment that points at it.
 
-const COMMENT_MARKER = "<!-- quality-pr-gate -->";
+export const COMMENT_MARKER = "<!-- quality-pr-gate -->";
 const MAX_COMMENT_FINDINGS = 25;
 
 const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 };

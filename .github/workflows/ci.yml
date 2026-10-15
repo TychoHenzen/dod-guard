@@ -151,9 +151,21 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      # Fails when a file this pull request changes has a high-severity quality-guard finding.
-      - name: Block high-severity findings in changed files
-        run: node packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs --base=${{ github.event.pull_request.base.sha }} --root=packages
+      # Fails when this pull request adds a medium or high quality-guard finding to a file it changes, or does
+      # not remove at least one pre-existing medium/high finding from those files. Line length blocks only
+      # above 120 columns; the scanner's 80-column medium limit is advisory here.
+      - name: Block new findings in changed files
+        run: >-
+          node packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs
+          --base=${{ github.event.pull_request.base.sha }} --root=packages
+          --rule-block-on=line-length:high --report=quality-gate-report.md
+      - name: Upload the quality gate report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: quality-gate-report
+          path: quality-gate-report.md
+          if-no-files-found: ignore
 
   package-integrity:
     needs: build-test
