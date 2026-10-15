@@ -74,6 +74,19 @@ test("a direct checkLines call with no resolver keeps the fallback", () => {
   );
 });
 
+test("a null high bound stays disabled when a formatter width applies", () => {
+  const config = buildConfig();
+  config.thresholds["line-length"].high = null;
+  const file = { rel: "src/a.ts", lines: [lineOf(90), lineOf(200)] };
+  const out = [];
+  checkLines({ file, config, out, widthFor: () => ({ width: 80, source: "x" }) });
+  const found = out.filter((v) => v.rule === "line-length");
+  assert.deepEqual(
+    found.map((f) => f.severity),
+    ["medium", "medium"],
+  );
+});
+
 test("findings differing only in widthSource keep one gate identity", (t) => {
   const source = { "src/a.ts": `${lineOf(90)}\n` };
   const head = lineViolations(tempTree(t, { ...source, ...widthConfig(80) }));

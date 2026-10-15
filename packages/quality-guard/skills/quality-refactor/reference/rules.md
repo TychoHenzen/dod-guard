@@ -736,9 +736,9 @@ next scan. Configs are cached for one scan only.
 
 In this repository, packages with a `lineWidth` 80 override in `biome.json`
 are judged at 80, most other JS/TS at 120, and paths Biome does not format
-(for example `packages/quality-guard/skills/`) fall back. The CI gate scans
-with `--root=packages`, where no root `biome.json` is visible, so every file
-falls back there; that CI scope is owned by #937.
+(for example `packages/quality-guard/skills/`) fall back. The CI gate passes the
+checkout directory as the scan `--root`, so the root `biome.json` and each
+package override are visible there and widths resolve per path as above.
 
 **Why the formatter width:** the formatter already decides how long a line in
 that file may be. Judging the file against a different, fixed number reports

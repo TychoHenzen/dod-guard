@@ -13,7 +13,8 @@ function lineBounds(config, resolved) {
   if (width === null) {
     return { width: bounds.medium, medium: bounds.medium, high: bounds.high };
   }
-  return { width, medium: width, high: Math.max(width, bounds.high) };
+  const high = bounds.high === null ? null : Math.max(width, bounds.high);
+  return { width, medium: width, high };
 }
 
 // A null bound disables that tier, matching severityFor in config.mjs.
