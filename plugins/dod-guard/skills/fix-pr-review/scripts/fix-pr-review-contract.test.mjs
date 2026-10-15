@@ -1,20 +1,9 @@
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
-import { readFile } from "node:fs/promises";
-// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
+import { assertInOrder, skill } from "./lib/contract-text.mjs";
 
-const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
-
-function assertInOrder(text, patterns) {
-  let previous = -1;
-  for (const pattern of patterns) {
-    const position = text.search(pattern);
-    assert.ok(position > previous, `${pattern} must follow the preceding step`);
-    previous = position;
-  }
-}
 test("documents supported GitHub review-comment request shapes", () => {
   const updateSection = skill.slice(skill.indexOf("## Update proven findings"));
   const replySection = updateSection.match(/Otherwise reply through([\s\S]*?)Do\s+not use the legacy/)?.[1] ?? "";
@@ -67,46 +56,4 @@ test("does not widen the exception to routine GraphQL provider data", () => {
   assert.doesNotMatch(skill, /projectsV2/i);
   assert.match(skill, /do not batch unrelated threads or ProjectV2\s+data/);
   assert.doesNotMatch(skill, /Azure|ADO-/);
-});
-
-function declineSection() {
-  const start = skill.indexOf("## Decline non-actionable findings");
-  const end = skill.indexOf("## Report");
-  assert.notEqual(start, -1, "the decline section must exist");
-  assert.ok(end > start, "the report section must follow the decline section");
-  return skill.slice(start, end);
-}
-
-test("documents the decline path for non-actionable findings", () => {
-  const decline = declineSection();
-
-  assert.match(decline, /`unsupported`, `already-fixed`, or `stale`/);
-  assert.match(decline, /whose thread is still open/);
-  assert.match(decline, /ask for no per-PR confirmation/);
-  assert.match(decline, /already resolved is\s+a no-op with no write/);
-  assertInOrder(decline, [/Reply through the same endpoint/, /`in_reply_to`/, /exactly one `resolveReviewThread`/]);
-  assert.match(decline, /`node\(id: \$threadId\)`/);
-  assert.match(decline, /classification, the exact evidence/);
-  assert.doesNotMatch(skill, /only findings proven fixed/);
-  assert.doesNotMatch(skill, /Keep stale, unsupported,\s+and unresolved findings visible/);
-});
-
-test("pins decline head handling, mixed threads, stops, recovery, and the report", () => {
-  const decline = declineSection();
-  const report = skill.slice(skill.indexOf("## Report"));
-
-  assert.match(decline, /Read the PR head once before\s+the first reply and the resolve/);
-  assert.match(decline, /expected and\s+observed SHAs, post no reply, and make no resolution claim/);
-  assert.match(decline, /set the\s+reply's `commit_id` to that revalidated head/);
-  assert.match(decline, /three-ref convergence wait/);
-  assert.match(
-    decline,
-    /one reply that lists the fixed items with\s+the commit and the verification command and gives a reason for each declined\s+item/,
-  );
-  assert.match(decline, /a mismatched head, or an unresolved readback stops the workflow/);
-  assert.match(decline, /no resolution claim, and the thread unchanged/);
-  assert.match(decline, /reads the thread back first/);
-  assert.match(decline, /never posts a duplicate reply/);
-  assert.match(report, /declined finding IDs each with its classification\s+and evidence/);
-  assert.match(report, /resolved thread IDs/);
 });

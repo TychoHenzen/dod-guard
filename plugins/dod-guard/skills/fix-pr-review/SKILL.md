@@ -165,6 +165,9 @@ provider read failure, merge-parent mismatch, or timeout. Do not push again,
 write `refs/pull/*`, call `update-branch`, resolve a review thread, or make any
 other provider mutation while convergence is unresolved.
 
+Skip any thread that also holds a declined item, because "Decline
+non-actionable findings" owns its single reply and resolve.
+
 Use the connector's reply and exact-thread resolution operations when
 available. Otherwise reply through
 `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments` with a JSON body
@@ -221,7 +224,9 @@ The body states the classification, the exact evidence (path and line, or the
 command and its output), and the head SHA. A thread that mixes fixed and
 declined items (a scanner group) gets one reply that lists the fixed items with
 the commit and the verification command and gives a reason for each declined
-item.
+item. This procedure owns the one reply and the one resolve of a thread that
+holds both a fixed and a declined item. The fix path under "Update proven
+findings" posts no reply and no resolve for such a thread.
 
 Then read back the exact review thread, verify the reply belongs to the
 selected root comment and the head, issue exactly one `resolveReviewThread`
@@ -232,8 +237,18 @@ write, a rate limit, an authentication error, a malformed response, a missing
 thread, a mismatched head, or an unresolved readback stops the workflow with
 actionable evidence, no resolution claim, and the thread unchanged.
 
-A rerun after a failed resolve reads the thread back first. It treats an
-already-resolved thread as a no-op and never posts a duplicate reply.
+A rerun after a failed resolve reads the thread back first and never posts a
+duplicate reply:
+
+- A resolved thread is a no-op with no write.
+- An open thread whose selected root comment already holds a decline reply from
+  this skill is the state a failed resolve leaves. Post no second reply and go
+  straight to the read back and resolve steps. The head-handling stop above
+  does not apply to that reply. Accept its `commit_id` when it is an ancestor
+  of the current head, even if the head moved between runs. When it is not an
+  ancestor, re-verify the evidence against the current head: resolve without a
+  new reply when it still holds, otherwise stop with the expected and observed
+  SHAs.
 
 ## Report
 
