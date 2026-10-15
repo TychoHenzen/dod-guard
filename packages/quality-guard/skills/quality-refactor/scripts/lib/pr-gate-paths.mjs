@@ -13,21 +13,21 @@ export function isGenerated(path, excludes = GENERATED_PATHS) {
   return excludes.some((fragment) => normalized.includes(fragment));
 }
 
-/**
- * Turn `git diff --name-status -M` output into `{ path, basePath }` rows. `basePath` is where the file lived
- * at the merge base: the old name for a rename or copy, the same path for a modification, null for an added file.
- */
+// Where the file lived at the merge base: the old name for a rename or copy, null for an added file.
+function toRow(line) {
+  const [status, first, second] = line.split("\t");
+  if (status.startsWith("R") || status.startsWith("C")) return { path: second, basePath: first };
+  if (status.startsWith("A")) return { path: first, basePath: null };
+  return { path: first, basePath: first };
+}
+
+const normalizeRow = ({ path, basePath }) => ({
+  path: normalizePath(path),
+  basePath: basePath === null ? null : normalizePath(basePath),
+});
+
+/** Turn `git diff --name-status -M` output into `{ path, basePath }` rows. */
 export function parseNameStatus(output) {
-  const files = [];
-  for (const line of output.split("\n")) {
-    const [status, first, second] = line.trim().split("\t");
-    if (!status) continue;
-    if (status.startsWith("R") || status.startsWith("C")) files.push({ path: second, basePath: first });
-    else if (status.startsWith("A")) files.push({ path: first, basePath: null });
-    else files.push({ path: first, basePath: first });
-  }
-  return files.map(({ path, basePath }) => ({
-    path: normalizePath(path),
-    basePath: basePath === null ? null : normalizePath(basePath),
-  }));
+  const lines = output.split("\n").map((line) => line.trim());
+  return lines.filter(Boolean).map(toRow).map(normalizeRow);
 }

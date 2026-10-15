@@ -1,6 +1,6 @@
 // Markdown for the pull-request gate: a full log kept as a build artifact, and one short comment that points at it.
 
-export const COMMENT_MARKER = "<!-- quality-pr-gate -->";
+const COMMENT_MARKER = "<!-- quality-pr-gate -->";
 const MAX_COMMENT_FINDINGS = 25;
 
 const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 };
@@ -22,8 +22,12 @@ function section(title, findings, limit = Number.POSITIVE_INFINITY) {
   return [`## ${title} (${findings.length})`, "", ...sortFindings(findings).slice(0, limit).map(bullet), ...more, ""];
 }
 
-function growth(finding) {
-  return `- \`${finding.file}:${finding.line}\` ${finding.rule}: ${finding.was.message} -> ${finding.message}`;
+function grownSection(worsened) {
+  if (worsened.length === 0) return [];
+  const rows = worsened.map(
+    (finding) => `- \`${finding.file}:${finding.line}\` ${finding.rule}: ${finding.was.message} -> ${finding.message}`,
+  );
+  return [`## Pre-existing findings that grew (${worsened.length})`, "", ...rows, ""];
 }
 
 function requirement({ top, low }) {
@@ -61,9 +65,7 @@ export function renderReport({ gate, classified, mergeBase, changedCount }) {
     ...section("New findings below the blocking threshold", belowThreshold),
     ...section("Pre-existing findings removed by this pull request", classified.resolved),
     ...section("Pre-existing findings still open in the changed files", classified.existing),
-    ...(classified.worsened.length > 0
-      ? [`## Pre-existing findings that grew (${classified.worsened.length})`, "", ...classified.worsened.map(growth), ""]
-      : []),
+    ...grownSection(classified.worsened),
     ...section("Findings that moved between changed files (not new)", classified.moved),
   ].join("\n");
 }

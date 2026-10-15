@@ -12,45 +12,13 @@ import { join } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-import { classifyChanges, evaluateGate, severityRank } from "./lib/pr-gate-compare.mjs";
-import { GENERATED_PATHS, isGenerated, normalizePath, parseNameStatus } from "./lib/pr-gate-paths.mjs";
+import { classifyChanges, severityRank } from "./lib/pr-gate-compare.mjs";
+import { evaluateGate } from "./lib/pr-gate-evaluate.mjs";
+import { GENERATED_PATHS, parseNameStatus } from "./lib/pr-gate-paths.mjs";
 import { quotaText, renderComment, renderReport } from "./lib/pr-gate-report.mjs";
-
-export { GENERATED_PATHS, isGenerated, normalizePath };
 
 const SCAN = fileURLToPath(new URL("./quality-scan.mjs", import.meta.url));
 const DEFAULTS = { blockOn: "medium", fixMediumHigh: 1, fixLow: 3 };
-const COUNT_FLAGS = { "--fix-medium-high=": "fixMediumHigh", "--fix-low=": "fixLow" };
-const PATH_FLAGS = { "--report=": "report", "--comment=": "comment", "--report-link=": "reportLink" };
-
-function applyListArg(options, arg) {
-  if (arg.startsWith("--base=")) options.base = arg.slice("--base=".length);
-  else if (arg.startsWith("--root=")) options.roots.push(arg.slice("--root=".length));
-  else if (arg.startsWith("--exclude=")) options.excludes.push(arg.slice("--exclude=".length));
-  else if (arg.startsWith("--block-on=")) options.blockOn = arg.slice("--block-on=".length);
-  else return false;
-  return true;
-}
-
-function applyFlag(options, arg, flags, convert) {
-  const prefix = Object.keys(flags).find((flag) => arg.startsWith(flag));
-  if (prefix === undefined) return false;
-  const raw = arg.slice(prefix.length);
-  if (convert === Number && !/^\d+$/.test(raw)) options.error = `${prefix}<n> needs a whole number`;
-  else options[flags[prefix]] = convert(raw);
-  return true;
-}
-
-function applyRuleOverride(options, arg) {
-  if (!arg.startsWith("--rule-block-on=")) return false;
-  const [rule, severity, ...rest] = arg.slice("--rule-block-on=".length).split(":");
-  if (!rule || rest.length > 0 || !isSeverity(severity)) {
-    options.error = "--rule-block-on must look like <rule>:<low|medium|high>";
-  } else {
-    options.ruleBlockOn[rule] = severity;
-  }
-  return true;
-}
 
 function isSeverity(value) {
   try {
@@ -60,13 +28,47 @@ function isSeverity(value) {
   }
 }
 
+function setRuleBlockOn(options, value) {
+  const [rule, severity, ...rest] = value.split(":");
+  if (!rule || rest.length > 0 || !isSeverity(severity)) {
+    options.error = "--rule-block-on must look like <rule>:<low|medium|high>";
+    return;
+  }
+  options.ruleBlockOn[rule] = severity;
+}
+
+const text = (key) => (options, value) => {
+  options[key] = value;
+};
+
+const count = (flag, key) => (options, value) => {
+  if (!/^\d+$/.test(value)) {
+    options.error = `${flag}<n> needs a whole number`;
+    return;
+  }
+  options[key] = Number(value);
+};
+
+const FLAGS = {
+  "--base=": text("base"),
+  "--root=": (options, value) => options.roots.push(value),
+  "--exclude=": (options, value) => options.excludes.push(value),
+  "--block-on=": text("blockOn"),
+  "--rule-block-on=": setRuleBlockOn,
+  "--fix-medium-high=": count("--fix-medium-high=", "fixMediumHigh"),
+  "--fix-low=": count("--fix-low=", "fixLow"),
+  "--report=": text("report"),
+  "--comment=": text("comment"),
+  "--report-link=": text("reportLink"),
+};
+
 function applyArg(options, arg) {
-  const handled =
-    applyListArg(options, arg) ||
-    applyRuleOverride(options, arg) ||
-    applyFlag(options, arg, COUNT_FLAGS, Number) ||
-    applyFlag(options, arg, PATH_FLAGS, String);
-  if (!handled) options.error = `unknown argument: ${arg}`;
+  const prefix = Object.keys(FLAGS).find((flag) => arg.startsWith(flag));
+  if (prefix === undefined) {
+    options.error = `unknown argument: ${arg}`;
+    return;
+  }
+  FLAGS[prefix](options, arg.slice(prefix.length));
 }
 
 export function parseArgs(argv) {
@@ -150,7 +152,8 @@ function main(argv, { cwd = process.cwd(), out = process.stdout, err = process.s
       return 0;
     }
     const base = scanMergeBase(options, cwd);
-    const classified = classifyChanges(files, scanViolations(options, cwd), base.violations, options.excludes);
+    const head = scanViolations(options, cwd);
+    const classified = classifyChanges({ files, head, base: base.violations, excludes: options.excludes });
     const gate = evaluateGate(classified, options);
     writeOutputs(options, { gate, classified, mergeBase: base.mergeBase.slice(0, 7), changedCount: files.length });
     reportToConsole(gate, err, out);

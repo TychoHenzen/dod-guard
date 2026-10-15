@@ -63,7 +63,8 @@ test("a pull request that adds a medium finding is blocked", (t) => {
 });
 
 test("a pre-existing finding does not block, but the pull request must remove one", (t) => {
-  const repo = pullRequest(t, { base: `${LONG_LINE}\n`, head: `${LONG_LINE}\n${SHORT_LINE.replace("label", "other")}\n` });
+  const head = `${LONG_LINE}\n${SHORT_LINE.replace("label", "other")}\n`;
+  const repo = pullRequest(t, { base: `${LONG_LINE}\n`, head });
   const result = runGate(repo);
   assert.equal(result.status, 1);
   assert.doesNotMatch(result.stderr, /line-length/);
@@ -80,7 +81,8 @@ test("removing a pre-existing finding satisfies the quota", (t) => {
 });
 
 test("a per-rule override lets a new line-length finding through", (t) => {
-  const repo = pullRequest(t, { base: `${LONG_LINE}\n`, head: `${LONG_LINE}\n${LONG_LINE.replace("label", "more")}\n` });
+  const head = `${LONG_LINE}\n${LONG_LINE.replace("label", "more")}\n`;
+  const repo = pullRequest(t, { base: `${LONG_LINE}\n`, head });
   const blocked = runGate(repo);
   assert.equal(blocked.status, 1);
   const allowed = runGate(repo, "--rule-block-on=line-length:high", "--fix-medium-high=0", "--fix-low=0");
