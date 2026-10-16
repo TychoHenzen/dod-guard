@@ -17,7 +17,7 @@ const PLAN_CONTRACT = [
     "`dod-guard:stage-cheap` from the task's step plan, the `## Step plan: <task-id>` " +
     "comment that `dod-guard:refine-backlog-item` wrote on the issue.",
   "Before dispatching a task, save its step plan comment, unchanged, to a scratch file outside the repository.",
-  "The brief is the one \"Stage brief\" in `standards/model-routing.md` defines",
+  'The brief is the one "Stage brief" in `standards/model-routing.md` defines',
   "its first line reads `Follow the step plan in <scratch file>.`",
   "This thread writes no step plan and decides no design question: the plan carries every design decision.",
   "Implementing the task from that plan uses the cheap tier on `dod-guard:stage-cheap`",
