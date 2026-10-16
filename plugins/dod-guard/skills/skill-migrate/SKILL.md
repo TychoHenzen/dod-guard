@@ -96,6 +96,8 @@ of a different kind refuses the comparison and exits 3. The score covers body le
 frontmatter shape. It also checks content hygiene. That means no `@`-imports, no scaffolding
 patterns, no cross-phase back-references, no near-duplicates, and no dated references. Bare
 negatives need alternatives, scope needs a word like every or all, and caps emphasis stops at 2.
+An agent must declare `tools`, except one that deliberately inherits every tool: it omits the
+`tools` line and sets `inheritAllTools: true`, and combining the two fails as a contradiction.
 
 ### Claim coverage (Phase 5)
 
