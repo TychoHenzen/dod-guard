@@ -101,9 +101,8 @@ owner, as `standards/model-routing.md` says. Each row runs at this tier:
 A cheap row that needs a skill, a GitHub write, or an MCP connector
 (`/submit-draft-pr`, the `/review-pr` owner thread, `/complete-pr`, and
 `/add-backlog-idea`) runs on `dod-guard:stage-standard` with `model: haiku`. A
-`/complete-pr` run on the cheap model stops at `merge_conflict` and reports the
-stop; this thread then runs the conflict triage as its own stage, owned by a
-`dod-guard:stage-standard` worker at the standard tier, as
+`/complete-pr` run on the cheap model stops at `merge_conflict`, and this thread
+then runs the conflict triage as its own stage, as
 `standards/conflict-triage.md` says. A rerun of any row, such as a refreshed
 handoff or a second `/complete-pr`, takes that row's tier.
 

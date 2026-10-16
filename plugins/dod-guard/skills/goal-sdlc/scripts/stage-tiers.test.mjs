@@ -25,20 +25,22 @@ test("goal-sdlc runs cheap skill-capable rows on the haiku stage worker", () => 
   ]);
 });
 
-test("a cheap-model complete-pr stops at merge_conflict and the triage gets a standard owner", () => {
+test("a cheap-model complete-pr stops at merge_conflict and the triage rule has one owner", () => {
   assertPhrases(skill, [
-    "A `/complete-pr` run on the cheap model stops at `merge_conflict` and reports the",
-    "stop; this thread then runs the conflict triage as its own stage, owned by a",
-    "`dod-guard:stage-standard` worker at the standard tier",
+    "A `/complete-pr` run on the cheap model stops at `merge_conflict`, and this thread",
+    "then runs the conflict triage as its own stage, as `standards/conflict-triage.md` says.",
   ]);
   assertPhrases(completePr, [
     "A run on the cheap model does not triage.",
-    "It stops at `merge_conflict`, reports the stop with the trusted head and the pull request number, and leaves the head unchanged.",
-    "Its dispatcher then runs the triage as its own stage with an owner on a standard-tier model.",
+    "It stops at `merge_conflict`, reports the stop with the trusted head and the pull",
+    "request number, and leaves the head unchanged.",
+    "Its dispatcher then runs the triage, as `standards/conflict-triage.md` says.",
   ]);
   assertPhrases(triage, [
     "unless that run is on the cheap model:",
-    "a cheap-model `/complete-pr` run stops at `merge_conflict` and reports the stop to its dispatcher, which runs the triage as its own stage.",
-    "that thread is the `dod-guard:stage-standard` stage worker at the standard tier",
+    "a cheap-model `/complete-pr` run stops at `merge_conflict` and reports the stop",
+    "to its dispatcher, which runs the triage as its own stage.",
+    "that thread is the `dod-guard:stage-standard`",
+    "stage worker at the standard tier",
   ]);
 });

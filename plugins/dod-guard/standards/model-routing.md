@@ -220,11 +220,22 @@ with `model: opus` and the strong effort.
 
 A cheap-model skill-capable stage, which runs on `dod-guard:stage-standard`
 with `model: haiku`, never carries out a failed row itself. It stops and
-reports the failure record to its dispatcher. The dispatcher sends the stage
-back once with the exact gap, then runs it again on `dod-guard:stage-standard`
-with `model: sonnet` and the failure record, and after a second failure with
-`model: opus` and the strong effort. A failure on the opus run stops the stage
+reports the failure record to its dispatcher, and the dispatcher takes the
+numbered order above with that stage as the stalled one. It sends the stage back
+once at haiku with the exact gap, then runs it again on
+`dod-guard:stage-standard` with `model: sonnet` and the failure record; the
+cheap-to-standard rung skips the advisor. When the sonnet run fails, the
+dispatcher sends it back once, asks `/codex-advisor` its one question, applies
+advice that names a repair at the standard tier, and otherwise runs the stage on
+`model: opus` with the strong effort. A failure on the opus run stops the stage
 as a blocker.
+
+Dispatching a read-only row one rung up is not carrying out a failed row. The
+`/review-pr` owner reruns a failed investigator batch once on
+`dod-guard:read-standard`, as its skill says. When that rerun fails the same
+check, the owner stops without posting and reports the stop to its dispatcher.
+That is the batch rule's own stop, so the dispatcher does not rerun the review
+stage on sonnet or opus.
 
 A skill that says to stop on a repeated failure keeps that rule unless this
 section names it. The failed-check rule above, the investigator-batch rule in

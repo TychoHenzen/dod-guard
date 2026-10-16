@@ -86,9 +86,8 @@ test("goal-sdlc keeps its sections short and its own", () => {
     "## Reporting",
     "## Stop condition",
   ]);
-  // 180: the plan and fix-apply rows and the escalation sentence (#944) spent
-  // the headroom above 162; the owner-thread and triage rows (#958) added
-  // thirteen more lines.
+  // The cap keeps goal-sdlc a thin orchestrator: a rule that one stage owner
+  // enforces belongs in that owner's skill, not in the loop that sequences them.
   const lineCount = skill.split("\n").length;
   assert.ok(lineCount <= 180, "goal-sdlc grew past an orchestrator");
   // Rules that belong to an owner must not come back here.

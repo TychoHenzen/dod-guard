@@ -15,7 +15,8 @@ const PLAN_CONTRACT = [
   "Before dispatching a task, write its step plan to a scratch file",
   "outside the repository",
   "Use fenced code blocks only",
-  "Dispatch every task, including the single task of a one-task PBI, to `dod-guard:stage-cheap` from a step plan you wrote.",
+  "Dispatch every task, including the single task of a one-task PBI, " +
+    "to `dod-guard:stage-cheap` from a step plan you wrote.",
   "Writing the plan uses the standard tier, and the plan carries every design decision.",
   "Implementing the task from that plan uses the cheap tier on `dod-guard:stage-cheap`",
   "Edit tracked files for implementation on this thread only after the task escalated:",

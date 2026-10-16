@@ -136,7 +136,8 @@ file, the PBI acceptance criteria and sub-issues verbatim, and the governing
    head. Send a failed batch back once with the exact gap; if it fails again,
    run that batch once on `dod-guard:read-standard` with the failure record, as
    "Escalation" in that standard says, and if it fails the same check there,
-   stop without posting and name the batch. Save the plan JSON with a
+   stop without posting, name the batch, and report the stop to the dispatcher,
+   which does not rerun the review stage. Save the plan JSON with a
    `status` on each question: `verified`, `repaired` (verified after that one
    repair), or `unanswered` (the investigator reported that the repository
    does not answer it). The build regenerates the slots and refuses a plan

@@ -61,10 +61,10 @@ const ESCALATION = [
   "with `model: opus` and the strong effort",
   "A cheap-model skill-capable stage, which runs on `dod-guard:stage-standard`",
   "with `model: haiku`, never carries out a failed row itself.",
-  "It stops and reports the failure record to its dispatcher.",
-  "then runs it again on `dod-guard:stage-standard` with `model: sonnet` and the",
-  "failure record, and after a second failure with `model: opus`",
+  "It stops and reports the failure record to its dispatcher",
   "A failure on the opus run stops the stage as a blocker.",
+  "Dispatching a read-only row one rung up is not carrying out a failed row.",
+  "so the dispatcher does not rerun the review stage on sonnet or opus.",
   "The failed-check rule above, the investigator-batch rule in",
   "and the repair rule in `dod-guard:step-by-step` escalate once and then",
   "a step whose repair fails climbs one rung under this section",
@@ -152,7 +152,8 @@ const OWNER_PRINCIPLE = [
 
 test("the tiers follow the owner principle and a rerun keeps its tier", () => {
   assertPhrases(standard, OWNER_PRINCIPLE);
-  const tiers = standard.slice(standard.indexOf("## Tiers"), standard.indexOf("## Applying a tier"));
+  const start = standard.indexOf("## Tiers");
+  const tiers = standard.slice(start, standard.indexOf("## Applying a tier"));
   assert.doesNotMatch(tiers, prose("It is for judgement with modest reasoning effort"));
   assert.doesNotMatch(tiers, prose("owning a stage, drafting a pull request, remediation"));
 });
@@ -160,9 +161,10 @@ test("the tiers follow the owner principle and a rerun keeps its tier", () => {
 test("stage-standard describes itself as the skill-capable worker for any tier", async () => {
   const source = await readFile(new URL("agents/stage-standard.md", pluginRoot), "utf8");
   assertPhrases(source, [
-    "It is the skill-capable worker for any tier, so a cheap-tier stage that needs a skill",
-    "such as drafting a pull request or completing a guarded merge, runs here with the cheap tier's model",
-    "and a strong-tier stage runs here with the strong tier's model.",
+    "It is the skill-capable worker for any tier: the dispatcher passes the tier's",
+    "model and effort on the Agent call.",
+    "stop and report the failure record to your dispatcher instead of carrying the row out",
   ]);
   assert.doesNotMatch(source, prose("judgement-heavy"));
+  assert.doesNotMatch(source, prose("drafting a pull request"));
 });

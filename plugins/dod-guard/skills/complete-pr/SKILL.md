@@ -167,8 +167,8 @@ helper stop ends the run as described above.
 
 A run on the cheap model does not triage. It stops at `merge_conflict`, reports
 the stop with the trusted head and the pull request number, and leaves the head
-unchanged. Its dispatcher then runs the triage as its own stage with an owner on
-a standard-tier model.
+unchanged. Its dispatcher then runs the triage, as `standards/conflict-triage.md`
+says.
 
 ## Finalize the parent unit
 

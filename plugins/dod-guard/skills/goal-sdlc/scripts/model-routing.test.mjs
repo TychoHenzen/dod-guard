@@ -36,7 +36,8 @@ test("the routing standard defines the tiers, runtime rules, and verification on
   for (const phrase of [
     "The cheap tier is for work that needs a lot of effort but low intelligence:",
     "The standard tier is for tasks that need the added intelligence:",
-    "haiku for anything that needs a lot of effort but low intelligence, sonnet only for tasks that need the added intelligence",
+    "haiku for anything that needs a lot of effort but low intelligence, " +
+      "sonnet only for tasks that need the added intelligence",
     "The strong tier is for escalation only. No stage starts on it",
     "| standard | `sonnet`; effort from frontmatter |",
     "| cheap | `haiku`; effort from frontmatter |",
