@@ -54,7 +54,7 @@ function Invoke-ReleaseVerificationCommand {
         StderrPresent = -not [string]::IsNullOrEmpty($stderr)
     }
     if ($exitCode -ne 0 -and -not $AllowNonZeroExit) {
-        throw "$Name failed with exit code $exitCode"
+        throw (Get-PublishNativeFailureMessage $Name $exitCode $stderr)
     }
     return $output
 }

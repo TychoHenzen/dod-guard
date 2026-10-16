@@ -12,6 +12,20 @@ function ConvertTo-PublishNativeText {
     return ($lines -join [Environment]::NewLine).Trim()
 }
 
+function Get-PublishNativeFailureMessage {
+    param(
+        [Parameter(Mandatory = $true)][string]$Description,
+        [Parameter(Mandatory = $true)][int]$ExitCode,
+        [AllowNull()][string]$Stderr
+    )
+
+    $message = "$Description failed with exit code $ExitCode"
+    if (-not [string]::IsNullOrWhiteSpace($Stderr)) {
+        $message = "${message}: $Stderr"
+    }
+    return $message
+}
+
 # stderr must never terminate a run: under the caller's 'Stop' preference on PowerShell 5.1, a
 # merged stderr line becomes a terminating ErrorRecord before $LASTEXITCODE is read, so the exit
 # code alone judges success and stderr is returned separately as evidence.

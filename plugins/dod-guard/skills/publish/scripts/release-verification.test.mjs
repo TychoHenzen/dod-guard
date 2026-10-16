@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import process from "node:process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parsePowerShellFile, runPowerShell } from "./maintenance-harness.mjs";
@@ -57,7 +58,7 @@ test("release verification fails closed before parsing incomplete or mismatched 
 }, async (t) => {
   const realHelper = await createRealHelperFixture(t);
   const cases = [
-    ["command", /git-head failed with exit code 7/, "git-head", 7],
+    ["command", /git-head failed with exit code 7: fatal: not a git repository/, "git-head", 7],
     ["head", /current Git HEAD/, "git-head", 0],
     ["parent", /published commit parent/, "git-parent", 0],
     ["remote", /remote master/, "git-remote", 0],
@@ -128,4 +129,22 @@ $result | ConvertTo-Json -Depth 5 -Compress
   assert.equal(captured.ExitCode, 3);
   assert.equal(captured.Output, '{"installed":[]}');
   assert.equal(captured.Stderr, "warn");
+});
+
+test("the shared failure message names the exit code and appends stderr only when present", {
+  skip: process.platform !== "win32",
+}, () => {
+  const command = String.raw`$ErrorActionPreference = 'Stop'
+. $env:DOD_GUARD_NATIVE_COMMAND
+$with = Get-PublishNativeFailureMessage 'git push' 5 'rejected'
+$without = Get-PublishNativeFailureMessage 'git push' 5 ''
+@{ With = $with; Without = $without } | ConvertTo-Json -Compress
+`;
+  const result = runPowerShell(command, {
+    DOD_GUARD_NATIVE_COMMAND: fileURLToPath(new URL("./publish-native-command.ps1", import.meta.url)),
+  });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  const messages = JSON.parse(result.stdout.trim().split(/\r?\n/).at(-1));
+  assert.equal(messages.With, "git push failed with exit code 5: rejected");
+  assert.equal(messages.Without, "git push failed with exit code 5");
 });

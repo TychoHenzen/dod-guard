@@ -82,7 +82,7 @@ const RELEASE_3 = String.raw`$invokeCommand = {
   param([string]$Executable, [string[]]$Arguments, [AllowNull()][string]$InputText)
   $key = $Executable + ' ' + ($Arguments -join ' ')
   if ($fixtureStage -eq 'command' -and $key -eq 'git rev-parse HEAD') {
-    return [pscustomobject]@{ ExitCode = 7; Output = '' }
+    return [pscustomobject]@{ ExitCode = 7; Output = ''; Stderr = 'fatal: not a git repository' }
   }
   $revParse = $Executable -eq 'git' -and $Arguments[0] -eq 'rev-parse'
   if ($revParse -and $Arguments[1] -eq 'HEAD') {

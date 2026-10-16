@@ -295,19 +295,6 @@ function Invoke-MaintenanceAction {
     }
 }
 
-function Get-MaintenanceNativeFailure {
-    param(
-        [Parameter(Mandatory = $true)][string]$Command,
-        [Parameter(Mandatory = $true)][object]$Native
-    )
-
-    $message = "$Command failed with exit code $($Native.ExitCode)"
-    if (-not [string]::IsNullOrWhiteSpace($Native.Stderr)) {
-        $message = "${message}: $($Native.Stderr)"
-    }
-    return $message
-}
-
 function Invoke-MaintenancePublish {
     [CmdletBinding()]
     param(
@@ -325,7 +312,7 @@ function Invoke-MaintenancePublish {
             param([string[]]$Arguments)
             $native = Invoke-PublishNativeCommand "git" $Arguments $null
             if ($native.ExitCode -ne 0) {
-                throw (Get-MaintenanceNativeFailure "git $($Arguments -join ' ')" $native)
+                throw (Get-PublishNativeFailureMessage "git $($Arguments -join ' ')" $native.ExitCode $native.Stderr)
             }
             $native.Output
         }
@@ -335,7 +322,7 @@ function Invoke-MaintenancePublish {
             param([string]$Method, [string]$Endpoint)
             $native = Invoke-PublishNativeCommand "gh" @("api", "--method", $Method, $Endpoint, "--include") $null
             if ($native.ExitCode -ne 0) {
-                throw (Get-MaintenanceNativeFailure "gh api $Method $Endpoint" $native)
+                throw (Get-PublishNativeFailureMessage "gh api $Method $Endpoint" $native.ExitCode $native.Stderr)
             }
 
             $text = $native.Output

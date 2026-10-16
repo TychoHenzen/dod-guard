@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -14,78 +14,14 @@ import {
   savedSha,
 } from "./maintenance-harness.mjs";
 
-// The default $InvokeGit and $InvokeGhApi run through the shared native helper. The test body
-// defines global git and gh functions that call standin.mjs through that same helper and re-emit
-// its stderr as ErrorRecords, so the wrapper sees the stderr line as a real native stderr would
-// be seen. Functions avoid cmd shims, which would consume the caret in HEAD^. standin.mjs keeps
-// repository and protection state in state.json and writes a stderr line on every call.
-// DOD_GUARD_MAINTENANCE_WRAPPER_OVERRIDE lets the same body run against another wrapper copy
-// (for example the master version) to prove the test detects the old behavior.
+// Global git and gh functions stand in for the real tools (cmd shims would eat the caret in
+// HEAD^) and re-emit the stand-in's stderr as ErrorRecords, as a real native stderr arrives.
+// DOD_GUARD_MAINTENANCE_WRAPPER_OVERRIDE runs the same body against another wrapper copy, such
+// as master's, to prove the test detects the old behavior.
 const wrapperPath = process.env.DOD_GUARD_MAINTENANCE_WRAPPER_OVERRIDE || maintenanceWrapperPath;
 const nativeHelperPath = fileURLToPath(new URL("./publish-native-command.ps1", import.meta.url));
 
-const STANDIN_SOURCE = String.raw`import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const dir = path.dirname(fileURLToPath(import.meta.url));
-const statePath = path.join(dir, "state.json");
-const state = JSON.parse(fs.readFileSync(statePath, "utf8"));
-const [tool, ...args] = process.argv.slice(2);
-const line = args.join(" ");
-const save = () => fs.writeFileSync(statePath, JSON.stringify(state));
-const ok = (text) => { fs.writeSync(1, text); process.exit(0); };
-const fail = (code, text) => { fs.writeSync(2, text + "\n"); process.exit(code); };
-const head200 = "HTTP/2.0 200 OK\n\n";
-
-fs.writeSync(2, "remote: Bypassed rule violations for refs/heads/master:\n");
-
-if (tool === "git") {
-  if (args[0] === "rev-parse" && args[1] === "--path-format=absolute") ok("C:/repo/.git\n");
-  if (line === "rev-parse HEAD") ok(state.head + "\n");
-  if (line === "rev-parse HEAD^") ok(state.savedSha + "\n");
-  if (line === "status --porcelain --untracked-files=no") ok("");
-  if (args[0] === "push") {
-    if (process.env.DOD_GUARD_FAIL_GIT_PUSH === "1") fail(5, "error: failed to push some refs");
-    state.remote = state.head;
-    save();
-    ok("");
-  }
-  if (line === "ls-remote origin refs/heads/master") ok(state.remote + "\trefs/heads/master\n");
-  fail(9, "unexpected git: " + line);
-}
-
-if (tool === "gh") {
-  const [api, methodFlag, method, endpoint, include] = args;
-  if (api !== "api" || methodFlag !== "--method" || include !== "--include" || args.length !== 5) {
-    fail(9, "unexpected gh: " + line);
-  }
-  if (method === "GET" && endpoint === state.protectionEndpoint) {
-    ok(head200 + JSON.stringify({
-      url: "https://api.github.com/" + endpoint,
-      allow_force_pushes: { enabled: true },
-      enforce_admins: { enabled: state.adminEnabled },
-      required_status_checks: { strict: true, contexts: ["build-test"] },
-    }) + "\n");
-  }
-  if (method === "GET" && endpoint === state.adminEndpoint) {
-    ok(head200 + JSON.stringify({ enabled: state.adminEnabled }) + "\n");
-  }
-  if (method === "DELETE" && endpoint === state.adminEndpoint) {
-    state.adminEnabled = false;
-    save();
-    ok("HTTP/2.0 204 No Content\n\n");
-  }
-  if (method === "POST" && endpoint === state.adminEndpoint) {
-    state.adminEnabled = true;
-    save();
-    ok(head200);
-  }
-  fail(9, "unexpected gh endpoint: " + line);
-}
-
-fail(9, "unknown tool: " + tool);
-`;
+const standinSourcePath = fileURLToPath(new URL("./maintenance-native-standin.mjs", import.meta.url));
 
 // Test-owned PowerShell body: the real default invokers run through the shared helper, and only
 // the commit and pre-push actions are supplied. The last stdout line is the compact result JSON.
@@ -110,14 +46,21 @@ $commitAction = {
   [IO.File]::WriteAllText($statePath, ($state | ConvertTo-Json -Compress))
 }
 $prePushAction = {}
-$result = Invoke-MaintenancePublish -Owner 'TychoHenzen' -Repo 'dod-guard' -SavedSha '${savedSha}' -CommitAction $commitAction -PrePushAction $prePushAction
+$publishArguments = @{
+  Owner = 'TychoHenzen'
+  Repo = 'dod-guard'
+  SavedSha = '${savedSha}'
+  CommitAction = $commitAction
+  PrePushAction = $prePushAction
+}
+$result = Invoke-MaintenancePublish @publishArguments
 $result | ConvertTo-Json -Depth 20 -Compress
 `;
 
 function runNativePublish({ failGitPush = false } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "dod-guard-maintenance-native-"));
   try {
-    writeFileSync(join(dir, "standin.mjs"), STANDIN_SOURCE);
+    copyFileSync(standinSourcePath, join(dir, "standin.mjs"));
     writeFileSync(
       join(dir, "state.json"),
       JSON.stringify({
@@ -152,6 +95,10 @@ test("native publish completes through the real git and gh default invokers", {
   assert.equal(outcome.ReleaseSha, releaseSha);
   assert.equal(outcome.Restored, true);
   assert.equal(outcome.Error, null);
+  // Success and Restored already prove no stderr line reached a parsed HTTP body (it would
+  // fail JSON parsing or the saved-protection comparison); the stand-in writes it on every call.
+  assert.doesNotMatch(outcome.ReleaseSha, /Bypassed|remote:/);
+  assert.doesNotMatch(JSON.stringify(outcome), /Bypassed rule violations/);
 });
 
 test("native publish keeps protection restored when the real git push fails", {
@@ -163,5 +110,5 @@ test("native publish keeps protection restored when the real git push fails", {
   assert.equal(outcome.DeleteAttempted, true);
   assert.equal(outcome.Restored, true);
   assert.equal(outcome.RestoreAttempts, 1);
-  assert.match(outcome.Error, /git push .* failed with exit code 5/);
+  assert.match(outcome.Error, /git push .* failed with exit code 5: .*failed to push some refs/s);
 });
