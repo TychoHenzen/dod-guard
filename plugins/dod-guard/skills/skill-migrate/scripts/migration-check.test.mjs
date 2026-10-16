@@ -752,25 +752,37 @@ describe("migration-check", () => {
     return JSON.parse(r.stdout).checks.find((c) => c.id === "agent-tools");
   };
 
-  it("agent-tools passes when there is no tools line and inheritAllTools is true", () => {
+  it("agent-tools passes with no tools line and inheritAllTools true", () => {
     const out = agentToolsCheck("agent-inherit.md", ["inheritAllTools: true"]);
     assert.equal(out.pass, true, out.detail);
   });
 
-  it("agent-tools still fails with no marker or inheritAllTools false", () => {
-    assert.equal(agentToolsCheck("agent-no-marker.md", []).pass, false);
-    assert.equal(agentToolsCheck("agent-marker-false.md", ["inheritAllTools: false"]).pass, false);
-    assert.equal(agentToolsCheck("agent-empty-tools.md", ["tools:"]).pass, false);
+  it("agent-tools fails with no tools line and no inherit marker", () => {
+    const out = agentToolsCheck("agent-no-marker.md", []);
+    assert.equal(out.pass, false, `no marker must fail: ${out.detail}`);
   });
 
-  it("agent-tools fails as contradictory when tools and inheritAllTools: true both appear", () => {
-    const out = agentToolsCheck("agent-contradiction.md", ["tools: Read, Edit", "inheritAllTools: true"]);
-    assert.equal(out.pass, false);
+  it("agent-tools fails with no tools line and inheritAllTools false", () => {
+    const extra = ["inheritAllTools: false"];
+    const out = agentToolsCheck("agent-marker-false.md", extra);
+    assert.equal(out.pass, false, `false marker must fail: ${out.detail}`);
+  });
+
+  it("agent-tools fails with empty tools and no inherit marker", () => {
+    const out = agentToolsCheck("agent-empty-tools.md", ["tools:"]);
+    assert.equal(out.pass, false, `empty tools must fail: ${out.detail}`);
+  });
+
+  it("agent-tools fails as contradictory with both keys", () => {
+    const extra = ["tools: Read, Edit", "inheritAllTools: true"];
+    const out = agentToolsCheck("agent-contradiction.md", extra);
+    assert.equal(out.pass, false, out.detail);
     assert.match(out.detail, /contradiction/);
   });
 
-  it("agent-tools passes an empty tools value together with inheritAllTools: true", () => {
-    const out = agentToolsCheck("agent-empty-inherit.md", ["tools:", "inheritAllTools: true"]);
+  it("agent-tools passes empty tools with inheritAllTools true", () => {
+    const extra = ["tools:", "inheritAllTools: true"];
+    const out = agentToolsCheck("agent-empty-inherit.md", extra);
     assert.equal(out.pass, true, out.detail);
   });
 

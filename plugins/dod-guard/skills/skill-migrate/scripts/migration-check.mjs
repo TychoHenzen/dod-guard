@@ -293,25 +293,30 @@ function checkMemoryFrontmatter(fm, rawFm) {
 // Omitting `tools` is the runtime's own inherit-all form, so an agent that
 // means it says so with the dedicated `inheritAllTools: true` key. Without the
 // key, a missing tools line is a forgotten allowlist and still fails.
-
 function agentToolsOutcome(tools, inheritsAll) {
-  if (tools.length > 0 && inheritsAll)
-    return { pass: false, detail: "contradiction: tools line together with inheritAllTools: true" };
-  if (tools.length > 0) return { pass: true, detail: "tools declared" };
-  if (inheritsAll) return { pass: true, detail: "inherits every tool (inheritAllTools: true)" };
-  return { pass: false, detail: "no tools line" };
+  if (tools && inheritsAll) {
+    const detail = "contradiction: tools line with inheritAllTools: true";
+    return { pass: false, value: tools, detail };
+  }
+  if (tools) return { pass: true, value: tools, detail: "tools declared" };
+  if (inheritsAll) {
+    const detail = "inherits every tool (inheritAllTools: true)";
+    return { pass: true, value: "inherit-all", detail };
+  }
+  return { pass: false, value: "absent", detail: "no tools line" };
+}
+
+function trimmedValue(raw) {
+  return (raw ?? "").trim();
 }
 
 function checkAgentTools(fm) {
-  const tools = (fm.tools ?? "").trim();
-  const inheritsAll = (fm.inheritAllTools ?? "").trim() === "true";
-  const { pass, detail } = agentToolsOutcome(tools, inheritsAll);
+  const tools = trimmedValue(fm.tools);
+  const inheritsAll = trimmedValue(fm.inheritAllTools) === "true";
   return {
     id: "agent-tools",
     label: "Frontmatter declares tools",
-    value: tools.length > 0 ? tools : inheritsAll ? "inherit-all" : "absent",
-    pass,
-    detail,
+    ...agentToolsOutcome(tools, inheritsAll),
   };
 }
 
