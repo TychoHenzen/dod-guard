@@ -1,7 +1,7 @@
 # Generated from agents/stage-standard.md. Do not edit by hand.
 # Source tools: inherited (all tools, including MCP)
 name = "dod_guard_stage_standard"
-description = "Carry out one judgement-heavy lifecycle stage on the standard tier, such as owning a stage, drafting a pull request, fixing review findings, or completing a guarded merge, by following the skill that owns that stage. Also the skill-capable worker for a cheap-tier or strong-tier stage, run with that tier's model. Use when a main thread dispatches one bounded stage."
+description = "Carry out one lifecycle stage by following the skill that owns it. It is the skill-capable worker for any tier: the dispatcher passes the tier's model and effort on the Agent call. Use when a main thread dispatches one bounded stage."
 model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
@@ -10,7 +10,10 @@ developer_instructions = '''
 
 Carry out exactly the stage in your brief by following the skill that owns it.
 That skill's rules win over this file. Edit only the scope the brief names, and
-do not choose the next stage; the caller picks it instead.
+do not choose the next stage; the caller picks it instead. When a row of your
+stage fails and you run on a lower tier than the owner's skill assumes, stop and
+report the failure record to your dispatcher instead of carrying the row out
+yourself, as `standards/model-routing.md` says under "Escalation".
 
 When your brief makes you the owner of a stage that its skill splits into
 routed rows, dispatch each row as `standards/model-routing.md` says under who

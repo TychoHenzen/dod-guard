@@ -7,18 +7,28 @@ everything else.
 
 ## Tiers
 
-The standard tier is the default. It is for judgement with modest reasoning
-effort: planning what to look for, deciding scope and acceptance, judging
-evidence into findings, owning a stage, drafting a pull request, remediation,
-and the guarded merge.
+The owner's principle decides every tier: haiku for anything that needs a lot
+of effort but low intelligence, sonnet only for tasks that need the added
+intelligence, and opus only when sonnet or haiku cannot figure it out.
 
-The cheap tier is for mechanical, high-volume work:
+The cheap tier is for work that needs a lot of effort but low intelligence:
 implementing one task from the owner's written step plan, applying a written
 plan, running validations, regenerating artifacts, reading files to answer
-planned questions, and capturing backlog items.
+planned questions, capturing backlog items, and running a stage whose gates
+are fail-closed scripts and named stop codes that the dispatcher re-verifies,
+such as drafting a pull request from a handoff or the guarded merge.
+
+The standard tier is for tasks that need the added intelligence: planning what
+to look for, deciding scope and acceptance, writing step plans, judging
+evidence into findings, designing remediation, and owning a stage whose thread
+must carry out a failed row.
 
 The strong tier is for escalation only. No stage starts on it; a stage reaches
 it through "Escalation" below.
+
+A rerun of a row takes that row's tier. A refreshed handoff, a fresh head and
+CI run, or a second `/complete-pr` run is the same row again, so it does not
+fall back to the standard tier.
 
 | Tier | Claude Code `model`, `effort` | Codex agent file | Write-capable agent | Read-only agent |
 |---|---|---|---|---|
@@ -83,8 +93,11 @@ When `dod-guard:goal-sdlc` reaches a stage whose owner splits its work into
 routed rows (refinement research, `/next-ticket` tasks, `/review-pr`, or the
 conflict triage in `standards/conflict-triage.md`), it runs that stage on
 `dod-guard:stage-standard`, the only tier agent that inherits every
-tool, including Agent and MCP connectors. That stage worker is the owner's main
-thread: it dispatches each row at its tier and runs the verification below. A
+tool, including Agent and MCP connectors. The Agent call passes the model of the
+stage's own tier, so an owner whose tier is cheap, such as the `/review-pr`
+owner, runs on `dod-guard:stage-standard` with `model: haiku`. That stage
+worker is the owner's main thread: it dispatches each row at its tier and runs
+the verification below. A
 worker dispatched for one row never dispatches further, even on
 `dod-guard:stage-standard`. In Codex, when a spawned agent cannot spawn agents of
 its own, goal-sdlc's main thread runs that owner's procedure itself and
@@ -152,7 +165,11 @@ strong-tier output, the main thread checks that:
   stage describes;
 - the stage's own named proof passes, and was run at the accepted head;
 - a readback of any issue, pull request, or Project state the stage wrote shows
-  the described change.
+  the described change;
+- a stage that implements tasks reports, for each task, its dispatch (agent,
+  model, and effort) or the escalation record that explains an edit by the
+  owner. A missing report is a failed check, and the main thread logs it in the
+  friction log.
 
 A failed check follows the same send-back and escalation rules as a cheap-tier
 failure.
@@ -200,6 +217,25 @@ the owner, already a standard-tier thread that holds the plan and the failure
 record, carries out the task itself. When a standard-tier stage escalates, the
 thread that dispatched the stage runs it again on `dod-guard:stage-standard`
 with `model: opus` and the strong effort.
+
+A cheap-model skill-capable stage, which runs on `dod-guard:stage-standard`
+with `model: haiku`, never carries out a failed row itself. It stops and
+reports the failure record to its dispatcher, and the dispatcher takes the
+numbered order above with that stage as the stalled one. It sends the stage back
+once at haiku with the exact gap, then runs it again on
+`dod-guard:stage-standard` with `model: sonnet` and the failure record; the
+cheap-to-standard rung skips the advisor. When the sonnet run fails, the
+dispatcher sends it back once, asks `/codex-advisor` its one question, applies
+advice that names a repair at the standard tier, and otherwise runs the stage on
+`model: opus` with the strong effort. A failure on the opus run stops the stage
+as a blocker.
+
+Dispatching a read-only row one rung up is not carrying out a failed row. The
+`/review-pr` owner reruns a failed investigator batch once on
+`dod-guard:read-standard`, as its skill says. When that rerun fails the same
+check, the owner stops without posting and reports the stop to its dispatcher.
+That is the batch rule's own stop, so the dispatcher does not rerun the review
+stage on sonnet or opus.
 
 A skill that says to stop on a repeated failure keeps that rule unless this
 section names it. The failed-check rule above, the investigator-batch rule in

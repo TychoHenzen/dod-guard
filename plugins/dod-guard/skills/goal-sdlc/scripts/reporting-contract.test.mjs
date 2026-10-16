@@ -34,9 +34,13 @@ test("goal-sdlc reports parent and child completions only in the final report", 
   );
   for (const phrase of [
     "on a model tier from `standards/model-routing.md`",
-    "the standard tier (Sonnet, `gpt-5.6-terra` in Codex) is the default and plans, decides, and judges",
-    "the cheap tier (Haiku, `gpt-5.6-luna` in Codex) implements a task from a written step plan",
-    "the strong tier (Opus, `gpt-5.6-sol` in Codex) is reached only by escalation",
+    "by one rule: haiku for anything that needs a lot of effort but low intelligence, " +
+      "sonnet only for tasks that need the added intelligence",
+    "The cheap tier (Haiku, `gpt-5.6-luna` in Codex) implements every task from a written step plan",
+    "The standard tier (Sonnet, `gpt-5.6-terra` in Codex) plans, decides, and judges, " +
+      "and owns the stages that write plans or absorb a failed row",
+    "runs on the all-tools stage agent at the owner's own tier",
+    "The strong tier (Opus, `gpt-5.6-sol` in Codex) is reached only by escalation",
     "Run the `/goal` session itself on a standard-tier model",
     `The final report says how many parent and child PBIs reached Done. That figure counts ${SCOPE}`,
   ]) {

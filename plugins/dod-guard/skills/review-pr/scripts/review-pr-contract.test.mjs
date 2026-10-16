@@ -186,7 +186,13 @@ test("review-pr merges judged findings in one read-standard pass", () => {
 // build is not a capability failure, so those stops are never escalated.
 test("review-pr escalates a failed investigator batch once and never a format failure", () => {
   assert.match(skill, prose("run that batch once on `dod-guard:read-standard` with the failure record"));
-  assert.match(skill, prose("if it fails the same check there, stop without posting and name the batch"));
+  assert.match(
+    skill,
+    prose(
+      "if it fails the same check there, stop without posting, name the batch,",
+      "and report the stop to the dispatcher, which does not rerun the review stage",
+    ),
+  );
   assert.match(skill, prose("a format failure is not escalated to another tier"));
   assert.match(skill, prose("a refused build is not escalated to another tier"));
 });
