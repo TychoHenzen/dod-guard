@@ -96,19 +96,33 @@ the result in the brief when the same stage resumes at its checkpoint.
 
 Context size sets cost. Haiku 5.5 charges five times more for every request
 whose prompt passes 100,000 tokens, and each call of an agent is one request.
-A Claude Code agent compacts at the lower of its `autoCompactWindow` frontmatter
-field and the window of the model it runs on, which the user sets per model
-under `modelSettings` in their settings file. The field is a plain integer of
-tokens from 100000 to 1000000; a value written as `200k` is ignored. The three
-Haiku agents, `dod-guard:stage-cheap`, `dod-guard:stage-cheap-skill`, and
-`dod-guard:read-cheap`, declare 110000, so a Haiku run compacts before the price
-increase whatever window the user has set for Haiku. `dod-guard:stage-standard`
-declares 250000, the window where a replay of measured Sonnet sessions was
-cheapest. One agent cannot declare both windows, which is why the cheap tier has
-its own skill-capable agent. The window caps one run of one agent; it does not
-replace the rule in `goal-sdlc` to retire a subagent between stages once its
-context passes about 100,000 tokens. The `CLAUDE_CODE_AUTO_COMPACT_WINDOW`
-environment variable overrides all of these, so leave it unset.
+A Haiku request over that line still costs about half as much as a Sonnet
+request of the same size. A Claude Code agent compacts when its context reaches
+its window minus 33,000 tokens (20,000 reserved and a buffer of 13,000). Its
+window is the lower of its `autoCompactWindow` frontmatter field and the window
+of the model it runs on, which the user sets per model under `modelSettings` in
+their settings file. The field is a plain integer of tokens from 100000 to
+1000000; a value written as `200k` is ignored.
+
+A window must leave room above the start size of the agent. With less than about
+40,000 tokens of room, the agent compacts every few turns and the run ends with
+the error "Autocompact is thrashing". The lean Haiku agents,
+`dod-guard:stage-cheap` and `dod-guard:read-cheap`, start near 30,000 tokens and
+declare 110000, so a run compacts at 77,000 tokens, before the price increase.
+The skill-capable Haiku agent, `dod-guard:stage-cheap-skill`, starts near 58,000
+tokens in a measured run, because its Agent and Skill tools add about 23,000. It
+cannot stay under the price line, so it declares 200000 and compacts at 167,000
+tokens. Measured draft PR, merge, and backlog rows reached 115,000 to 180,000
+tokens at the 90th percentile. The user's window for Haiku must be at least
+200000 for that value to apply. `dod-guard:stage-standard` declares 250000, the
+window where a replay of measured Sonnet sessions was cheapest. One agent cannot
+declare both a Sonnet window and a Haiku window, which is why the cheap tier has
+its own skill-capable agent.
+
+The window caps one run of one agent; it does not replace the rule in
+`goal-sdlc` to retire a subagent between stages once its context passes about
+100,000 tokens. The `CLAUDE_CODE_AUTO_COMPACT_WINDOW` environment variable
+overrides all of these, so leave it unset.
 
 ## Who dispatches
 
