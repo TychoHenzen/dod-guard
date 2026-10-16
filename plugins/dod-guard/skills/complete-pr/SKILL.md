@@ -165,6 +165,11 @@ convergence and `/review-pr` before this skill runs again. When the triage
 stops, report the stop and leave the pull request head unchanged. Every other
 helper stop ends the run as described above.
 
+A run on the cheap model does not triage. It stops at `merge_conflict`, reports
+the stop with the trusted head and the pull request number, and leaves the head
+unchanged. Its dispatcher then runs the triage, as `standards/conflict-triage.md`
+says.
+
 ## Finalize the parent unit
 
 Only after the helper returns a verified merge result, read the linked parent

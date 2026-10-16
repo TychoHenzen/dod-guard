@@ -488,3 +488,38 @@ Decided: N1, rename the agents (2026-10-15).
    `@codex review` rule? Proposed: the project's `CLAUDE.md`.
 4. Should the review owner stage become a script-driven flow rather than an
    LLM owner? Out of scope here; it was 10.5% of spend.
+
+## Addendum 2026-10-16 (issue 958): effort versus intelligence
+
+This addendum supersedes two parts of the design above where they differ. In
+the "Tiers" table, the standard row's role list (it names drafting a pull
+request and the guarded merge as standard-tier work) is superseded by the tier
+definitions in `standards/model-routing.md`. In the "Stage routing" table, the
+`/submit-draft-pr` row (strong to standard) and the `/complete-pr` row (strong
+to standard) are superseded by the rows below, and so is the `/review-pr` owner
+treatment where it differs.
+The owner's principle decides every row: haiku for anything that needs a lot of
+effort but low intelligence, sonnet only for tasks that need the added
+intelligence, and opus only when sonnet or haiku cannot figure it out.
+
+| Stage | Proposed above | Now |
+|---|---|---|
+| `/submit-draft-pr` | standard | cheap, on the all-tools worker |
+| `/complete-pr`: guarded merge and Project finalization | standard | cheap, stops at `merge_conflict` |
+| `/review-pr`: owner thread | standard | cheap, on the all-tools worker |
+| `/next-ticket`: implement one task from its plan | cheap | cheap for every task, a one-task PBI included, with no owner-edit escape hatch |
+| `/complete-pr` at `merge_conflict` | not stated | the cheap run stops and reports the stop; its dispatcher runs the triage as its own stage with a standard-model owner, as `standards/conflict-triage.md` says |
+| Merge conflict triage: owner, plan, judge | standard | standard |
+| Refinement, `/next-ticket`, and `/fix-pr-review` owner threads | standard | standard, because they write plans, classify, or revalidate, and absorb failed rows |
+
+A rerun of a row takes that row's tier. A cheap-model owner never carries out a
+failed row: it reports to its dispatcher, which sends the stage back once, reruns
+it on sonnet, and after a sonnet failure and the advisor question reruns it on
+opus. The `/review-pr` owner's rerun of a failed investigator batch on
+`read-standard` is not carrying out a row, and its stop does not climb further.
+
+The first goal-sdlc run measured after 5.7.0 used 31 stage-standard agents on
+sonnet, 4 on haiku, 50 read-cheap agents on haiku, and no stage-cheap
+dispatch. That is the defect this change closes. Haiku quality on skill-capable
+stages is unmeasured. The friction log shows which rows escalate often and
+belong one tier higher.

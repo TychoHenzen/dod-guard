@@ -86,16 +86,21 @@ or closure evidence is not reported; a `completed` hand close without evidence
 still is. A parent that needs a user answer or is externally blocked stays in
 place while the queue moves on. Each stage runs in one fresh subagent on a
 model tier from
-`standards/model-routing.md`: the standard tier (Sonnet, `gpt-5.6-terra` in
-Codex) is the default and plans, decides, and judges, the cheap tier (Haiku,
-`gpt-5.6-luna` in Codex) implements a task from a written step plan, runs
-validations, and answers planned questions, and the strong tier (Opus,
-`gpt-5.6-sol` in Codex) is reached only by escalation after a lower tier failed
-its check twice. The main thread checks cheap-tier output before anything
-relies on it and reads back each stage's commit. A stage whose owner splits its
-work, such as `/review-pr`, runs on the standard stage agent, which dispatches
-those split rows itself. Run the `/goal` session itself on a standard-tier
-model: the loop only sequences stages and checks their results. The final
+`standards/model-routing.md`, by one rule: haiku for anything that needs a lot
+of effort but low intelligence, sonnet only for tasks that need the added
+intelligence, and opus only when sonnet or haiku cannot figure it out. The
+cheap tier (Haiku, `gpt-5.6-luna` in Codex) implements every task from a
+written step plan, runs validations, answers planned questions, drafts the pull
+request, runs the `/review-pr` owner thread, and completes the guarded merge.
+The standard tier (Sonnet, `gpt-5.6-terra` in Codex) plans, decides, and
+judges, and owns the stages that write plans or absorb a failed row. The strong
+tier (Opus, `gpt-5.6-sol` in Codex) is reached only by escalation after a lower
+tier failed its check twice. The main thread checks cheap-tier output before
+anything relies on it and reads back each stage's commit. A stage whose owner
+splits its work, such as `/review-pr`, runs on the all-tools stage agent at the
+owner's own tier, and that agent dispatches the split rows itself. Run the
+`/goal` session itself on a standard-tier model: the loop only sequences stages
+and checks their results. The final
 report says how many parent and
 child PBIs reached Done. That figure counts only the target repository's parent
 and child PBIs whose Project status reads Done, as select-next's `counts` report

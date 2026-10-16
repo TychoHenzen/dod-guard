@@ -34,9 +34,10 @@ test("each tier agent pins its model and effort for Claude Code and Codex", asyn
 
 test("the routing standard defines the tiers, runtime rules, and verification once", () => {
   for (const phrase of [
-    "The standard tier is the default.",
-    "It is for judgement with modest reasoning effort",
-    "The cheap tier is for mechanical, high-volume work:",
+    "The cheap tier is for work that needs a lot of effort but low intelligence:",
+    "The standard tier is for tasks that need the added intelligence:",
+    "haiku for anything that needs a lot of effort but low intelligence, " +
+      "sonnet only for tasks that need the added intelligence",
     "The strong tier is for escalation only. No stage starts on it",
     "| standard | `sonnet`; effort from frontmatter |",
     "| cheap | `haiku`; effort from frontmatter |",
