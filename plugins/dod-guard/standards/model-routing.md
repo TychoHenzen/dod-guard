@@ -87,6 +87,13 @@ registered files pin the standard and cheap tiers, so spawn a strong-tier stage
 without a pinned file, with `gpt-5.6-sol` and `high` at spawn time, and record
 it as "requested, not pinned".
 
+No tier agent holds an MCP connector, which keeps each first call small. A proof
+that calls a runtime MCP tool, as `/next-ticket` describes for a game, an app,
+or an emulator, is a misrouted step for the agent that reaches it: the agent
+stops there and reports the exact call and its arguments. Its dispatcher, which
+holds the session's own MCP tools, makes that call on its own thread and passes
+the result in the brief when the same stage resumes at its checkpoint.
+
 Context size sets cost. Haiku 5.5 charges five times more for every request
 whose prompt passes 100,000 tokens, and each call of an agent is one request.
 A Claude Code agent compacts at the lower of its `autoCompactWindow` frontmatter

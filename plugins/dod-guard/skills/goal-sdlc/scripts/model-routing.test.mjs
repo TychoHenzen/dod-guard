@@ -219,6 +219,22 @@ test("a skill-capable stage runs on its tier's skill-capable agent", () => {
   assertPhrases(standard, SKILL_CAPABLE, "model-routing.md");
 });
 
+// The tier agents hold no MCP connector, so a proof that calls a runtime MCP
+// tool goes back to the dispatcher, which holds the session's MCP tools.
+test("a runtime MCP proof is made by the dispatcher", () => {
+  assertPhrases(
+    standard,
+    [
+      "No tier agent holds an MCP connector",
+      "A proof that calls a runtime MCP tool, as `/next-ticket` describes for a game, an app, or an emulator,",
+      "is a misrouted step for the agent that reaches it",
+      "Its dispatcher, which holds the session's own MCP tools, makes that call on its own thread",
+      "passes the result in the brief when the same stage resumes at its checkpoint",
+    ],
+    "model-routing.md",
+  );
+});
+
 // A row worker cannot write the main thread's trailer and must not push
 // unverified work, so the thread that dispatched it owns commit and push. A
 // run that owns a skill's procedure is that skill's main thread on any model.
