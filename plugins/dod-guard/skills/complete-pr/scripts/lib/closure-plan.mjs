@@ -5,97 +5,18 @@
 import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
 import {
   childNumbers,
-  indexSnapshot,
   issueFor,
   itemFor,
   itemPullNumbers,
   itemStatus,
   parentNumberOf,
-  preflightHolds,
   pullFor,
   statusUnreadable,
 } from "../../../../lib/closure-index.mjs";
-import { isOpen, judgeDelivery } from "./closure-delivery.mjs";
-import { parseCompletionRecord, parseSupersedes, recordComments, renderClosureEvidence } from "./closure-records.mjs";
-
-// One hold per issue, so the reasons found for an issue read as one entry. A hold that names no
-// issue stays on its own, because it names no target issue to merge into.
-function mergeHolds(holds) {
-  const merged = [];
-  const byIssue = new Map();
-  for (const hold of holds) {
-    if (hold.issue === null) {
-      merged.push(hold);
-      continue;
-    }
-    if (!byIssue.has(hold.issue)) {
-      const entry = { issue: hold.issue, reasons: [] };
-      byIssue.set(hold.issue, entry);
-      merged.push(entry);
-    }
-    const entry = byIssue.get(hold.issue);
-    for (const reason of hold.reasons) {
-      if (!entry.reasons.includes(reason)) entry.reasons.push(reason);
-    }
-  }
-  return merged;
-}
-
-// Records reasons against an issue's hold in place, so the reasons for an issue stay in one entry
-// with no reason repeated. A hold that names no issue is always its own entry: it has no issue to
-// merge into.
-function addHold(context, issue, reasons) {
-  const entry = context.holds.find((hold) => hold.issue !== null && hold.issue === issue);
-  if (entry === undefined) {
-    context.holds.push({ issue, reasons: [...new Set(reasons)] });
-    return;
-  }
-  for (const reason of reasons) {
-    if (!entry.reasons.includes(reason)) {
-      entry.reasons.push(reason);
-    }
-  }
-}
-
-// The one place that decides whether an issue is held for a write. Every close and every Project
-// Done repair passes through it. A held issue is refused, and the refusal joins that issue's hold.
-function admitWrite(context, issue, refusal) {
-  if (context.holds.some((hold) => hold.issue === issue)) {
-    addHold(context, issue, [refusal]);
-    return false;
-  }
-  return true;
-}
-
-// The only code that appends to context.closes.
-function admitClose(context, close) {
-  if (!admitWrite(context, close.issue, `${close.rule} close refused: issue is held`)) {
-    return false;
-  }
-  context.closes.push(close);
-  return true;
-}
-
-function createContext(snapshot) {
-  const index = indexSnapshot(snapshot);
-  const deliveries = new Map();
-  const delivery = (number) => {
-    if (!deliveries.has(number)) deliveries.set(number, judgeDelivery(index, number));
-    return deliveries.get(number);
-  };
-  const roots = new Map();
-  const rootErrors = [];
-  for (const number of index.order) {
-    const parsed = parseSupersedes(issueFor(index, number)?.body, index.repository);
-    if (parsed.error) rootErrors.push({ issue: number, reasons: [parsed.error] });
-    else if (parsed.numbers.length > 0) roots.set(number, parsed.numbers);
-  }
-  const rootsOf = (original) => [...roots].filter(([, numbers]) => numbers.includes(original)).map(([root]) => root);
-  // Indexing problems and unsafe relations are holds before any rule runs. A held issue is never
-  // closed or set Done because admitClose and admitWrite refuse it, so no rule checks holds itself.
-  const holds = mergeHolds([...index.problems, ...rootErrors, ...preflightHolds(index)]);
-  return { index, delivery, roots, rootsOf, closes: [], holds };
-}
+import { createContext } from "./closure-context.mjs";
+import { isOpen } from "./closure-delivery.mjs";
+import { addHold, admitClose, admitWrite, planned } from "./closure-holds.mjs";
+import { parseCompletionRecord, recordComments, renderClosureEvidence } from "./closure-records.mjs";
 
 function originalHold(context, original) {
   const issue = issueFor(context.index, original);
@@ -148,10 +69,6 @@ function unmappedCriteria(issue, children) {
     .filter((item) => !item.checked)
     .map((item) => item.text)
     .filter((text) => !children.some((child) => new RegExp(`#${child}\\b`).test(text)));
-}
-
-function planned(context, number) {
-  return context.closes.some((close) => close.issue === number);
 }
 
 function prefixed(judged) {
@@ -373,7 +290,7 @@ function walkPass(context, seeds) {
       current = parent;
     }
   }
-  const limitOnly = [...limitHolds].filter(([parent]) => !planned(context, parent) && !reasonHeld.has(parent));
+  const limitOnly = [...limitHolds].filter(([parent]) => !(planned(context, parent) || reasonHeld.has(parent)));
   return [...holds, ...limitOnly.map(([issue, reasons]) => ({ issue, reasons }))];
 }
 
