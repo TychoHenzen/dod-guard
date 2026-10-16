@@ -4,277 +4,226 @@ description: Review a GitHub pull request's changed files with the quality-guard
 argument-hint: "[PR URL or number; default: the open PR for the current branch]"
 ---
 
-# Review pull request
+# Review PR
 
-Review the files a pull request changes, the way `/quality-guard:quality-refactor`
-reviews a scope, plus judgment the scanner cannot give: correctness, PBI
-acceptance, wiring, and failure handling. Report only. Post one GitHub review;
-`dod-guard:fix-pr-review` owns the fixes. Never edit files, approve, mark ready, merge,
-or close anything.
+This skill adds what the scanner cannot judge to a quality-refactor pass:
+correctness, PBI acceptance, wiring, and failure handling.
 
-Read and apply `standards/working-defaults.md` and
-`standards/github-request-discipline.md` from the plugin root. Stricter
-boundaries in this skill win.
+Ground rules:
 
-The skill directory is `${CLAUDE_PLUGIN_ROOT}/skills/review-pr` in Claude Code
-and the directory containing this `SKILL.md` in Codex. Keep scratch files
-outside the repository and delete them after posting. Pass every script flag
-as its own native argument, as the
-[command-composition contract](../../docs/command-composition.md) requires.
+- Read `standards/working-defaults.md` and `standards/github-request-discipline.md`
+  (paths relative to the plugin root) before you start. Where this skill is
+  stricter, this skill wins.
+- Never edit files, approve, mark ready, merge, or close anything. Fixes belong
+  to `dod-guard:fix-pr-review`.
+- One PR gets one comment-only review, and you never post a second review.
+- Scratch files live outside the repository. Delete them after posting.
+- `<skill-dir>` means `${CLAUDE_PLUGIN_ROOT}/skills/review-pr` in Claude Code
+  and the directory holding this file in Codex.
+- Each script flag is its own native argument, per
+  [the command-composition contract](../../docs/command-composition.md).
+- Model tiers come from `standards/model-routing.md`.
 
-## 1. Resolve the pull request and its PBI
+## 1. Resolve PR and PBI
 
-Resolve the repository as described under "Resolve the repository and Project"
-in `standards/github-request-discipline.md`. Accept a PR URL or number; without
-one, use the open PR whose head is the current branch. Stop when no PR exists.
+Find the repository by the "Resolve the repository and Project" section of
+`standards/github-request-discipline.md`. The PR is the URL or number you were
+given; without one, it is the open PR whose head is the current branch. If no PR
+exists, stop.
 
-Require local `HEAD` to equal the PR head SHA, and `git status --porcelain` to
-be empty, because the scanner and reviewers read the working tree. If either
-fails, stop and name the SHAs or the pending paths; do not switch branches,
-stash, or create a worktree.
+The scanner and the reviewers read the working tree, so check it first. Local
+`HEAD` must equal the PR head SHA, and `git status --porcelain` must print
+nothing. If either fails, stop and name the SHAs or the pending paths. Do not
+switch branches, stash, or create a worktree.
 
-Load the parent PBI from the PR's closing issue or the `codex/<issue>-<slug>`
-branch segment, with its acceptance criteria and linked sub-issues. Stop and
-name the missing PBI when none resolves.
+The parent PBI comes from the PR's closing issue, or from the `codex/<issue>-<slug>`
+branch segment. Fetch it and its sub-issues. If none resolves, stop and name the
+missing PBI.
 
-## 2. One review per pull request
+```text
+gh api "repos/{owner}/{repo}/issues/{n}"
+gh api --paginate --slurp "repos/{owner}/{repo}/issues/{n}/sub_issues?per_page=100"
+```
 
-Save the PR's reviews (`gh api --paginate --slurp "repos/{owner}/{repo}/pulls/{n}/reviews?per_page=100"`), then run:
+## 2. One review per PR
+
+Do this before any expensive work. Save the PR's existing reviews, then ask the
+script whether one carries the marker.
+
+```text
+gh api --paginate --slurp "repos/{owner}/{repo}/pulls/{n}/reviews?per_page=100"
+```
 
 ```text
 node "<skill-dir>/scripts/review-findings.mjs" existing --reviews=<reviews.json>
 ```
 
-When it reports `found: true`, report that review's recommendation, head, and
-URL, and stop. Commits pushed after it, such as `dod-guard:fix-pr-review` remediation, do
-not start another review unless the user asks for one.
+On `found: true`, report that review's recommendation, head, and URL, and stop.
+A later commit, such as remediation by `dod-guard:fix-pr-review`, does not
+justify a new review unless the user asks for one.
 
 ## 3. Diff and slots
 
-Find the merge base with the PR base branch and save
-`git diff --unified=0 --no-ext-diff --no-color --src-prefix=a/ --dst-prefix=b/ <merge-base> HEAD`
-as the diff file. The explicit prefixes override a user's `diff.mnemonicPrefix`
-or `diff.noprefix` setting. The scripts read the changed files and their added
-lines from this diff, decoding Git's quoted paths, so no separate file list is
-needed.
+One diff drives everything. Save it against the merge base with the PR base
+branch. The scripts read changed files and added lines from it, including Git's
+quoted paths, so no separate file list is needed.
 
-Save the PBI issue (`gh api "repos/{owner}/{repo}/issues/{n}"`) and its
-sub-issues (`gh api --paginate --slurp "repos/{owner}/{repo}/issues/{n}/sub_issues?per_page=100"`),
-then run:
+```text
+git diff --unified=0 --no-ext-diff --no-color --src-prefix=a/ --dst-prefix=b/ <merge-base> HEAD
+```
+
+Then cut the review into slots:
 
 ```text
 node "<skill-dir>/scripts/review-findings.mjs" slots --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --out=<slots.json>
 ```
 
-It writes one slot per review target: `file:<path>` for each changed file with
-at least one added line, `criterion:<n>` for each checkbox item under the PBI's
-`## Acceptance criteria`, checked or not, in document order, and
-`sub-issue:<owner/name>#<number>` for each linked sub-issue. Deletion-only
-files, pure renames, and binary files get no slot. It stops and names the PBI
-when the PBI has no checkbox item under `## Acceptance criteria`, and names the
-file when an input is missing or malformed. A PBI without sub-issues is valid.
-The slots are fixed: the planner cannot add, drop, or rename one.
+- `file:<path>` for each changed file with an added line.
+- `criterion:<n>` for each checkbox item under the PBI's `## Acceptance criteria`, checked or not, in document order.
+- `sub-issue:<owner/name>#<number>` for each linked sub-issue.
+
+Deletion-only files, pure renames, and binary files get no slot. A PBI with no
+sub-issues is valid. The script stops and names the PBI if it has no checkbox
+criterion, or names the file if an input is missing or malformed. The slots are fixed: the planner cannot add, drop, or rename one.
 
 ## 4. Scan
 
-Save the client's plugin list (`claude plugin list --json` in Claude Code,
-`codex plugin list --json` in Codex), check its exit status, then run:
-
-```text
-node "<skill-dir>/scripts/review-findings.mjs" scan --client=<claude|codex> --registry=<plugins.json> --root=<repository> --out=<scan.json>
-```
-
-It locates the installed quality-guard scanner from that list and scans the
-whole repository. A scan of only the changed files would report every export
-as dead, because their importers sit outside the scan. Stop when quality-guard
-is not installed or the scan fails; never guess a cache path.
-
+The scanner's output is limited by this rule:
 Structural rules such as complexity, length, duplication, nesting, parameters,
 and dead or test-only exports cover each whole changed file, including what it
 had before this PR: a touched file's design debt is in scope. Line-level rules
 such as `line-length` and the comment rules cover only the lines this PR adds.
 
-Then number the violations in scope:
+Save the plugin list for your client and check its exit status. The scan script uses
+it to locate the installed quality-guard scanner, then scans the whole repository
+(a changed-files-only scan would report every export as dead). Stop if
+quality-guard is missing or the scan fails, and never guess a cache path.
+
+```text
+claude plugin list --json
+codex plugin list --json
+node "<skill-dir>/scripts/review-findings.mjs" scan --client=<claude|codex> --registry=<plugins.json> --root=<repository> --out=<scan.json>
+```
+
+Next, filter the scan to the diff. `violations` numbers every in-scope violation `S1..Sn` in file, line, rule, and message order.
 
 ```text
 node "<skill-dir>/scripts/review-findings.mjs" violations --scan=<scan.json> --diff=<unified0.diff> --out=<violations.json>
 ```
 
-It numbers every in-scope violation `S1..Sn` in file, line, rule, and message
-order, so the planner can name each one.
-
 ## 5. Plan, investigate, judge, merge
 
-Run the review as the plan, investigate, and judge split in
-`standards/model-routing.md`. Every stage gets one shared brief: PR number and
-URL, base and head SHAs, the slots file, the diff file path, the violations
-file, the PBI acceptance criteria and sub-issues verbatim, and the governing
-`AGENTS.md` and `CLAUDE.md` paths.
+This step runs the plan, investigate, and judge split in `standards/model-routing.md`,
+with a verify stage after investigation and a merge stage after judging.
 
-1. **Plan.** One `dod-guard:read-standard` planner fills every slot in the slots
-   file and returns the plan as a JSON array with one entry per slot, either
-   `{ "slot", "questions" }` or `{ "slot", "excluded": { "lens", "reason" } }`.
-   Each question has an `id`, its `lens`, the `question`, the `files` to read,
-   and the risk it targets. The lenses are `review-pr-feature`,
-   `review-pr-design`, `review-pr-reliability`, and `review-pr-hygiene`, and
-   every lens gets at least one question or exclusion. Ids are unique across
-   all four lenses, for example with the lens prefixes `F`, `D`, `R`, and `H`.
-   A slot that needs no question gets one exclusion that names the lens that
-   owns it and the reason; a slot never has both. The planner copies every
-   slot id exactly and adds none. In each `file:` slot that has in-scope
-   violations, the planner writes scanner check questions that list the `S`
-   ids they cover in a `scanner` array. Each asks whether the violation shows
-   at the reviewed head, whether the path is generated or excluded, and
-   whether the rule's own condition holds. Investigators answer them like any
-   other question, and the main thread verifies them.
-2. **Investigate.** `dod-guard:read-cheap` investigators answer every
-   question, batched by slot with at most eight questions per investigator.
-   Each answer gives the slot, the question id, the cited path and line, and
-   the fact found there. Nobody investigates an exclusion.
-3. **Verify.** Before judging, the main thread checks every answer under the
-   cheap-output rule in that standard, with the reviewed head as the accepted
-   head. Send a failed batch back once with the exact gap; if it fails again,
-   run that batch once on `dod-guard:read-standard` with the failure record, as
-   "Escalation" in that standard says, and if it fails the same check there,
-   stop without posting, name the batch, and report the stop to the dispatcher,
-   which does not rerun the review stage. Save the plan JSON with a
-   `status` on each question: `verified`, `repaired` (verified after that one
-   repair), or `unanswered` (the investigator reported that the repository
-   does not answer it). The build regenerates the slots and refuses a plan
-   that misses, adds, or leaves empty a slot.
-4. **Judge.** Dispatch the four reviewers at once. Each receives the shared
-   brief and the slots assigned to its lens, with their questions, answers,
-   and answer statuses or their exclusions, and judges from that evidence
-   instead of re-reading the whole diff. It returns one ruling for every slot
-   assigned to its lens. A slot is assigned to a lens when it has a question
-   of that lens or an exclusion that names that lens. A judge settles each
-   `unanswered` question of its lens from the files that question names, or
-   reports the gap as a finding; it never counts one as passing. A judge
-   reports an exclusion assigned to its lens as a finding when its reason does
-   not hold.
+Every stage gets the same brief: PR number and URL, base and head SHAs, the slots
+file, the diff file path, the violations file, the PBI acceptance criteria and
+sub-issues verbatim, and the paths of the governing `AGENTS.md` and `CLAUDE.md`.
 
-- In Claude Code, use the Agent tool with the model and effort of each
-  stage's tier: `dod-guard:read-standard` plans, `dod-guard:read-cheap`
-  investigates, and `dod-guard:review-pr-feature`, `dod-guard:review-pr-design`,
-  `dod-guard:review-pr-reliability`, and `dod-guard:review-pr-hygiene` judge.
-- In Codex, use the matching `dod_guard_*` agents when the project registers
-  them in `.codex/agents/` (as this repository does); otherwise spawn an
-  explorer with the full agent definition from `<plugin-root>/agents/` in its
-  message, and record the stage as "requested, not pinned".
+| Stage | Claude Code agent |
+|---|---|
+| Planner | `dod-guard:read-standard` |
+| Investigators | `dod-guard:read-cheap` |
+| Judges | `dod-guard:review-pr-feature`, `dod-guard:review-pr-design`, `dod-guard:review-pr-reliability`, `dod-guard:review-pr-hygiene` |
+| Merge pass | `dod-guard:read-standard` |
 
-Each returns one JSON object with `reviewer`, `rulings`, and `findings`.
-`rulings` holds one `{ "slot", "status", "evidence" }` entry for every slot
-assigned to that reviewer's lens, with a `status` of `VERIFIED` or `FINDING`.
-Save the four objects as one JSON array. When an agent returns malformed JSON,
-send it one correction request for the same review in the exact format. If it
-fails again, stop without posting and name the reviewer; a format failure is not
-escalated to another tier. A review is posted once per PR, so a missing angle
-cannot be filled in later. The build step
-refuses results that lack any of the four reviewers, and names the reviewer and
-slot for a missing, duplicate, or unassigned ruling or an unknown status.
-It also refuses a result whose reviewer is not one of the four, and a
-`FINDING` ruling from a reviewer that returned no findings.
+Claude Code runs each through the Agent tool with the stage's tier model and
+effort. Codex uses the matching `dod_guard_*` agents when the project registers
+them in `.codex/agents/`. If it does not, spawn an explorer whose message holds
+the full definition from `<plugin-root>/agents/`, and record the stage as "requested, not pinned".
 
-5. **Merge.** Write the candidates file from the saved results:
+1. **Plan.**
+   - One `dod-guard:read-standard` planner fills every slot and returns a JSON array with one entry per slot.
+   - An entry is `{ "slot", "questions" }` or `{ "slot", "excluded": { "lens", "reason" } }`. Copy slot ids exactly and never add a slot.
+   - A question carries `id`, `lens`, `question`, `files`, and the risk it targets. The lenses are `review-pr-feature`, `review-pr-design`, `review-pr-reliability`, and `review-pr-hygiene`. Each lens gets at least one question or exclusion. Ids are unique across all four lenses.
+   - A slot that needs no question gets one exclusion that names the lens that owns it and the reason; a slot never has both.
+   - For each `file:` slot with in-scope violations, the planner writes scanner check questions that list the `S` ids they cover in a `scanner` array. The questions ask whether the violation shows at the reviewed head, whether the path is generated or excluded, and whether the rule's own condition holds.
+2. **Investigate.**
+   - The `dod-guard:read-cheap` investigators answer every question, batched by slot, at most eight questions each.
+   - An answer names the slot, the question id, a cited path and line, and the fact found.
+   - Nobody investigates an exclusion.
+3. **Verify.**
+   - Before judging, the main thread checks every answer against the cheap-output rule in that standard, with the reviewed head as the accepted head.
+   - Send a failed batch back once with the exact gap. If it fails again, run that batch once on `dod-guard:read-standard` with the failure record; if it fails the same check there, stop without posting, name the batch, and report the stop to the dispatcher, which does not rerun the review stage.
+   - Save the plan JSON with a `status` on each question: `verified`, `repaired` (verified after the one repair), or `unanswered` (the repository does not answer it).
+   - The build regenerates the slots and refuses a plan that misses, adds, or leaves empty a slot.
+4. **Judge.**
+   - Dispatch the four reviewers at once. Each gets the shared brief and its assigned slots, with their questions, answers, answer statuses, or exclusions. A slot is assigned to a lens when it has a question of that lens or an exclusion that names that lens.
+   - Each reviewer judges from that evidence instead of re-reading the whole diff. It returns one ruling for every slot assigned to its lens.
+   - For an `unanswered` question of its lens, the reviewer settles it from the files the question names or reports the gap as a finding; it never counts one as passing. It also reports an exclusion assigned to its lens as a finding when its reason does not hold.
+   - Each returns one JSON object with `reviewer`, `rulings`, and `findings`. A ruling is `{ "slot", "status", "evidence" }`, and status is `VERIFIED` or `FINDING`.
+   - Save the four objects as one JSON array. On malformed JSON, send one correction request in the exact format. If that fails too, stop without posting and name the reviewer; a format failure is not escalated to another tier. The review posts once, so a missed angle stays missed.
+5. **Merge.**
+   - Run `candidates`. It numbers the judged findings `J1..Jn` and repeats the `S` ids.
 
    ```text
    node "<skill-dir>/scripts/review-findings.mjs" candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --out=<candidates.json>
    ```
 
-   It numbers every judged finding `J1..Jn` and repeats the `S` ids. Then one
-   `dod-guard:read-standard` pass reads the candidates file and the saved plan.
-   In Claude Code, use the Agent tool with that tier's model and effort; in
-   Codex, use the registered `dod_guard_read_standard` agent. The pass returns
-   one JSON object:
+   - When the candidates file lists no finding and no violation, save `{ "groups": [], "scanner": [] }` as the merge file without dispatching the pass.
+   - Otherwise one `dod-guard:read-standard` pass reads the candidates file and the saved plan, through the Agent tool in Claude Code or the registered `dod_guard_read_standard` agent in Codex. It returns an object of this shape, which you save as the merge file:
 
    ```json
-   {
-     "groups": [{ "members": ["J1", "J3"], "representative": "J1" }],
-     "scanner": [{ "ids": ["S1"], "status": "KEEP" },
-       { "ids": ["S2"], "status": "DROP", "reason": "rule-misfire", "answer": "D4" }]
-   }
+   { "groups": [{ "members": ["J1", "J3"], "representative": "J1" }], "scanner": [{ "ids": ["S1"], "status": "KEEP" }, { "ids": ["S2"], "status": "DROP", "reason": "rule-misfire", "answer": "D4" }] }
    ```
 
-   Every `J` id is in exactly one group, and a finding no other lens repeated
-   is a one-member group. The pass groups only findings that cite the same
-   defect in the same file, and the representative is one of the group's
-   members. Every `S` id is in exactly one scanner ruling. A ruling is `KEEP`
-   unless one of `not-at-head`, `excluded-path`, or `rule-misfire` holds and a
-   `verified` or `repaired` scanner check question listing that `S` id shows
-   it; a `DROP` names that reason and cites the question id as `answer`. The
-   pass never sets a severity, and pre-existing or unchanged at base is never
-   a reason. Save its output as the merge file. When the candidates file lists
-   no finding and no violation, save `{ "groups": [], "scanner": [] }` as the
-   merge file without dispatching the pass.
-
-   If the build refuses the pass output, send the pass one correction request
-   with the build's exact error. If the corrected output is refused again,
-   stop without posting and name the merge pass; a refused build is not
-   escalated to another tier.
+   - Every `J` id is in exactly one group, and a finding no other lens repeated forms a one-member group. A group joins only findings that cite the same defect in the same file, and its representative is one of its members.
+   - Every `S` id is in exactly one scanner ruling. The ruling is `KEEP`, unless one of `not-at-head`, `excluded-path`, or `rule-misfire` holds and a `verified` or `repaired` scanner check question listing that `S` id shows it. Then the ruling is `DROP`, with that reason and the question id as `answer`.
+   - The pass never sets a severity. Whether a violation is pre-existing or unchanged at base is never a reason to drop it.
+   - If the build refuses the pass output, send the pass one correction request with the build's exact error. If it is refused again, stop without posting and name the merge pass. Capability is not the issue, so a refused build is not escalated to another tier.
 
 ## 6. Build and post
+
+`build` takes the full 40-character head SHA and every earlier file:
 
 ```text
 node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --out=<payload.json>
 ```
 
-The build regenerates the `J` and `S` ids from its own inputs and never reads
-them from a file. It refuses the merge output, naming the id, when a `J` id is
-missing, duplicated, or unknown; a representative is not a member of its
-group; a group spans files; an `S` ruling is missing or duplicated or has a
-status other than `KEEP` or `DROP`; a `DROP` reason is not `not-at-head`,
-`excluded-path`, or `rule-misfire`; a `DROP` cites a question that is not
-`verified` or `repaired` in the saved plan or does not list that `S` id; or
-the output carries any severity field.
+What the build enforces:
 
-It regenerates the slots from `--diff`, `--pbi`, and `--sub-issues`, never
-from a slot list the planner returns. It refuses the plan, naming the slot or
-question id, when a generated slot is missing, a planned slot was not
-generated, a slot has neither questions nor an exclusion or has both, a
-question or exclusion is incomplete, a question id repeats, or a lens has no
-question or exclusion. It posts one finding per group with the
-representative's text, the highest member severity, and every member lens. It
-groups only kept scanner violations into one comment per changed file, and
-lists dropped violations by file and rule in a collapsed block in the review
-body with their `S` ids, lines, reasons, and answer ids. It posts every
-`BLOCKER` and `MAJOR` finding as an inline comment with its own `GH-<id>`.
-`MINOR` findings go in a "Minor notes" list in the review body: they get no
-thread, need no reply, and do not block. When the diff adds no line, there is
-nothing to anchor a comment on, so blocking findings are listed in the review
-body without a `GH-<id>`. It lists every slot with its questions
-and their statuses, or its exclusion lens and reason, in a collapsed
-`<details>` block in the review body. When the body would pass GitHub's
-65536-character limit, the build refuses before anything is posted; shorten
-the question text in the saved plan and rebuild. A scanner group never moves
-to another file: when its file has no added line, the review body lists it
-under its own file and line, with no `GH-<id>`. A judged finding whose cited
-line this PR did not add moves to the nearest added line of its file, or to
-the first added line when its file has no added line (including a file
-outside the diff), and its body names the cited location. Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A
+- Slots come from `--diff`, `--pbi`, and `--sub-issues`, never from a slot list the planner returns. It refuses a plan, naming the slot or question id, when a generated slot is missing, a planned slot was not generated, a slot has neither questions nor an exclusion or has both, a question or exclusion is incomplete, a question id repeats, or a lens has no question or exclusion.
+- It refuses results that lack any of the four reviewers or come from a reviewer outside the four. It refuses a `FINDING` ruling from a reviewer that returned no findings. It names the reviewer and slot for a missing, duplicate, or unassigned ruling or an unknown status.
+- It regenerates the `J` and `S` ids from its own inputs and never reads them from a file. It refuses the merge output, naming the id or group at fault, when:
+  - a `J` id is missing, duplicated, or unknown;
+  - a representative is not a member;
+  - a group spans files;
+  - an `S` ruling is missing or duplicated or has a status other than `KEEP` or `DROP`;
+  - a `DROP` reason is not `not-at-head`, `excluded-path`, or `rule-misfire`;
+  - a `DROP` cites a question that is not `verified` or `repaired`, or that does not list that `S` id;
+  - the output carries any severity field.
+- If the body would pass GitHub's 65536-character limit, it refuses before posting. Shorten question text in the saved plan and rebuild.
+
+What the posted review contains:
+
+- Judged findings: one finding per group with the representative's text, the highest member severity, and every member lens. Each `BLOCKER` and `MAJOR` is an inline comment with its own `GH-<id>`. `MINOR` findings go in a "Minor notes" list in the review body; they open no thread, need no reply, and do not block.
+- Scanner findings: the build groups only kept scanner violations into one comment per changed file, and lists dropped violations by file and rule in a collapsed block in the body, with `S` ids, lines, reasons, and answer ids. A scanner group never moves to another file; with no added line in its file, it is listed in the body under its own file and line, with no `GH-<id>`.
+- When the diff adds no line, blocking findings are listed in the review body without a `GH-<id>`.
+- Every slot, with its questions and statuses or its exclusion lens and reason, sits in a collapsed `<details>` block in the review body.
+- A judged finding whose cited line this PR did not add moves to the nearest added line of its file, or to the file's first added line. A file outside the diff also uses its first added line. The body of the finding names the
+cited location. Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A
 file's scanner findings are `MAJOR` when any is `high`, otherwise `MINOR`.
-Recommendation: any `BLOCKER` is `BLOCK`, any
-`MAJOR` is `REQUEST_CHANGES`, and only `MINOR` findings or none is `APPROVE`.
 
-It writes the review payload to `--out` and prints the recommendation and
-severity counts. Reread the PR head; stop if it moved. Post the payload as one
-review:
+The recommendation follows the worst severity: any `BLOCKER` is `BLOCK`, any `MAJOR` is `REQUEST_CHANGES`, and only `MINOR` findings or none is `APPROVE`.
+
+Then post:
+
+1. Reread the PR head. If it moved, stop.
+2. Post the payload as one review. The review event is always `COMMENT`, and the body carries the `dod-guard:review-pr` marker that step 2 detects.
+3. If the post fails or its outcome is unclear, rerun step 2 before any retry, and never post a second review.
 
 ```text
 gh api --method POST "repos/{owner}/{repo}/pulls/{n}/reviews" --input <payload.json>
 ```
 
-The review event is always `COMMENT`, and its body carries the
-`dod-guard:review-pr` marker that step 2 detects. If the post fails or is
-ambiguous, rerun step 2 before any retry; never post a second review.
-
 ## 7. Report
 
-Save the PR's review comments, then run:
+Save the PR's review comments and run:
 
 ```text
 node "<skill-dir>/scripts/review-findings.mjs" report --review-id=<posted id> --comments=<comments.json>
 ```
 
-Report the PR, head SHA, PBI, `Recommendation`, the review URL, and each
-finding as `GH-<id>`, severity, and `file:line`. Callers pass the `GH-` IDs to
+Give the PR, head SHA, PBI, `Recommendation`, and review URL. List each finding
+as `GH-<id>`, severity, and `file:line`. A caller passes those `GH-` ids on to
 `dod-guard:fix-pr-review`.

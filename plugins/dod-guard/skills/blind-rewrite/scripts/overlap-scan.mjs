@@ -219,7 +219,7 @@ async function main() {
   const metrics = scoreOverlap(original, rewrite, {
     mode: options.mode,
     whitelist: options.whitelist,
-    contract: loadContract(options["contract-file"]),
+    contract: loadContract(options["contract-file"] ? await readFile(options["contract-file"], "utf8") : ""),
   });
   console.log(
     JSON.stringify({

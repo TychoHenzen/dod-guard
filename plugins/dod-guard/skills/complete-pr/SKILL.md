@@ -5,243 +5,142 @@ description: Complete a verified open pull request through guarded REST merge, r
 
 # Complete PR
 
-Treat invocation of this skill as the explicit acceptance gate for the current
-pull request, not a separate human-approval step. Before invoking it, verify
-the current head, linked child acceptance, review remediation, required checks,
-and cleanup conditions. Do not infer that the gate is satisfied from review
-comments, passing checks, or an earlier command; this invocation performs the
-final guarded verification.
+Calling this skill is the explicit acceptance gate for the current pull request, so no further human approval follows it. The caller checked the head, linked child acceptance, review remediation, required checks, and cleanup conditions before calling. This skill still does the last guarded verification itself. Review comments, green checks, and earlier commands never stand in for that gate.
 
-Read and apply `standards/working-defaults.md` and
-`standards/github-request-discipline.md` from the plugin root. Stricter
-boundaries in this skill win.
+Load `standards/working-defaults.md` and `standards/github-request-discipline.md` from the plugin root. Stricter boundaries in this skill win over both. Shell composition follows the [command-composition contract](../../docs/command-composition.md): the helper invocation passes repository and PR number as separate native arguments and preserves a non-zero preflight result.
 
 ## Resolve the pull request
 
-1. Confirm the current directory is inside a Git checkout and inspect
-   `git status --short`. A dirty tree is not automatically a failure. Classify
-   pending paths without mutation and preserve ordinary changes that are clearly
-   part of the accepted PBI. Stop for secrets, destructive intent, unrelated or
-   indistinguishable work, or when the accepted pull request no longer
-   represents reviewed code.
-2. Run `gh auth status`. Require `repo` access.
-3. Resolve the repository and default branch with the GitHub MCP repository
-   operation. If MCP is unavailable, use
-   `gh repo view --json nameWithOwner,defaultBranchRef,url`.
-4. Resolve the one open pull request for the current branch, or use the pull
-   request number supplied by the user. Accept either a draft or ready pull
-   request whose head belongs to the current repository and whose base is the
-   default branch.
-5. Read the pull request, linked issue, review result, and latest verification
-   evidence. Stop if the draft does not represent the reviewed and verified code.
-6. If the classified pending changes are clearly part of the accepted PBI,
-   stage only those reviewed paths, commit them on this verified branch, and
-   push. Reread the pull request head and
-   verification evidence. Stop unless the new head has fresh review and
-   verification evidence for those changes.
+1. Check that the working directory is a Git checkout, then run `git status --short`.
+2. Treat a dirty tree as input, not failure. Sort each pending path without changing it, and keep ordinary edits that clearly belong to the accepted PBI.
+3. Stop on secrets, destructive intent, unrelated or indistinguishable work, or a PR that no longer represents reviewed code.
+4. Run `gh auth status`. It must show `repo` access.
+5. Get the repository and default branch from the GitHub MCP repository operation. Fall back to `gh repo view --json nameWithOwner,defaultBranchRef,url` only when MCP is unavailable.
+6. Pick the single open PR for the current branch, or the number the user supplied. Draft and ready both qualify. The head lives in this repository and the base is the default branch.
+7. Read the PR, its linked issue, the review result, and the newest verification evidence. Stop if the draft is not the reviewed, verified code.
+8. If pending changes are clearly part of the accepted PBI, stage only those reviewed paths, commit them on this verified branch, push, and reread the head and evidence. Stop unless the new head carries fresh review and verification evidence for them.
 
 ## Complete the accepted pull request
 
-Resolve this skill's directory from the loaded `SKILL.md`, then run:
+### Gates before the helper
 
-The helper invocation follows the repository's
-[command-composition contract](../../docs/command-composition.md): pass the
-repository and pull-request values as separate native arguments and preserve a
-non-zero preflight result.
+**Preflight checkpoint.** Take the `## Preflight checkpoint` from the implementation handoff. Before any ready transition, branch update, merge, or cleanup, it must give:
+
+- the exact branch and PR head;
+- the base ref and SHA, and mergeability;
+- a matrix row for every required provider context, each with provider, workflow, run ID, ref, head SHA, and state. A classic status-only context may leave out workflow and run ID, but it still needs provider, the same repository ref, and exact head.
+
+State values are `present`, `pending`, `failed`, `skipped`, and `unavailable`. An exact-head `skipped` context passes. Reject missing, pending, failed, unavailable, stale, duplicate, forked, or provider-mismatched evidence, and never infer success from a passing aggregate. On rejection, stop and report expected versus observed.
+
+**Draft-skipped workflow.** When a workflow was skipped because the PR was a draft, confirm draft readiness at the same repository ref and exact head. Dispatch once through the existing guarded workflow owner, then read back run, workflow, ref, and head before waiting. If the base advances, the handoff and acceptance matrix are void. Bounded branch synchronization is the only recovery, and a merge conflict on the PBI head goes to the triage under "Triage a merge conflict". An unresolvable conflict, unexpected branch movement, failed readback, or a second dispatch stops before review resolution, merge, cleanup, force-push, or generated-ref mutation. After synchronizing, require fresh acceptance and required-check proof at the final head.
+
+**Review threads.** Once the head has converged and before any mutation, read all review threads. Count each unresolved thread, whoever wrote it and even if outdated. Never count resolved ones.
+
+- Any unresolved thread: stop with `unresolved-review-threads` and name each thread URL and path.
+- A read that fails, is malformed, or is not fully paginated: stop with `review-threads-unavailable` before marking ready, enabling auto-merge, dispatching CI, or merging.
+- To clear either stop, run `dod-guard:fix-pr-review` or resolve the thread, then rerun this skill.
+
+### Run the helper
+
+Find the skill directory from this loaded file and pass the exact verified pushed head. The helper does not treat a mutable provider head as its first sign of acceptance.
 
 ```text
 node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha>
 ```
 
-The final gate consumes the `## Preflight checkpoint` carried by the
-implementation handoff. Before any ready transition, branch update, merge, or
-cleanup, require the checkpoint's exact branch/PR head, base ref/SHA,
-mergeability, and complete matrix for every required provider context. Every context row must
-retain its provider, workflow, run ID, ref, head SHA, and state. Missing,
-pending, failed, unavailable, stale, duplicate, forked, or
-provider-mismatched evidence stops with the expected and observed values rather
-than being inferred from a passing aggregate check. An exact-head `skipped`
-context is accepted as passing, matching the completion helper. The normalized states are
-`present`, `pending`, `failed`, `skipped`, and `unavailable`.
-Classic status-only contexts may omit workflow and run ID, but still require the
-observed provider, repository ref, and exact head.
+The helper works in this order.
 
-If a draft-skipped workflow needs recovery, verify draft readiness at the same
-repository ref and exact head, dispatch it once through the existing guarded
-workflow owner, and read back the run, workflow, ref, and head before waiting
-for required checks. A base advance invalidates the handoff and acceptance
-matrix; the bounded branch synchronization below is the only recovery path,
-and a merge conflict on the PBI head goes to the triage under "Triage a merge
-conflict". An unresolvable conflict, unexpected branch movement, failed
-readback, or a second dispatch stops before review resolution, merge, cleanup,
-force-push, or generated-ref mutation. Fresh acceptance and required-check
-proof is mandatory at the final head after synchronization.
+CI and checks:
 
-Normal completion requires the exact pushed head SHA already verified by the
-calling workflow; the helper never adopts a mutable provider head as its first
-acceptance signal. Merged-recovery mode uses the recorded merged head instead
-and keeps its existing `--recover-merged [--dry-run]` invocation. In normal
-completion, after head convergence and before any mutation, the helper reads
-every review thread. Every unresolved thread counts regardless of its author
-or whether it is outdated, and resolved threads never count. An unresolved
-thread stops with `unresolved-review-threads`, naming each thread's URL and
-path. A failed, malformed, or incompletely paginated read stops with
-`review-threads-unavailable` before it marks ready, enables auto-merge,
-dispatches CI, or merges. The remedy is `dod-guard:fix-pr-review` or resolving the
-thread, then running this skill again. If the pull request is a draft, it marks
-it ready. If it is already ready, it preserves that state. It then:
+- It marks a draft ready and leaves an already-ready PR alone.
+- It looks for a `.github/workflows/ci.yml` run on the accepted head. With none, it confirms the same-repository branch still points at that SHA, dispatches once, and waits a bounded time for an exact-head run. After an ambiguous dispatch it reads back and does not retry blindly.
+- It waits out queued or in-progress CI. It stops on a fork, branch drift, a stale or duplicate run, the wrong workflow, a failed or cancelled run, an unsupported state, a dispatch error, or a missing-run timeout.
+- One REST path, shared with the closure snapshot, supplies the required checks: base branch protection, then the check runs and commit statuses of the exact PR head, including an expected GitHub App provider. It never runs `gh pr checks`, and the token must be able to read branch protection.
+- A 403 or other non-404 protection read, or a failed check or status read, stops with an error that names the endpoint. A 404 (unprotected base) stops with `missing_required_checks`. A green `ci.yml` run alone is not acceptance.
+- When one provider reports several exact-head runs of a required check, the newest numeric check-run id decides. Runs that cannot be ordered count only if they agree. `success`, `neutral`, and `skipped` pass; pending stays pending. Missing, stale, mismatched, conflicting, disagreeing unordered, or unsupported evidence fails closed, as do several statuses, or a run plus a status, for one context.
 
-- checks for a `.github/workflows/ci.yml` run on the accepted head SHA; if none
-  exists, it verifies that the same-repository branch still points to that SHA,
-  dispatches the existing workflow once, and waits a bounded time for an
-  exact-head run;
-- reads back after an ambiguous dispatch instead of blindly retrying, waits for
-  queued or in-progress CI to pass before attempting the merge, and stops on a fork,
-  branch drift, stale or duplicate run, wrong workflow, failed or cancelled
-  run, unsupported state, dispatch error, or missing-run timeout;
-- enables repository auto-merge when needed;
-- merges through the REST pull-request endpoint with the expected head SHA;
-- waits for every required check before merging and stops on failure or cancellation;
-- reads the review threads again immediately before each merge request and
-  stops the same way;
-- reads required checks through one REST path, the same reader the closure
-  snapshot uses: branch protection for the base branch, then the check runs
-  and commit statuses of the exact pull-request head, including any expected
-  GitHub App provider. It runs no `gh pr checks` command. The token must be
-  able to read branch protection. A 403 or other non-404 protection read, or a
-  failed check-run or status read, stops with an error naming the endpoint; an
-  unprotected base (404) stops with `missing_required_checks`;
-- requires those exact-SHA required checks and provider evidence after `ci.yml`
-  completes; a successful workflow run alone is not acceptance;
-- settles several exact-head runs of one required check from its provider,
-  such as a `pull_request` run and a `workflow_dispatch` run, by the newest
-  run, ordered by numeric check-run id: that run's pass, failure, or pending
-  state decides. Runs that cannot be ordered count only when they agree;
-- treats `success`, `neutral`, and `skipped` as passing, keeps pending results
-  pending, and fails closed for missing, stale, mismatched or conflicting
-  provider, disagreeing unordered, or unsupported evidence, and for several
-  statuses or a run plus a status for one context;
-- updates a stale branch only with its trusted head SHA;
-- accepts an update commit only when its parents are the prior trusted head and
-  the base branch tip read just before the update, and stops with
-  `base_branch_missing` when that base branch ref is absent;
-- repeats guarded updates if the base advances again;
-- stops with `merge_conflict` on conflicts, which the triage below handles,
-  and stops on unexpected pushes, permission failures, or bounded waits;
-- confirms the merge commit and linked closing issue state;
-- verifies the same-repository remote branch still points to the merged head,
-  deletes it, and confirms it is absent;
-- cleans the local branch only through the current checkout. If the target
-  branch is current, it switches that checkout to the default branch only when
-  clean and fast-forwardable; it preserves dirty or refused state and never
-  inspects or changes another checkout;
+Branch and merge:
 
-If a prior run already merged the pull request but stopped before branch
-cleanup, use the explicit recovery mode after checking the live state:
+- It updates a stale branch only with its trusted head SHA. An update commit is accepted only when its parents are the prior trusted head and the base tip read just before the update. An absent base ref gives `base_branch_missing`. If the base moves again, it repeats the guarded update.
+- stops with `merge_conflict` on conflicts, which the triage below handles, and on unexpected pushes, permission failures, and bounded waits.
+- It enables repo auto-merge when needed and waits for every required check, stopping on failure or cancellation. Right before each merge request it rereads review threads and stops the same way.
+- It merges through the REST pull-request endpoint with the expected head SHA, then confirms the merge commit and the linked closing issue state.
+
+Cleanup:
+
+- It checks that the same-repository remote branch still points at the merged head, deletes it, and confirms it is gone.
+- It cleans the local branch only through the current checkout: switch to the default branch only when clean and fast-forwardable, keep any dirty or refused state, and never touch another checkout.
+
+Never use `--admin`, force-push, weaken repository protections, or delete a ref whose SHA differs from the merged PR head.
+
+### Recover a merged pull request
+
+If an earlier run merged but stopped before cleanup, check live state first. Then run the dry run, and after it the real recovery:
 
 ```text
 node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --recover-merged --dry-run
 node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --recover-merged
 ```
 
-Recovery accepts only an already-merged pull request with complete required
-checks, closed linked issues, and `Done` Project status. It deletes the remote
-head only when that branch still points to the merged head, then confirms the
-ref is absent. It uses the same exact-branch local cleanup and reports any
-preserved current-checkout state or local ref. The dry run performs these
-checks without deleting a remote ref or local ref, or switching branches.
-
-Never use `--admin`, force-push, weaken repository protections, or delete a ref
-whose SHA differs from the merged pull request head.
+Recovery takes only a PR that is already merged, with complete required checks, closed linked issues, and `Done` Project status. It deletes the remote head only if that head still equals the merged head, confirms it is gone, performs the same exact-branch local cleanup, and reports whatever state it preserved. The dry run deletes and switches nothing. This mode uses the recorded merged head instead of the verified pushed head.
 
 ## Triage a merge conflict
 
-When the helper stops with `merge_conflict` on a pull request whose head is
-the trusted PBI head, triage the conflict as `standards/conflict-triage.md`
-says instead of ending the run. That standard owns the preconditions, stages,
-stop rules, push provenance, and record. After a verified push, end with
-`conflict-triaged` and do not merge: the new head needs `dod-guard:submit-draft-pr`
-convergence and `dod-guard:review-pr` before this skill runs again. When the triage
-stops, report the stop and leave the pull request head unchanged. Every other
-helper stop ends the run as described above.
+When the helper stops with `merge_conflict` on a pull request whose head is the trusted PBI head, triage the conflict as `standards/conflict-triage.md` says instead of ending the run. That standard owns preconditions, stages, stop rules, push provenance, and the record.
 
-A run on the cheap model does not triage. It stops at `merge_conflict`, reports
-the stop with the trusted head and the pull request number, and leaves the head
-unchanged. Its dispatcher then runs the triage, as `standards/conflict-triage.md`
-says.
+- After a verified triage push, end with `conflict-triaged` and do not merge. The new head needs `dod-guard:submit-draft-pr` convergence and `dod-guard:review-pr` before this skill runs again.
+- If the triage stops, report the stop and leave the PR head unchanged.
+- Any other helper stop ends the run.
+
+A run on the cheap model does not triage. It stops at `merge_conflict`, reports the stop with the trusted head and the pull
+request number, and leaves the head unchanged. Its dispatcher then runs the triage, as `standards/conflict-triage.md` says.
 
 ## Finalize the parent unit
 
-Only after the helper returns a verified merge result, read the linked parent
-PBI, its linked child issues, and their one shared Project. For a structured
-parent, require each linked child to match one independently delivered and
-verified functional slice recorded in the task list. There is no fixed child
-count or category set; finalize every linked child and every parent-level task
-that owns implementation, wiring and end-to-end usability, code quality, or
-failure/recovery work. Resolve the
-shared Project number, REST item IDs, Status-field ID, and `Done` option ID once.
-Before finalizing a structured parent, consume the current handoff through
-`complete-pr/scripts/finalization-gate.mjs`, which calls the exported
-`evaluateConvergence` API from `next-ticket/scripts/structured-workflow-proof.mjs`,
-and stop on any actionable remainder. Load its `records`, `tasks`, `children`,
-`reviewLenses`, `acceptance`, `acceptanceMatrix`, and exact pushed `headSha`,
-then require `outcome: "verified"`; each lens must also resolve its
-`acceptanceEvidence` and `verificationEvidence` through the exact-head matrix.
-Any other outcome stops finalization. Direct Project readback does not replace
-this convergence proof.
+Only after the helper returns a verified merge result, read the linked parent PBI, its linked children, and the one Project they share. A structured parent expects each linked child to match one independently delivered and verified functional slice from the task list. There is no fixed child count or category set. Finalize every child, plus every parent-level task that owns implementation, wiring and end-to-end usability, code quality, or failure and recovery.
 
-Use the shipped helper as an import-based gate, passing the parsed handoff object
-from the durable issue comment:
+### Prove convergence first
+
+A structured parent must pass the finalization gate before anything is finalized. Feed it the durable handoff, which holds `records`, `tasks`, `children`, `reviewLenses`, `acceptance`, `acceptanceMatrix`, and the exact pushed `headSha`. The gate lives in `complete-pr/scripts/finalization-gate.mjs` and calls the exported `evaluateConvergence` API from `next-ticket/scripts/structured-workflow-proof.mjs`. Direct Project readback never replaces this proof. Proceed only if you require `outcome: "verified"`, and stop on any actionable remainder.
 
 ```js
 import { evaluateStructuredFinalization } from "./scripts/finalization-gate.mjs";
+
 const result = evaluateStructuredFinalization(handoff);
 if (result.nextStep !== "project-status.mjs") throw new Error(result.remainder.join("; "));
 ```
-Require every parent-level task that owns one of those review lenses to carry
-explicit acceptance and verification evidence in the durable handoff and read
-it back before finalizing the Project item, even when it has no linked child
-commit. The evidence must resolve through the handoff's acceptance matrix, whose
-mandatory user-path rows prove wiring/usability and failure/recovery behavior at
-the exact pushed head. The finalization gate binds `wiring/usability` to
-`interactive-control` and `browser/e2e`, and `reliability` to `data/error` and
-`recovery`; one passing row cannot stand in for multiple lenses.
-Use the shared status-write runner with the child item IDs first and the parent item ID last:
+
+Evidence rules the gate enforces:
+
+- Each review lens resolves its `acceptanceEvidence` and `verificationEvidence` through the exact-head matrix.
+- Every parent-level lens-owning task carries explicit acceptance and verification evidence in the durable handoff, read back before finalizing, even with no child commit.
+- Mandatory user-path rows in the matrix prove wiring, usability, failure, and recovery at the exact head. The gate binds `wiring/usability` to `interactive-control` and `browser/e2e`, and `reliability` to `data/error` and `recovery`. One passing row cannot cover several lenses.
+
+### Write Done
+
+Resolve the shared Project number, REST item IDs, Status-field ID, and `Done` option ID once. Then run the status runner with child item IDs first and the parent item ID last:
 
 ```text
 node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> ... <parent-item-id>
 ```
 
-Each item ID may be the Project item's numeric REST id or its `PVTI_` global
-node id; the runner resolves either form to the same item and refuses two IDs
-that name one item. Pass numeric ids: the runner reads them through the
-single-item endpoint, while a `PVTI_` id is found only through the items list,
-which can lag behind a newly added item.
+An item ID is either its numeric REST id or its `PVTI_` global node id. The runner accepts both and refuses two IDs that name one item. Pass numeric ids: the runner reads them through the single-item endpoint, whereas a `PVTI_` id turns up only in the items list, which can lag behind a newly added item. The runner resolves the live REST field and item IDs, and reads each item back from the shared Project before continuing.
 
-The runner resolves the live REST field and item IDs and reads each item back
-from the shared Project before continuing. For every code-backed child, verify
-its pushed commit is included in the verified merge. Close a
-still-open code-backed child only after that verification. If a parent or child
-is still Backlog, Todo, or In Progress after the pass, repair that item and
-read it back before reporting completion. Never finalize a parent or child
-before the helper's merge result, and never alter unrelated Project items.
+### Close children
+
+For every code-backed child, verify its pushed commit is included in the verified merge. Close a still-open code-backed child only after that verification. If a parent or child is still Backlog, Todo, or In Progress after this pass, repair it and read it back before reporting completion. Never finalize a parent or child before the helper's merge result, and never alter unrelated Project items.
 
 ## Record completion and close replaced issues
 
-After the finalization readback shows the delivered issues Done, save the
-helper's JSON result and the handoff's acceptance-matrix rows as files, then
-record completion evidence on each linked closing issue and each finalized
-child:
+After the finalization readback shows the delivered issues Done, record the evidence. Save the helper's JSON result and the acceptance-matrix rows as files. The record step then adds a `## Completion evidence` comment to each linked closing issue and each finalized child; `standards/project-workflow.md` defines that record:
 
 ```text
 node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --result=<helper-result.json> --matrix=<matrix-rows.json> --children=<child-number>,...
 ```
 
-The `## Completion evidence` record is defined in
-`standards/project-workflow.md`. The record step reads before it writes,
-updates an existing record in place, and reads it back, so a stopped run reruns
-it safely. Then build the closure snapshot that `standards/project-workflow.md`
-defines after the record step, and run:
+Record reads before writing, updates an existing record in place, and reads the result back, so a stopped run reruns it safely.
+
+Next, build the closure snapshot that `standards/project-workflow.md` defines, plan against it, and apply the plan:
 
 ```text
 node <skill-dir>/scripts/closure.mjs snapshot --repository=<owner/repository> --output=<file>
@@ -249,51 +148,34 @@ node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
 node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 ```
 
-If snapshot exits non-zero, stop and report its error; never plan or apply on
-an older file.
+If snapshot exits non-zero, stop and report. Never plan or apply on an older file.
 
-The snapshot holds only non-archived Project items, so a verified root archived
-before `apply` runs no longer closes the originals its `supersedes` record
-names. An archived sub-issue or parent has no record either, so the parent walk
-holds that parent with `child #N readback missing` or `issue #P readback
-missing` instead of closing it. `unverified-closed` leaves out an owner's
-`not_planned` hand close that has no `supersedes` root, completion record, or
-closure evidence, and still reports a `completed` hand close without evidence.
-Details are in `standards/project-workflow.md`.
+- `plan` only reads.
+- `apply` re-plans the same snapshot, then takes each planned issue through read, evidence comment, close with its `state_reason`, readback, and Project Done. When a readback disagrees, it stops and shows the observed partial state.
+- A rerun finishes the job: a rerun completes the remaining steps without a second comment; it also sets Done on an issue it already closed whose Project status write stopped.
+- Report every hold with its reason.
 
-`plan` is read-only. `apply` re-plans the same snapshot and closes each planned
-issue as read, evidence comment, close with its `state_reason`, readback, and
-Project Done; it stops with the observed partial state when a readback
-disagrees, and a rerun completes the remaining steps without a second comment;
-it also sets Done on an issue it already closed whose Project status write
-stopped. Report every hold with its reason. Closing keywords and the helper's
-linked-issue confirmation are unchanged.
+Archived items are outside the snapshot, which holds only non-archived Project items. A root archived before apply stops closing the originals its `supersedes` record names. An archived sub-issue or parent has no record, so the parent walk holds that parent with `child #N readback missing` or `issue #P readback missing`. `unverified-closed` omits an owner's `not_planned` hand close that has no `supersedes` root, completion record, or closure evidence, and still reports a `completed` hand close without evidence. `standards/project-workflow.md` has the details.
+
+Closing keywords and the helper's linked-issue confirmation are unchanged.
 
 ## Close delivered issues for goal-sdlc
 
-When `dod-guard:goal-sdlc` delegates its start-of-run cleanup, run only this section:
-resolve no pull request, merge nothing, take the closure snapshot that
-`dod-guard:goal-sdlc` built with `closure.mjs snapshot --repository=<owner/repository>
---output=<file>`, or build one with that command itself when none was passed,
-and run:
+`dod-guard:goal-sdlc` may delegate its start-of-run cleanup here. Run only this section: resolve no pull request and merge nothing. If the caller passed a snapshot it built, use that. Otherwise build one:
+
+```text
+node <skill-dir>/scripts/closure.mjs snapshot --repository=<owner/repository> --output=<file>
+```
+
+If snapshot exits non-zero, stop and report its error, and never plan or apply on an older file. On success, plan and then apply:
 
 ```text
 node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
 node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 ```
 
-If snapshot exits non-zero, stop and report its error: when that build failed,
-never plan or apply on an older file.
-
-Report the applied closes, status repairs, holds, `unverified-closed` reports
-(scoped as in "Record completion and close replaced issues" and
-`standards/project-workflow.md`), and any stop with its observed state. Make no
-other issue or Project write.
+Make no other issue or Project write. Report applied closes, status repairs, holds, `unverified-closed` reports (scoped as in the previous section), and any stop with the observed state.
 
 ## Result
 
-Report the pull request, accepted head, final trusted head, merge commit, linked
-issue state, remote branch deletion, parent/child Project finalization
-readback, completion records, and closure closes and holds. Stop after the helper succeeds or returns a specific failure code,
-or the conflict triage ends with `conflict-triaged` or a stop. Publishing and
-plugin-cache refresh remain separate workflows.
+Report: the PR; the accepted head; the final trusted head; the merge commit; linked issue state; remote branch deletion; parent and child Project finalization readback; completion records; closure closes and holds. Stop after helper success or a specific failure code, or the conflict triage ends with `conflict-triaged` or a stop. Publishing and plugin-cache refresh are separate workflows.

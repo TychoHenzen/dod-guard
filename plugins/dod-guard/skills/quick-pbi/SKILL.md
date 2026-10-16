@@ -6,83 +6,40 @@ argument-hint: "<requested outcome>"
 
 # Quick PBI
 
-Run one complete PBI lifecycle. This skill coordinates the existing delivery
-skills and does not replace their safety gates or evidence requirements.
-
-Read and apply `standards/working-defaults.md` and
-`standards/github-request-discipline.md` from the plugin root. Load each
-referenced skill from the active plugin root before invoking it.
+Take one requested outcome and carry it to a merged pull request. Read `standards/working-defaults.md` and `standards/github-request-discipline.md` from the plugin root first. Load each skill named below from the active plugin root before you invoke it.
 
 ## Interaction contract
 
-- Treat invoking this skill as authorization for the listed lifecycle,
-  including commits, pushes, review publication, and `dod-guard:complete-pr` for the
-  final verified pull request head.
-- Ask no confirmation between stages. The only allowed user interaction is the
-  batched clarification round owned by `dod-guard:refine-backlog-item`.
-- Use the current repository or an explicitly supplied target repository. If
-  the target, linked Project, credentials, branch, head, or required evidence
-  cannot be resolved, stop and report the exact blocker instead of asking the
-  user to choose a fallback.
-- Never invent a requirement or silently continue past a failed gate.
-- A concrete feature request authorizes the routine lifecycle without a second
-  planning or permission round: create or reuse one associated parent PBI,
-  move it to `In Progress`, and carry that feature through one branch, its
-  commit series, and one draft PR. Use functional decomposition during
-  refinement: create child PBIs only for independently deliverable and
-  verifiable functional slices, and keep dependent atomic steps in the parent
-  checklist. Explicitly assess these review lenses:
-  `implementation`; `wiring/usability` for wiring and end-to-end usability,
-  including proof that the feature is reachable from its intended UI or
-  supported user-facing surface; `quality` for refactoring and code quality,
-  including cleanup; and `reliability` for failure/recovery beyond the happy
-  path. Attach each concern to the slice or parent task that owns it
-  instead of manufacturing category children. Linked child PBIs remain
-  checklist work delivered through the parent's single branch, commit series,
-  and draft PR.
-- Do not pause for ceremonial confirmation before issue, Project, branch,
-  commit, push, or draft-PR actions already covered by this skill. Ask only the
-  batched refinement questions for material constraints, or a real external
-  blocker that repository evidence cannot resolve.
+A concrete feature request authorizes the routine lifecycle. Invoking this skill authorizes every commit, push, review publication, and the final `dod-guard:complete-pr` run on the verified final head. Do not pause for ceremonial confirmation. Ask no confirmation between stages.
+
+The only allowed user interaction is the clarification round that `dod-guard:refine-backlog-item` owns. Collect all currently independent questions in one round, ask them together, then resume the same issue with the answers. Ask nowhere else. If a material answer stays unavailable, leave the issue in its real state and stop.
+
+Use the current repository, or the one the user names. If the target, Project, credentials, branch, head, or evidence cannot be resolved, stop and report the exact blocker. Do not ask for a fallback. Never invent a requirement, and never continue past a failed gate.
+
+Shape the work this way:
+
+- Create or reuse one associated parent PBI for the request, and move it to `In Progress`.
+- Use one branch, its commit series, and one draft PR for the whole parent.
+- Open a child PBI only for a functional slice that can be delivered and verified on its own. Keep dependent atomic steps in the parent checklist.
+- Treat a linked child as checklist work on the parent's branch and PR.
+- Assess four lenses: `implementation`, `wiring/usability`, `quality`, and `reliability`. Attach each concern to the slice or task that owns it. Create no child issue for a lens.
+- Under `wiring/usability`, require proof that the feature is reachable from its intended UI or supported user-facing surface.
+- Under `quality`, include cleanup.
+- Under `reliability`, cover failure and recovery beyond the happy path.
 
 ## Run the lifecycle
 
-1. Invoke `dod-guard:add-backlog-idea` once with the complete user request. Keep its
-   feature split and issue mappings. If it creates multiple independent
-   issues, process them one at a time in creation order. If capture reports
-   text that cannot be assigned to a feature, stop with that blocker and do not
-   ask the user to assign it or guess where it belongs.
-2. For each created issue, invoke `dod-guard:refine-backlog-item <issue-number>`.
-   When refinement finds missing user constraints, ask all currently
-   independent questions in one round, wait for the answers, and resume the
-   same issue. Do not ask questions in any other stage. If a material answer
-   remains unavailable, leave the issue in its actual state and stop.
-3. Invoke `dod-guard:next-ticket <issue-number>` after refinement moves the issue to
-   `Todo`. Use its pushed branch, commit, and checks
-   as the implementation handoff. Do not select another ticket.
-4. Invoke `dod-guard:submit-draft-pr <issue-number>` and retain the returned pull
-   request and head.
-5. Invoke `dod-guard:review-pr <pull-request>`. It scans the changed files, runs its
-   reviewer agents, and posts one comment-only review. A completed
-   `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` recommendation is the one review of
-   this pull request, including when it contains findings. Read the
-   recommendation and reviewed commit back from the remote PR; no local ledger
-   is needed. If `dod-guard:review-pr` stops without posting a review, record its
-   reason and the PR URL as a durable blocker and stop. For `BLOCKER` and `MAJOR`
-   findings, the ones with a `GH-<id>` thread (a `MINOR` note has no thread and
-   blocks nothing), invoke
-   `dod-guard:fix-pr-review <pull-request> <finding-ids>` with every valid unresolved
-   finding, rerun affected checks, and respond to and resolve each finding. It
-   fixes the actionable ones and declines the rest with evidence, resolving the
-   thread of both.
-   Do not invoke another review after those fixes.
-6. Invoke `dod-guard:complete-pr <pull-request>` once every `BLOCKER` and `MAJOR`
-   finding is fixed and resolved, or recorded as not actionable with evidence, all required checks
-   pass, and the head is the one the fixes pushed. Its guarded merge is the
-   acceptance boundary authorized by this skill. When `dod-guard:complete-pr` stops on
-   `unresolved-review-threads`, clear the named threads with
-   `dod-guard:fix-pr-review` and invoke `dod-guard:complete-pr` again.
+This skill coordinates the existing delivery skills. It does not replace their safety gates or evidence requirements. Run the stages in this order. Pass each stage's result to the next one.
 
-If any stage fails, stop without rollback or duplicate issues. Report completed
-issue, branch, pull request, commit, review, check, Project, and merge state,
-then report the exact failed stage and its next required evidence or decision.
+1. Capture. Invoke `dod-guard:add-backlog-idea` once, with the whole request. If it creates several independent issues, keep its feature split and issue mappings, and process them one at a time in creation order. If part of the text cannot be assigned to a feature, stop with that blocker, and do not ask and do not guess.
+2. Refine. Invoke `dod-guard:refine-backlog-item <issue-number>`. When refinement finishes, the issue moves to `Todo` before the next stage starts.
+3. Implement. Invoke `dod-guard:next-ticket <issue-number>`. Its pushed branch, commit, and checks are the handoff. Choose no other ticket.
+4. Open the PR. Invoke `dod-guard:submit-draft-pr <issue-number>`. Keep the pull request number and head it reports.
+5. Review and fix.
+   - Invoke `dod-guard:review-pr <pull-request>`. It scans the changed files, runs the reviewer agents, and posts one comment-only review. It yields exactly one review. A completed `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` recommendation is the one review, even when it carries findings.
+   - If the review stops without posting a review, record the reason and the PR URL as a durable blocker and stop.
+   - Read the recommendation and reviewed commit back from the remote PR; no local ledger is needed.
+   - For every valid unresolved finding (`BLOCKER` or `MAJOR`), invoke `dod-guard:fix-pr-review <pull-request> <finding-ids>`, with ids in the form `GH-<id>`. Fix each actionable finding. Decline any other with evidence. Then rerun affected checks, respond to and resolve each finding, and push. Do not invoke another review after those fixes.
+6. Merge. Invoke `dod-guard:complete-pr <pull-request>` once every `BLOCKER` and `MAJOR` finding is fixed and resolved, or recorded as not actionable with evidence. Also require that the required checks pass and that the PR head is the head the fixes pushed. A `MINOR` note has no thread and blocks nothing. If `complete-pr` reports `unresolved-review-threads`, clear them with `dod-guard:fix-pr-review <pull-request> <finding-ids>` and invoke `dod-guard:complete-pr <pull-request>` again.
+
+If any stage fails, stop without rollback or duplicate issues. Then report these items: issue, branch, PR, commit, review, check, Project, and merge state, plus the failed stage and the next evidence needed.

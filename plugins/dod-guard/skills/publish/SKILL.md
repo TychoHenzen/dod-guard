@@ -5,58 +5,32 @@ description: Release changed dod-guard marketplace plugins through a functional 
 
 # Publish dod-guard marketplace changes
 
-Use this skill only when the user explicitly asks to publish or release a
-completed change in this monorepo.
+Start only on an explicit user request to publish or release a finished change in this monorepo; never infer one.
 
-Read and apply `standards/working-defaults.md` and
-`standards/github-request-discipline.md` from the plugin root. Stricter
-boundaries in this skill win.
+Before anything else, read `standards/working-defaults.md` and `standards/github-request-discipline.md` from the plugin root. Where this skill sets a stricter boundary, the stricter boundary wins. For shell composition, see the [command-composition contract](../../docs/command-composition.md): pass native arguments separately, and halt before any mutation if an argument or parent is missing.
 
 ## Release model
 
-This repository is a Claude Code and Codex plugin marketplace. Nothing
-publishes to npm. Functional releases use a reviewed pull request merged into
-`master`. A `maintenance-only` release skips the PBI and PR ceremony: push its
-version-bumped commit directly to `master`, then wait for green CI and refresh
-each client's marketplace.
+Two routes reach the Claude Code and Codex marketplace:
 
-The root `.claude-plugin/marketplace.json` is the only marketplace manifest.
-Every changed shipped code plugin needs one valid, matching version in its
-`package.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and
-any present adapter package. Those versions are cache keys, so a client can
-retain old plugin content without the bump. A paired version-only bump made solely to invalidate the cache for
-maintenance content remains `maintenance-only`; any other manifest change is `functional`.
+- `functional`: a reviewed pull request merged to `master`.
+- `maintenance-only`: a version-bumped commit pushed straight to `master` after validation.
+
+Either route finishes with green CI and a marketplace refresh in each client. Nothing publishes to npm.
+
+Clients key their cache on version, so unchanged versions can leave old content in place. Every changed shipped code plugin needs one valid, matching version in each of its manifests, or clients keep the old content. Four files carry a version: `package.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and any present adapter package. The root `.claude-plugin/marketplace.json` is the only marketplace manifest. A paired version-only bump made solely to invalidate the cache for maintenance content remains `maintenance-only`; any other manifest change is `functional`.
 
 ## Installation identity preflight
 
-Before any other release step, resolve `<skill-dir>` from this loaded skill:
-`${CLAUDE_PLUGIN_ROOT}/skills/publish` in Claude Code, or the directory
-containing this loaded `SKILL.md` in Codex. Confirm
-`<skill-dir>/scripts/preflight-installation.mjs` exists. Never locate the helper
-from the repository checkout or from a guessed cache directory.
+This preflight comes before every other release step. Find the helper through the loaded skill only. Do not look in the checkout or in a guessed cache, do not scan caches or choose the newest path, and do not fall back to another marketplace, client install, or checkout.
 
-Treat any caller-supplied version or path as an exact pin. A path pin is the
-absolute path to `skills/publish/SKILL.md`, not the plugin root. Pass only pins
-that the caller supplied; omit the corresponding flag otherwise:
+Failure handling comes first. If the helper exits non-zero, report the requested values, the observed values, the exact mismatch, and a safe next step, then stop. Do not run the procedure or any Git, GitHub, protection, version-bump, or client-cache mutation. If it succeeds, bind the run to the returned version and `skillPath`, and use the returned `pluginRoot` for every later `<plugin-root>` path.
 
-Run the client inventory command, capture its stdout and exit status
-before passing captured JSON to Node, and pass that status to the helper with
-`--inventory-status` instead of stopping on it. Capture stdout and status before
-piping; do not pipe the client command directly, because a direct pipeline can
-hide a failed inventory command. Keep stderr out of the captured JSON. A
-non-zero inventory status is tolerated only when the captured stdout still
-parses and holds exactly one installed and enabled registration with the
-expected identity. Empty or unparseable stdout, and a missing, duplicate,
-disabled, or wrong-identity record, still fail, and the helper's failure names
-the status. Use the snippet for the active shell, set the client to codex or
-claude, and append only exact pins supplied by the caller to the helper command:
+Locate the helper this way:
 
-All commands in this skill also follow the repository's
-[command-composition contract](../../docs/command-composition.md). In
-particular, keep native arguments separate, capture producer status before
-limiting output, and stop before mutation on missing arguments or parents.
-
-PowerShell:
+1. Take the absolute path to `skills/publish/SKILL.md` for the loaded skill. Its directory is `<skill-dir>`; in Claude Code that is `${CLAUDE_PLUGIN_ROOT}/skills/publish`. Confirm `<skill-dir>/scripts/preflight-installation.mjs` exists before running it.
+2. Treat any version or path the caller gave as an exact pin and forward it with `--version <version>` or `--skill-path <path>`. A caller's path pin is the absolute path to `skills/publish/SKILL.md`, not the plugin root. Forward nothing the caller did not give.
+3. Run the inventory command, keeping its stdout and exit status before passing captured JSON to Node. Stderr never goes into that JSON.
 
 ```powershell
 $client = 'codex' # use 'claude' in Claude Code
@@ -65,8 +39,6 @@ $clientStatus = $LASTEXITCODE
 $inventory | node "<skill-dir>/scripts/preflight-installation.mjs" $client --inventory-status $clientStatus
 if ($LASTEXITCODE -ne 0) { throw "Installation preflight failed; stop before release mutations" }
 ```
-
-POSIX shell:
 
 ```sh
 client=codex # use claude in Claude Code
@@ -79,112 +51,50 @@ if [ "$preflight_status" -ne 0 ]; then
 fi
 ```
 
-The helper accepts the inventory on stdin and returns JSON. For Codex, it
-requires the unique enabled `dod-guard@dod-guard-monorepo` record, its exact
-`dod-guard-monorepo` marketplace name and Git source, `source.path`, and the
-`.codex-plugin/plugin.json` identity/version. For Claude Code, it requires the
-unique enabled `dod-guard@dod-guard` record, `installPath`, and the
-`.claude-plugin/plugin.json` identity/version. Codex uses the loaded helper's
-plugin root for its manifest and `skills/publish/SKILL.md` checks; its
-`source.path` is marketplace registration evidence and may differ from that
-loaded cache root. Claude Code's `installPath` must resolve to the loaded
-installation, and every loaded publish skill must be a readable file inside
-its loaded plugin root.
+The helper accepts a non-zero inventory status only if stdout still parses and shows exactly one installed, enabled registration with the expected identity. It rejects unparseable stdout, empty stdout, and any missing, duplicate, disabled, or wrong-identity record, and its message names the status.
 
-This loaded-root check is the pre-release installation identity preflight. Step 11 passes
-`--registered-root` to the same helper: after the version bump and client
-refresh the loaded skill still holds the previous release, so the helper takes
-the plugin root from the active registration for both clients (Claude
-`installPath`, Codex `source.path`) and reads the manifest and
-`skills/publish/SKILL.md` from that registered root. Every other registration,
-identity, and manifest check is unchanged.
+What each client must show:
 
-If the helper exits non-zero, report its requested and observed values, exact
-mismatch, and safe next step, then stop. Do not run the procedure or any Git,
-GitHub, protection, version-bump, or client-cache mutation. On success, use the
-returned `pluginRoot` for every later `<plugin-root>` path and bind this run to
-the returned version and `skillPath`. Never scan caches, choose a newest path,
-or fall back to another marketplace, client installation, or checkout.
+- Codex: a unique enabled `dod-guard@dod-guard-monorepo` record, from marketplace `dod-guard-monorepo` with the expected Git source. Its manifest identity and version must match the registration. The `source.path` is registration evidence and can differ from the loaded cache root.
+- Claude Code: a unique enabled `dod-guard@dod-guard` record whose `installPath` resolves to the loaded install, with matching manifest identity and version.
+- Both: the manifest is `.codex-plugin/plugin.json` or `.claude-plugin/plugin.json` respectively, and the loaded publish skill is a readable file inside its loaded plugin root.
+
+This loaded-root check is the pre-release installation identity preflight. Before release it uses the loaded helper's root; after release the loaded skill still holds the previous release, so the check must use the registered root. Step 11 passes `--registered-root` to the same helper (Claude `installPath`, Codex `source.path`).
 
 ## Windows authentication boundary
 
-On Windows, run the complete publish flow from the authenticated interactive
-PowerShell session that launched it. Before any GitHub API, protection,
-release, commit, push, or post-release verification operation, prove that this
-same session can use GitHub CLI:
+On Windows the entire flow runs in the authenticated interactive PowerShell session that launched it. Check authentication before anything else:
 
 ```powershell
 gh auth status
 $githubAuthStatus = $LASTEXITCODE
-if ($githubAuthStatus -ne 0) {
-  throw "GitHub CLI authentication failed; stop before release mutations"
-}
+if ($githubAuthStatus -ne 0) { throw "GitHub CLI authentication failed; stop before release mutations" }
 ```
 
-The checked-in `maintenance-publish.ps1` owns the mutation-side `gh` calls,
-and `release-verification.ps1` owns the post-release read-only `gh` calls.
-Both helpers run every native command through `publish-native-command.ps1` and
-judge it by exit code only; stderr is kept as evidence, never as a success signal.
-`preflight-installation.mjs` only parses local client inventory; it is not an
-authentication bridge. Do not invoke `gh api` from a Node REPL or another
-unauthenticated nested runtime.
+If this fails, nothing may happen: no protection change, no checkout or ref move, no commit, no push, no client refresh, no cache mutation. Repair authentication in the user's normal session, then rerun both the auth and installation preflights from the start and throw away partial evidence.
 
-If `gh auth status` fails, stop before protection changes, checkout or ref
-movement, commit, push, client refresh, or cache mutation. Restore GitHub CLI
-authentication through the user's normal authenticated PowerShell session,
-rerun this authentication preflight and the installation preflight from the
-start, and discard partial or failed evidence. Never copy or persist
-credentials to another runtime or file.
+- Never copy or persist credentials.
+- Do not invoke `gh api` from a Node REPL or any other unauthenticated nested runtime.
+- `preflight-installation.mjs` only parses local client inventory.
+- `maintenance-publish.ps1` performs every release mutation; `release-verification.ps1` only reads, after the release. Both run each native command through `publish-native-command.ps1` and judge it by exit code alone, treating stderr as evidence and never as proof of success.
 
 ## Source metadata preflight
 
-After the installation and authentication preflights, and before any release,
-protection, checkout/ref, commit, push, or client-cache mutation, run this from
-the repository root:
+This runs after the installation and auth preflights and ahead of any release, protection, checkout or ref, commit, push, or cache mutation.
 
 ```text
 node scripts/ci/validate-plugins.mjs
 ```
 
-The validator checks every shipped code plugin's package, Claude, Codex, and
-present adapter version metadata. Each source must contain a valid `x.y.z`
-version, and every present source must agree. A mismatch, missing or malformed
-version, or ambiguous source reports each affected path and observed value, then
-stops the release. Correct the tracked metadata explicitly and rerun the
-preflight. It never synchronizes or rewrites manifests, chooses an authority,
-or relies on a later validator or client-cache readback to recover the release.
+It examines package, Claude, Codex, and present adapter version metadata. Each entry needs a valid `x.y.z` version and all must agree. Stop on a mismatch, missing or malformed version, or ambiguous source, and list each affected path and observed value. Correct the tracked metadata explicitly and rerun. The skill never synchronizes or rewrites manifests, picks an authority, or leans on a later validator or cache readback.
 
 ## Procedure
 
-1. Inspect `git status --short --branch --untracked-files=all`, the current
-   branch, and the GitHub MCP repository metadata operation. If MCP is
-   unavailable, use `gh repo view`. Classify every staged, unstaged, tracked,
-   and untracked path before branch or ref movement. Continue only when each
-   pending path is clearly part of the authorized release. If any path is
-   credential-like, destructive, unrelated, or indistinguishable, report the
-   exact paths and stop before changing the checkout or refs. Never silently
-   filter a mixed tree, stash, reset, overwrite, move, or include unrelated
-   user-owned changes.
-2. Before committing, run the existing repository inspector against the complete
-   pending tree:
-   `node <plugin-root>/skills/setup-repository/scripts/inspect-repository.mjs <repository-root>`.
-   Stop when `credentialFindings` is non-empty. Never print matched values.
-3. Classify the complete pending tree before requiring a PBI or pull request.
-   Treat changes as `functional` when they alter runtime code, installed
-   behavior, MCP or hook wiring, or plugin manifest content beyond the paired
-   version-only cache-key bump described above. Treat changes as
-   `maintenance-only` only when they are limited to documentation, skill or
-   agent prose, tests, CI configuration, generated reports, or equivalent
-   non-product maintenance. A cache-key-only bump stays maintenance-only only
-   when all other changes are maintenance-only. Inspect file
-   contents when a path classification is unclear. If any file is functional,
-   use the functional path for the whole release.
-4. Use the passing source metadata preflight as the version decision; do not
-   select a canonical source or rewrite a manifest. Confirm changed plugins'
-   descriptions still match their shipped skills or agents. Update the root
-   marketplace description if it states a changed skill count.
-5. Run the release gates from the repository root before committing:
-   On Windows PowerShell, list package source directories explicitly.
+1. Inspect the starting state with `git status --short --branch --untracked-files=all`; read repository metadata from GitHub MCP, with `gh repo view` as the fallback. Classify every staged, unstaged, tracked, and untracked path before branch or ref movement. If any path is credential-like, destructive, unrelated, or indistinguishable, report the exact paths and stop before changing the checkout or refs. Never silently filter a mixed tree, stash, reset, overwrite, move, or include unrelated user-owned changes.
+2. Before committing anything, scan the complete pending tree with `node <plugin-root>/skills/setup-repository/scripts/inspect-repository.mjs <repository-root>`. Stop when `credentialFindings` is non-empty. Never print matched values.
+3. Classify the complete pending tree before requiring a PBI or pull request. Treat a file as `functional` when it alters runtime code, installed behavior, MCP or hook wiring, or manifest content beyond the paired version-only bump. Only docs, skill or agent prose, tests, CI config, generated reports, and their equivalents are `maintenance-only`. Read the contents when the category is unclear. If any file is functional, use the functional path for the whole release.
+4. Take the passing metadata preflight as the version decision. Check that each changed plugin's description still fits its shipped skills and agents, and update the root marketplace description when it states a skill count that changed.
+5. Run these gates from the repository root before the release commit:
 
    ```text
    npm run build
@@ -194,145 +104,46 @@ or relies on a later validator or client-cache readback to recover the release.
    npx @biomejs/biome check packages/code-explorer/src/ packages/fossil/src/ packages/knowledge-base/src/ packages/quality-guard/src/ plugins/dod-guard/ scripts/ci/ --no-errors-on-unmatched
    ```
 
-6. If a gate generates tracked changes, reclassify the complete tree, rerun the
-   inspector, and rerun the affected gates before committing.
+   Windows PowerShell gets the package source directories spelled out; no glob.
+6. When a gate writes tracked changes, go back: reclassify the whole tree, rerun the inspector, and rerun the affected gates before the release commit.
 7. For a `maintenance-only` release:
-   - Do not require or create a PBI, feature branch, or pull request.
-   - Use only the current primary checkout. Do not run any Git worktree
-     command. Confirm the checkout is primary by resolving
-     `git rev-parse --path-format=absolute --git-dir` and
-     `git rev-parse --path-format=absolute --git-common-dir` and comparing the
-     resulting paths with host path semantics. If either value is unavailable
-     or the paths differ, stop before any branch/ref, release, protection, or
-     cache mutation.
-   - After the pending paths are classified and the release is confirmed
-     `maintenance-only`, record the starting branch (if attached) and `HEAD`,
-     fetch `origin master`, and save the exact `origin/master` SHA. Use
-     `git switch --detach <saved-sha>` in this same checkout. Continue only if
-     Git retains every classified release path without conflict; if it refuses
-     the switch, verify and report the unchanged starting state, then stop.
-     Never create another checkout, stash, or reset to carry release paths.
-     Verify `HEAD` equals the saved SHA and the starting branch reference is
-     unchanged, then rerun the repository inspector and release gates against
-     this exact base.
-   - Require the release commit's parent to equal the saved SHA and
-     `allow_force_pushes.enabled` to be true. Stage only the classified release
-     paths; never use blanket staging. Push only with
-     `git push --force-with-lease=refs/heads/master:<saved-sha> origin HEAD:refs/heads/master`.
-     This remains a fast-forward, and the lease rejects any intervening update.
-     If master advances, restore protection, stop without pulling, merging, or
-     retrying the push, preserve the exact release checkpoint, and stop. A later run must
-     classify the pending release paths again and rebuild from the newly saved
-     head before rerunning all gates. Never use an unpinned force push or create
-     a PR as fallback.
-   - Read and save the complete protection with
-     `gh api --method GET repos/{owner}/{repo}/branches/master/protection` and
-     read the admin state separately from
-     `repos/{owner}/{repo}/branches/master/protection/enforce_admins`. Treat the
-     parsed protection object as the immutable restore snapshot; compare JSON
-     semantically by object keys and array values, not by formatting or a
-     hand-picked subset of fields. Require both initial reads to return HTTP
-     `200` with non-empty objects, require the broad response to contain an
-     `enforce_admins.enabled` boolean and the admin response to contain an
-     `enabled` boolean, and require those values to agree before any protection
-     mutation. The helper reads this snapshot once, after validation and
-     immediately before any DELETE (or before the push when admin enforcement is
-     already disabled).
-   - Use the checked-in `<skill-dir>/scripts/maintenance-publish.ps1` helper as
-     the only maintenance mutation boundary. Dot-source it and invoke
-     `Invoke-MaintenancePublish` with the owner, repository, saved SHA, and the
-     `-CommitAction` script block that stages only the classified release paths
-     and commits them, and a `-PrePushAction` script block that reruns the
-     release gates. The helper
-     constructs and validates these exact values:
-     `protection_endpoint= repos/{owner}/{repo}/branches/master/protection`,
-     `admin_endpoint= repos/{owner}/{repo}/branches/master/protection/enforce_admins`,
-     `admin_method= DELETE`, and
-     `--force-with-lease=refs/heads/master:<saved-sha> origin HEAD:refs/heads/master`.
-     It rejects a non-primary checkout, a head or commit-parent mismatch, an
-     invalid endpoint or method, an unavailable `allow_force_pushes.enabled`,
-     and any unpinned force-push alternative. It never invokes a Git worktree
-     command.
-   - The helper runs `-CommitAction`, then the `-PrePushAction` validation,
-     then checks the exact tree. This order matters: validation runs, and the
-     tree is checked, before admin enforcement is disabled. The tree check
-     requires `HEAD` to equal the release commit, the release commit's parent
-     to equal the saved SHA, and `git status --porcelain --untracked-files=no`
-     to be empty. Any failure before the DELETE, including preflight failures
-     (a non-primary checkout, or `HEAD` not equal to the saved SHA), commit,
-     validation, tree-check, and protection-snapshot failures (an invalid
-     initial readback, or `allow_force_pushes.enabled` not true), stops with
-     protection unchanged, issues no DELETE or POST, and reports
-     `DeleteAttempted` false. For these pre-DELETE failures, a `Restored` value
-     of false with `DeleteAttempted` false is therefore not a protection
-     incident.
-   - A force-push allowance alone does not bypass the PR or check rules. If the
-     saved `enforce_admins.enabled` is true, the helper invokes only the
-      validated admin endpoint with `gh api --method DELETE <admin_endpoint>
-      --include`. It marks restoration required before invoking DELETE,
-     requires HTTP `204`, and does not parse the deliberately empty body as
-     JSON. It reads the admin endpoint and complete protection object back even
-     when the command errors or returns an unexpected status; HTTP `200`,
-     `enabled=false`, and equality of every non-admin protection field are
-     required before the release can proceed. An invalid response or readback
-     stops before the push.
-     Admin enforcement is off from the DELETE until the restoring POST, and the
-     off-window is the push plus its readback. The disable readback that
-     confirms the DELETE is read-only and runs first. Between the DELETE and
-     the restoring POST the helper issues only that disable readback, the leased
-     push, and one `git ls-remote origin refs/heads/master` readback, which
-     must equal the release commit. A mismatch there is a failure that still
-     restores protection.
-   - The helper owns the cleanup `finally` scope, so every exit after an
-     attempted DELETE, including a failed disable readback, a failed push, or a
-     remote readback mismatch, restores the saved admin state. This is an
-     accepted residual risk: a hard kill between the DELETE and the cleanup
-     cannot restore protection, and the exposure is limited to the push and its
-     readback. If it was initially enabled, it invokes
-      only the same validated endpoint with `gh api --method POST <admin_endpoint>
-      --include`, requires HTTP `200`, and reads the admin endpoint and
-      complete protection object back after every POST attempt. If any response,
-      admin state, or protection field differs from the saved snapshot, it
-      retries that exact POST once and reads both resources again. If either
-      read throws, it stops without a second POST because the mutation is not
-      safely decidable. It never retries an unknown mutation before its
-      complete readback. If the second readback still differs, it stops and
-      reports the exact remaining difference. If admin enforcement was initially
-      disabled, it does not call POST; it proves it remains disabled and the
-      complete protection snapshot is unchanged, and this run then reports
-      `Restored` true with `RestoreAttempts` 0 and `DeleteAttempted` false.
-     Other users remain subject to the branch rules throughout.
-8. For a `functional` release, invoke `dod-guard:submit-draft-pr` with the parent PBI
-   number after the release commit is pushed to the issue branch. Do not create or update
-   the pull request yourself. Never approve, mark ready, merge, or close it.
-9. After a direct maintenance push or a human-merged functional release, inspect
-   CI on the exact published commit. It must pass
-   `build-test`, `plugin-config`, `static-analysis`, and `package-integrity`.
-10. After a direct maintenance push or a merged functional release has green CI,
-   refresh both clients:
+   - Do not require or create a PBI, feature branch, or pull request. Work only in the primary checkout.
+   - Confirm the checkout is primary by resolving `git rev-parse --path-format=absolute --git-dir` and `git rev-parse --path-format=absolute --git-common-dir` and comparing the results with host path semantics. If either value is unavailable or the paths differ, stop before any branch/ref, release, protection, or cache mutation.
+   - Record the starting branch (if attached) and `HEAD`. Fetch `origin master` and save its exact SHA as `<saved-sha>`.
+   - Use `git switch --detach <saved-sha>` in this same checkout. Continue only if Git retains every classified release path without conflict; if it refuses the switch, verify and report the unchanged starting state, then stop. Never create another checkout, stash, or reset to carry release paths.
+   - After the switch, verify `HEAD` equals the saved SHA and confirm the starting branch reference is unchanged, then rerun the repository inspector and release gates against this exact base.
+   - Stage only the classified release paths; never use blanket staging. Require the release commit's parent to equal the saved SHA and `allow_force_pushes.enabled` to be true. A force-push allowance alone does not bypass the PR or check rules,. Other users remain subject to the branch rules.
+   - Read the protection snapshot once, after validation and immediately before any DELETE (or before the push when admin enforcement is already disabled). Read `gh api --method GET repos/{owner}/{repo}/branches/master/protection` and, as a separate call, `repos/{owner}/{repo}/branches/master/protection/enforce_admins`. Require both initial reads to return HTTP `200` with non-empty objects before any protection mutation. The broad body needs a boolean `enforce_admins.enabled`, the admin body a boolean `enabled`, and the two must agree. Keep the parsed protection object as the immutable restore snapshot, and compare JSON semantically by object keys and array values.
+   - Do all mutation through the checked-in helper. Use the checked-in `<skill-dir>/scripts/maintenance-publish.ps1` helper by dot-sourcing it and calling `Invoke-MaintenancePublish` with the owner, repository, saved SHA, a `-CommitAction` script block that stages only the classified release paths and commits them, and a `-PrePushAction` script block that reruns the release gates. It checks exact values and rejects a non-primary checkout, a head or parent mismatch, an invalid endpoint or method, unavailable `allow_force_pushes.enabled`, and every unpinned force-push alternative. It builds these values:
+     - `protection_endpoint= repos/{owner}/{repo}/branches/master/protection`
+     - `admin_endpoint= repos/{owner}/{repo}/branches/master/protection/enforce_admins`
+     - `admin_method= DELETE`
+     - `--force-with-lease=refs/heads/master:<saved-sha> origin HEAD:refs/heads/master`
+   - Order inside the helper: commit action, pre-push validation, tree check, and only then the protection change. The validation runs, and the tree is checked, before admin enforcement is disabled. The tree check requires `HEAD` to equal the release commit, the release commit's parent to equal the saved SHA, and `git status --porcelain --untracked-files=no` to be empty. The agent must not run any Git worktree command. It never invokes a Git worktree command.
+   - Early failures leave protection alone. Any failure before the DELETE, including preflight failures (a non-primary checkout, or `HEAD` not equal to the saved SHA) and commit, validation, tree-check, and protection-snapshot failures (an invalid initial readback, or `allow_force_pushes.enabled` not true), stops with protection unchanged, issues no DELETE or POST, and reports `DeleteAttempted` false. For those failures a `Restored` value of false with `DeleteAttempted` false is therefore not a protection incident.
+   - Disable step. If the saved `enforce_admins.enabled` is true, the helper invokes only the validated admin endpoint with `gh api --method DELETE <admin_endpoint> --include`. It marks restoration required before invoking DELETE. The call requires HTTP `204`, and the helper does not parse the deliberately empty body as JSON. Whatever the outcome, it reads the admin endpoint and complete protection object back even when the command errors or returns an unexpected status; HTTP `200`, `enabled=false`, and unchanged non-admin fields prove the disable. This read-only `Disable` readback runs first. HTTP `200`, `enabled=false`, and equality of every non-admin protection field are required before release proceeds; an invalid response or readback stops before the push.
+   - Push step. From DELETE to the restoring POST, the helper issues only that disable readback, the leased push, and one `git ls-remote origin refs/heads/master` readback. The push is `git push --force-with-lease=refs/heads/master:<saved-sha> origin HEAD:refs/heads/master`; the lease rejects any intervening update, and the off-window is the push plus its readback. The readback must equal the release commit, and a mismatch counts as a failure that still triggers cleanup. Never use an unpinned force push.
+   - If master advances, restore protection, stop, never pull, merge, or retry, and preserve the exact release checkpoint. A later run reclassifies and rebuilds from the new head. A pull request is never the fallback.
+   - Cleanup. The helper owns the cleanup `finally` scope, and in that scope every exit after an attempted DELETE, including a failed disable readback, a failed push, or a remote readback mismatch, restores the saved admin state. The restoring call is `gh api --method POST <admin_endpoint> --include`, and it requires HTTP `200`. It uses only that same validated endpoint. Admin enforcement is off from the DELETE until the restoring POST.
+   - The helper reads the admin endpoint and complete protection object back after every POST attempt. If any response, admin state, or protection field differs from the saved snapshot, it retries that exact POST once and reads both resources again. If either read throws, it stops without a second POST. It never retries an unknown mutation before its complete readback. If the second readback still differs, it stops and reports the exact remaining difference.
+   - If admin enforcement was initially disabled, it does not call POST: it proves it remains disabled and the complete protection snapshot is unchanged, and this run then reports `Restored` true with `RestoreAttempts` 0 and `DeleteAttempted` false.
+   - One risk stays accepted: a hard kill between the DELETE and the cleanup cannot restore protection, and the exposure is limited to the push and its readback.
+8. For a `functional` release, invoke `dod-guard:submit-draft-pr` with the parent PBI number after the release commit is pushed to the issue branch. The pull request itself is not created or updated here, and this skill never approves, readies, merges, or closes it.
+9. Look at CI on the exact published commit. `build-test`, `plugin-config`, `static-analysis`, and `package-integrity` must all pass.
+10. After a direct maintenance push or a merged functional release has green CI, refresh each client with exactly these commands:
 
-   ```text
-   Claude Code: /plugin marketplace update dod-guard, then /reload-plugins
-   Codex: codex plugin marketplace upgrade dod-guard-monorepo
-   Codex: codex plugin add dod-guard@dod-guard-monorepo
-   ```
+    ```text
+    Claude Code: /plugin marketplace update dod-guard, then /reload-plugins
+    Codex: codex plugin marketplace upgrade dod-guard-monorepo
+    Codex: codex plugin add dod-guard@dod-guard-monorepo
+    ```
 
-   Confirm `codex plugin list` reports the released version. Do not copy files
-   into either client cache manually.
-   If the machine runs the shared MCP host, restart only its two named apps
-   after both refresh commands succeed:
+    Then confirm `codex plugin list` reports the released version. Never copy files into either client cache by hand. Once both refreshes have succeeded, a machine that runs the shared host must restart only its two named apps, and only after the cache refresh succeeds, leaving every other PM2 process alone:
 
-   ```text
-   pm2 restart dod-guard-quality-guard dod-guard-knowledge-base --update-env
-   ```
-
-   Never restart these apps before the cache refresh succeeds, and never use
-   this step to restart unrelated PM2 processes. A machine without those apps
-   has no host restart to perform.
-11. On Windows PowerShell, after both client refreshes and any host restart,
-   use the checked-in
-    `<skill-dir>/scripts/release-verification.ps1` read-only boundary. Bind it to
-    the exact published SHA, its expected parent SHA, and the released version:
+    ```text
+    pm2 restart dod-guard-quality-guard dod-guard-knowledge-base --update-env
+    ```
+11. On Windows PowerShell, once the refreshes and any host restart are done, run the read-only verification for the published SHA, expected parent SHA, and released version:
 
     ```powershell
     . "<skill-dir>/scripts/release-verification.ps1"
@@ -346,22 +157,11 @@ or relies on a later validator or client-cache readback to recover the release.
     if (-not $verification.Success) { throw "Release verification failed at $($verification.Stage)" }
     ```
 
-    The helper checks the current and remote Git heads, complete branch
-    protection and `enforce_admins` readbacks, all required checks on the exact
-    published SHA, and both refreshed client registrations. It verifies the
-    registered installation of the new release (registered root, manifest, and
-    publish skill), not the loaded one, so no session reload is needed, and it
-    still fails when the registered version differs from `-ExpectedVersion`.
-    It records every
-    command exit status before parsing output and fails closed on missing,
-    malformed, stale, or mismatched evidence. It never publishes, mutates
-    protection, changes a checkout, or copies client files.
+    The helper records every command exit status before parsing its output. It compares current and remote heads, reads the full protection and `enforce_admins` state, confirms every required check on the exact SHA, and examines both client registrations, rechecking registration, identity, manifest, and the publish skill under the registered root. It verifies the registered installation of the new release rather than the loaded one, so no session reload is needed. It still fails when the registered version differs from `-ExpectedVersion`, and any missing, malformed, stale, or mismatched evidence fails closed. It never publishes, changes protection, touches a checkout, or copies client files.
 
 ## Boundaries
 
-- Do not create npm releases or tags.
-- Functional releases still require pull-request review.
-- A force-push allowance does not bypass branch protection by itself. The
-  maintenance-only path relies on a temporary admin bypass and an exact
-  `--force-with-lease` guard.
-- Do not call a release complete until the published commit has green CI.
+- No npm releases or tags.
+- A functional release always goes through pull-request review.
+- A force-push allowance does not bypass branch protection by itself; the maintenance route depends on the temporary admin bypass together with the exact `--force-with-lease` guard.
+- A release is not complete until the published commit has green CI.

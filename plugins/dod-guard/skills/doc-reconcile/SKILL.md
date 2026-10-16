@@ -7,147 +7,129 @@ description: >-
   doc is right", reconcile the docs, docs contradict each other, remove
   outdated docs, or docs say different things.
 ---
+
 # Doc Reconcile
 
-Documentation rots in pairs. One file says six, another says eight, and both look
-authoritative to whoever lands on them. This skill finds those pairs across the
-repository, works out which half was written first from real edit history, and
-deletes the older half when the history is clear enough to be sure.
+Read and apply `standards/working-defaults.md` from the plugin root. Stricter boundaries in this skill win.
 
-Throughout, a *claim* is one scanned piece of text and a *pair* is two claims held
-up against each other. No other names for those two things.
+Documentation goes wrong in pairs: one page gives six, another gives eight, and each looks like the authority. This skill locates such pairs, asks edit history which side is older, and removes that side only when history answers plainly.
 
-Read and apply `standards/working-defaults.md` from the plugin root. Stricter
-boundaries in this skill win.
+Two words are fixed here. A *claim* is one scanned piece of text. A *pair* is two claims held against each other.
 
-## Fixed limits
+## Who decides what
 
-- Record the initial tree state. Exclude uncommitted files from automatic dating and
-  deletion. Do not commit, stash, reset, or overwrite user work.
-- One agent dispatch per pair, 20 dispatches per run at most. Tighten
-  `--threshold`, `--limit` and `--max-per-claim` until the file fits that budget,
-  then start dispatching.
-- Keep every edit inside the files and line ranges the scanner named. Touch nothing
-  else in the repository.
-- Delete a claim only under the verdicts in the table below. Leave every other claim
-  exactly as written.
-- For repeated wording, delete one copy and point at the other. Never write a fresh
-  sentence that blends the two. Instead pick one existing wording and keep it as it stands.
+| Actor | Decides |
+|---|---|
+| Scanner (`scan-docs.mjs`) | which pairs are worth a look |
+| `doc-conflict-judge` | what a pair is: its verdict |
+| Dating script (`claim-age.mjs`) | which claim is older |
+| This thread | whether to delete, and the deletion itself |
 
-Scope: this skill deletes and points, and it stops there. Rewriting a claim into new
-prose, editing code, and reconciling anything the scanner did not report all sit
-outside it. Every deletion traces to one agent verdict and one dating result.
+No actor takes over another's decision. The thread never guesses an age, and the judge never edits.
 
-## Agent lifecycle
+## Hard rules
 
-In Claude Code, dispatch each pair to the `dod-guard:doc-conflict-judge` agent
-through the Agent tool. Each call starts a fresh agent that ends when it
-answers, so nothing needs closing.
+- Record the initial tree state first.
+- Exclude uncommitted files from automatic dating and deletion.
+- Do not commit, stash, reset, or overwrite user work.
+- Make no GitHub writes.
+- Dispatch at most 20 agents in a run, one per pair.
+- Edit only inside the files and line ranges the scanner named.
+- Delete or alter a claim only as the outcome table allows. Leave every other claim as written.
+- Delete and point, nothing more. Do not rewrite a claim into new prose, edit code, or reconcile anything the scanner did not report.
+- Trace each deletion to exactly one verdict and one dating result.
 
-In Codex, before dispatching, inspect the active agent list. Reuse a related agent for later
-pairs when practical. Limit each parallel wave to the free slots.
+## Outcomes
 
-After recording a verdict, close the completed agent with the runtime's close action
-when available. If only interruption is available, interrupt work that is no longer
-needed. Do not assume a returned result freed a slot.
+| Verdict and dating | Result |
+|---|---|
+| `CONFLICT` + `DECISIVE` -> delete the claim history dates as older | the older claim goes |
+| `DUPLICATE` + `DECISIVE` -> keep the newer wording, point the older copy at it | the older copy becomes a pointer |
+| `CONFLICT` or `DUPLICATE` + `AMBIGUOUS` -> change nothing, carry the pair forward | no edit; the pair is reported as undecided |
+| `STALE-SUBSET` + not dated -> leave both claims alone | no edit |
+| `UNRELATED` + not dated -> leave both claims alone | no edit |
 
-If capacity is full, release unneeded agents and retry once. If closure is unavailable,
-send the next pair to an existing agent through a follow-up.
+A `STALE-SUBSET` pair is a narrowing, not a contradiction, so it is not this skill's to fix.
 
-## Runtime path
+For repeated wording, keep one existing copy and point the other at it. Never compose a fresh sentence from both.
 
-Resolve `<skill-dir>` before running a bundled script. In Claude, use
-`${CLAUDE_PLUGIN_ROOT}/skills/doc-reconcile`. In Codex, use the directory containing this loaded
-`SKILL.md`. Confirm the resolved script exists. If neither path resolves, end the turn with the
-missing path.
+When history cannot split a `DUPLICATE` pair, the wording still needs one home. Keep it in the document that owns the subject and turn the other copy into a pointer. The report must say this choice was made, not measured.
 
-## What each outcome buys
+## Procedure
 
-| Agent verdict | Dating | Action |
-|---|---|---|
-| `CONFLICT` | `DECISIVE` | delete the claim history dates as older |
-| `DUPLICATE` | `DECISIVE` | keep the newer wording, point the older copy at it |
-| `CONFLICT` or `DUPLICATE` | `AMBIGUOUS` | change nothing, carry the pair forward |
-| `STALE-SUBSET` | not dated | leave both claims alone |
-| `UNRELATED` | not dated | leave both claims alone |
-
-A `STALE-SUBSET` pair says less on one side than the other. That narrowing is not a
-contradiction, so it is not yours to fix.
-
-Repeated wording that history cannot separate still deserves a single location.
-Choose the document that owns the subject, keep the claim there, replace the other
-copy with a pointer, and say in your write-up that you chose rather than measured.
-
-## Getting a verdict
-
-Send `doc-conflict-judge` exactly one pair, and give it both claims' `file`,
-`startLine`, `endLine`, `heading` and `text` straight from the candidates file. It
-answers with exactly one of `CONFLICT`, `DUPLICATE`, `STALE-SUBSET` or `UNRELATED`,
-plus quoted evidence whenever the answer is `CONFLICT`.
-
-Expect `UNRELATED` for most of what you send. The scanner errs toward offering too
-many pairs, so a long run of `UNRELATED` means it worked as designed.
-
-Where two claims put different numbers on the same thing, whether a count, version,
-port, percentage or timeout, that is a `CONFLICT` and not a difference of phrasing.
-The one exception is a pair that spells out, in the claims themselves, the
-conditions under which both figures hold.
-
-The agent weighs the two texts alone. It does not go hunting through the enclosing
-document for a reading that lets both survive, because whoever reads one claim in
-the wild never sees the other one's surroundings. It also writes nothing: no edits,
-no merged claims, no suggested replacement wording. You own the deletions and the
-dating script owns the question of which claim came first.
-
-## Getting a date
-
-Date the `CONFLICT` and `DUPLICATE` pairs only. Send nothing else to the script.
-
-`claim-age.mjs` follows a line backward through `git log -L`, compares content with
-formatting normalized away, passes over the commits that shifted no words, and
-reports the last edit that changed what the line meant. `git blame` would name only
-the newest commit touching that line, so a rewrap, autofix or reformat would dress
-an old claim up as a recent one. Following the history is what keeps that from
-happening.
-
-A `DECISIVE` result names which of the two claims is older. Dates separated by less
-than `--min-gap` produce `AMBIGUOUS` and no winner. A file carrying uncommitted
-changes dates as `uncommitted`, which forces `AMBIGUOUS` on any pair that includes
-it and exits 1.
-
-## Script reference
+1. Find `<skill-dir>`. In Claude it is `${CLAUDE_PLUGIN_ROOT}/skills/doc-reconcile`. In Codex it is the directory holding the loaded `SKILL.md`.
+2. Check that the scripts exist there. If not, end the turn and name the missing path.
+3. Record the tree state, then run the scanner.
+4. Count the pairs in `.doc-reconcile/candidates.json`. If there are more than 20, raise `--threshold` or lower `--limit` and `--max-per-claim`, rerun, and recount until the count fits.
+5. Send each pair to the judge.
+6. Date each `CONFLICT` and `DUPLICATE` pair.
+7. Apply the outcome table.
+8. Write the report.
 
 ```bash
 node "<skill-dir>/scripts/scan-docs.mjs"
 node "<skill-dir>/scripts/claim-age.mjs"
 ```
 
-`scan-docs.mjs` reads every git-tracked Markdown file plus each `description` field
-inside `plugin.json` and `marketplace.json`. It cuts each document into claims along
-these boundaries: a paragraph, a top-level list item, a table row, a JSON
-description string. It scores every pair sharing vocabulary, keeps whatever meets
-the threshold, limits how many pairs one claim may join, and writes the file that
-each later phase reads. Repeat runs over unchanged input match line for line, sorted
-by score, then file, then line. Exit 0 ran, exit 3 flagged a usage error.
+## The scanner
 
-| Flag | Meaning | Default |
+It reads every git-tracked Markdown file and every `description` field in `plugin.json` and `marketplace.json`. It cuts each into claims at a paragraph, top-level list item, table row, or JSON description string. It scores each pair of claims that share vocabulary, drops pairs under the threshold, caps how many pairs one claim joins, and writes `.doc-reconcile/candidates.json`. On unchanged input a rerun yields the same lines, ordered by score, then file, then line.
+
+| Flag | Effect | Default |
 |---|---|---|
 | `--root=<path>` | repository to read | cwd |
 | `--threshold=<n>` | lowest pair score kept | 0.35 |
 | `--max-per-claim=<n>` | how many pairs one claim may join | 3 |
-| `--min-tokens=<n>` | drops claims holding fewer content tokens than this | 6 |
+| `--min-tokens=<n>` | drop claims with fewer content tokens | 6 |
 | `--out=<path>` | output file, resolved against `--root` | `.doc-reconcile/candidates.json` |
-| `--json` | prints to stdout in place of writing the file | off |
-| `--limit=<n>` | keeps only the best-scoring pairs | none |
+| `--json` | print to stdout instead of writing the file | off |
+| `--limit=<n>` | keep only the best-scoring pairs | none |
 
-`claim-age.mjs` compares two ranges given as `--pair=<file>:<start>-<end>` twice, or
-ages one range given as `--file=<path>` with `--lines=<start>-<end>`. It also takes
-`--min-gap=<days>`, default 1, and `--json`, default off. Exit 0 covers single mode
-and a `DECISIVE` pair, exit 1 an `AMBIGUOUS` pair, exit 3 a usage error.
+It exits 0 when it ran and 3 on a usage error.
 
-## What you hand back
+It offers more pairs than are real on purpose. A long run of `UNRELATED` verdicts shows it working.
 
-Give every deletion its own entry: the pair, the agent's quoted evidence, the commit
-that settled the age, and the commits skipped for changing wording only. Follow that
-with a single numbered list of the pairs left undecided, each showing both claims,
-both dates, and what stopped the dating from settling it.
+## The judge
+
+Use the agent `dod-guard:doc-conflict-judge`, also called `doc-conflict-judge`. In Claude Code, dispatch it through the Agent tool.
+
+- Give it one pair per call.
+- For both claims, pass `file`, `startLine`, `endLine`, `heading`, and `text`, copied directly from the candidates file.
+- It answers with exactly one of `CONFLICT`, `DUPLICATE`, `STALE-SUBSET`, or `UNRELATED`. A `CONFLICT` answer includes quoted evidence.
+- It reads the two texts and nothing else, because someone who meets a single claim never sees what surrounds the other. It does not hunt through the enclosing document for a reading that lets both stand.
+- It writes nothing: no edits, merged claims, or replacement wording.
+- Two claims that give different numbers for the same thing (count, version, port, percentage, timeout) are a `CONFLICT`, not a difference in phrasing. The only exception is a pair whose own text states when each figure holds.
+
+Agent handling by runtime:
+
+- Claude Code: every Agent call starts a fresh agent that ends once it answers. There is nothing to close.
+- Codex: list the active agents before you dispatch, and reuse a related one for later pairs where practical. Run each parallel wave only as wide as the free slots. Once a verdict is recorded, close that agent with the runtime's close action; if there is none, interrupt work you no longer need. A returned result does not mean the slot is free. When capacity is full, release agents you do not need and retry once. When closing is not possible, send the next pair as a follow-up to an agent that already exists.
+
+## The dating script
+
+Send it `CONFLICT` and `DUPLICATE` pairs only.
+
+It walks a line back through `git log -L`, compares text with formatting normalized, passes over commits that changed no words, and reports the last edit that changed the meaning. It does not use `git blame`, which credits the newest commit to touch a line and so makes an old claim look recent after a rewrap, autofix, or reformat.
+
+- `--pair=<file>:<start>-<end>`, given twice, compares two ranges.
+- `--file=<path>` with `--lines=<start>-<end>` ages one range.
+- `--min-gap=<days>` sets the smallest meaningful gap. Default 1.
+- `--json` prints JSON. Default off.
+
+Results and exit codes:
+
+- `DECISIVE` names the older claim. Exit 0, as for single mode.
+- `AMBIGUOUS` means the dates fall closer than `--min-gap`, so there is no winner. Exit 1.
+- A file with uncommitted changes dates as `uncommitted`. Any pair that includes it is `AMBIGUOUS`.
+- Exit 3 is a usage error.
+
+## Report
+
+For each deletion, list:
+
+- the pair
+- the judge's quoted evidence
+- the commit that settled the age
+- the commits passed over because they changed wording only
+
+After the deletions, add one numbered list of undecided pairs. Give each pair's two claims, their two dates, and the reason the dating could not settle it.

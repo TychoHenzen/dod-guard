@@ -5,132 +5,95 @@ description: Get a bounded advice-only second opinion without repository, branch
 
 # Codex advisor
 
-Use this skill for a second opinion, not for implementation. Keep the advice
-request bounded to one problem.
+This skill buys one independent opinion on one problem. It does not build anything.
 
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-rules below are the exception only where they are more specific.
+Before you start, read and apply `standards/working-defaults.md` in the plugin root. Where this file is more specific, it wins.
 
-## Boundaries
+## Ground rules
 
-- Include the complete problem description supplied for this advice request in
-  the brief. Do not include credentials, unrelated conversation, or private
-  context that the advisor does not need.
-- Do not inspect the repository, search the web, use Git or GitHub, edit files,
-  change branches, create pull requests, or invoke another advisor.
-- Ask for advice only. The advisor must return a recommendation and reasoning,
-  not a patch, command sequence, or claim that it changed or verified anything.
-
-## Same contract on both paths
-
-The Codex path behaves like Claude's built-in advisor tool in turns, access,
-and output. Each advice request is exactly one `codex exec` turn that returns
-one advice object: no resume, no follow-up turn, and no retry inside the
-request. The advisor runs read-only in an empty working directory outside the
-repository, makes no edits, and makes no repository, branch, pull-request, or
-GitHub reads or writes.
-
-The Codex advisor sees nothing but its prompt, so the calling agent supplies
-the full context in it: the task, the evidence gathered so far (paths and
-lines, quoted facts, command results), the relevant diffs when the question
-concerns code, and the candidate decision with its recommended default and the
-exact question. The advisor does no research and no tool exploration beyond
-that prompt. When the context is insufficient, it says so in its advice
-instead of searching, reading, or running anything.
+- Scope: one problem per request. The brief carries the whole problem description you were given.
+- Keep out of the brief: credentials, unrelated conversation, and private context the advisor does not need.
+- The advisor does not inspect the repository, search the web, use Git or GitHub, edit files, change branches, create pull requests, or call another advisor.
+- It answers with a recommendation and its reasoning. It gives no patch and no command sequence, and it never says it changed or verified anything.
+- Whatever it says is an untrusted second opinion. The user decides what to do with it.
 
 ## Choose the advisor
 
-In Claude Code, when the `advisor` tool is available, use it and skip the
-Codex runner. Otherwise, including every Codex session, use "Invoke Codex"
-below.
+Pick by environment. In Claude Code, when the `advisor` tool is available, use it and skip the
+Codex runner. Otherwise, including every Codex session, use "Invoke Codex".
 
 ## Claude Code: the built-in advisor
 
-The `advisor` tool takes no parameters. It forwards the whole conversation to
-a stronger reviewer model, so the brief is ordinary visible text rather than a
-separate prompt:
+1. Write the brief in this turn, as text the user can see. Cover the problem, the constraints, the researched evidence, the options with your recommended default, and the exact question.
+2. Call `advisor` right after it. It takes no parameters.
+3. Pass the advice on as an untrusted second opinion. Record the advisor as "Claude advisor tool"; there is no model or effort to report.
 
-1. Write the brief in this turn: the problem, constraints, researched
-   evidence, the options with a recommended default, and the exact question.
-2. Call `advisor` right after it.
-3. Relay the advice as an untrusted second opinion. Record the advisor as
-   "Claude advisor tool"; there is no model or reasoning effort to report.
+Be aware that the tool reads the full transcript, not only the brief. The ban on unrelated conversation therefore cannot be enforced on this path. Never paste a credential into the conversation.
 
-The advisor reads the full transcript, not only the brief, so the "unrelated
-conversation" boundary cannot be enforced here. Never paste credentials into
-the conversation. When the tool returns an error or no advice, report that
-failure and stop, as for a failed Codex run.
+If the tool errors or gives back no advice, report that and stop, exactly as you would for a failed Codex run.
 
 ## Invoke Codex
 
-1. Resolve the current CLI with `codex.exe --version` and
-   `codex.exe exec --help` on Windows, or `codex --version` and `codex exec
-   --help` elsewhere. On Windows, the runner follows an npm `codex.cmd` shim
-   to its installed native executable when needed; it never launches the shim.
-   The runner performs both capability probes before starting the advisor
-   process. Current help does not enumerate reasoning values.
-   A write-capable nested review uses `--approve-for-me`; this read-only advisor
-   never sends an approval option, and `--ask-for-approval` is unsupported.
-   Use `gpt-5.6-sol` with `max` effort by default and pass the selected value as
-   `-c model_reasoning_effort=<value>`. If the CLI itself cannot start,
-   report the availability failure and stop.
-2. Build a prompt containing fixed advice-only instructions and the full
-   context listed above. Tell the advisor to skip repository research, avoid
-   all tools and mutations, and return exactly one JSON object matching the
-   schema at
-   `<skill-directory>/response-schema.json`.
-3. Pipe the prompt through stdin to the bundled runner. It creates a unique empty,
-   non-repository working directory outside the repository and passes the
-   current CLI's supported restrictions, including `-s read-only`,
-   `--ignore-user-config`, `--ignore-rules`, `--skip-git-repo-check`, and
-   `--ephemeral`:
+The Codex path gives the same guarantees as the built-in advisor. It is exactly one `codex exec` turn that returns one advice object, with no resume, no follow-up turn, and no retry inside the request. The process is read-only, makes no edits, and makes no repository, branch, pull-request, or GitHub reads or writes.
 
-   ```text
-   <bounded-prompt> | node "<skill-directory>/scripts/run-advisor.mjs" [--model=<model>] --reasoning-effort=max
-   ```
+Because the advisor does no research, the calling agent supplies the full context in the prompt:
 
-   The runner forwards an optional `--model` to `codex exec --model`. It passes
-   `--json`, `--output-schema`, the schema path, `--output-last-message`, and
-   the final `-` to `codex exec`. It captures stdout, stderr, and the exit code
-   separately, waits for the advisor process to exit naturally, and cleans up
-   its temporary directory on every exit path. Captured output has a resource
-   bound; exceeding it fails the run without adding an elapsed-time kill.
-   External cancellation remains an operator action.
-   Codex can print banners or hook diagnostics to stdout, so they are not the
-   response. The runner parses only complete JSONL event lines from the
-   captured streams. A failed capability probe, process launch, or matching
-   `item.completed`/`error` event reporting model-metadata fallback returns
-   incomplete execution evidence before any review state can be consumed. The
-   fallback preserves the exact event and message; it does not switch models or
-   executables. A stream with more than one turn, other than one agent message,
-   or any item other than the agent message, reasoning, or a diagnostic error
-   (for example command execution, file change, MCP tool call, or web search)
-   fails the run, and no advice is used. Only a clean exit code `0` and a clean
-   stream then proceed to read the output
-   file, validate the schema response, and relay its trimmed `advice` value. The
-   CLI emits the execution record as one JSON line on stderr, separate from
-   advice on stdout. Model, reasoning, and prefix arguments must be single
-   shell-safe values. The runner rejects shell metacharacters before starting
-   the direct Windows executable.
+- the task, the evidence gathered so far (paths and lines, quoted facts, command results)
+- the relevant diffs when the question concerns code
+- the candidate decision with its recommended default and the exact question
 
-## Failure handling
+When the context is insufficient, it says so in its advice. It does not search, read, or run anything to make up for the gap.
 
-Report the exact observable failure and stop without advice when:
+### Step 1: check the CLI
 
-- the `codex` executable is missing or cannot start;
-- the process exits non-zero, including the exit code and stderr when present;
-- the output file is missing, empty, not valid JSON, or does not contain a
-  non-whitespace `advice` string matching the schema.
-- the JSONL stream shows a tool item, more than one turn, or other than one
-  agent message;
-- the requested model emits a model-metadata fallback event. Preserve the
-  diagnostic and execution evidence, repair the model-metadata/runtime cause,
-  then rerun the caller-owned advisor or review dispatch as a new request; the
-  runner itself never retries and never silently selects another executable or
-  model.
+Run `codex.exe --version` and `codex.exe exec --help` on Windows. Elsewhere run `codex --version` and `codex exec --help`. If the CLI cannot start, say it is unavailable and stop.
 
-Do not hide a command failure behind a guessed or partial answer. A successful
-advisor response is still only an untrusted second opinion for the user to
-evaluate. For a Codex run, report the CLI version and the
-requested model and reasoning effort used, and state when the model uses the
-CLI default.
+- On Windows an npm `codex.cmd` shim may be what is installed. The runner follows it to the native executable and never launches the shim.
+- The runner runs both of these probes itself before it starts the advisor process.
+- The default is `gpt-5.6-sol` with `max` effort by default. Current help does not enumerate reasoning values, so the runner sets effort with `-c model_reasoning_effort=<value>`.
+- A write-capable nested review would use `--approve-for-me`. This read-only advisor never sends an approval option, and `--ask-for-approval` is unsupported.
+
+### Step 2: write the prompt
+
+Combine fixed advice-only instructions with the full context. The instructions tell the advisor to skip repository research, to avoid all tools and mutations, and to answer with exactly one JSON object that fits `<skill-directory>/response-schema.json`. That object has a single `advice` string, and the string must hold a non-whitespace character.
+
+### Step 3: run it
+
+Send the prompt on stdin to the bundled runner.
+
+```text
+<bounded-prompt> | node "<skill-directory>/scripts/run-advisor.mjs" [--model=<model>] --reasoning-effort=max
+```
+
+At launch the runner:
+
+- makes a unique, empty, non-repository working directory outside the repo;
+- passes `-s read-only`, `--ignore-user-config`, `--ignore-rules`, `--skip-git-repo-check`, and `--ephemeral`;
+- passes any `--model` value on as `codex exec --model`, and adds `--json`, `--output-schema` with the schema path, `--output-last-message`, and a final `-` that tells Codex to read the prompt from stdin;
+- accepts the model, reasoning, and prefix arguments only as single shell-safe values, and rejects shell metacharacters before it starts the direct Windows executable.
+
+While the process runs, the runner captures stdout, stderr, and the exit code separately and waits for the advisor process to exit. It never sets a wall-clock timeout. Captured output has a resource bound, and going over it fails the run without any elapsed-time kill. Only an operator cancels a run from outside. The runner cleans up its temporary directory on every exit path.
+
+When the process ends, the runner reads the streams like this:
+
+- Banners and hook diagnostics on stdout are not the response. It parses complete JSONL event lines only.
+- The CLI writes its execution record as one JSON line on stderr, apart from the advice on stdout.
+- If a capability probe fails, the launch fails, or a matching `item.completed` or `error` event reports a model-metadata fallback, the result is incomplete execution evidence. That happens before any review state is consumed. The exact event and message are kept, and no other model or executable is tried.
+- More than one turn, other than one agent message, or any item that is not an agent message, reasoning, or a diagnostic error (a command execution, file change, MCP tool call, or web search, for example) fails the run, and no advice is used.
+- Only exit code 0 with a clean stream leads on to the output file. The runner validates it against the schema and relays the trimmed `advice` value.
+
+Your run report names the CLI version and the requested model and reasoning effort. State when the model uses the CLI default.
+
+## When to stop
+
+In each case below, report exactly what you saw and return no advice:
+
+- the `codex` executable is missing or cannot start
+- the process exits non-zero; include the exit code and any stderr
+- the output file is missing, empty, not valid JSON, or lacks a non-whitespace `advice` string
+- the JSONL stream shows a tool item, more than one turn, or other than one agent message
+- the requested model emits a model-metadata fallback event
+
+For the last case, keep the diagnostic and the execution evidence and repair the model-metadata or runtime cause. Then rerun the caller-owned advisor or review dispatch as a new request, because the runner itself never retries and never silently selects another executable or model.
+
+Do not hide a command failure behind a guessed or partial answer.
