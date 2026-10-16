@@ -98,7 +98,7 @@ owner, as `standards/model-routing.md` says. Each row runs at this tier:
 | Merge conflict triage: investigate and apply | cheap |
 | `/add-backlog-idea`, including the friction log | cheap |
 
-A cheap row that needs a skill, a GitHub write, or an MCP connector
+A cheap row that needs a skill or a GitHub write
 (`/submit-draft-pr`, the `/review-pr` owner thread, `/complete-pr`, and
 `/add-backlog-idea`) runs on `dod-guard:stage-standard` with `model: haiku`. A
 `/complete-pr` run on the cheap model stops at `merge_conflict`, and this thread

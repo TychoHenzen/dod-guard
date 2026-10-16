@@ -76,15 +76,25 @@ in the progress message.
 
 A skill-capable stage runs on `dod-guard:stage-standard` at its own tier's
 model and effort, cheap, standard, or strong. A stage is skill-capable when it
-invokes a skill, writes issue, pull request, or Project state, or needs an MCP
-connector: `dod-guard:stage-cheap` and the read-only agents have no Skill tool
-or MCP connector, and their own text rules out GitHub writes even through Bash,
-so capability follows the agent and cost follows the model. In Claude Code,
+invokes a skill or writes issue, pull request, or Project state:
+`dod-guard:stage-cheap` and the read-only agents have no Skill tool, and their
+own text rules out GitHub writes even through Bash, so capability follows the
+agent and cost follows the model. In Claude Code,
 pass the tier's `model` and `effort` on the Agent call. In Codex, the
 registered stage-standard file pins the standard tier, so spawn a cheap-tier
 skill-capable stage without that file, with `gpt-5.6-luna` and `max` at spawn
 time, and record it as "requested, not pinned". Spawn a strong-tier stage the
 same way with `gpt-5.6-sol` and `high`.
+
+Context size sets cost. Haiku 5.5 charges five times more for every request
+whose prompt passes 100,000 tokens, and each call of an agent is one request.
+Each Claude Code agent that runs a long loop declares `autoCompactWindow` in its
+frontmatter as a plain integer of tokens from 100000 to 1000000; a value written
+as `200k` is ignored. `dod-guard:stage-cheap` and `dod-guard:read-cheap` declare
+100000, so a Haiku worker shrinks its context before the price increase.
+`dod-guard:stage-standard` declares 250000, the window where a replay of
+measured Sonnet sessions was cheapest. The `CLAUDE_CODE_AUTO_COMPACT_WINDOW`
+environment variable overrides the field, so leave it unset.
 
 ## Who dispatches
 
@@ -92,8 +102,8 @@ Only the thread that owns a skill's procedure dispatches its subagents.
 When `dod-guard:goal-sdlc` reaches a stage whose owner splits its work into
 routed rows (refinement research, `/next-ticket` tasks, `/review-pr`, or the
 conflict triage in `standards/conflict-triage.md`), it runs that stage on
-`dod-guard:stage-standard`, the only tier agent that inherits every
-tool, including Agent and MCP connectors. The Agent call passes the model of the
+`dod-guard:stage-standard`, the only tier agent that holds the Agent and Skill
+tools. The Agent call passes the model of the
 stage's own tier, so an owner whose tier is cheap, such as the `/review-pr`
 owner, runs on `dod-guard:stage-standard` with `model: haiku`. That stage
 worker is the owner's main thread: it dispatches each row at its tier and runs

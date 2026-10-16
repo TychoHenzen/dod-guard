@@ -32,6 +32,40 @@ test("each tier agent pins its model and effort for Claude Code and Codex", asyn
   }
 });
 
+// Haiku charges five times more for a request whose prompt passes 100,000
+// tokens, so the haiku workers compact below that line. Claude Code reads
+// autoCompactWindow only as a plain integer from 100000 to 1000000 and ignores
+// a value such as `200k`, so the test pins the digits.
+const COMPACT_WINDOWS = {
+  "stage-cheap": 100000,
+  "read-cheap": 100000,
+  "stage-standard": 250000,
+};
+
+test("long-running agents declare a plain-integer autoCompactWindow", async () => {
+  for (const agent of TIER_AGENTS) {
+    const source = await agentText(agent.name);
+    const declared = frontmatterValue(source, "autoCompactWindow");
+    const expected = COMPACT_WINDOWS[agent.name];
+    if (expected === undefined) {
+      assert.equal(declared, undefined, `${agent.name} declares no autoCompactWindow`);
+      continue;
+    }
+    assert.match(declared ?? "", /^\d{6,7}$/, `${agent.name} autoCompactWindow must be a plain integer`);
+    assert.equal(Number(declared), expected, agent.name);
+    assert.ok(Number(declared) >= 100000 && Number(declared) <= 1000000, agent.name);
+  }
+  for (const phrase of [
+    "Haiku 5.5 charges five times more for every request whose prompt passes 100,000 tokens",
+    "declares `autoCompactWindow` in its frontmatter as a plain integer of tokens from 100000 to 1000000",
+    "`dod-guard:stage-cheap` and `dod-guard:read-cheap` declare 100000",
+    "`dod-guard:stage-standard` declares 250000",
+    "The `CLAUDE_CODE_AUTO_COMPACT_WINDOW` environment variable overrides the field",
+  ]) {
+    assert.match(standard, prose(phrase), phrase);
+  }
+});
+
 test("the routing standard defines the tiers, runtime rules, and verification once", () => {
   for (const phrase of [
     "The cheap tier is for work that needs a lot of effort but low intelligence:",
@@ -69,22 +103,27 @@ test("the routing standard defines the tiers, runtime rules, and verification on
 
 // Only an owner's thread dispatches: the stage agent that owns a split stage
 // can spawn agents, and every row worker cannot.
-const DISPATCH_TITLE = "only the standard stage agent can dispatch or use MCP";
+const DISPATCH_TITLE = "only the standard stage agent can dispatch";
 
 test(DISPATCH_TITLE, async () => {
-  // stage-standard has no tools allowlist, so it inherits Agent and MCP tools;
-  // every other tier agent keeps an allowlist without Agent.
+  // stage-standard lists Agent and Skill in an allowlist that holds no MCP
+  // tool, which keeps its first call small; every other tier agent keeps an
+  // allowlist without Agent.
   for (const agent of TIER_AGENTS) {
     const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
     const tools = source.match(/^tools: (.+)$/m)?.[1].split(", ");
-    const marker = /^inheritAllTools: true$/m.test(source);
+    assert.ok(tools, `${agent.name} must declare a tools allowlist`);
+    assert.equal(/^inheritAllTools:/m.test(source), false, `${agent.name} must not inherit every tool`);
+    assert.equal(
+      tools.some((tool) => tool.startsWith("mcp__")),
+      false,
+      `${agent.name} must hold no MCP tool`,
+    );
     if (agent.name === "stage-standard") {
-      assert.equal(tools, undefined, "stage-standard must inherit every tool");
-      assert.ok(marker, "stage-standard must carry inheritAllTools: true");
+      assert.ok(tools.includes("Agent") && tools.includes("Skill"), "stage-standard must hold Agent and Skill");
       continue;
     }
-    assert.ok(tools && !tools.includes("Agent"), agent.name);
-    assert.equal(marker, false, `${agent.name} must not carry inheritAllTools`);
+    assert.ok(!tools.includes("Agent"), agent.name);
   }
   for (const phrase of [
     "Only the thread that owns a skill's procedure dispatches its subagents.",
@@ -153,12 +192,12 @@ test(ALLOWLIST_TITLE, async () => {
 });
 
 // Capability follows the agent and cost follows the model, so a cheap stage
-// that needs a skill, a GitHub write, or MCP runs on stage-standard at the
-// cheap tier and is still verified as cheap output.
+// that needs a skill or a GitHub write runs on stage-standard at the cheap
+// tier and is still verified as cheap output.
 const SKILL_CAPABLE = [
   "A skill-capable stage runs on `dod-guard:stage-standard` at its own",
   "tier's model and effort, cheap, standard, or strong.",
-  "invokes a skill, writes issue, pull request, or Project state, or needs " + "an MCP connector",
+  "invokes a skill or writes issue, pull request, or Project state:",
   "In Claude Code, pass the tier's `model` and `effort` on the Agent call.",
   "spawn a cheap-tier skill-capable stage without that file, with " +
     "`gpt-5.6-luna` and `max` at spawn time, and record it as " +
@@ -249,7 +288,7 @@ test(HANDOFF_TITLE, async () => {
 
 // Each workaround answers a tool failure a cheap worker hit in a friction log.
 const STAGE_CHEAP_WORKAROUNDS = [
-  "When the step needs a skill, a GitHub write, or an MCP connector, stop " + "and report it as misrouted",
+  "When the step needs a skill or a GitHub write, stop and report it as misrouted",
   "That step belongs on `dod-guard:stage-standard` at the cheap tier.",
   "Write file content with the Write tool instead of heredocs or echo " + "redirection",
   "When Edit cannot match a line that holds a non-ASCII character",

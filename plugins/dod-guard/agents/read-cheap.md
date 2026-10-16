@@ -4,6 +4,7 @@ description: Investigate planned questions on the cheap tier. Reads files, histo
 model: haiku
 tools: Read, Grep, Glob, Bash
 effort: medium
+autoCompactWindow: 100000
 codex_effort: max
 ---
 

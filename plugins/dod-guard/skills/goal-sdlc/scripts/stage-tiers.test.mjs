@@ -18,7 +18,7 @@ function assertPhrases(text, phrases) {
 
 test("goal-sdlc runs cheap skill-capable rows on the haiku stage worker", () => {
   assertPhrases(skill, [
-    "A cheap row that needs a skill, a GitHub write, or an MCP connector",
+    "A cheap row that needs a skill or a GitHub write",
     "(`/submit-draft-pr`, the `/review-pr` owner thread, `/complete-pr`, and",
     "`/add-backlog-idea`) runs on `dod-guard:stage-standard` with `model: haiku`.",
     "A rerun of any row, such as a refreshed handoff or a second `/complete-pr`, takes that row's tier.",
