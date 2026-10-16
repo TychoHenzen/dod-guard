@@ -63,8 +63,7 @@ test("long-running agents declare a plain-integer autoCompactWindow", async () =
     "Haiku 5.5 charges five times more for every request whose prompt passes 100,000 tokens",
     "A Haiku request over that line still costs about half as much as a Sonnet request of the same size",
     "A Claude Code agent compacts when its context reaches its window minus 33,000 tokens",
-    "Its window is the lower of its `autoCompactWindow` frontmatter field " +
-      "and the window of the model it runs on",
+    "Its window is the lower of its `autoCompactWindow` frontmatter field and the window of the model it runs on",
     "The field is a plain integer of tokens from 100000 to 1000000",
     "A window must leave room above the start size of the agent",
     'the run ends with the error "Autocompact is thrashing"',
