@@ -59,6 +59,12 @@ const ESCALATION = [
   "the owner, already a standard-tier thread that holds the plan and the",
   "failure record, carries out the task itself",
   "with `model: opus` and the strong effort",
+  "A cheap-model skill-capable stage, which runs on `dod-guard:stage-standard`",
+  "with `model: haiku`, never carries out a failed row itself.",
+  "It stops and reports the failure record to its dispatcher.",
+  "then runs it again on `dod-guard:stage-standard` with `model: sonnet` and the",
+  "failure record, and after a second failure with `model: opus`",
+  "A failure on the opus run stops the stage as a blocker.",
   "The failed-check rule above, the investigator-batch rule in",
   "and the repair rule in `dod-guard:step-by-step` escalate once and then",
   "a step whose repair fails climbs one rung under this section",
@@ -81,6 +87,10 @@ const TIER_VERIFICATION = [
   "check above does not apply.",
   "every commit the stage reports exists, is pushed, and matches the diff",
   "the stage's own named proof passes, and was run at the accepted head",
+  "a stage that implements tasks reports, for each task, its dispatch (agent,",
+  "model, and effort) or the escalation record that explains an edit by the",
+  "owner. A missing report is a failed check, and the main thread logs it in the",
+  "friction log.",
 ];
 
 test("each tier has a stated verification rule", () => {
@@ -128,4 +138,21 @@ test(NAMES_TITLE, async () => {
       assert.ok(codexNames.has(name), `${name} is not a Codex agent`);
     }
   }
+});
+
+const OWNER_PRINCIPLE = [
+  "The owner's principle decides every tier: haiku for anything that needs a lot",
+  "of effort but low intelligence, sonnet only for tasks that need the added",
+  "intelligence, and opus only when sonnet or haiku cannot figure it out.",
+  "such as drafting a pull request from a handoff or the guarded merge.",
+  "A rerun of a row takes that row's tier.",
+  "so it does not fall back to the standard tier.",
+  "runs on `dod-guard:stage-standard` with `model: haiku`",
+];
+
+test("the tiers follow the owner principle and a rerun keeps its tier", () => {
+  assertPhrases(standard, OWNER_PRINCIPLE);
+  const tiers = standard.slice(standard.indexOf("## Tiers"), standard.indexOf("## Applying a tier"));
+  assert.doesNotMatch(tiers, prose("It is for judgement with modest reasoning effort"));
+  assert.doesNotMatch(tiers, prose("owning a stage, drafting a pull request, remediation"));
 });
