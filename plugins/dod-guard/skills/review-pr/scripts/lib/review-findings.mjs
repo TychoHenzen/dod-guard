@@ -61,7 +61,8 @@ function firstAnchor(changedLines) {
 // GitHub only accepts an inline comment on a line the diff adds. Moving a
 // finding to the nearest such line keeps
 // it a review comment with its own GH-<id>, which /fix-pr-review needs to
-// select it.
+// select it. A caller passes no fallback for a finding that must not leave
+// its file.
 function anchor(finding, changedLines, fallback) {
   const lines = changedLines.get(finding.file);
   if (lines?.has(finding.line)) {
@@ -146,11 +147,15 @@ function checkedInputs({ scan, diff, results, plan, pbi, subIssues, merge }) {
 
 // Only kept violations reach the unchanged scannerFinding, so a dropped one
 // never sets a file's severity or shows in the counts.
+// A scanner group describes its own file, so it never takes the cross-file
+// fallback: with no added line in that file it stays unanchored and
+// reviewBody lists it under its own file and line. Only a judged finding can
+// cite a file outside the diff by design.
 function anchoredFindings({ changedLines, judged, kept }, merge) {
   const fallback = firstAnchor(changedLines);
   const groups = [...scannerGroups(kept)].map(([file, group]) => scannerFinding(file, group));
-  const findings = [...mergedFindings(merge.groups, judged), ...groups];
-  return findings.map((finding) => anchor(finding, changedLines, fallback));
+  const moved = mergedFindings(merge.groups, judged).map((finding) => anchor(finding, changedLines, fallback));
+  return [...moved, ...groups.map((group) => anchor(group, changedLines, null))];
 }
 
 function planBlocks(plan, { slots, dropped }) {
