@@ -21,7 +21,8 @@ async function createRealHelperFixture(t) {
   const manifest = JSON.stringify({ name: "dod-guard", version: "5.4.56" });
   await mkdir(join(loaded, "skills", "publish", "scripts"), { recursive: true });
   await mkdir(join(loaded, ".claude-plugin"), { recursive: true });
-  await writeFile(join(loaded, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "dod-guard", version: "5.4.55" }));
+  const previous = JSON.stringify({ name: "dod-guard", version: "5.4.55" });
+  await writeFile(join(loaded, ".claude-plugin", "plugin.json"), previous);
   await mkdir(join(root, "skills", "publish"), { recursive: true });
   await mkdir(join(root, ".codex-plugin"), { recursive: true });
   await mkdir(join(root, ".claude-plugin"), { recursive: true });

@@ -488,7 +488,10 @@ if (-not $verification.Success) { throw "Release verification failed at $($verif
 
 This read-only helper verifies the current and remote Git heads, complete
 branch protection and `enforce_admins` readbacks, all required checks on the
-published SHA, and the refreshed Codex and Claude registrations. It captures
+published SHA, and the refreshed Codex and Claude registrations. It verifies
+the registered installation of the new release (registered root, manifest, and
+publish skill), not the loaded one, so no session reload is needed; step 1
+still verifies the loaded installation. It captures
 each command exit status before parsing output and reports a failed stage
 instead of presenting partial evidence as a successful release.
 
