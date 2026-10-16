@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { advisories, fixHint, main } from "./check-audit.mjs";
+import { advisories, fixHint, main, parseAuditReport } from "./check-audit.mjs";
 
 function run(argv, deps = {}) {
   let out = "";
@@ -110,7 +110,7 @@ test("unknown argument exits 3 and writes nothing", () => {
   assert.equal(result.out, "");
 });
 
-test("fixHint covers object, true, and absent", () => {
+test("fixHint covers object, true, and false", () => {
   assert.equal(fixHint({ name: "a", version: "2.0.0" }), "fix: a@2.0.0");
   assert.equal(fixHint(true), "fix: npm audit fix");
   assert.equal(fixHint(false), "no fix available");
@@ -134,4 +134,65 @@ test("advisories parsed from an npm audit report keep moderate and drop low", ()
   assert.equal(items.length, 1);
   assert.equal(items[0].id, "1");
   assert.equal(items[0].fix, "fix: npm audit fix");
+});
+
+test("parseAuditReport accepts a report with a vulnerabilities object", () => {
+  const report = parseAuditReport('{"vulnerabilities":{}}');
+  assert.deepEqual(report, { vulnerabilities: {} });
+});
+
+test("parseAuditReport rejects an npm error object and keeps its summary", () => {
+  const text = JSON.stringify({ error: { code: "ENOTFOUND", summary: "registry unreachable" } });
+  assert.throws(() => parseAuditReport(text), /registry unreachable/);
+});
+
+test("parseAuditReport rejects a report without a vulnerabilities object", () => {
+  assert.throws(() => parseAuditReport('{"metadata":{}}'), /no vulnerabilities/);
+  assert.throws(() => parseAuditReport("null"), /no vulnerabilities/);
+});
+
+test("main reports unavailable when npm audit fails with an error object", () => {
+  const npmFailure = Object.assign(new Error("Command failed"), {
+    stdout: JSON.stringify({ error: { code: "ENOTFOUND", summary: "registry unreachable" } }),
+  });
+  const result = run([], {
+    exec: () => {
+      throw npmFailure;
+    },
+    summaryPath: "summary.md",
+  });
+  assert.equal(result.code, 0);
+  assert.match(result.out, /audit advisory unavailable - .*registry unreachable/);
+  assert.doesNotMatch(result.out, /0 production advisory/);
+  assert.match(result.summary[0][1], /audit advisory unavailable/);
+});
+
+test("main reports unavailable when npm audit exits zero with an error object", () => {
+  const result = run([], {
+    exec: () => JSON.stringify({ error: { summary: "bad registry response" } }),
+    summaryPath: "",
+  });
+  assert.equal(result.code, 0);
+  assert.match(result.out, /audit advisory unavailable - .*bad registry response/);
+});
+
+test("main reports advisories parsed from the npm audit output", () => {
+  const output = JSON.stringify({
+    vulnerabilities: {
+      sdk: { fixAvailable: true, via: [{ source: 9, name: "sdk", severity: "high", title: "Bad sdk", range: "<2" }] },
+    },
+  });
+  const result = run([], { exec: () => output, summaryPath: "" });
+  assert.match(result.out, /high \(1\):/);
+  assert.match(result.out, /advisory 9/);
+});
+
+test("advisories picks the same fix hint whatever order npm lists the packages", () => {
+  const via = { source: 7, name: "shared", severity: "high", title: "Shared", range: "<2" };
+  const withFix = { severity: "high", fixAvailable: { name: "a-pkg", version: "2.0.0" }, via: [via] };
+  const withoutFix = { severity: "high", fixAvailable: false, via: [via] };
+  const forward = advisories({ vulnerabilities: { "a-pkg": withFix, "b-pkg": withoutFix } });
+  const reversed = advisories({ vulnerabilities: { "b-pkg": withoutFix, "a-pkg": withFix } });
+  assert.deepEqual(forward, reversed);
+  assert.equal(forward.length, 1);
 });

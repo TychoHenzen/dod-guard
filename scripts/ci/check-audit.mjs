@@ -13,21 +13,38 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 // Order is the report order, most severe first.
 const REPORTED_LEVELS = ["critical", "high", "moderate"];
 
-function runAudit() {
+// A failed npm audit prints an error object (an `error` key, no `vulnerabilities`).
+// Treating that as a report would show 0 advisories, so it is thrown as unavailable instead.
+export function parseAuditReport(text) {
+  const report = JSON.parse(text);
+  if (report?.error) {
+    const detail = report.error.summary ?? report.error.code ?? "npm audit returned an error";
+    throw new Error(String(detail));
+  }
+  if (typeof report?.vulnerabilities !== "object" || report.vulnerabilities === null) {
+    throw new Error("npm audit report has no vulnerabilities object");
+  }
+  return report;
+}
+
+function readAuditOutput(exec) {
   const command = npmCommand(["audit", "--json", "--omit=dev"]);
   try {
-    return JSON.parse(
-      execFileSync(command.command, command.args, {
-        cwd: ROOT,
-        encoding: "utf8",
-        shell: command.shell,
-        stdio: ["ignore", "pipe", "pipe"],
-      }),
-    );
+    return exec(command.command, command.args, {
+      cwd: ROOT,
+      encoding: "utf8",
+      shell: command.shell,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
   } catch (error) {
-    if (error.stdout) return JSON.parse(error.stdout);
+    // npm audit exits non-zero when it finds advisories but still prints the report on stdout.
+    if (error.stdout) return error.stdout;
     throw error;
   }
+}
+
+export function runAudit(exec = execFileSync) {
+  return parseAuditReport(readAuditOutput(exec));
 }
 
 export function fixHint(fixAvailable) {
@@ -48,9 +65,13 @@ function bySeverityThenId(left, right) {
   );
 }
 
+function byPackageName([left], [right]) {
+  return left.localeCompare(right);
+}
+
 export function advisories(report) {
   const found = new Map();
-  for (const entry of Object.values(report.vulnerabilities ?? {})) {
+  for (const [, entry] of Object.entries(report.vulnerabilities ?? {}).sort(byPackageName)) {
     for (const via of entry.via ?? []) {
       if (!isReportedAdvisory(via)) continue;
       const id = String(via.source);
@@ -94,22 +115,17 @@ export function writeSummary(lines, summaryPath, append) {
   append(summaryPath, `### Dependency audit (report only)\n\n\`\`\`\n${lines.join("\n")}\n\`\`\`\n`);
 }
 
-function reportLines(readAdvisories) {
+function reportLines(dependencies) {
   try {
-    return formatReport(readAdvisories ? readAdvisories() : advisories(runAudit()));
+    const current = dependencies.advisories ? dependencies.advisories() : advisories(runAudit(dependencies.exec));
+    return formatReport(current);
   } catch (error) {
     return [formatUnavailable(error)];
   }
 }
 
-export function main(argv, dependencies = {}) {
-  if (argv.length > 0) {
-    (dependencies.stderr ?? process.stderr).write(`unknown option: ${argv[0]}\nusage: check-audit.mjs\n`);
-    return 3;
-  }
-
+function emitReport(lines, dependencies) {
   const stdout = dependencies.stdout ?? process.stdout;
-  const lines = reportLines(dependencies.advisories);
   for (const line of lines) stdout.write(`${line}\n`);
   try {
     writeSummary(
@@ -120,6 +136,14 @@ export function main(argv, dependencies = {}) {
   } catch (error) {
     stdout.write(`audit summary not written - ${error instanceof Error ? error.message : String(error)}\n`);
   }
+}
+
+export function main(argv, dependencies = {}) {
+  if (argv.length > 0) {
+    (dependencies.stderr ?? process.stderr).write(`unknown option: ${argv[0]}\nusage: check-audit.mjs\n`);
+    return 3;
+  }
+  emitReport(reportLines(dependencies), dependencies);
   return 0;
 }
 
