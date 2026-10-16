@@ -1,6 +1,6 @@
 ---
 name: stage-standard
-description: Carry out one judgement-heavy lifecycle stage on the standard tier, such as owning a stage, drafting a pull request, fixing review findings, or completing a guarded merge, by following the skill that owns that stage. Also the skill-capable worker for a cheap-tier or strong-tier stage, run with that tier's model. Use when a main thread dispatches one bounded stage.
+description: Carry out one lifecycle stage by following the skill that owns it, such as owning a stage, writing plans, or fixing review findings on the standard tier. It is the skill-capable worker for any tier, so a cheap-tier stage that needs a skill, a GitHub write, or an MCP connector, such as drafting a pull request or completing a guarded merge, runs here with the cheap tier's model, and a strong-tier stage runs here with the strong tier's model. Use when a main thread dispatches one bounded stage.
 model: sonnet
 effort: medium
 inheritAllTools: true

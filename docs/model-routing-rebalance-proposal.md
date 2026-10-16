@@ -488,3 +488,29 @@ Decided: N1, rename the agents (2026-10-15).
    `@codex review` rule? Proposed: the project's `CLAUDE.md`.
 4. Should the review owner stage become a script-driven flow rather than an
    LLM owner? Out of scope here; it was 10.5% of spend.
+
+## Addendum 2026-10-16 (issue 958): effort versus intelligence
+
+This addendum supersedes the "Stage routing" table above where they differ.
+The owner's principle decides every row: haiku for anything that needs a lot of
+effort but low intelligence, sonnet only for tasks that need the added
+intelligence, and opus only when sonnet or haiku cannot figure it out.
+
+| Stage | Proposed above | Now |
+|---|---|---|
+| `/submit-draft-pr` | standard | cheap, on the all-tools worker |
+| `/complete-pr`: guarded merge and Project finalization | standard | cheap, stops at `merge_conflict` |
+| `/review-pr`: owner thread | standard | cheap, on the all-tools worker |
+| `/next-ticket`: implement one task from its plan | cheap | cheap for every task, a one-task PBI included, with no owner-edit escape hatch |
+| Merge conflict triage: owner, plan, judge | standard | standard |
+| Refinement, `/next-ticket`, and `/fix-pr-review` owner threads | standard | standard, because they write plans, classify, or revalidate, and absorb failed rows |
+
+A rerun of a row takes that row's tier. A cheap-model owner never carries out a
+failed row: it reports to its dispatcher, which reruns the stage on sonnet and
+then on opus.
+
+The first goal-sdlc run measured after 5.7.0 used 31 stage-standard agents on
+sonnet, 4 on haiku, 50 read-cheap agents on haiku, and no stage-cheap
+dispatch. That is the defect this change closes. Haiku quality on skill-capable
+stages is unmeasured. The friction log shows which rows escalate often and
+belong one tier higher.

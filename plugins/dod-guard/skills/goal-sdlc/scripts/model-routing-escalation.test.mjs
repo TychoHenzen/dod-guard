@@ -156,3 +156,13 @@ test("the tiers follow the owner principle and a rerun keeps its tier", () => {
   assert.doesNotMatch(tiers, prose("It is for judgement with modest reasoning effort"));
   assert.doesNotMatch(tiers, prose("owning a stage, drafting a pull request, remediation"));
 });
+
+test("stage-standard describes itself as the skill-capable worker for any tier", async () => {
+  const source = await readFile(new URL("agents/stage-standard.md", pluginRoot), "utf8");
+  assertPhrases(source, [
+    "It is the skill-capable worker for any tier, so a cheap-tier stage that needs a skill",
+    "such as drafting a pull request or completing a guarded merge, runs here with the cheap tier's model",
+    "and a strong-tier stage runs here with the strong tier's model.",
+  ]);
+  assert.doesNotMatch(source, prose("judgement-heavy"));
+});
