@@ -87,7 +87,7 @@ or whether it is outdated, and resolved threads never count. An unresolved
 thread stops with `unresolved-review-threads`, naming each thread's URL and
 path. A failed, malformed, or incompletely paginated read stops with
 `review-threads-unavailable` before it marks ready, enables auto-merge,
-dispatches CI, or merges. The remedy is `/fix-pr-review` or resolving the
+dispatches CI, or merges. The remedy is `dod-guard:fix-pr-review` or resolving the
 thread, then running this skill again. If the pull request is a draft, it marks
 it ready. If it is already ready, it preserves that state. It then:
 
@@ -160,8 +160,8 @@ When the helper stops with `merge_conflict` on a pull request whose head is
 the trusted PBI head, triage the conflict as `standards/conflict-triage.md`
 says instead of ending the run. That standard owns the preconditions, stages,
 stop rules, push provenance, and record. After a verified push, end with
-`conflict-triaged` and do not merge: the new head needs `/submit-draft-pr`
-convergence and `/review-pr` before this skill runs again. When the triage
+`conflict-triaged` and do not merge: the new head needs `dod-guard:submit-draft-pr`
+convergence and `dod-guard:review-pr` before this skill runs again. When the triage
 stops, report the stop and leave the pull request head unchanged. Every other
 helper stop ends the run as described above.
 
@@ -271,9 +271,9 @@ linked-issue confirmation are unchanged.
 
 ## Close delivered issues for goal-sdlc
 
-When `/goal-sdlc` delegates its start-of-run cleanup, run only this section:
+When `dod-guard:goal-sdlc` delegates its start-of-run cleanup, run only this section:
 resolve no pull request, merge nothing, take the closure snapshot that
-`/goal-sdlc` built with `closure.mjs snapshot --repository=<owner/repository>
+`dod-guard:goal-sdlc` built with `closure.mjs snapshot --repository=<owner/repository>
 --output=<file>`, or build one with that command itself when none was passed,
 and run:
 

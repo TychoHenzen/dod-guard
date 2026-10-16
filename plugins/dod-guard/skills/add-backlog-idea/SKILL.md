@@ -10,7 +10,7 @@ user-chosen target repository. Do not inspect the codebase for a design, create
 a branch, assign an owner, or add implementation subtasks.
 
 For the structured path, the issue's concise outcome and scope are the problem
-handoff to `/refine-backlog-item`. Do not derive, resolve, or organize new
+handoff to `dod-guard:refine-backlog-item`. Do not derive, resolve, or organize new
 requirements, decisions, plans, or tasks during capture; retain any supplied
 decision verbatim as `## Context` for later refinement.
 

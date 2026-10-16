@@ -68,7 +68,14 @@ test("routes discovery after repository and issue research", () => {
 test("reads back only after a failed write, and once before Todo", () => {
   assert.doesNotMatch(skill, /mutation snapshot/);
   assert.match(skill, /After a failed, timed-out, or ambiguous write, follow the shared GitHub\s+standard/);
-  assert.match(skill, /Read back the issue body, labels, linked sub-issues, and Project status from\s+GitHub/);
+  assert.match(
+    skill,
+    prose(
+      "Read back the issue body, labels, linked sub-issues, step plan comments, and",
+      "Project status from GitHub.",
+      "every task has its `## Step plan: <task-id>` comment",
+    ),
+  );
 });
 
 test("paginates the complete live label inventory", () => {

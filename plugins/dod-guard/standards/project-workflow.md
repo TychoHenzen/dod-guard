@@ -39,6 +39,7 @@ and pull request as the source of truth.
 | Clarification | `refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
 | Plan | `refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
 | Tasks | `refine-backlog-item` | `task-list` record and functional-slice child PBIs when independent delivery warrants them | `Todo` PBI hands every slice and parent task evidence to implementation on one branch and PR. |
+| Step plans | `refine-backlog-item` | One `## Step plan: <task-id>` issue comment per task | `next-ticket` implements each task from its comment and designs nothing. |
 | Implementation handoff | `next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
 | Convergence | `submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
@@ -156,6 +157,14 @@ and UTF-16, which a Windows PowerShell 5.1 `>` redirect writes, exits 2.
 `refine-backlog-item` runs it before `Todo`, and `next-ticket` runs it before
 the branch exists.
 
+Step plans are not one of the seven records and are not in the issue body. Each
+task has one `## Step plan: <task-id>` comment on the parent issue, written by
+`refine-backlog-item` and read by `next-ticket`: for every step the file, the
+edit, the test, the validation command, and the expected result, in fenced code
+blocks only. A task without its comment stops `next-ticket` with
+`step-plan-missing`, and `refine-backlog-item` then writes the missing plans
+while the parent stays in `Todo`.
+
 `refine-backlog-item` owns these records. It keeps a material unresolved
 requirement in `Backlog` and moves a coherent PBI to `Todo`. `next-ticket`
 uses the records as its implementation handoff and maps tasks to changed
@@ -206,14 +215,14 @@ none), `parent` as `{repository, number}` or null, `body`, `state_reason`, and
 `comments` as `[{id, body}]`. On every pull request it carries its state, merge
 time, head, base, merge commit, and REST-read `requiredChecks`; the merge commit
 and `requiredChecks` are null until the pull request merges. `requiredChecks`
-comes from the same REST reader `/complete-pr` uses, so both reach one verdict
+comes from the same REST reader `dod-guard:complete-pr` uses, so both reach one verdict
 for one head, and several exact-head runs of one required check are settled by
 the newest run.
 
 The snapshot also carries a `project` object with `owner`, `number`,
 `statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
 Status field node ID and Done option ID from the Project fields read, the same
-values `/complete-pr` passes to `project-status.mjs`. Every non-archived item is
+values `dod-guard:complete-pr` passes to `project-status.mjs`. Every non-archived item is
 read because a `supersedes` record lives only on its root, and a parent closes
 only after every sub-issue is checked, so reading fewer than the non-archived
 items misses roots and siblings. An issue whose `children` list is missing is
@@ -322,7 +331,7 @@ to its owner. Every acceptance criterion and matrix row has fresh evidence at
 the exact head. No item is
 contradicted or unresolved. The
 required-context and base/mergeability
-checkpoint must also be stable at that exact head. `/review-pr` then reviews
+checkpoint must also be stable at that exact head. `dod-guard:review-pr` then reviews
 that head; neither record is copied into a second review
 ledger.
 

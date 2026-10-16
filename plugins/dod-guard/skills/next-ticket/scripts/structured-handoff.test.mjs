@@ -162,7 +162,7 @@ test("structured handoffs carry one exact-head preflight checkpoint", () => {
   }
   assert.match(standard, /one `## Preflight checkpoint` record/);
   assert.match(nextTicket, /same\s+handoff|same `## Preflight checkpoint`/i);
-  assert.match(submit, /before `\/review-pr`\s+or guarded completion/);
+  assert.match(submit, /before `dod-guard:review-pr`\s+or guarded completion/);
   assert.match(completePr, /Before any ready transition, branch update, merge, or/);
   assert.match(submit, /checkpoint remains\s+in the same handoff and Convergence record/);
 });
@@ -292,7 +292,7 @@ test("next-ticket lands one verified commit per task-list task", () => {
   assert.match(nextTicket, prose("When the task list has more than one task, run each task in order as one step"));
   assert.ok(nextTicket.includes("[dod-guard:step-by-step](../step-by-step/SKILL.md)"));
   assert.match(nextTicket, prose("one fresh subagent per task"));
-  assert.match(nextTicket, prose("regenerating artifacts uses the cheap tier, as `standards/model-routing.md`"));
+  assert.match(nextTicket, prose("regenerating artifacts uses the cheap tier on `dod-guard:stage-cheap`, as `standards/model-routing.md`"));
   assert.match(nextTicket, prose("passing the task list as a calling-skill plan with a commit per step"));
   assert.match(nextTicket, prose("step-by-step's per-step commit makes every verified task a durable checkpoint"));
   assert.match(nextTicket, prose("with more than one task, each task already has its own verified commit"));

@@ -17,17 +17,22 @@ function assertInOrder(text, patterns) {
 
 test("quick-pbi covers the full delivery lifecycle without extra prompts", () => {
   const stages = [
-    "/add-backlog-idea",
-    "/refine-backlog-item",
-    "/next-ticket",
-    "/submit-draft-pr",
-    "/review-pr",
-    "/fix-pr-review",
-    "/complete-pr",
+    "dod-guard:add-backlog-idea",
+    "dod-guard:refine-backlog-item",
+    "dod-guard:next-ticket",
+    "dod-guard:submit-draft-pr",
+    "dod-guard:review-pr",
+    "dod-guard:fix-pr-review",
+    "dod-guard:complete-pr",
   ];
   for (const stage of stages) {
-    assert.match(skill, new RegExp(stage.replaceAll("/", "\\/")));
+    assert.ok(skill.includes(stage), `${stage} must be named in full`);
   }
+  assert.doesNotMatch(
+    skill,
+    /(^|[^\w/:.-])\/(add-backlog-idea|refine-backlog-item|next-ticket|submit-draft-pr|review-pr|fix-pr-review|complete-pr)\b/m,
+    "quick-pbi names every stage by its full dod-guard: skill name, never a bare slash name",
+  );
   const lifecycleStart = skill.indexOf("## Run the lifecycle");
   const positions = stages.map((stage) => skill.indexOf(stage, lifecycleStart));
   assert.ok(positions.every((position, index) => index === 0 || position > positions[index - 1]));

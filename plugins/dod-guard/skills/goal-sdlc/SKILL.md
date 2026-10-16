@@ -13,18 +13,15 @@ owning skill wins. Under `/goal`, also read and apply `standards/goal-stop.md`.
 
 ## Owners
 
-- [dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md): refinement,
-  functional slices, review lenses, and Todo readiness.
-- [dod-guard:next-ticket](../next-ticket/SKILL.md): the branch, implementation,
-  validation, acceptance matrix, preflight checkpoint, and pushed handoff.
-- [dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md): the draft pull
-  request and its convergence before review.
-- [dod-guard:review-pr](../review-pr/SKILL.md): the one code review.
-- [dod-guard:fix-pr-review](../fix-pr-review/SKILL.md): review remediation.
-- [dod-guard:complete-pr](../complete-pr/SKILL.md): the ready transition,
-  guarded merge, Project finalization, and branch cleanup.
-- [dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md): new Backlog
-  issues, including the daily friction log.
+| Owner | Runs when | Owns |
+|---|---|---|
+| [dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md) | the parent has Status Backlog, or Todo after `step-plan-missing` | refinement, functional slices, review lenses, step plans, Todo readiness |
+| [dod-guard:next-ticket](../next-ticket/SKILL.md) | the parent has Status Todo with step plans, or In Progress with no pushed handoff | the branch, implementation, validation, acceptance matrix, preflight checkpoint, pushed handoff |
+| [dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md) | the parent has Status In Progress, a pushed handoff, and no converged draft pull request | the draft pull request and its convergence |
+| [dod-guard:review-pr](../review-pr/SKILL.md) | the parent has a converged draft pull request and no review | the one code review |
+| [dod-guard:fix-pr-review](../fix-pr-review/SKILL.md) | the parent has a review with unresolved findings | review remediation |
+| [dod-guard:complete-pr](../complete-pr/SKILL.md) | every finding of the parent's pull request is fixed or declined | the ready transition, guarded merge, Project finalization, branch cleanup |
+| [dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md) | work has no issue yet, or today's friction log is missing | new Backlog issues |
 
 This skill owns only queue selection, sequencing, delegation, the friction log,
 and the stop decision. It never writes issue, Project, branch, or pull request
@@ -37,7 +34,7 @@ Repeat until the stop condition holds:
 1. **Resume before selecting.** A dirty tree or in-progress branch usually means
    a delivery is underway: match its paths, branch, issue, children, and pull
    request, and resume it at its latest checkpoint. When nothing matches,
-   capture the work with `/add-backlog-idea`, refine it, and resume it. Never
+   capture the work with `dod-guard:add-backlog-idea`, refine it, and resume it. Never
    discard, stash, or fold it into an unrelated PBI.
 2. **Clean up, then select one parent.** In `../complete-pr/scripts`, build the
    closure snapshot that `standards/project-workflow.md` defines with
@@ -45,7 +42,7 @@ Repeat until the stop condition holds:
    snapshot exits non-zero, stop and report its error; never plan on an older
    file. Then run `node closure.mjs plan --snapshot=<file>`, report each close,
    hold, and `unverified-closed` entry with reasons, delegate planned closes and
-   status repairs to `/complete-pr`'s "Close delivered issues for goal-sdlc"
+   status repairs to `dod-guard:complete-pr`'s "Close delivered issues for goal-sdlc"
    section, as one write-capable stage, and reread. Run `closure.mjs annotate` on
    the snapshot, which takes `activeCheckpoint` and `trustedHeadSha` from the
    completion records and leaves every relation as read, then in this skill's
@@ -55,12 +52,16 @@ Repeat until the stop condition holds:
    cannot be classified, and returns the first eligible group: In Progress parents
    first (one with an open pull request ahead of one without), then Todo, then
    Backlog, each in Project order. Report holds; `queueState: held` is not exhaustion.
-3. **Run the lifecycle for that parent.** Follow
-   [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6 from the step the
-   parent has reached. When refinement needs a user answer, leave the parent in
-   Backlog with the questions recorded and move on to another parent.
-4. **Read back and continue.** When `/complete-pr` returns `conflict-triaged`,
-   go to `/submit-draft-pr` for the new head, not to the completion owner.
+3. **Run the lifecycle for that parent.** In the order of
+   [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6, run the owner whose
+   "Runs when" condition the parent meets, as the Delegation table says. When
+   `dod-guard:next-ticket` stops with `step-plan-missing`, run
+   `dod-guard:refine-backlog-item` on the parent, then `dod-guard:next-ticket`
+   again. When refinement needs a user answer, leave the parent in Backlog with
+   the questions recorded and move on to another parent.
+4. **Read back and continue.** When `dod-guard:complete-pr` returns
+   `conflict-triaged`, go to `dod-guard:submit-draft-pr` for the new head, not to
+   the completion owner.
    Otherwise read the parent and child statuses. When any is not Done, return
    to the completion owner before selecting again. Otherwise go back to step 1.
 
@@ -73,38 +74,39 @@ The main thread sequences stages and checks results; bounded subagents do the
 context-heavy work. Each stage runs in one fresh subagent as one step of
 [dod-guard:step-by-step](../step-by-step/SKILL.md), which owns the checkpoint,
 proof, commit, and repair rules. A stage's split rows are dispatched by its
-owner, as `standards/model-routing.md` says. Each row runs at this tier:
+owner, as `standards/model-routing.md` says. Each row runs at this tier, on this
+agent, and runs exactly what its last column names:
 
-| Stage | Tier |
-|---|---|
-| Queue snapshot read | cheap |
-| Refinement: owner thread (dispatch, verify, labels, Todo) | standard |
-| Refinement: plan research questions | standard |
-| Refinement: investigate code, callers, and tests | cheap |
-| Refinement: decide classification and criteria | standard |
-| `/next-ticket`: owner thread (start ticket, matrix, preflight, handoff) | standard |
-| `/next-ticket`: write the step plan for one task | standard |
-| `/next-ticket`: implement one task from its plan | cheap |
-| `/next-ticket`: run validations and regenerate artifacts | cheap |
-| `/submit-draft-pr` | cheap |
-| `/review-pr`: owner thread (scripts, dispatch, citation checks, build, post) | cheap |
-| `/review-pr`: plan | standard |
-| `/review-pr`: investigate | cheap |
-| `/review-pr`: judge and merge pass | standard |
-| `/fix-pr-review`: owner thread (revalidate, classify, plan fixes, verify, reply) | standard |
-| `/fix-pr-review`: apply a written per-finding fix | cheap |
-| `/complete-pr`: guarded merge and Project finalization | cheap |
-| Merge conflict triage: owner thread, plan, and judge | standard |
-| Merge conflict triage: investigate and apply | cheap |
-| `/add-backlog-idea`, including the friction log | cheap |
+| Stage | Tier | Agent | Runs |
+|---|---|---|---|
+| Queue snapshot read | cheap | `dod-guard:read-cheap` | Follow Loop step 2 of this skill |
+| Refinement: owner thread (dispatch, verify, labels, step plans, Todo) | standard | `dod-guard:stage-standard` | Skill `dod-guard:refine-backlog-item <issue>` |
+| Refinement: plan research questions | standard | `dod-guard:read-standard` | Follow "Research and discovery triage" in `dod-guard:refine-backlog-item` |
+| Refinement: investigate code, callers, and tests | cheap | `dod-guard:read-cheap` | Follow "Research and discovery triage" in `dod-guard:refine-backlog-item` |
+| Refinement: decide classification and criteria | standard | `dod-guard:read-standard` | Follow "Research and discovery triage" in `dod-guard:refine-backlog-item` |
+| `dod-guard:next-ticket`: owner thread (start ticket, matrix, preflight, handoff) | cheap | `dod-guard:stage-cheap-skill` | Skill `dod-guard:next-ticket <issue>` |
+| `dod-guard:next-ticket`: implement one task from its step plan | cheap | `dod-guard:stage-cheap` | Follow the task's `## Step plan: <task-id>` comment, saved unchanged to a scratch file |
+| `dod-guard:next-ticket`: run validations and regenerate artifacts | cheap | `dod-guard:stage-cheap` | Follow the validation commands of that step plan |
+| `dod-guard:submit-draft-pr` | cheap | `dod-guard:stage-cheap-skill` | Skill `dod-guard:submit-draft-pr <issue>` |
+| `dod-guard:review-pr`: owner thread (scripts, dispatch, citation checks, build, post) | cheap | `dod-guard:stage-cheap-skill` | Skill `dod-guard:review-pr <pull-request>` |
+| `dod-guard:review-pr`: plan | standard | `dod-guard:read-standard` | Follow step 5, "Plan", in `dod-guard:review-pr` |
+| `dod-guard:review-pr`: investigate | cheap | `dod-guard:read-cheap` | Follow step 5, "Investigate", in `dod-guard:review-pr` |
+| `dod-guard:review-pr`: judge and merge pass | standard | `dod-guard:review-pr-feature`, `dod-guard:review-pr-design`, `dod-guard:review-pr-reliability`, `dod-guard:review-pr-hygiene`; the merge pass on `dod-guard:read-standard` | Follow step 5, "Judge" and "Merge", in `dod-guard:review-pr` |
+| `dod-guard:fix-pr-review`: owner thread (revalidate, classify, plan fixes, verify, reply) | standard | `dod-guard:stage-standard` | Skill `dod-guard:fix-pr-review <pull-request> <finding-ids>` |
+| `dod-guard:fix-pr-review`: apply a written per-finding fix | cheap | `dod-guard:stage-cheap` | Follow the owner's per-finding fix plan |
+| `dod-guard:complete-pr`: guarded merge and Project finalization | cheap | `dod-guard:stage-cheap-skill` | Skill `dod-guard:complete-pr <pull-request>` |
+| `dod-guard:complete-pr`: close delivered issues (Loop step 2) | cheap | `dod-guard:stage-cheap-skill` | Skill `dod-guard:complete-pr`, section "Close delivered issues for goal-sdlc" only |
+| Merge conflict triage: owner thread, plan, and judge | standard | `dod-guard:stage-standard`, `dod-guard:read-standard` | Follow `standards/conflict-triage.md` |
+| Merge conflict triage: investigate and apply | cheap | `dod-guard:read-cheap`, `dod-guard:stage-cheap` | Follow `standards/conflict-triage.md` |
+| `dod-guard:add-backlog-idea`, including the friction log | cheap | `dod-guard:stage-cheap-skill` | Skill `dod-guard:add-backlog-idea <request>` |
 
-A cheap row that needs a skill or a GitHub write
-(`/submit-draft-pr`, the `/review-pr` owner thread, `/complete-pr`, and
-`/add-backlog-idea`) runs on `dod-guard:stage-cheap-skill`. A
-`/complete-pr` run on the cheap model stops at `merge_conflict`, and this thread
-then runs the conflict triage as its own stage, as
+Every dispatch carries the brief that "Stage brief" in
+`standards/model-routing.md` defines, built from the last column, and nothing
+else: write no template, copy, summary, or rules file of a skill. A
+`dod-guard:complete-pr` run on the cheap model stops at `merge_conflict`, and
+this thread then runs the conflict triage as its own stage, as
 `standards/conflict-triage.md` says. A rerun of any row, such as a refreshed
-handoff or a second `/complete-pr`, takes that row's tier.
+handoff or a second `dod-guard:complete-pr`, takes that row's tier.
 
 Dispatch each row as `standards/model-routing.md` says: pass its model and
 effort to the Agent call in Claude Code, or use the registered tier agent in
@@ -131,7 +133,7 @@ are the only ownership record; do not create a lock file or local ledger.
 ## Blockers
 
 Follow the failure-recovery rule in `standards/working-defaults.md`, including
-`/codex-advisor` for a blocker that survives local triage. A blocked parent is
+`dod-guard:codex-advisor` for a blocker that survives local triage. A blocked parent is
 not a reason to stop: record what is blocking it, what was tried, and what
 would unblock it on the issue, preserve its branch and checkpoint, and select
 the next eligible parent. When a provider reports a rate limit, record the
@@ -147,7 +149,7 @@ the incident was recovered:
   occurrence to it. Otherwise, if one search finds an open PBI that already
   owns the fix, comment there. Otherwise append a new entry.
 - Find today's log with one search for that exact title. Create it only when
-  none exists, through `/add-backlog-idea`, with entries under `## Entries`.
+  none exists, through `dod-guard:add-backlog-idea`, with entries under `## Entries`.
 - Each entry is a `###` section: what happened (error, tool, stage, PBI, SHA),
   the workaround, the durable fix (files and change), and how to verify it.
 - Re-read the issue before appending, and read it back after writing.

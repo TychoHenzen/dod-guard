@@ -302,7 +302,7 @@ or relies on a later validator or client-cache readback to recover the release.
       complete protection snapshot is unchanged, and this run then reports
       `Restored` true with `RestoreAttempts` 0 and `DeleteAttempted` false.
      Other users remain subject to the branch rules throughout.
-8. For a `functional` release, invoke `/submit-draft-pr` with the parent PBI
+8. For a `functional` release, invoke `dod-guard:submit-draft-pr` with the parent PBI
    number after the release commit is pushed to the issue branch. Do not create or update
    the pull request yourself. Never approve, mark ready, merge, or close it.
 9. After a direct maintenance push or a human-merged functional release, inspect

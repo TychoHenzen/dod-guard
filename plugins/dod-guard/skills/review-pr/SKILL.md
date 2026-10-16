@@ -9,7 +9,7 @@ argument-hint: "[PR URL or number; default: the open PR for the current branch]"
 Review the files a pull request changes, the way `/quality-guard:quality-refactor`
 reviews a scope, plus judgment the scanner cannot give: correctness, PBI
 acceptance, wiring, and failure handling. Report only. Post one GitHub review;
-`/fix-pr-review` owns the fixes. Never edit files, approve, mark ready, merge,
+`dod-guard:fix-pr-review` owns the fixes. Never edit files, approve, mark ready, merge,
 or close anything.
 
 Read and apply `standards/working-defaults.md` and
@@ -46,7 +46,7 @@ node "<skill-dir>/scripts/review-findings.mjs" existing --reviews=<reviews.json>
 ```
 
 When it reports `found: true`, report that review's recommendation, head, and
-URL, and stop. Commits pushed after it, such as `/fix-pr-review` remediation, do
+URL, and stop. Commits pushed after it, such as `dod-guard:fix-pr-review` remediation, do
 not start another review unless the user asks for one.
 
 ## 3. Diff and slots
@@ -277,4 +277,4 @@ node "<skill-dir>/scripts/review-findings.mjs" report --review-id=<posted id> --
 
 Report the PR, head SHA, PBI, `Recommendation`, the review URL, and each
 finding as `GH-<id>`, severity, and `file:line`. Callers pass the `GH-` IDs to
-`/fix-pr-review`.
+`dod-guard:fix-pr-review`.

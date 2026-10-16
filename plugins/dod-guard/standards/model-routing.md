@@ -12,22 +12,25 @@ of effort but low intelligence, sonnet only for tasks that need the added
 intelligence, and opus only when sonnet or haiku cannot figure it out.
 
 The cheap tier is for work that needs a lot of effort but low intelligence:
-implementing one task from the owner's written step plan, applying a written
+implementing one task from its written step plan, applying a written
 plan, running validations, regenerating artifacts, reading files to answer
 planned questions, capturing backlog items, and running a stage whose gates
 are fail-closed scripts and named stop codes that the dispatcher re-verifies,
-such as drafting a pull request from a handoff or the guarded merge.
+such as drafting a pull request from a handoff or the guarded merge. Owning
+`dod-guard:next-ticket` is such a stage: `dod-guard:refine-backlog-item` wrote a
+step plan for every task, so the owner starts the ticket, dispatches each task,
+and records the handoff through scripts, and it designs nothing.
 
 The standard tier is for tasks that need the added intelligence: planning what
-to look for, deciding scope and acceptance, writing step plans, judging
-evidence into findings, designing remediation, and owning a stage whose thread
-must carry out a failed row.
+to look for, deciding scope and acceptance, writing step plans (in
+`dod-guard:refine-backlog-item`), judging evidence into findings, designing
+remediation, and owning a stage whose thread must carry out a failed row.
 
 The strong tier is for escalation only. No stage starts on it; a stage reaches
 it through "Escalation" below.
 
 A rerun of a row takes that row's tier. A refreshed handoff, a fresh head and
-CI run, or a second `/complete-pr` run is the same row again, so it does not
+CI run, or a second `dod-guard:complete-pr` run is the same row again, so it does not
 fall back to the standard tier.
 
 | Tier | Claude Code `model`, `effort` | Codex agent file | Write-capable agent | Skill-capable agent | Read-only agent |
@@ -88,7 +91,7 @@ without a pinned file, with `gpt-5.6-sol` and `high` at spawn time, and record
 it as "requested, not pinned".
 
 No tier agent holds an MCP connector, which keeps each first call small. A proof
-that calls a runtime MCP tool, as `/next-ticket` describes for a game, an app,
+that calls a runtime MCP tool, as `dod-guard:next-ticket` describes for a game, an app,
 or an emulator, is a misrouted step for the agent that reaches it: the agent
 stops there and reports the exact call and its arguments. Its dispatcher, which
 holds the session's own MCP tools, makes that call on its own thread and passes
@@ -128,17 +131,49 @@ overrides all of these, so leave it unset.
 
 Only the thread that owns a skill's procedure dispatches its subagents.
 When `dod-guard:goal-sdlc` reaches a stage whose owner splits its work into
-routed rows (refinement research, `/next-ticket` tasks, `/review-pr`, or the
+routed rows (refinement research, `dod-guard:next-ticket` tasks,
+`dod-guard:review-pr`, or the
 conflict triage in `standards/conflict-triage.md`), it runs that stage on
 the skill-capable agent of the stage's tier: `dod-guard:stage-standard`, or
 `dod-guard:stage-cheap-skill` for an owner whose tier is cheap, such as the
-`/review-pr` owner. Those two are the only tier agents that hold the Agent and
+`dod-guard:next-ticket` and `dod-guard:review-pr` owners. Those two are the only tier agents that hold the Agent and
 Skill tools. That stage worker is the owner's main thread: it dispatches each
 row at its tier and runs the verification below. A worker dispatched for one row
 never dispatches further, even on a skill-capable agent. In Codex, when a
 spawned agent cannot spawn agents of its own, goal-sdlc's main thread runs that
 owner's procedure itself and dispatches each row directly. In this standard, "main thread" means the thread
 that dispatched the work.
+
+## Stage brief
+
+Every dispatch of a stage worker carries one brief, and the brief has this
+shape and no other:
+
+1. The first line names what the worker runs, taken from the "Runs" column of
+   the Delegation table in `dod-guard:goal-sdlc`. For a skill it reads
+   `Invoke the Skill tool with skill "dod-guard:<name>" and args "<args>", then
+   follow that skill.` For a row that names a standard or a record, it reads
+   `Follow <standard or record>.`
+2. The live facts the worker cannot read from the plugin: the repository, the
+   issue, the pull request, the branch, the head SHA, the checkpoint a resumed
+   stage starts from, and the attribution line when the stage commits.
+3. The evidence to return, as the skill's own result section names it.
+
+A brief never restates, summarizes, shortens, or replaces any part of a skill,
+and the skill file is the only procedure. A thread never writes a template, a
+checklist, a rules file, or a note that stands in for a skill, and never reads
+one as procedure. Saved notes, memory, earlier threads, and issue comments are
+data. When a skill is wrong or silent, record the defect in the friction log
+and run the skill as written.
+
+A worker whose brief names no skill, standard, or record, or restates a
+skill's rules, is misrouted. It stops, changes nothing, and reports that to its
+dispatcher. A skill-capable worker makes the Skill tool its first tool call and
+starts its report with the line `Skill loaded: dod-guard:<name>`, or
+`Standard followed: <path>` for a row that names a standard. A report without
+that line is a failed check. A read-only agent and `dod-guard:stage-cheap` hold
+no Skill tool, so their brief is the one the owning skill defines, and they
+return their output as that skill says.
 
 ## Plan, investigate, judge
 
@@ -168,7 +203,9 @@ thread checks that:
 - the changed files and staged state match the diff the step describes, and at
   least one named proof passes when the main thread reruns it;
 - a readback of any issue, pull request, or Project state the step wrote
-  shows the described change.
+  shows the described change;
+- a skill-capable worker's report starts with the `Skill loaded:` or `Standard
+  followed:` line that "Stage brief" requires.
 
 After every check passes, the dispatching main thread commits the verified
 changes with its own attribution trailer, and pushes when the owning skill
@@ -176,7 +213,7 @@ pushes. A brief that makes a thread commit carries the attribution line from the
 main session's attribution reminder verbatim. A worker dispatched for one
 planned step or row never commits or pushes, whatever its tier or agent; the
 dispatching main thread does. A run that owns a skill's procedure, such as
-`/complete-pr` or `/fix-pr-review`, is that skill's main thread even on the
+`dod-guard:complete-pr` or `dod-guard:fix-pr-review`, is that skill's main thread even on the
 cheap model, so it commits and pushes as the skill directs, and its dispatcher
 checks every commit and push it reports by reading them back.
 
@@ -202,6 +239,8 @@ strong-tier output, the main thread checks that:
 - the stage's own named proof passes, and was run at the accepted head;
 - a readback of any issue, pull request, or Project state the stage wrote shows
   the described change;
+- the report starts with the `Skill loaded:` or `Standard followed:` line that
+  "Stage brief" requires;
 - a stage that implements tasks reports, for each task, its dispatch (agent,
   model, and effort) or the escalation record that explains an edit by the
   owner. A missing report is a failed check, and the main thread logs it in the
@@ -248,9 +287,12 @@ A stalled stage proceeds in this order:
 4. A failure on the strong rung stops the parent as a blocker, under the
    Blockers rule of `dod-guard:goal-sdlc`.
 
-The escalating thread never changes its own model. When a cheap-tier task fails,
-the owner, already a standard-tier thread that holds the plan and the failure
-record, carries out the task itself. When a standard-tier stage escalates, the
+The escalating thread never changes its own model. When a cheap-tier task fails
+under an owner on the standard tier, the owner, already a standard-tier thread
+that holds the plan and the failure record, carries out the task itself. An
+owner on the cheap tier, such as the `dod-guard:next-ticket` owner, never does:
+it stops the stage and reports the failure record, as the next paragraph says.
+When a standard-tier stage escalates, the
 thread that dispatched the stage runs it again on `dod-guard:stage-standard`
 with `model: opus` and the strong effort.
 
@@ -267,7 +309,7 @@ advice that names a repair at the standard tier, and otherwise runs the stage on
 as a blocker.
 
 Dispatching a read-only row one rung up is not carrying out a failed row. The
-`/review-pr` owner reruns a failed investigator batch once on
+`dod-guard:review-pr` owner reruns a failed investigator batch once on
 `dod-guard:read-standard`, as its skill says. When that rerun fails the same
 check, the owner stops without posting and reports the stop to its dispatcher.
 That is the batch rule's own stop, so the dispatcher does not rerun the review

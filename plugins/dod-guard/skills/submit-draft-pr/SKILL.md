@@ -65,7 +65,7 @@ or call `update-branch` as metadata repair.
 
 ## Early required-context and base checkpoint
 
-After the draft PR is created or updated, and before `/review-pr`
+After the draft PR is created or updated, and before `dod-guard:review-pr`
 or guarded completion, consume the one `## Preflight checkpoint` record in the
 implementation handoff. Read the same-repository branch ref, PR API head, and
 `refs/pull/<number>/head` at one exact pushed SHA, then record the base ref and
