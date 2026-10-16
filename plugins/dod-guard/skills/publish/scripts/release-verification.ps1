@@ -374,7 +374,9 @@ function Invoke-ReleaseVerification {
             $preflightName = "$client-preflight"
             $evidence.Stage = $preflightName
             $preflightPath = Join-Path $PSScriptRoot "preflight-installation.mjs"
-            $preflightOutput = Invoke-ReleaseVerificationCommand $InvokeCommand $preflightName "node" @($preflightPath, $client, "--inventory-status", [string]$inventoryStatus) $inventory $evidence.Commands
+            # --registered-root: judge the registration the client now reports, not this session's loaded root.
+            $preflightArguments = @($preflightPath, $client, "--registered-root", "--inventory-status", [string]$inventoryStatus)
+            $preflightOutput = Invoke-ReleaseVerificationCommand $InvokeCommand $preflightName "node" $preflightArguments $inventory $evidence.Commands
             try {
                 $preflight = $preflightOutput | ConvertFrom-Json
             } catch {
