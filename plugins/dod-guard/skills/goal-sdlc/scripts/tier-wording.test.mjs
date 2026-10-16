@@ -78,7 +78,7 @@ test("USAGE.md states the tier assignments and the escalation rule", () => {
       "judges, and owns the stages that write plans or absorb a failed row.",
       "The strong tier (Opus, `gpt-5.6-sol` in Codex) is reached only by escalation",
       "The main thread checks cheap-tier output before anything relies on it",
-      "runs on the all-tools stage agent at the owner's own tier",
+      "runs on the skill-capable agent of the owner's own tier",
     ),
   );
 });

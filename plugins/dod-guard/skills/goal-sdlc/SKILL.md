@@ -98,9 +98,9 @@ owner, as `standards/model-routing.md` says. Each row runs at this tier:
 | Merge conflict triage: investigate and apply | cheap |
 | `/add-backlog-idea`, including the friction log | cheap |
 
-A cheap row that needs a skill, a GitHub write, or an MCP connector
+A cheap row that needs a skill or a GitHub write
 (`/submit-draft-pr`, the `/review-pr` owner thread, `/complete-pr`, and
-`/add-backlog-idea`) runs on `dod-guard:stage-standard` with `model: haiku`. A
+`/add-backlog-idea`) runs on `dod-guard:stage-cheap-skill`. A
 `/complete-pr` run on the cheap model stops at `merge_conflict`, and this thread
 then runs the conflict triage as its own stage, as
 `standards/conflict-triage.md` says. A rerun of any row, such as a refreshed

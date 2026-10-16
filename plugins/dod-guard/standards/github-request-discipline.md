@@ -2,7 +2,8 @@
 
 All GitHub-facing skills use this policy. The connected GitHub MCP connector is
 the preferred transport when it is available. Otherwise use `gh api` with the
-same request shape.
+same request shape. The stage workers that `goal-sdlc` dispatches hold no MCP
+connector, so they use `gh api`.
 
 MCP does not create a new GitHub quota. It reduces waste only when the skill
 uses narrow operations, reuses a run snapshot, and avoids duplicate calls.
