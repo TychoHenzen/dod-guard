@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { copyFile, mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import process from "node:process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const sourceHelper = fileURLToPath(new URL("./preflight-installation.mjs", import.meta.url));
+const sourceArguments = fileURLToPath(new URL("./preflight-arguments.mjs", import.meta.url));
 const loadedVersion = "5.4.56";
 const releasedVersion = "5.4.57";
 const manifestDirectory = { codex: ".codex-plugin", claude: ".claude-plugin" };
@@ -29,6 +30,7 @@ async function createReleaseFixture(t, client) {
   const registeredRoot = await createRoot(parent, "registered", client, releasedVersion);
   const helperPath = join(loadedRoot, "skills", "publish", "scripts", "preflight-installation.mjs");
   await copyFile(sourceHelper, helperPath);
+  await copyFile(sourceArguments, join(dirname(helperPath), "preflight-arguments.mjs"));
   return { parent, loadedRoot, registeredRoot, helperPath };
 }
 
@@ -115,6 +117,18 @@ test("post-release mode fails closed on a missing or contradictory registered ro
   }
 });
 
+test("post-release mode fails closed on an unreadable publish skill", async (t) => {
+  for (const client of ["codex", "claude"]) {
+    const fixture = await createReleaseFixture(t, client);
+    const skill = join(fixture.registeredRoot, "skills/publish/SKILL.md");
+    await rm(skill);
+    await mkdir(skill);
+
+    const result = run(fixture, client, registryFor(client, fixture.registeredRoot));
+    assertRejected(result, /publish skill is not a readable regular file/, client);
+  }
+});
+
 test("post-release mode rejects a manifest that resolves outside the registered root", async (t) => {
   for (const client of ["codex", "claude"]) {
     const fixture = await createReleaseFixture(t, client);
@@ -136,14 +150,16 @@ test("post-release mode keeps the registration and identity checks", async (t) =
     const wrapped = (entries) => (client === "codex" ? { installed: entries } : entries);
     const identity = client === "codex" ? { marketplaceName: "other" } : { id: "dod-guard@other" };
     const cases = [
-      ["missing", wrapped([])],
-      ["duplicate", wrapped([entry, structuredClone(entry)])],
-      ["wrong identity", registryFor(client, fixture.registeredRoot, identity)],
+      ["missing", wrapped([]), /found 0/],
+      ["duplicate", wrapped([entry, structuredClone(entry)]), /found 2/],
+      [
+        "wrong identity",
+        registryFor(client, fixture.registeredRoot, identity),
+        /does not match the expected plugin and marketplace identity/,
+      ],
     ];
-    for (const [label, registry] of cases) {
-      const result = run(fixture, client, registry);
-      assert.equal(result.status, 1, `${client} ${label}`);
-      assert.equal(result.response.ok, false, `${client} ${label}`);
+    for (const [label, registry, reason] of cases) {
+      assertRejected(run(fixture, client, registry), reason, `${client} ${label}`);
     }
   }
 });

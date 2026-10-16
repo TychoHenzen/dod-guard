@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { chmod, copyFile, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const sourceHelper = fileURLToPath(new URL("./preflight-installation.mjs", import.meta.url));
+const sourceArguments = fileURLToPath(new URL("./preflight-arguments.mjs", import.meta.url));
 const skillPath = new URL("../SKILL.md", import.meta.url);
 const usagePath = new URL("../../../USAGE.md", import.meta.url);
 
@@ -26,6 +27,7 @@ async function createInstall(t, client) {
   ]);
   await Promise.all([
     copyFile(sourceHelper, helperPath),
+    copyFile(sourceArguments, join(dirname(helperPath), "preflight-arguments.mjs")),
     writeFile(skillFile, "# publish fixture\n"),
     writeFile(manifestPath, JSON.stringify({ name: "dod-guard", version: "5.4.56" })),
   ]);

@@ -20,13 +20,15 @@ test("publish guidance exposes the exact cross-client refresh sequence", async (
 test("publish guidance separates the loaded pre-release check from the registered post-release check", async () => {
   const [skill, usage] = await Promise.all([readFile(skillPath, "utf8"), readFile(usagePath, "utf8")]);
 
-  assert.match(skill, /loaded-root check is the pre-release \(step 1\) check/);
+  assert.match(skill, /loaded-root check is the pre-release installation identity preflight/);
   assert.match(skill, /Step 11 passes\s+`--registered-root` to the same helper/);
   assert.match(skill, /`installPath`, Codex\s+`source\.path`\)/);
   assert.match(skill, /verifies the\s+registered installation of the new release[\s\S]+no session reload is needed/);
   assert.match(skill, /still fails when the registered version differs from `-ExpectedVersion`/);
-  assert.match(usage, /verifies\s+the registered installation of the new release[\s\S]+no session reload is needed/);
-  assert.match(usage, /step 1\s+still verifies the loaded installation/);
+  assert.match(usage, /verifies\s+the registered installation of the new release[\s\S]+no session reload is\s+needed/);
+  assert.match(usage, /In procedure\s+step 11 it verifies the registered installation/);
+  assert.match(usage, /installation identity preflight before release still verifies\s+the\s+loaded\s+installation/);
+  assert.doesNotMatch(usage, /step 1\s+still verifies/);
 });
 
 test("publish guidance restarts only the shared host after cache refresh", async () => {

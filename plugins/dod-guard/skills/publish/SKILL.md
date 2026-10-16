@@ -91,7 +91,7 @@ loaded cache root. Claude Code's `installPath` must resolve to the loaded
 installation, and every loaded publish skill must be a readable file inside
 its loaded plugin root.
 
-This loaded-root check is the pre-release (step 1) check. Step 11 passes
+This loaded-root check is the pre-release installation identity preflight. Step 11 passes
 `--registered-root` to the same helper: after the version bump and client
 refresh the loaded skill still holds the previous release, so the helper takes
 the plugin root from the active registration for both clients (Claude

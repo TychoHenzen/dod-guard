@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { realpathSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import process from "node:process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -28,6 +28,10 @@ async function createRealHelperFixture(t) {
   await mkdir(join(root, ".claude-plugin"), { recursive: true });
   await Promise.all([
     copyFile(fileURLToPath(new URL("./preflight-installation.mjs", import.meta.url)), helper),
+    copyFile(
+      fileURLToPath(new URL("./preflight-arguments.mjs", import.meta.url)),
+      join(dirname(helper), "preflight-arguments.mjs"),
+    ),
     writeFile(join(root, "skills", "publish", "SKILL.md"), "# publish fixture\n"),
     writeFile(join(root, ".codex-plugin", "plugin.json"), manifest),
     writeFile(join(root, ".claude-plugin", "plugin.json"), manifest),
