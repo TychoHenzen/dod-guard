@@ -76,16 +76,22 @@ function recordComments(comments, kind) {
   return (Array.isArray(comments) ? comments : []).filter((comment) => isRecord(comment, kind));
 }
 
+// Each row is [message, passes]. The first failing row names why the record is unusable.
+const COMPLETION_FIELD_CHECKS = [
+  ["has no pull request number", (value) => Number.isInteger(value.pullRequest) && value.pullRequest > 0],
+  ["has no full merge commit SHA", (value) => FULL_SHA.test(value.mergeCommit ?? "")],
+  ["has no full trusted head SHA", (value) => FULL_SHA.test(value.trustedHeadSha ?? "")],
+  ["has no required-check outcome", (value) => CHECK_OUTCOMES.has(value.requiredChecks)],
+  [
+    "has no pending-row list",
+    (value) => Array.isArray(value.pendingRows) && value.pendingRows.every((row) => typeof row === "string"),
+  ],
+];
+
 function completionFieldsError(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return "is not an object";
-  if (!Number.isInteger(value.pullRequest) || value.pullRequest <= 0) return "has no pull request number";
-  if (!FULL_SHA.test(value.mergeCommit ?? "")) return "has no full merge commit SHA";
-  if (!FULL_SHA.test(value.trustedHeadSha ?? "")) return "has no full trusted head SHA";
-  if (!CHECK_OUTCOMES.has(value.requiredChecks)) return "has no required-check outcome";
-  if (!Array.isArray(value.pendingRows) || value.pendingRows.some((row) => typeof row !== "string")) {
-    return "has no pending-row list";
-  }
-  return null;
+  const failed = COMPLETION_FIELD_CHECKS.find(([, passes]) => !passes(value));
+  return failed ? failed[0] : null;
 }
 
 // Returns { record: null } when no comment is a completion record, { record } for
