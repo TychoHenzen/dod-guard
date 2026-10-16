@@ -83,5 +83,8 @@ openspec/changes/archive/
 # scripts/ci/check-coverage.mjs writes its advisory output here during preflight:static-analysis
 .coverage-advisory-*/
 
+# scripts/ci/test-dod-guard-skills.test.mjs creates these scratch skill fixtures
+plugins/dod-guard/skills/test-fixture-*/
+
 # Acceptance-matrix scratch files that /complete-pr runs write to the repo root
 .tmp-complete-pr-*.json
