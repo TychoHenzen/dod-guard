@@ -13,6 +13,11 @@ function parseArguments(args) {
   const requested = {};
   for (let index = 0; index < options.length; index += 1) {
     const option = options[index];
+    if (option === "--registered-root") {
+      if (requested.registeredRoot) return { client, requested, error: `Invalid or duplicate argument: ${option}` };
+      requested.registeredRoot = true;
+      continue;
+    }
     let key;
     if (option === "--version") key = "version";
     if (option === "--skill-path") key = "path";
@@ -235,6 +240,12 @@ async function resolveRegisteredRoot(client, requested, installation, loadedRoot
 }
 
 async function resolvePluginRoot(client, requested, installation) {
+  // Post-release verification judges the registration the client now reports, not the root this
+  // helper was loaded from, which still holds the previous release until the session reloads.
+  if (requested.registeredRoot) {
+    return resolveRegisteredRoot(client, requested, installation, installation.registeredRoot);
+  }
+
   const loadedRoot = await resolveLoadedRoot(client, requested, installation);
   if (typeof loadedRoot !== "string") return loadedRoot;
 
