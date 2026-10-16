@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { buildCodexExecArgs, buildCodexPreflightArgs, resolveCodexExecutable } from "./codex-launch-contract.mjs";
 
@@ -102,16 +103,21 @@ function runProcess(executable, args, options, prompt, abortSignal, spawnImpl = 
   });
 }
 
+function errorMessage(error) {
+  return error?.message ?? null;
+}
+
 function processEvidence(executable, args, processResult) {
+  const { code = null, signal = null, stderr = "", stdout = "", startError, stdinError } = { ...processResult };
   return {
     command: [executable, ...args],
     shell: false,
-    exitCode: processResult?.code ?? null,
-    signal: processResult?.signal ?? null,
-    stderr: processResult?.stderr ?? "",
-    stdout: processResult?.stdout ?? "",
-    startError: processResult?.startError?.message ?? null,
-    stdinError: processResult?.stdinError?.message ?? null,
+    exitCode: code,
+    signal,
+    stderr,
+    stdout,
+    startError: errorMessage(startError),
+    stdinError: errorMessage(stdinError),
   };
 }
 
@@ -162,7 +168,6 @@ function optionError(name, value) {
   if (typeof value !== "string" || !value || /[\s"&|<>^()%!]/u.test(value)) {
     return `Codex advisor ${name} contains unsupported shell characters`;
   }
-  return undefined;
 }
 
 function parseAdvice(raw) {
@@ -198,22 +203,20 @@ function jsonEvents(...outputs) {
   return events;
 }
 
+function errorItemMessage(event) {
+  const isError = event?.type === "item.completed" && event.item?.type === "error";
+  return isError && typeof event.item.message === "string" ? event.item.message : undefined;
+}
+
 function modelMetadataFallback(events, model) {
-  if (typeof model !== "string") return undefined;
+  if (typeof model !== "string") return;
   const prefix = `Model metadata for ${model} not found.`;
   for (const event of events) {
-    const message = event?.item?.message;
-    if (
-      event?.type === "item.completed" &&
-      event.item?.type === "error" &&
-      typeof message === "string" &&
-      message.startsWith(prefix) &&
-      message.includes("Defaulting to fallback metadata")
-    ) {
+    const message = errorItemMessage(event);
+    if (message?.startsWith(prefix) && message.includes("Defaulting to fallback metadata")) {
       return { event, message };
     }
   }
-  return undefined;
 }
 
 // The Codex advisor must behave like Claude's built-in advisor tool: one turn,
@@ -239,16 +242,15 @@ function oneTurnViolation(events) {
   if (answers !== 1) {
     return `Codex advisor returned ${answers} agent messages; exactly one is allowed`;
   }
-  return undefined;
 }
 
-// A step is one process invocation: the run it belongs to, its arguments, and its result.
+// A step is one process invocation: its launcher (executable and prefix arguments), arguments, and result.
 function stageFailure(step, stage, message) {
-  return failure(message, step.result, step.run.executable, step.args, stage, step.run.prefixArgs);
+  return failure(message, step.result, step.launcher.executable, step.args, stage, step.launcher.prefixArgs);
 }
 
-function processOptions(run) {
-  return { cwd: run.workdir, env: { ...process.env, ...run.env } };
+function processOptions({ workdir, env }) {
+  return { cwd: workdir, env: { ...process.env, ...env } };
 }
 
 function invalidOptionMessage({ prefixArgs, model, reasoningEffort }) {
@@ -272,7 +274,7 @@ function describeAttempt(options) {
 
 function launcherRejection(attempt) {
   const message = attempt.executable ? invalidOptionMessage(attempt) : UNAVAILABLE_MESSAGE;
-  if (!message) return undefined;
+  if (!message) return;
   const { executable, attemptedArgs, prefixArgs } = attempt;
   return failure(message, undefined, executable, attemptedArgs, "launcher-contract", prefixArgs);
 }
@@ -288,17 +290,17 @@ function preflightMessage(stage, result) {
   if (result.startError) return `Codex advisor executable is missing or cannot start (${result.startError.message})`;
   if (result.cancelled) return "Codex advisor capability probe cancelled by operator";
   if (result.code !== 0) return `Codex advisor ${stage} capability probe exits non-zero with code ${result.code}`;
-  return undefined;
 }
 
-async function runPreflight(run) {
-  const preflightArgs = buildCodexPreflightArgs({ mode: "read-only", prefixArgs: run.prefixArgs });
+async function runPreflight({ executable, prefixArgs, workdir, env, signal, spawnImpl }) {
+  const preflightArgs = buildCodexPreflightArgs({ mode: "read-only", prefixArgs });
+  const launcher = { executable, prefixArgs };
   const probes = {};
   for (const [stage, args] of Object.entries(preflightArgs)) {
-    const result = await runProcess(run.executable, args, processOptions(run), "", run.signal, run.spawnImpl);
+    const result = await runProcess(executable, args, processOptions({ workdir, env }), "", signal, spawnImpl);
     const message = preflightMessage(stage, result);
-    if (message) return { failure: stageFailure({ run, args, result }, stage, message) };
-    probes[stage] = processEvidence(run.executable, args, result);
+    if (message) return { failure: stageFailure({ launcher, args, result }, stage, message) };
+    probes[stage] = processEvidence(executable, args, result);
   }
   return { probes };
 }
@@ -317,13 +319,12 @@ function launchFailure(step) {
     return stageFailure(step, "reviewer-launch", message);
   }
   if (result.cancelled) return stageFailure(step, "reviewer-process", "Codex advisor cancelled by operator");
-  return undefined;
 }
 
-function outcomeFailure(step) {
+function outcomeFailure(step, model) {
   const { result } = step;
   const events = jsonEvents(result.stdout, result.stderr);
-  const fallback = modelMetadataFallback(events, step.run.model);
+  const fallback = modelMetadataFallback(events, model);
   if (fallback) {
     const failed = stageFailure(step, "reviewer-process", fallback.message);
     failed.execution.fallbackEvent = fallback.event;
@@ -353,32 +354,34 @@ function parseReport(raw, parseResponse) {
   }
 }
 
-// A parser that returns nothing makes `parse.parsed.error` throw, which the outer catch reports as before.
-async function readAdvice(step) {
+// A parser that returns nothing is not guarded: `parse.parsed.error` throws a TypeError, and runAdvisor's
+// catch reports it as a launcher-contract failure. advisor-report-stage.test.mjs pins that outcome.
+async function readAdvice(step, parseResponse) {
   const report = await readReport(step.outputPath);
-  const parse = report.error ? report : parseReport(report.raw, step.run.parseResponse);
+  const parse = report.error ? report : parseReport(report.raw, parseResponse);
   const error = parse.error ?? parse.parsed.error;
   if (error) return { failure: stageFailure(step, "reviewer-report", error) };
   return { value: parse.parsed.value };
 }
 
 async function launchReviewer(run) {
-  const outputPath = join(run.workdir, "last-message.json");
+  const { executable, prefixArgs, model, reasoningEffort, schemaPath, workdir, env, prompt, signal, spawnImpl } = run;
+  const outputPath = join(workdir, "last-message.json");
   const args = buildCodexExecArgs({
     mode: "read-only",
-    prefixArgs: run.prefixArgs,
-    model: run.model,
-    reasoningEffort: run.reasoningEffort,
-    schemaPath: run.schemaPath,
+    prefixArgs,
+    model,
+    reasoningEffort,
+    schemaPath,
     outputPath,
-    workdir: run.workdir,
+    workdir,
   });
-  const result = await runProcess(run.executable, args, processOptions(run), run.prompt, run.signal, run.spawnImpl);
-  return { run, args, result, outputPath };
+  const result = await runProcess(executable, args, processOptions({ workdir, env }), prompt, signal, spawnImpl);
+  return { launcher: { executable, prefixArgs }, args, result, outputPath };
 }
 
 function adviceSuccess(step, preflight, advice) {
-  const { executable, prefixArgs } = step.run;
+  const { executable, prefixArgs } = step.launcher;
   return {
     ok: true,
     ...(advice.value ?? {}),
@@ -389,9 +392,9 @@ function adviceSuccess(step, preflight, advice) {
 
 async function runExec(run) {
   const step = await launchReviewer(run);
-  const failed = launchFailure(step) ?? outcomeFailure(step);
+  const failed = launchFailure(step) ?? outcomeFailure(step, run.model);
   if (failed) return { failure: failed };
-  return { ...(await readAdvice(step)), step };
+  return { ...(await readAdvice(step, run.parseResponse)), step };
 }
 
 async function runReviewer(run) {
