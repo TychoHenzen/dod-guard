@@ -82,7 +82,7 @@ const RELEASE_3 = String.raw`$invokeCommand = {
   param([string]$Executable, [string[]]$Arguments, [AllowNull()][string]$InputText)
   $key = $Executable + ' ' + ($Arguments -join ' ')
   if ($fixtureStage -eq 'command' -and $key -eq 'git rev-parse HEAD') {
-    return [pscustomobject]@{ ExitCode = 7; Output = '' }
+    return [pscustomobject]@{ ExitCode = 7; Output = ''; Stderr = 'fatal: not a git repository' }
   }
   $revParse = $Executable -eq 'git' -and $Arguments[0] -eq 'rev-parse'
   if ($revParse -and $Arguments[1] -eq 'HEAD') {
@@ -116,7 +116,7 @@ const RELEASE_3 = String.raw`$invokeCommand = {
   }
   if ($Executable -eq 'node' -and $env:DOD_GUARD_FIXTURE_HELPER) {
     $helperArguments = @($env:DOD_GUARD_FIXTURE_HELPER) + @($Arguments | Select-Object -Skip 1)
-    return (Invoke-ReleaseVerificationNativeCommand 'node' $helperArguments $InputText)
+    return (Invoke-PublishNativeCommand 'node' $helperArguments $InputText)
   }
   if ($Executable -eq 'node') { return (& $answerPreflight $Arguments[1]) }
   throw ('unexpected command: ' + $key)

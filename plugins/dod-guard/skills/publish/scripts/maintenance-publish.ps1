@@ -1,3 +1,5 @@
+. "$PSScriptRoot/publish-native-command.ps1"
+
 function ConvertTo-MaintenanceCanonicalValue {
     param([AllowNull()][object]$Value)
 
@@ -308,23 +310,22 @@ function Invoke-MaintenancePublish {
     if ($null -eq $InvokeGit) {
         $InvokeGit = {
             param([string[]]$Arguments)
-            $output = @(& git @Arguments 2>&1)
-            if ($LASTEXITCODE -ne 0) {
-                throw "git $($Arguments -join ' ') failed with exit code $LASTEXITCODE"
+            $native = Invoke-PublishNativeCommand "git" $Arguments $null
+            if ($native.ExitCode -ne 0) {
+                throw (Get-PublishNativeFailureMessage "git $($Arguments -join ' ')" $native.ExitCode $native.Stderr)
             }
-            $output
+            $native.Output
         }
     }
     if ($null -eq $InvokeGhApi) {
         $InvokeGhApi = {
             param([string]$Method, [string]$Endpoint)
-            $output = @(& gh api --method $Method $Endpoint --include 2>&1)
-            $exitCode = $LASTEXITCODE
-            if ($exitCode -ne 0) {
-                throw "gh api $Method $Endpoint failed with exit code $exitCode"
+            $native = Invoke-PublishNativeCommand "gh" @("api", "--method", $Method, $Endpoint, "--include") $null
+            if ($native.ExitCode -ne 0) {
+                throw (Get-PublishNativeFailureMessage "gh api $Method $Endpoint" $native.ExitCode $native.Stderr)
             }
 
-            $text = ($output | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+            $text = $native.Output
             $statusMatch = [regex]::Match($text, "(?m)^HTTP/\S+\s+(\d{3})[^\r\n]*\r?$")
             if (-not $statusMatch.Success) {
                 throw "gh api $Method $Endpoint returned no HTTP status"
