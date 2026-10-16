@@ -78,6 +78,24 @@ test("reads back only after a failed write, and once before Todo", () => {
   );
 });
 
+test("writes only the missing step plans for a Todo or In Progress parent after step-plan-missing", () => {
+  assert.match(
+    skill,
+    prose(
+      "The one other case is a parent in `Todo` or `In Progress` after",
+      "`dod-guard:next-ticket` stopped with `step-plan-missing`:",
+      'run only "Write the step plans" for it, leave its Status as it is, and change nothing else.',
+    ),
+  );
+  assert.match(
+    skill,
+    prose(
+      "Write one comment per task on the parent issue, headed `## Step plan: <task-id>`,",
+      "Read every comment back before the Status changes, or before you report when the Status stays as it is.",
+    ),
+  );
+});
+
 test("paginates the complete live label inventory", () => {
   assert.match(skill, /gh api --paginate "repos\/\{owner\}\/\{repo\}\/labels\?per_page=100"/);
   assert.match(fixtures, /Put the only matching scale label on the second API page/);

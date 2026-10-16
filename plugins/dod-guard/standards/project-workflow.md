@@ -163,7 +163,7 @@ task has one `## Step plan: <task-id>` comment on the parent issue, written by
 edit, the test, the validation command, and the expected result, in fenced code
 blocks only. A task without its comment stops `next-ticket` with
 `step-plan-missing`, and `refine-backlog-item` then writes the missing plans
-while the parent stays in `Todo`.
+while the parent keeps its Status, `Todo` or `In Progress`.
 
 `refine-backlog-item` owns these records. It keeps a material unresolved
 requirement in `Backlog` and moves a coherent PBI to `Todo`. `next-ticket`

@@ -164,7 +164,13 @@ test("goal-sdlc keeps one daily friction log and a strict stop", () => {
 const RESEARCH = 'Follow "Research and discovery triage" in `dod-guard:refine-backlog-item`';
 const CONFLICT = "Follow `standards/conflict-triage.md`";
 const ROUTES = [
-  ["Queue snapshot read", "cheap", "`dod-guard:read-cheap`", "Follow Loop step 2 of this skill"],
+  [
+    "Queue snapshot read",
+    "cheap",
+    "`dod-guard:read-cheap`",
+    "Follow Loop step 2 of this skill, but run only its `closure.mjs` and `select-next.mjs` commands and " +
+      "return their output; the close delegation stays with this thread",
+  ],
   [
     "Refinement: owner thread (dispatch, verify, labels, step plans, Todo)",
     "standard",

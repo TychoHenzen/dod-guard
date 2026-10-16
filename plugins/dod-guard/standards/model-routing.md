@@ -152,7 +152,9 @@ shape and no other:
 1. The first line names what the worker runs, taken from the "Runs" column of
    the Delegation table in `dod-guard:goal-sdlc`. For a skill it reads
    `Invoke the Skill tool with skill "dod-guard:<name>" and args "<args>", then
-   follow that skill.` For a row that names a standard or a record, it reads
+   follow that skill.` In Codex, which has no Skill tool, it reads `Read
+   <plugin-root>/skills/<name>/SKILL.md, then follow that skill with args
+   "<args>".` For a row that names a standard or a record, it reads
    `Follow <standard or record>.`
 2. The live facts the worker cannot read from the plugin: the repository, the
    issue, the pull request, the branch, the head SHA, the checkpoint a resumed
@@ -168,7 +170,8 @@ and run the skill as written.
 
 A worker whose brief names no skill, standard, or record, or restates a
 skill's rules, is misrouted. It stops, changes nothing, and reports that to its
-dispatcher. A skill-capable worker makes the Skill tool its first tool call and
+dispatcher. A skill-capable worker loads the skill as its first tool call (the
+Skill tool in Claude Code, a read of the skill file in Codex) and
 starts its report with the line `Skill loaded: dod-guard:<name>`, or
 `Standard followed: <path>` for a row that names a standard. A report without
 that line is a failed check. A read-only agent and `dod-guard:stage-cheap` hold

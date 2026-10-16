@@ -19,8 +19,9 @@ yourself, as `standards/model-routing.md` says under "Escalation".
 
 Your brief has the shape that "Stage brief" in `standards/model-routing.md`
 defines. Its first line names the skill to run or the standard to follow. When
-it names a skill, your first tool call is the Skill tool with that skill, and
-you follow that skill and nothing else as procedure. Your report starts with
+it names a skill, your first tool call loads that skill: the Skill tool in
+Claude Code, or a read of its SKILL.md file under the plugin root in Codex,
+which has no Skill tool. You follow that skill and nothing else as procedure. Your report starts with
 `Skill loaded: dod-guard:<name>`, or `Standard followed: <path>` when the line
 names a standard. A brief that names no skill, standard, or record, or that
 restates, summarizes, or templates a skill's rules, is misrouted: stop, change

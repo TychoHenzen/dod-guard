@@ -22,9 +22,9 @@ boundaries in this skill win.
    and stop on outcome `none` or `several` or on exit 2.
 2. Verify the specified issue belongs to the repository, appears in that
    Project, and has Status `Backlog`. The one other case is a parent in `Todo`
-   after `dod-guard:next-ticket` stopped with `step-plan-missing`: run only
-   "Write the step plans" for it, leave its Status `Todo`, and change nothing
-   else.
+   or `In Progress` after `dod-guard:next-ticket` stopped with
+   `step-plan-missing`: run only "Write the step plans" for it, leave its Status
+   as it is, and change nothing else.
 3. Query all live labels in the target repository, including descriptions:
 
    Use the GitHub MCP repository-resource operation with the labels endpoint.
@@ -330,7 +330,8 @@ applies it without choosing anything. Settle an open decision under "Research
 and discovery triage"; never leave it to the reader of the plan.
 
 On re-refinement, replace the comment of a task that changed and keep the rest.
-Read every comment back before the Status changes.
+Read every comment back before the Status changes, or before you report when
+the Status stays as it is.
 
 ## Apply labels and verify before Todo
 

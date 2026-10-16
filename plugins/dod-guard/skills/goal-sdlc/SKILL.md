@@ -15,7 +15,7 @@ owning skill wins. Under `/goal`, also read and apply `standards/goal-stop.md`.
 
 | Owner | Runs when | Owns |
 |---|---|---|
-| [dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md) | the parent has Status Backlog, or Todo after `step-plan-missing` | refinement, functional slices, review lenses, step plans, Todo readiness |
+| [dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md) | the parent has Status Backlog, or Todo or In Progress after `step-plan-missing` | refinement, functional slices, review lenses, step plans, Todo readiness |
 | [dod-guard:next-ticket](../next-ticket/SKILL.md) | the parent has Status Todo with step plans, or In Progress with no pushed handoff | the branch, implementation, validation, acceptance matrix, preflight checkpoint, pushed handoff |
 | [dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md) | the parent has Status In Progress, a pushed handoff, and no converged draft pull request | the draft pull request and its convergence |
 | [dod-guard:review-pr](../review-pr/SKILL.md) | the parent has a converged draft pull request and no review | the one code review |
@@ -79,7 +79,7 @@ agent, and runs exactly what its last column names:
 
 | Stage | Tier | Agent | Runs |
 |---|---|---|---|
-| Queue snapshot read | cheap | `dod-guard:read-cheap` | Follow Loop step 2 of this skill |
+| Queue snapshot read | cheap | `dod-guard:read-cheap` | Follow Loop step 2 of this skill, but run only its `closure.mjs` and `select-next.mjs` commands and return their output; the close delegation stays with this thread |
 | Refinement: owner thread (dispatch, verify, labels, step plans, Todo) | standard | `dod-guard:stage-standard` | Skill `dod-guard:refine-backlog-item <issue>` |
 | Refinement: plan research questions | standard | `dod-guard:read-standard` | Follow "Research and discovery triage" in `dod-guard:refine-backlog-item` |
 | Refinement: investigate code, callers, and tests | cheap | `dod-guard:read-cheap` | Follow "Research and discovery triage" in `dod-guard:refine-backlog-item` |
