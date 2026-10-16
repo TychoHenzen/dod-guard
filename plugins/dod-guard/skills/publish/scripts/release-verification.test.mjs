@@ -1,10 +1,30 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { parsePowerShellFile, runPowerShell } from "./maintenance-harness.mjs";
-import { createRealHelperFixture, releaseVerificationPath, runReleaseVerification } from "./release-harness.mjs";
+import { releaseVerificationPath, runReleaseVerification } from "./release-harness.mjs";
+
+// A throwaway plugin root holding a copy of the real preflight helper, so the inventory-status
+// rule under test is not re-implemented in the PowerShell stub.
+async function createRealHelperFixture(t) {
+  const root = await mkdtemp(join(tmpdir(), "dod-guard-release-helper-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const helper = join(root, "skills", "publish", "scripts", "preflight-installation.mjs");
+  const manifest = JSON.stringify({ name: "dod-guard", version: "5.4.56" });
+  await mkdir(join(root, "skills", "publish", "scripts"), { recursive: true });
+  await mkdir(join(root, ".codex-plugin"), { recursive: true });
+  await mkdir(join(root, ".claude-plugin"), { recursive: true });
+  await Promise.all([
+    copyFile(fileURLToPath(new URL("./preflight-installation.mjs", import.meta.url)), helper),
+    writeFile(join(root, "skills", "publish", "SKILL.md"), "# publish fixture\n"),
+    writeFile(join(root, ".codex-plugin", "plugin.json"), manifest),
+    writeFile(join(root, ".claude-plugin", "plugin.json"), manifest),
+  ]);
+  return { root, helper };
+}
 
 test("release verification parses and proves the complete read-only evidence boundary", {
   skip: process.platform !== "win32",

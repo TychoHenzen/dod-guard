@@ -1,7 +1,4 @@
 import assert from "node:assert/strict";
-import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPowerShell } from "./maintenance-harness.mjs";
 
@@ -191,25 +188,8 @@ $result = Invoke-ReleaseVerification @verificationArguments
 $result | ConvertTo-Json -Depth 20 -Compress
 `;
 
-// With a fixture, the node command runs the real preflight-installation.mjs copied into a
-// throwaway plugin root, so the inventory-status rule under test is not re-implemented here.
-export async function createRealHelperFixture(t) {
-  const root = await mkdtemp(join(tmpdir(), "dod-guard-release-helper-"));
-  t.after(() => rm(root, { recursive: true, force: true }));
-  const helper = join(root, "skills", "publish", "scripts", "preflight-installation.mjs");
-  const manifest = JSON.stringify({ name: "dod-guard", version: "5.4.56" });
-  await mkdir(join(root, "skills", "publish", "scripts"), { recursive: true });
-  await mkdir(join(root, ".codex-plugin"), { recursive: true });
-  await mkdir(join(root, ".claude-plugin"), { recursive: true });
-  await Promise.all([
-    copyFile(fileURLToPath(new URL("./preflight-installation.mjs", import.meta.url)), helper),
-    writeFile(join(root, "skills", "publish", "SKILL.md"), "# publish fixture\n"),
-    writeFile(join(root, ".codex-plugin", "plugin.json"), manifest),
-    writeFile(join(root, ".claude-plugin", "plugin.json"), manifest),
-  ]);
-  return { root, helper };
-}
-
+// With a fixture, the node command runs the real preflight-installation.mjs; see
+// release-verification.test.mjs for how the throwaway plugin root is built.
 export function runReleaseVerification(failureStage = "", fixture = undefined) {
   const harness = [RELEASE_1, RELEASE_2, RELEASE_3, RELEASE_4, RELEASE_5].join("");
   const result = runPowerShell(harness, {
