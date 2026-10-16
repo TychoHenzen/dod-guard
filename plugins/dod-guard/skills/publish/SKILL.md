@@ -91,6 +91,14 @@ loaded cache root. Claude Code's `installPath` must resolve to the loaded
 installation, and every loaded publish skill must be a readable file inside
 its loaded plugin root.
 
+This loaded-root check is the pre-release installation identity preflight. Step 11 passes
+`--registered-root` to the same helper: after the version bump and client
+refresh the loaded skill still holds the previous release, so the helper takes
+the plugin root from the active registration for both clients (Claude
+`installPath`, Codex `source.path`) and reads the manifest and
+`skills/publish/SKILL.md` from that registered root. Every other registration,
+identity, and manifest check is unchanged.
+
 If the helper exits non-zero, report its requested and observed values, exact
 mismatch, and safe next step, then stop. Do not run the procedure or any Git,
 GitHub, protection, version-bump, or client-cache mutation. On success, use the
@@ -340,7 +348,11 @@ or relies on a later validator or client-cache readback to recover the release.
 
     The helper checks the current and remote Git heads, complete branch
     protection and `enforce_admins` readbacks, all required checks on the exact
-    published SHA, and both refreshed client registrations. It records every
+    published SHA, and both refreshed client registrations. It verifies the
+    registered installation of the new release (registered root, manifest, and
+    publish skill), not the loaded one, so no session reload is needed, and it
+    still fails when the registered version differs from `-ExpectedVersion`.
+    It records every
     command exit status before parsing output and fails closed on missing,
     malformed, stale, or mismatched evidence. It never publishes, mutates
     protection, changes a checkout, or copies client files.

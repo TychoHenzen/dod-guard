@@ -3,35 +3,11 @@ import { open, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, normalize, parse, relative, resolve, sep } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { parseArguments } from "./preflight-arguments.mjs";
 
 const repository = "https://github.com/TychoHenzen/dod-guard.git";
 const pluginRootFromScript = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const longPathPrefix = /^\\\\\?\\/;
-
-function parseArguments(args) {
-  const [client, ...options] = args;
-  const requested = {};
-  for (let index = 0; index < options.length; index += 1) {
-    const option = options[index];
-    let key;
-    if (option === "--version") key = "version";
-    if (option === "--skill-path") key = "path";
-    if (option === "--inventory-status") key = "inventoryStatus";
-    const value = options[index + 1];
-    if (!(key && value) || value.startsWith("--") || requested[key] !== undefined) {
-      return { client, requested, error: `Invalid or duplicate argument: ${option}` };
-    }
-    requested[key] = value;
-    index += 1;
-  }
-  if (client !== "codex" && client !== "claude") {
-    return { client, requested, error: "Client must be codex or claude" };
-  }
-  if (requested.inventoryStatus !== undefined && !/^\d+$/.test(requested.inventoryStatus)) {
-    return { client, requested, error: "Invalid --inventory-status: must be a non-negative integer" };
-  }
-  return { client, requested };
-}
 
 function failure(client, requested, reason, observed = {}) {
   return {
@@ -221,37 +197,46 @@ async function resolveLoadedRoot(client, requested, installation) {
   }
 }
 
-async function resolveRegisteredRoot(client, requested, installation, loadedRoot) {
+async function resolveRegisteredRoot(client, requested, installation, reportedRoot) {
   try {
     return normalize(await realpath(installation.registeredRoot));
   } catch (error) {
     return failure(client, requested, `The registered plugin path is unavailable: ${error.message}`, {
       pluginIdentity: installation.identity,
       version: installation.version,
-      pluginRoot: loadedRoot,
+      pluginRoot: reportedRoot,
       registeredRoot: installation.registeredRoot,
     });
   }
 }
 
-async function resolvePluginRoot(client, requested, installation) {
+async function resolveLoadedPluginRoot(client, requested, installation) {
   const loadedRoot = await resolveLoadedRoot(client, requested, installation);
   if (typeof loadedRoot !== "string") return loadedRoot;
 
   if (client === "codex") return loadedRoot;
 
-  const registeredRoot = await resolveRegisteredRoot(client, requested, installation, loadedRoot);
-  if (typeof registeredRoot !== "string") return registeredRoot;
+  const resolvedRegisteredRoot = await resolveRegisteredRoot(client, requested, installation, loadedRoot);
+  if (typeof resolvedRegisteredRoot !== "string") return resolvedRegisteredRoot;
 
-  if (normalizedPath(loadedRoot) !== normalizedPath(registeredRoot)) {
+  if (normalizedPath(loadedRoot) !== normalizedPath(resolvedRegisteredRoot)) {
     return failure(client, requested, "The loaded publish skill is not from the registered dod-guard installation.", {
       pluginIdentity: installation.identity,
       version: installation.version,
       pluginRoot: loadedRoot,
-      registeredRoot,
+      registeredRoot: resolvedRegisteredRoot,
     });
   }
   return loadedRoot;
+}
+
+// Post-release verification judges the registration the client now reports, not the root this
+// helper was loaded from, which still holds the previous release until the session reloads.
+function resolvePluginRoot(client, requested, installation) {
+  if (requested.registeredRoot) {
+    return resolveRegisteredRoot(client, requested, installation, installation.registeredRoot);
+  }
+  return resolveLoadedPluginRoot(client, requested, installation);
 }
 
 async function loadManifest(client, requested, installation, pluginRoot) {
