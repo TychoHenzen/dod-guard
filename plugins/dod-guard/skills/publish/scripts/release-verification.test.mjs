@@ -117,9 +117,15 @@ test("release verification checks the registered root even when the loaded root 
 
   const outcome = runReleaseVerification("", fixture);
   assert.equal(outcome.Success, true, outcome.Error);
+  // The helper resolves roots with fs.promises.realpath, which expands 8.3 short names such as
+  // RUNNER~1 like the native resolver does; the JS realpathSync does not, so compare native forms.
   for (const client of ["codex", "claude"]) {
     assert.equal(outcome.Clients[client].Version, "5.4.56", client);
-    assert.equal(outcome.Clients[client].PluginRoot.toLowerCase(), realpathSync(fixture.root).toLowerCase(), client);
+    assert.equal(
+      outcome.Clients[client].PluginRoot.toLowerCase(),
+      realpathSync.native(fixture.root).toLowerCase(),
+      client,
+    );
     assert.match(outcome.Clients[client].SkillPath, /registered[\\/]skills[\\/]publish[\\/]SKILL\.md$/i, client);
   }
 });
