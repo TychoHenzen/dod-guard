@@ -1,6 +1,6 @@
 {
   "name": "knowledge-base",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Read-only retrieval from Markdown in an externally configured knowledge-base vault. Browse chapters, sections, and source-linked entries.",
   "type": "module",
   "main": "dist/bundle.js",
