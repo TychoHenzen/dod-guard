@@ -115,6 +115,8 @@ if ($githubAuthStatus -ne 0) {
 
 The checked-in `maintenance-publish.ps1` owns the mutation-side `gh` calls,
 and `release-verification.ps1` owns the post-release read-only `gh` calls.
+Both helpers run every native command through `publish-native-command.ps1` and
+judge it by exit code only; stderr is kept as evidence, never as a success signal.
 `preflight-installation.mjs` only parses local client inventory; it is not an
 authentication bridge. Do not invoke `gh api` from a Node REPL or another
 unauthenticated nested runtime.
