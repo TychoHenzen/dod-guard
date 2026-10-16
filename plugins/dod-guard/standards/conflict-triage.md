@@ -4,15 +4,15 @@ When a PBI branch cannot take the default branch because of merge conflicts,
 the delivery workflow triages the conflicts instead of stopping. This standard
 owns the triage rules. `standards/model-routing.md` owns the tiers, the tier
 agents, and how cheap-tier output is verified; this standard names only the
-tier each stage uses. `/complete-pr` owns the trigger.
+tier each stage uses. `dod-guard:complete-pr` owns the trigger.
 
 ## Trigger and owner
 
-The triage runs when the `/complete-pr` helper stops with `merge_conflict` on
+The triage runs when the `dod-guard:complete-pr` helper stops with `merge_conflict` on
 an open pull request whose head is the trusted PBI head. It never runs for a
 fork head, a base other than the default branch, or a pull request that is not
-open. The thread that runs `/complete-pr` owns the triage, unless that run is
-on the cheap model: a cheap-model `/complete-pr` run stops at `merge_conflict`
+open. The thread that runs `dod-guard:complete-pr` owns the triage, unless that run is
+on the cheap model: a cheap-model `dod-guard:complete-pr` run stops at `merge_conflict`
 and reports the stop to its dispatcher, which runs the triage as its own stage.
 When `dod-guard:goal-sdlc` runs it, that thread is the `dod-guard:stage-standard`
 stage worker at the standard tier, as "Who dispatches" in
@@ -43,7 +43,7 @@ Before any write, `start` checks that the pull request is open, its head is in
 this repository, and its base is the default branch. The checkout must be on
 the head branch at the trusted head, the pull request head must equal the
 trusted head, no merge may be in progress, and the worktree must be clean.
-Commit classified in-scope pending paths first, as `/complete-pr` says. Fetch
+Commit classified in-scope pending paths first, as `dod-guard:complete-pr` says. Fetch
 the default branch once before `start` so the base commit is local. `start`
 records the pull request base SHA as this run's base. During the run, never
 fetch the default branch again, rebase, or force-push. Before claiming the
@@ -153,8 +153,8 @@ no local ledger.
 
 ## After a push
 
-After a verified push, `/complete-pr` ends with `conflict-triaged` and does not
+After a verified push, `dod-guard:complete-pr` ends with `conflict-triaged` and does not
 merge. The merge commit holds code no reviewer has seen, and the acceptance
-matrix is not current at the new head. The PBI re-enters `/submit-draft-pr`
-convergence on the new head, then `/review-pr`, and only then `/complete-pr`.
+matrix is not current at the new head. The PBI re-enters `dod-guard:submit-draft-pr`
+convergence on the new head, then `dod-guard:review-pr`, and only then `dod-guard:complete-pr`.
 The triage posts no review request to Codex.

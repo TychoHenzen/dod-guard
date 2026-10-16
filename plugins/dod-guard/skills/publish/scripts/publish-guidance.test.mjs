@@ -86,7 +86,7 @@ test("publish skill classifies the complete tree before PBI routing", async () =
   assert.match(skill, /Classify the complete pending tree before requiring a PBI or pull request/);
   assert.match(skill, /If any file is functional,\s+use the functional path for the whole release/);
   assert.match(skill, /For a `maintenance-only` release/);
-  assert.match(skill, /For a `functional` release, invoke `\/submit-draft-pr`/);
+  assert.match(skill, /For a `functional` release, invoke `dod-guard:submit-draft-pr`/);
 });
 
 test("publish scans pending content before commit", async () => {

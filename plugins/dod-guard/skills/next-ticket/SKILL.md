@@ -57,7 +57,11 @@ Before reporting a ticket as ready, read its body and require:
 
 - a short description of the intended change;
 - implementation notes;
-- acceptance criteria written as checkboxes with observable outcomes.
+- acceptance criteria written as checkboxes with observable outcomes;
+- one step plan for every task in its task list, a `## Step plan: <task-id>`
+  comment that `dod-guard:refine-backlog-item` wrote and that the step plan rule
+  in `standards/project-workflow.md` accepts by its author; a PBI with no task
+  list has one task, `task-1`.
 
 For an ordinary parent, require every linked sub-issue to be open or closed
 with pushed implementation evidence. A parent PBI with no linked sub-issues is
@@ -102,7 +106,12 @@ The same functional-slice and lens-ownership handoff is consumed by
 delivery boundary aligned when changing this contract.
 
 Stop and name the missing section when the issue is incomplete. Do not invent
-requirements.
+requirements. A missing step plan, a comment with the heading from an author
+that the step plan rule does not accept, or a step plan that leaves a design
+decision open, is the stop `step-plan-missing`: name the task, change nothing,
+and report the stop to your dispatcher, which runs
+`dod-guard:refine-backlog-item` on the parent. Never write or complete a step
+plan yourself.
 
 Resolve the active dod-guard plugin root from the directory containing this skill,
 then read `<plugin-root>/standards/project-workflow.md` and classify the PBI
@@ -191,22 +200,27 @@ verification evidence in the completion report. Do not report a task complete
 when its requirement is contradicted or its evidence is missing.
 
 Dispatch every task, including the single task of a one-task PBI, to
-`dod-guard:stage-cheap` from a step plan you wrote. When the task list has more
-than one task, run each task in order as one step
+`dod-guard:stage-cheap` from the task's step plan, the `## Step plan: <task-id>`
+comment that the step plan rule in `standards/project-workflow.md` accepts. When the task
+list has more than one task, run each task in order as one step
 of [dod-guard:step-by-step](../step-by-step/SKILL.md), passing the task list
 as a calling-skill plan with a commit per step: one fresh subagent per task.
-Before dispatching a task, write its step plan to a scratch file outside the
-repository: for each step the file, the edit (symbol and intent), the test to
-add or change (name and assertion), the validation command, and the expected
-result. Use fenced code blocks only, and keep each batch small. Writing the
-plan uses the standard tier, and the plan carries every design decision.
+Before dispatching a task, save its step plan comment, unchanged, to a scratch
+file outside the repository. The brief is the one "Stage brief" in
+`standards/model-routing.md` defines: its first line reads `Follow the step plan
+in <scratch file>.`, then the branch and the proofs to return. This thread writes
+no step plan and decides no design question: the plan carries every design
+decision.
 Implementing the task from that plan uses the cheap tier on
 `dod-guard:stage-cheap`, and running its validations or
-regenerating artifacts uses the cheap tier, as `standards/model-routing.md`
-defines them. Edit tracked files for implementation on this thread only after
-the task escalated: the cheap model failed its check twice, or reported the
-plan unappliable and correcting the plan did not close the gap, as the
-Escalation section of that standard says. Each task report names its dispatch
+regenerating artifacts uses the cheap tier on `dod-guard:stage-cheap`, as
+`standards/model-routing.md` defines them. Edit tracked files for
+implementation on this thread only when your brief carries the failure record of
+an earlier cheap run of the same task: the cheap model failed its check twice,
+or reported the plan unappliable, as the Escalation section of that standard
+says. When you run on `dod-guard:stage-cheap-skill` and a task fails that way,
+stop the stage and report the failure record to your dispatcher, which reruns
+the stage under that section. Each task report names its dispatch
 (agent, model, and effort) or the escalation record that explains an owner
 edit; a report with neither is a failed check. step-by-step's per-step
 commit makes every verified task a durable checkpoint before the next task
@@ -330,5 +344,5 @@ Do not create a local planning file or a second issue as a substitute.
 
 Report the repository, linked project, selected issue, branch, commit, checks,
 and pushed branch, with each acceptance criterion mapped to its evidence. Name
-any check that could not run. Stop after the push. `/review-pr` is the one
+any check that could not run. Stop after the push. `dod-guard:review-pr` is the one
 independent review of this work.

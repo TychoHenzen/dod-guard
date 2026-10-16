@@ -17,17 +17,22 @@ function assertInOrder(text, patterns) {
 
 test("quick-pbi covers the full delivery lifecycle without extra prompts", () => {
   const stages = [
-    "/add-backlog-idea",
-    "/refine-backlog-item",
-    "/next-ticket",
-    "/submit-draft-pr",
-    "/review-pr",
-    "/fix-pr-review",
-    "/complete-pr",
+    "dod-guard:add-backlog-idea",
+    "dod-guard:refine-backlog-item",
+    "dod-guard:next-ticket",
+    "dod-guard:submit-draft-pr",
+    "dod-guard:review-pr",
+    "dod-guard:fix-pr-review",
+    "dod-guard:complete-pr",
   ];
   for (const stage of stages) {
-    assert.match(skill, new RegExp(stage.replaceAll("/", "\\/")));
+    assert.ok(skill.includes(stage), `${stage} must be named in full`);
   }
+  assert.doesNotMatch(
+    skill,
+    /(^|[^\w/:.-])\/(add-backlog-idea|refine-backlog-item|next-ticket|submit-draft-pr|review-pr|fix-pr-review|complete-pr)\b/m,
+    "quick-pbi names every stage by its full dod-guard: skill name, never a bare slash name",
+  );
   const lifecycleStart = skill.indexOf("## Run the lifecycle");
   const positions = stages.map((stage) => skill.indexOf(stage, lifecycleStart));
   assert.ok(positions.every((position, index) => index === 0 || position > positions[index - 1]));
@@ -73,7 +78,11 @@ test("resolves findings without a second review", () => {
     /respond to and resolve each finding/,
     /Do not invoke another review after those fixes/,
   ]);
-  assert.match(skill, /every finding is fixed and\s+resolved, or recorded as not actionable with evidence/);
+  assert.match(
+    skill,
+    /every `BLOCKER` and `MAJOR`\s+finding is fixed and\s+resolved, or recorded as not actionable with evidence/,
+  );
+  assert.match(skill, /`MINOR` note has no thread and\s+blocks nothing/);
   assert.match(usage, /uses that completed review's recommendation[\s\S]*does\s+not invoke another review after fixes/);
   assert.doesNotMatch(usage, /repeats review before the guarded merge/);
 });

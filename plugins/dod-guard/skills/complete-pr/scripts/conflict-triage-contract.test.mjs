@@ -21,7 +21,7 @@ test("complete-pr hands a merge conflict on the PBI head to the triage", () => {
     "When the helper stops with `merge_conflict` on a pull request whose head is the trusted PBI head",
     "triage the conflict as `standards/conflict-triage.md` says instead of ending the run",
     "end with `conflict-triaged` and do not merge",
-    "`/submit-draft-pr` convergence and `/review-pr` before this skill runs again",
+    "`dod-guard:submit-draft-pr` convergence and `dod-guard:review-pr` before this skill runs again",
     "or the conflict triage ends with `conflict-triaged` or a stop",
   ]);
 });
@@ -65,7 +65,7 @@ test("the triage proves provenance, records the run, and re-enters review", () =
     "Add one `## Conflict triage` section",
     "the base SHA, the merge SHA, each path's decision and basis, the question ids, the investigator answers used, the verification results, and the stop reason",
     "Write no local ledger.",
-    "re-enters `/submit-draft-pr` convergence on the new head, then `/review-pr`, and only then `/complete-pr`",
+    "re-enters `dod-guard:submit-draft-pr` convergence on the new head, then `dod-guard:review-pr`, and only then `dod-guard:complete-pr`",
     "The triage posts no review request to Codex",
   ]);
 });

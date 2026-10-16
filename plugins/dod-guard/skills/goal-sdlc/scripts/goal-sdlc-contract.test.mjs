@@ -159,27 +159,120 @@ test("goal-sdlc keeps one daily friction log and a strict stop", () => {
   assert.match(skill, /checkpoint\.\n\nBefore claiming a parent/);
 });
 
+// Each row names its stage, tier, agent, and exactly what the agent runs, so a
+// dispatching thread has nothing left to interpret (issue 974).
+const RESEARCH = 'Follow "Research and discovery triage" in `dod-guard:refine-backlog-item`';
+const CONFLICT = "Follow `standards/conflict-triage.md`";
 const ROUTES = [
-  ["Queue snapshot read", "cheap"],
-  ["Refinement: owner thread (dispatch, verify, labels, Todo)", "standard"],
-  ["Refinement: plan research questions", "standard"],
-  ["Refinement: investigate code, callers, and tests", "cheap"],
-  ["Refinement: decide classification and criteria", "standard"],
-  ["`/next-ticket`: owner thread (start ticket, matrix, preflight, handoff)", "standard"],
-  ["`/next-ticket`: write the step plan for one task", "standard"],
-  ["`/next-ticket`: implement one task from its plan", "cheap"],
-  ["`/next-ticket`: run validations and regenerate artifacts", "cheap"],
-  ["`/submit-draft-pr`", "cheap"],
-  ["`/review-pr`: owner thread (scripts, dispatch, citation checks, build, post)", "cheap"],
-  ["`/review-pr`: plan", "standard"],
-  ["`/review-pr`: investigate", "cheap"],
-  ["`/review-pr`: judge and merge pass", "standard"],
-  ["`/fix-pr-review`: owner thread (revalidate, classify, plan fixes, verify, reply)", "standard"],
-  ["`/fix-pr-review`: apply a written per-finding fix", "cheap"],
-  ["`/complete-pr`: guarded merge and Project finalization", "cheap"],
-  ["Merge conflict triage: owner thread, plan, and judge", "standard"],
-  ["Merge conflict triage: investigate and apply", "cheap"],
-  ["`/add-backlog-idea`, including the friction log", "cheap"],
+  [
+    "Queue snapshot read",
+    "cheap",
+    "`dod-guard:read-cheap`",
+    "Follow Loop step 2 in `dod-guard:goal-sdlc`. This thread dispatches the row twice, and the close " +
+      "delegation stays with this thread: first to run only `closure.mjs snapshot` and `closure.mjs plan` " +
+      "and return the plan, then, after the closes, to run only a fresh `closure.mjs snapshot`, " +
+      "`closure.mjs annotate`, and `select-next.mjs` and return the selection",
+  ],
+  [
+    "Refinement: owner thread (dispatch, verify, labels, step plans, Todo)",
+    "standard",
+    "`dod-guard:stage-standard`",
+    "Skill `dod-guard:refine-backlog-item <issue>`",
+  ],
+  ["Refinement: plan research questions", "standard", "`dod-guard:read-standard`", RESEARCH],
+  ["Refinement: investigate code, callers, and tests", "cheap", "`dod-guard:read-cheap`", RESEARCH],
+  ["Refinement: decide classification and criteria", "standard", "`dod-guard:read-standard`", RESEARCH],
+  [
+    "`dod-guard:next-ticket`: owner thread (start ticket, matrix, preflight, handoff)",
+    "cheap",
+    "`dod-guard:stage-cheap-skill`",
+    "Skill `dod-guard:next-ticket <issue>`",
+  ],
+  [
+    "`dod-guard:next-ticket`: implement one task from its step plan",
+    "cheap",
+    "`dod-guard:stage-cheap`",
+    "Follow the step plan in <scratch file>. The file holds the task's `## Step plan: <task-id>` comment, saved unchanged",
+  ],
+  [
+    "`dod-guard:next-ticket`: run validations and regenerate artifacts",
+    "cheap",
+    "`dod-guard:stage-cheap`",
+    "Follow the step plan in <scratch file>. Run only its validation commands",
+  ],
+  [
+    "`dod-guard:submit-draft-pr`",
+    "cheap",
+    "`dod-guard:stage-cheap-skill`",
+    "Skill `dod-guard:submit-draft-pr <issue>`",
+  ],
+  [
+    "`dod-guard:review-pr`: owner thread (scripts, dispatch, citation checks, build, post)",
+    "cheap",
+    "`dod-guard:stage-cheap-skill`",
+    "Skill `dod-guard:review-pr <pull-request>`",
+  ],
+  [
+    "`dod-guard:review-pr`: plan",
+    "standard",
+    "`dod-guard:read-standard`",
+    'Follow step 5, "Plan", in `dod-guard:review-pr`',
+  ],
+  [
+    "`dod-guard:review-pr`: investigate",
+    "cheap",
+    "`dod-guard:read-cheap`",
+    'Follow step 5, "Investigate", in `dod-guard:review-pr`',
+  ],
+  [
+    "`dod-guard:review-pr`: judge and merge pass",
+    "standard",
+    "`dod-guard:review-pr-feature`, `dod-guard:review-pr-design`, `dod-guard:review-pr-reliability`, " +
+      "`dod-guard:review-pr-hygiene`; the merge pass on `dod-guard:read-standard`",
+    'Follow step 5, "Judge" and "Merge", in `dod-guard:review-pr`',
+  ],
+  [
+    "`dod-guard:fix-pr-review`: owner thread (revalidate, classify, plan fixes, verify, reply)",
+    "standard",
+    "`dod-guard:stage-standard`",
+    "Skill `dod-guard:fix-pr-review <pull-request> <finding-ids>`",
+  ],
+  [
+    "`dod-guard:fix-pr-review`: apply a written per-finding fix",
+    "cheap",
+    "`dod-guard:stage-cheap`",
+    "Follow the fix plan in <scratch file>. The file holds the owner's per-finding fix plan, saved unchanged",
+  ],
+  [
+    "`dod-guard:complete-pr`: guarded merge and Project finalization",
+    "cheap",
+    "`dod-guard:stage-cheap-skill`",
+    "Skill `dod-guard:complete-pr <pull-request>`",
+  ],
+  [
+    "`dod-guard:complete-pr`: close delivered issues (Loop step 2)",
+    "cheap",
+    "`dod-guard:stage-cheap-skill`",
+    'Skill `dod-guard:complete-pr`. Follow only its section "Close delivered issues for goal-sdlc"',
+  ],
+  [
+    "Merge conflict triage: owner thread, plan, and judge",
+    "standard",
+    "`dod-guard:stage-standard`, `dod-guard:read-standard`",
+    CONFLICT,
+  ],
+  [
+    "Merge conflict triage: investigate and apply",
+    "cheap",
+    "`dod-guard:read-cheap`, `dod-guard:stage-cheap`",
+    CONFLICT,
+  ],
+  [
+    "`dod-guard:add-backlog-idea`, including the friction log",
+    "cheap",
+    "`dod-guard:stage-cheap-skill`",
+    "Skill `dod-guard:add-backlog-idea <request>`",
+  ],
 ];
 // Effort is not repeated here: each tier agent's frontmatter owns it.
 function routingRows(text) {
@@ -218,6 +311,7 @@ test("goal-sdlc routes every stage to one tier", () => {
 // climbs one tier under the routing standard's Escalation section.
 test("goal-sdlc starts no stage on the strong tier", () => {
   const tiers = routingRows(skill).map(([, tier]) => tier);
+  assert.ok(tiers.length > 0, "the Delegation table has rows");
   assert.ok(!tiers.includes("strong"), "no row routes to the strong tier");
   assert.match(
     skill,

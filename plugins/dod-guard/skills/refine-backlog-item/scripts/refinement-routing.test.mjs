@@ -68,7 +68,34 @@ test("routes discovery after repository and issue research", () => {
 test("reads back only after a failed write, and once before Todo", () => {
   assert.doesNotMatch(skill, /mutation snapshot/);
   assert.match(skill, /After a failed, timed-out, or ambiguous write, follow the shared GitHub\s+standard/);
-  assert.match(skill, /Read back the issue body, labels, linked sub-issues, and Project status from\s+GitHub/);
+  assert.match(
+    skill,
+    prose(
+      "Read back the issue body, labels, linked sub-issues, step plan comments, and",
+      "Project status from GitHub.",
+      "every task has its `## Step plan: <task-id>` comment",
+    ),
+  );
+});
+
+test("writes only the missing step plans for a Todo or In Progress parent after step-plan-missing", () => {
+  assert.match(
+    skill,
+    prose(
+      "The one other case is a parent in `Todo` or `In Progress` after",
+      "`dod-guard:next-ticket` stopped with `step-plan-missing`:",
+      'run only "Write the step plans" for it, leave its Status as it is, and change nothing else.',
+    ),
+  );
+  assert.match(
+    skill,
+    prose(
+      "Write one comment per task on the parent issue, headed `## Step plan: <task-id>`,",
+      "Post as the authenticated user, and write a plan for every task that has no comment the step plan rule in",
+      "`standards/project-workflow.md` accepts,",
+      "Read every comment back, with its author, before the Status changes, or before you report when the Status stays as it is.",
+    ),
+  );
 });
 
 test("paginates the complete live label inventory", () => {

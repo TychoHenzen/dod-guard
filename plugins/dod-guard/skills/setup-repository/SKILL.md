@@ -10,8 +10,8 @@ description: >-
 # Setup repository
 
 Turn the current local project into a clean, pushed GitHub repository that can use
-`/add-backlog-idea`, `/refine-backlog-item`, `/next-ticket`, `/submit-draft-pr`, review, and
-`/complete-pr`.
+`dod-guard:add-backlog-idea`, `dod-guard:refine-backlog-item`, `dod-guard:next-ticket`,
+`dod-guard:submit-draft-pr`, `dod-guard:review-pr`, and `dod-guard:complete-pr`.
 
 For structured work, the existing repository instructions are the project-
 principles source described in `standards/project-workflow.md`. Preserve both
@@ -197,12 +197,12 @@ repository instructions. Use `git check-ignore -v` on representative paths after
 Find the repository's canonical instruction file. Merge one concise section without replacing
 existing guidance. It must state:
 
-- ideas enter the linked Project through `/add-backlog-idea` as Backlog issues;
-- `/refine-backlog-item` makes a Todo PBI;
-- `/next-ticket` implements and pushes one issue branch;
-- `/submit-draft-pr` creates its draft pull request;
-- review is read-only until explicit acceptance;
-- `/complete-pr` alone owns ready, merge, issue confirmation, and branch deletion.
+- ideas enter the linked Project through `dod-guard:add-backlog-idea` as Backlog issues;
+- `dod-guard:refine-backlog-item` makes a Todo PBI and writes its step plans;
+- `dod-guard:next-ticket` implements and pushes one issue branch;
+- `dod-guard:submit-draft-pr` creates its draft pull request;
+- `dod-guard:review-pr` reviews it, read-only until explicit acceptance;
+- `dod-guard:complete-pr` alone owns ready, merge, issue confirmation, and branch deletion.
 
 If both `AGENTS.md` and `CLAUDE.md` contain unique guidance, preserve both. Keep shared workflow text
 in the canonical file and use an existing import convention only when the repository already uses

@@ -21,7 +21,10 @@ boundaries in this skill win.
    `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`
    and stop on outcome `none` or `several` or on exit 2.
 2. Verify the specified issue belongs to the repository, appears in that
-   Project, and has Status `Backlog`.
+   Project, and has Status `Backlog`. The one other case is a parent in `Todo`
+   or `In Progress` after `dod-guard:next-ticket` stopped with
+   `step-plan-missing`: run only "Write the step plans" for it, leave its Status
+   as it is, and change nothing else.
 3. Query all live labels in the target repository, including descriptions:
 
    Use the GitHub MCP repository-resource operation with the labels endpoint.
@@ -49,9 +52,12 @@ work, read the affected instructions, their entry points, and existing
 validation. Record absent code or test coverage instead of assuming it exists.
 
 Run that research as the plan, investigate, and judge split in
-`standards/model-routing.md`. A standard planner writes the research questions
-from the issue. Cheap investigators read the code, callers, tests, and history
-and answer each question with cited evidence. After the main thread verifies
+`standards/model-routing.md`. Dispatch the planner and the judge on
+`dod-guard:read-standard` and the investigators on `dod-guard:read-cheap`, each
+with the brief that "Stage brief" in that standard defines. A standard planner
+writes the research questions from the issue. Cheap investigators read the
+code, callers, tests, and history and answer each question with cited evidence.
+After the main thread verifies
 those answers, the standard tier decides the discovery triage, classification,
 and acceptance criteria. Verified citations become `research-source` entries;
 the `discovery-triage` and `research-source` records keep their meaning.
@@ -242,7 +248,7 @@ effort label.
 Every replacement delivery root records the issues it replaces in one
 `supersedes` record under its `## Implementation notes`, as
 `standards/project-workflow.md` defines. An original that still owns delivery
-scope stays open; `/complete-pr` closes it once its root's delivery is
+scope stays open; `dod-guard:complete-pr` closes it once its root's delivery is
 verified. When the split leaves the original as a pure hierarchy record, with
 no linked pull request, no unchecked criterion outside its sub-issues, and
 every sub-issue settled or named by a replacement root's `supersedes` record,
@@ -310,6 +316,26 @@ evidence that is still current. Repeat only phases made stale or newly
 triggered, and update the existing summaries instead of appending conflicting
 assumptions. Do not create duplicate linked sub-issues or scale labels.
 
+## Write the step plans
+
+Write one comment per task on the parent issue, headed `## Step plan: <task-id>`,
+with the id the `task-list` record gives the task (`task-1` for a PBI with no
+task list). The standard tier writes the plans on this thread, because
+`dod-guard:next-ticket` runs on the cheap tier and plans nothing. For every step
+of the task, a comment holds the file, the edit (symbol and intent), the test to
+add or change (name and assertion), the validation command, and the expected
+result. Use fenced code blocks only and no indented code blocks, and keep each
+batch of steps small. The plan carries every design decision, so a cheap model
+applies it without choosing anything. Settle an open decision under "Research
+and discovery triage"; never leave it to the reader of the plan.
+
+On re-refinement, replace the comment of a task that changed and keep the rest.
+Post as the authenticated user, and write a plan for every task that has no
+comment the step plan rule in `standards/project-workflow.md` accepts, so a
+heading comment from an author that rule rejects does not count as a plan. Read
+every comment back, with its author, before the Status changes, or before you
+report when the Status stays as it is.
+
 ## Apply labels and verify before Todo
 
 Read the issue's current labels, then add the chosen priority,
@@ -321,13 +347,15 @@ variants with a `Prio <number>` or `Effort <number>` prefix. Use repeated
 unrelated labels. Remove obsolete standard classifications only when the
 research establishes that they no longer apply.
 
-For re-refinement, the issue must still satisfy the `Backlog` precondition.
+For re-refinement, the issue must still satisfy the `Backlog` precondition (the
+`step-plan-missing` case in Preconditions is the one exception).
 Replace previous estimates and their rationale instead of accumulating them.
 Reuse current discovery evidence and replace only stale or newly triggered
 summaries.
 
-Read back the issue body, labels, linked sub-issues, and Project status from
-GitHub. Confirm all required sections and evidence exist, sub-issues are
+Read back the issue body, labels, linked sub-issues, step plan comments, and
+Project status from GitHub. Confirm all required sections and evidence exist,
+every task has its `## Step plan: <task-id>` comment, sub-issues are
 linked, the PBI is still in Backlog, exactly one label from each scale remains,
 and at least one standard
 label applies. Confirm unknown priority explains missing evidence and effort

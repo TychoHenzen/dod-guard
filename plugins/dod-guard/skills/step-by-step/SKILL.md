@@ -47,7 +47,11 @@ For each step, in order:
    terminal result, finish each named proof in the foreground, include each
    named proof's final output and result in its report, and revert every
    temporary probe or mutation the step introduced while preserving
-   pre-existing and unrelated work.
+   pre-existing and unrelated work. When the calling skill routes its steps by
+   tier, as `dod-guard:goal-sdlc` does, the brief is instead the one "Stage
+   brief" in `standards/model-routing.md` defines, sent to the agent that the
+   caller's table names for the step: the skill or standard its first line
+   names carries the branch, pull request, and worktree rules of that step.
 3. Read the subagent result and inspect the changed state. Run the step's named
    proof before marking it complete.
 4. When the plan asks for a commit per step and the step changed tracked

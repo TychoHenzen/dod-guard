@@ -28,8 +28,8 @@ test("goal-sdlc reports parent and child completions only in the final report", 
   assert.match(
     skill,
     prose(
-      "When `/complete-pr` returns `conflict-triaged`,",
-      "go to `/submit-draft-pr` for the new head, not to the completion owner.",
+      "When `dod-guard:complete-pr` returns `conflict-triaged`,",
+      "go to `dod-guard:submit-draft-pr` for the new head, not to the completion owner.",
     ),
   );
   for (const phrase of [

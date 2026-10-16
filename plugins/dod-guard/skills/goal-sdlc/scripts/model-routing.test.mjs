@@ -235,7 +235,7 @@ test("a runtime MCP proof is made by the dispatcher", () => {
     standard,
     [
       "No tier agent holds an MCP connector",
-      "A proof that calls a runtime MCP tool, as `/next-ticket` describes for a game, an app, or an emulator,",
+      "A proof that calls a runtime MCP tool, as `dod-guard:next-ticket` describes for a game, an app, or an emulator,",
       "is a misrouted step for the agent that reaches it",
       "Its dispatcher, which holds the session's own MCP tools, makes that call on its own thread",
       "passes the result in the brief when the same stage resumes at its checkpoint",
@@ -253,8 +253,8 @@ const COMMIT_OWNERSHIP = [
     "attribution trailer, and pushes when the owning skill pushes.",
   "A worker dispatched for one planned step or row never commits or pushes, " +
     "whatever its tier or agent; the dispatching main thread does.",
-  "A run that owns a skill's procedure, such as `/complete-pr` or " +
-    "`/fix-pr-review`, is that skill's main thread even on the cheap model, " +
+  "A run that owns a skill's procedure, such as `dod-guard:complete-pr` or " +
+    "`dod-guard:fix-pr-review`, is that skill's main thread even on the cheap model, " +
     "so it commits and pushes as the skill directs",
   "its dispatcher checks every commit and push it reports by reading them " + "back.",
   "A failed check sends the same stage back once with the exact gap, under " +

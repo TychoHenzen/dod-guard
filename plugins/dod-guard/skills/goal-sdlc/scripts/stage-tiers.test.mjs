@@ -1,6 +1,7 @@
-// The stage-table surfaces of the owner's tier principle (issue 958): which
-// cheap rows run on the skill-capable worker, the merge_conflict handoff, and
-// the rerun rule. The table itself is pinned in goal-sdlc-contract.test.mjs.
+// The stage-table surfaces of the owner's tier principle (issue 958): the
+// merge_conflict handoff and the rerun rule. The table itself, with the agent
+// and skill of every row, is pinned in goal-sdlc-contract.test.mjs and
+// delegation-names.test.mjs.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -16,18 +17,15 @@ function assertPhrases(text, phrases) {
   }
 }
 
-test("goal-sdlc runs cheap skill-capable rows on the haiku stage worker", () => {
+test("goal-sdlc reruns a row at that row's tier", () => {
   assertPhrases(skill, [
-    "A cheap row that needs a skill or a GitHub write",
-    "(`/submit-draft-pr`, the `/review-pr` owner thread, `/complete-pr`, and",
-    "`/add-backlog-idea`) runs on `dod-guard:stage-cheap-skill`.",
-    "A rerun of any row, such as a refreshed handoff or a second `/complete-pr`, takes that row's tier.",
+    "A rerun of any row, such as a refreshed handoff or a second `dod-guard:complete-pr`, takes that row's tier.",
   ]);
 });
 
 test("a cheap-model complete-pr stops at merge_conflict and the triage rule has one owner", () => {
   assertPhrases(skill, [
-    "A `/complete-pr` run on the cheap model stops at `merge_conflict`, and this thread",
+    "A `dod-guard:complete-pr` run on the cheap model stops at `merge_conflict`, and this thread",
     "then runs the conflict triage as its own stage, as `standards/conflict-triage.md` says.",
   ]);
   assertPhrases(completePr, [
@@ -38,7 +36,7 @@ test("a cheap-model complete-pr stops at merge_conflict and the triage rule has 
   ]);
   assertPhrases(triage, [
     "unless that run is on the cheap model:",
-    "a cheap-model `/complete-pr` run stops at `merge_conflict` and reports the stop",
+    "a cheap-model `dod-guard:complete-pr` run stops at `merge_conflict` and reports the stop",
     "to its dispatcher, which runs the triage as its own stage.",
     "that thread is the `dod-guard:stage-standard`",
     "stage worker at the standard tier",
