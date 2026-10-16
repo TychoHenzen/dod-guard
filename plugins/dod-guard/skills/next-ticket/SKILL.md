@@ -190,18 +190,25 @@ For a structured PBI, map each task to the changed files, commit, and fresh
 verification evidence in the completion report. Do not report a task complete
 when its requirement is contradicted or its evidence is missing.
 
-When the task list has more than one task, run each task in order as one step
+Dispatch every task, including the single task of a one-task PBI, to
+`dod-guard:stage-cheap` from a step plan you wrote. When the task list has more
+than one task, run each task in order as one step
 of [dod-guard:step-by-step](../step-by-step/SKILL.md), passing the task list
 as a calling-skill plan with a commit per step: one fresh subagent per task.
 Before dispatching a task, write its step plan to a scratch file outside the
 repository: for each step the file, the edit (symbol and intent), the test to
 add or change (name and assertion), the validation command, and the expected
-result. Use fenced code blocks only, and keep each batch small. Implementing
-the task from that plan uses the cheap tier, and running its validations or
+result. Use fenced code blocks only, and keep each batch small. Writing the
+plan uses the standard tier, and the plan carries every design decision.
+Implementing the task from that plan uses the cheap tier on
+`dod-guard:stage-cheap`, and running its validations or
 regenerating artifacts uses the cheap tier, as `standards/model-routing.md`
-defines them. Writing the plan uses the standard tier, and so does implementing
-a task that cannot be reduced to a written plan, on this thread. You may apply
-a small exact edit yourself instead of dispatching it. step-by-step's per-step
+defines them. Edit tracked files for implementation on this thread only after
+the task escalated: the cheap model failed its check twice, or reported the
+plan unappliable and correcting the plan did not close the gap, as the
+Escalation section of that standard says. Each task report names its dispatch
+(agent, model, and effort) or the escalation record that explains an owner
+edit; a report with neither is a failed check. step-by-step's per-step
 commit makes every verified task a durable checkpoint before the next task
 starts.
 
