@@ -64,9 +64,18 @@ $codexPlugin = [pscustomobject]@{
   enabled = $true
   installed = $true
 }
+if ($env:DOD_GUARD_FIXTURE_ROOT) {
+  $marketplaceSource = [pscustomobject]@{ sourceType = 'git'; source = 'https://github.com/TychoHenzen/dod-guard.git' }
+  $localSource = [pscustomobject]@{ source = 'local'; path = $env:DOD_GUARD_FIXTURE_ROOT }
+  $codexPlugin | Add-Member -NotePropertyName source -NotePropertyValue $localSource
+  $codexPlugin | Add-Member -NotePropertyName marketplaceSource -NotePropertyValue $marketplaceSource
+}
 $codexRegistry = @{ installed = @($codexPlugin) } | ConvertTo-Json -Depth 10 -Compress
 $claudePlugin = [pscustomobject]@{ id = 'dod-guard@dod-guard'; version = $version; enabled = $true }
-$claudeRegistry = @($claudePlugin) | ConvertTo-Json -Depth 10 -Compress
+if ($env:DOD_GUARD_FIXTURE_ROOT) {
+  $claudePlugin | Add-Member -NotePropertyName installPath -NotePropertyValue $env:DOD_GUARD_FIXTURE_ROOT
+}
+$claudeRegistry = ConvertTo-Json -InputObject @($claudePlugin) -Depth 10 -Compress
 `;
 
 const RELEASE_3 = String.raw`$invokeCommand = {
@@ -90,11 +99,24 @@ const RELEASE_3 = String.raw`$invokeCommand = {
   }
   if ($Executable -eq 'gh') { return (& $answerGh $Arguments) }
   if ($Executable -eq 'codex' -and $Arguments[0] -eq 'plugin') {
+    if ($fixtureStage -eq 'codex-inventory-nonzero') {
+      return [pscustomobject]@{ ExitCode = 1; Output = $codexRegistry; Stderr = 'warning: marketplace broken' }
+    }
+    if ($fixtureStage -eq 'codex-inventory-nonzero-missing') {
+      return [pscustomobject]@{ ExitCode = 1; Output = '{"installed":[]}' }
+    }
+    if ($fixtureStage -eq 'codex-inventory-nonzero-malformed') {
+      return [pscustomobject]@{ ExitCode = 1; Output = 'warning: marketplace broken' }
+    }
     return [pscustomobject]@{ ExitCode = 0; Output = $codexRegistry }
   }
   if ($Executable -eq 'claude' -and $Arguments[0] -eq 'plugin') {
     if ($fixtureStage -eq 'inventory') { return [pscustomobject]@{ ExitCode = 9; Output = '' } }
     return [pscustomobject]@{ ExitCode = 0; Output = $claudeRegistry }
+  }
+  if ($Executable -eq 'node' -and $env:DOD_GUARD_FIXTURE_HELPER) {
+    $helperArguments = @($env:DOD_GUARD_FIXTURE_HELPER) + @($Arguments | Select-Object -Skip 1)
+    return (Invoke-ReleaseVerificationNativeCommand 'node' $helperArguments $InputText)
   }
   if ($Executable -eq 'node') { return (& $answerPreflight $Arguments[1]) }
   throw ('unexpected command: ' + $key)
@@ -166,11 +188,15 @@ $result = Invoke-ReleaseVerification @verificationArguments
 $result | ConvertTo-Json -Depth 20 -Compress
 `;
 
-export function runReleaseVerification(failureStage = "") {
+// With a fixture, the node command runs the real preflight-installation.mjs; see
+// release-verification.test.mjs for how the throwaway plugin root is built.
+export function runReleaseVerification(failureStage = "", fixture = undefined) {
   const harness = [RELEASE_1, RELEASE_2, RELEASE_3, RELEASE_4, RELEASE_5].join("");
   const result = runPowerShell(harness, {
     DOD_GUARD_RELEASE_VERIFICATION: releaseVerificationPath,
     DOD_GUARD_FAILURE_STAGE: failureStage,
+    DOD_GUARD_FIXTURE_ROOT: fixture?.root ?? "",
+    DOD_GUARD_FIXTURE_HELPER: fixture?.helper ?? "",
   });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   const lines = result.stdout.trim().split(/\r?\n/);

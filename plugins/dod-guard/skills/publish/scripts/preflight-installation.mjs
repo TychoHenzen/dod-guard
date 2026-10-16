@@ -16,6 +16,7 @@ function parseArguments(args) {
     let key;
     if (option === "--version") key = "version";
     if (option === "--skill-path") key = "path";
+    if (option === "--inventory-status") key = "inventoryStatus";
     const value = options[index + 1];
     if (!(key && value) || value.startsWith("--") || requested[key] !== undefined) {
       return { client, requested, error: `Invalid or duplicate argument: ${option}` };
@@ -25,6 +26,9 @@ function parseArguments(args) {
   }
   if (client !== "codex" && client !== "claude") {
     return { client, requested, error: "Client must be codex or claude" };
+  }
+  if (requested.inventoryStatus !== undefined && !/^\d+$/.test(requested.inventoryStatus)) {
+    return { client, requested, error: "Invalid --inventory-status: must be a non-negative integer" };
   }
   return { client, requested };
 }
@@ -387,16 +391,22 @@ async function resolveSkillPath(client, requested, installation, manifest) {
   return { skillPath };
 }
 
-async function preflight(args) {
-  const { client, requested } = args;
-  if (args.error) return failure(client, requested, args.error, { registry: "unavailable" });
+async function locateInstallation(client, requested) {
   const entries = await readRegistry(client, requested);
   if (!Array.isArray(entries)) return entries;
   const installation = selectRegistration(client, requested, entries);
   if (installation.ok === false) return installation;
   const pluginRoot = await resolvePluginRoot(client, requested, installation);
   if (typeof pluginRoot !== "string") return pluginRoot;
-  installation.pluginRoot = pluginRoot;
+  return { ...installation, pluginRoot };
+}
+
+async function resolvePreflight(args) {
+  const { client, requested } = args;
+  if (args.error) return failure(client, requested, args.error, { registry: "unavailable" });
+  const installation = await locateInstallation(client, requested);
+  if (installation.ok === false) return installation;
+  const { pluginRoot } = installation;
   const manifest = await readManifest(client, requested, installation, pluginRoot);
   if (manifest.ok === false) return manifest;
   const skill = await resolveSkillPath(client, requested, installation, manifest.manifest);
@@ -410,6 +420,21 @@ async function preflight(args) {
     pluginIdentity: installation.identity,
     identity: installation.identity,
     requested,
+  };
+}
+
+async function preflight(args) {
+  const result = await resolvePreflight(args);
+  const raw = args.requested?.inventoryStatus;
+  // ASSUMPTION: a parse error is reported alone; the inventory status is not applied to it.
+  if (raw === undefined || args.error) return result;
+  const status = Number(raw);
+  if (result.ok) return { ...result, inventoryStatus: status };
+  if (status === 0) return { ...result, observed: { ...result.observed, inventoryStatus: 0 } };
+  return {
+    ...result,
+    reason: `Inventory command exited with status ${status}; ${result.reason}`,
+    observed: { ...result.observed, inventoryStatus: status },
   };
 }
 
