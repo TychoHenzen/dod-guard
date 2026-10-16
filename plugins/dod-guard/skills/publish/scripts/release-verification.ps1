@@ -1,50 +1,4 @@
-function ConvertTo-ReleaseVerificationText {
-    param([AllowNull()][object[]]$Values)
-
-    $lines = @(
-        foreach ($value in @($Values)) {
-            [string]$value
-        }
-    )
-    if ($lines.Count -eq 0) {
-        return ""
-    }
-    return ($lines -join [Environment]::NewLine).Trim()
-}
-
-function Invoke-ReleaseVerificationNativeCommand {
-    param(
-        [Parameter(Mandatory = $true)][string]$Executable,
-        [Parameter(Mandatory = $true)][string[]]$Arguments,
-        [AllowNull()][string]$InputText
-    )
-
-    $ErrorActionPreference = 'Continue'
-    $output = @()
-    $global:LASTEXITCODE = 0
-    if ($null -eq $InputText) {
-        $output = @(& $Executable @Arguments 2>&1)
-    } else {
-        $output = @($InputText | & $Executable @Arguments 2>&1)
-    }
-    $exitCode = [int]$global:LASTEXITCODE
-
-    $stdoutItems = @()
-    $stderrItems = @()
-    foreach ($item in $output) {
-        if ($item -is [System.Management.Automation.ErrorRecord]) {
-            $stderrItems += $item.ToString()
-        } else {
-            $stdoutItems += $item
-        }
-    }
-
-    [pscustomobject]@{
-        ExitCode = $exitCode
-        Output = ConvertTo-ReleaseVerificationText $stdoutItems
-        Stderr = ConvertTo-ReleaseVerificationText $stderrItems
-    }
-}
+. "$PSScriptRoot/publish-native-command.ps1"
 
 function Get-ReleaseVerificationCommandText {
     param(
@@ -337,7 +291,7 @@ function Invoke-ReleaseVerification {
     if ($null -eq $InvokeCommand) {
         $InvokeCommand = {
             param([string]$Executable, [string[]]$Arguments, [AllowNull()][string]$InputText)
-            Invoke-ReleaseVerificationNativeCommand $Executable $Arguments $InputText
+            Invoke-PublishNativeCommand $Executable $Arguments $InputText
         }
     }
 

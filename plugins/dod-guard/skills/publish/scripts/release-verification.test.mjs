@@ -101,7 +101,7 @@ test("a non-zero codex inventory is judged by the real preflight helper", {
   }
 });
 
-test("the native command helper keeps stderr out of stdout and returns the real exit status", {
+test("the shared native command helper keeps stderr out of stdout and returns the real exit status", {
   skip: process.platform !== "win32",
 }, async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "dod-guard-release-native-"));
@@ -113,13 +113,14 @@ test("the native command helper keeps stderr out of stdout and returns the real 
       "\n",
     ),
   );
+  const publishNativeCommandPath = fileURLToPath(new URL("./publish-native-command.ps1", import.meta.url));
   const command = String.raw`$ErrorActionPreference = 'Stop'
-. $env:DOD_GUARD_RELEASE_VERIFICATION
-$result = Invoke-ReleaseVerificationNativeCommand node @($env:DOD_GUARD_NATIVE_SCRIPT) $null
+. $env:DOD_GUARD_NATIVE_COMMAND
+$result = Invoke-PublishNativeCommand node @($env:DOD_GUARD_NATIVE_SCRIPT) $null
 $result | ConvertTo-Json -Depth 5 -Compress
 `;
   const result = runPowerShell(command, {
-    DOD_GUARD_RELEASE_VERIFICATION: releaseVerificationPath,
+    DOD_GUARD_NATIVE_COMMAND: publishNativeCommandPath,
     DOD_GUARD_NATIVE_SCRIPT: script,
   });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);

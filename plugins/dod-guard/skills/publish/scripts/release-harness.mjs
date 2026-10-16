@@ -116,7 +116,7 @@ const RELEASE_3 = String.raw`$invokeCommand = {
   }
   if ($Executable -eq 'node' -and $env:DOD_GUARD_FIXTURE_HELPER) {
     $helperArguments = @($env:DOD_GUARD_FIXTURE_HELPER) + @($Arguments | Select-Object -Skip 1)
-    return (Invoke-ReleaseVerificationNativeCommand 'node' $helperArguments $InputText)
+    return (Invoke-PublishNativeCommand 'node' $helperArguments $InputText)
   }
   if ($Executable -eq 'node') { return (& $answerPreflight $Arguments[1]) }
   throw ('unexpected command: ' + $key)
