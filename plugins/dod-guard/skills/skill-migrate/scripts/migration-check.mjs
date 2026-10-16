@@ -290,14 +290,28 @@ function checkMemoryFrontmatter(fm, rawFm) {
   };
 }
 
+// Omitting `tools` is the runtime's own inherit-all form, so an agent that
+// means it says so with the dedicated `inheritAllTools: true` key. Without the
+// key, a missing tools line is a forgotten allowlist and still fails.
+
+function agentToolsOutcome(tools, inheritsAll) {
+  if (tools.length > 0 && inheritsAll)
+    return { pass: false, detail: "contradiction: tools line together with inheritAllTools: true" };
+  if (tools.length > 0) return { pass: true, detail: "tools declared" };
+  if (inheritsAll) return { pass: true, detail: "inherits every tool (inheritAllTools: true)" };
+  return { pass: false, detail: "no tools line" };
+}
+
 function checkAgentTools(fm) {
   const tools = (fm.tools ?? "").trim();
+  const inheritsAll = (fm.inheritAllTools ?? "").trim() === "true";
+  const { pass, detail } = agentToolsOutcome(tools, inheritsAll);
   return {
     id: "agent-tools",
     label: "Frontmatter declares tools",
-    value: tools.length > 0 ? tools : "absent",
-    pass: tools.length > 0,
-    detail: tools.length > 0 ? "tools declared" : "no tools line",
+    value: tools.length > 0 ? tools : inheritsAll ? "inherit-all" : "absent",
+    pass,
+    detail,
   };
 }
 

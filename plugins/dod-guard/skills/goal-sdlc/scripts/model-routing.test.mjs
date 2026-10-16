@@ -76,11 +76,14 @@ test(DISPATCH_TITLE, async () => {
   for (const agent of TIER_AGENTS) {
     const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
     const tools = source.match(/^tools: (.+)$/m)?.[1].split(", ");
+    const marker = /^inheritAllTools: true$/m.test(source);
     if (agent.name === "stage-standard") {
       assert.equal(tools, undefined, "stage-standard must inherit every tool");
+      assert.ok(marker, "stage-standard must carry inheritAllTools: true");
       continue;
     }
     assert.ok(tools && !tools.includes("Agent"), agent.name);
+    assert.equal(marker, false, `${agent.name} must not carry inheritAllTools`);
   }
   for (const phrase of [
     "Only the thread that owns a skill's procedure dispatches its subagents.",

@@ -737,6 +737,43 @@ describe("migration-check", () => {
     assert.equal(out.pass, true, `Expected pass: ${out.detail}`);
   });
 
+  const agentToolsCheck = (file, extra) => {
+    const path = writeSkill(file, [
+      "---",
+      "name: agent-z",
+      "description: Does something. Use when asked.",
+      ...extra,
+      "---",
+      "",
+      "Scope: one file.",
+      "",
+    ]);
+    const r = run([path, "--kind=agent", "--json"]);
+    return JSON.parse(r.stdout).checks.find((c) => c.id === "agent-tools");
+  };
+
+  it("agent-tools passes when there is no tools line and inheritAllTools is true", () => {
+    const out = agentToolsCheck("agent-inherit.md", ["inheritAllTools: true"]);
+    assert.equal(out.pass, true, out.detail);
+  });
+
+  it("agent-tools still fails with no marker or inheritAllTools false", () => {
+    assert.equal(agentToolsCheck("agent-no-marker.md", []).pass, false);
+    assert.equal(agentToolsCheck("agent-marker-false.md", ["inheritAllTools: false"]).pass, false);
+    assert.equal(agentToolsCheck("agent-empty-tools.md", ["tools:"]).pass, false);
+  });
+
+  it("agent-tools fails as contradictory when tools and inheritAllTools: true both appear", () => {
+    const out = agentToolsCheck("agent-contradiction.md", ["tools: Read, Edit", "inheritAllTools: true"]);
+    assert.equal(out.pass, false);
+    assert.match(out.detail, /contradiction/);
+  });
+
+  it("agent-tools passes an empty tools value together with inheritAllTools: true", () => {
+    const out = agentToolsCheck("agent-empty-inherit.md", ["tools:", "inheritAllTools: true"]);
+    assert.equal(out.pass, true, out.detail);
+  });
+
   it("a skill-kind run reports neither memory-frontmatter nor agent-tools", () => {
     const { checks } = runJson(join(dir, "good.md"));
     assert.equal(
