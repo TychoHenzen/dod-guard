@@ -249,9 +249,8 @@ the question text in the saved plan and rebuild. A scanner group never moves
 to another file: when its file has no added line, the review body lists it
 under its own file and line, with no `GH-<id>`. A judged finding whose cited
 line this PR did not add moves to the nearest added line of its file, or to
-the first added line when it cites a file outside the diff, and its
-body names the
-cited location. Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A
+the first added line when its file has no added line (including a file
+outside the diff), and its body names the cited location. Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A
 file's scanner findings are `MAJOR` when any is `high`, otherwise `MINOR`.
 Recommendation: any `BLOCKER` is `BLOCK`, any
 `MAJOR` is `REQUEST_CHANGES`, and only `MINOR` findings or none is `APPROVE`.
