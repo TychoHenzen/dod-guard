@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPowerShell } from "./maintenance-harness.mjs";
 
@@ -64,9 +67,18 @@ $codexPlugin = [pscustomobject]@{
   enabled = $true
   installed = $true
 }
+if ($env:DOD_GUARD_FIXTURE_ROOT) {
+  $marketplaceSource = [pscustomobject]@{ sourceType = 'git'; source = 'https://github.com/TychoHenzen/dod-guard.git' }
+  $localSource = [pscustomobject]@{ source = 'local'; path = $env:DOD_GUARD_FIXTURE_ROOT }
+  $codexPlugin | Add-Member -NotePropertyName source -NotePropertyValue $localSource
+  $codexPlugin | Add-Member -NotePropertyName marketplaceSource -NotePropertyValue $marketplaceSource
+}
 $codexRegistry = @{ installed = @($codexPlugin) } | ConvertTo-Json -Depth 10 -Compress
 $claudePlugin = [pscustomobject]@{ id = 'dod-guard@dod-guard'; version = $version; enabled = $true }
-$claudeRegistry = @($claudePlugin) | ConvertTo-Json -Depth 10 -Compress
+if ($env:DOD_GUARD_FIXTURE_ROOT) {
+  $claudePlugin | Add-Member -NotePropertyName installPath -NotePropertyValue $env:DOD_GUARD_FIXTURE_ROOT
+}
+$claudeRegistry = ConvertTo-Json -InputObject @($claudePlugin) -Depth 10 -Compress
 `;
 
 const RELEASE_3 = String.raw`$invokeCommand = {
@@ -105,7 +117,11 @@ const RELEASE_3 = String.raw`$invokeCommand = {
     if ($fixtureStage -eq 'inventory') { return [pscustomobject]@{ ExitCode = 9; Output = '' } }
     return [pscustomobject]@{ ExitCode = 0; Output = $claudeRegistry }
   }
-  if ($Executable -eq 'node') { return (& $answerPreflight $Arguments[1] $Arguments $InputText) }
+  if ($Executable -eq 'node' -and $env:DOD_GUARD_FIXTURE_HELPER) {
+    $helperArguments = @($env:DOD_GUARD_FIXTURE_HELPER) + @($Arguments | Select-Object -Skip 1)
+    return (Invoke-ReleaseVerificationNativeCommand 'node' $helperArguments $InputText)
+  }
+  if ($Executable -eq 'node') { return (& $answerPreflight $Arguments[1]) }
   throw ('unexpected command: ' + $key)
 }
 `;
@@ -133,15 +149,7 @@ const RELEASE_4 = String.raw`$answerGh = {
 `;
 
 const RELEASE_5 = String.raw`$answerPreflight = {
-  param([string]$Client, [string[]]$Arguments, [AllowNull()][string]$InputText)
-  $inventoryIndex = [array]::IndexOf($Arguments, '--inventory-status')
-  if ($inventoryIndex -ge 0 -and $Arguments[$inventoryIndex + 1] -ne '0') {
-    $inventory = $null
-    try { $inventory = $InputText | ConvertFrom-Json } catch { $inventory = $null }
-    if ($null -eq $inventory -or $null -eq $inventory.installed -or @($inventory.installed | Where-Object { $_.name -eq 'dod-guard' }).Count -eq 0) {
-      return [pscustomobject]@{ ExitCode = 1; Output = '' }
-    }
-  }
+  param([string]$Client)
   if ($fixtureStage -eq 'preflight-malformed' -and $Client -eq 'codex') {
     return [pscustomobject]@{ ExitCode = 0; Output = '{' }
   }
@@ -183,11 +191,32 @@ $result = Invoke-ReleaseVerification @verificationArguments
 $result | ConvertTo-Json -Depth 20 -Compress
 `;
 
-export function runReleaseVerification(failureStage = "") {
+// With a fixture, the node command runs the real preflight-installation.mjs copied into a
+// throwaway plugin root, so the inventory-status rule under test is not re-implemented here.
+export async function createRealHelperFixture(t) {
+  const root = await mkdtemp(join(tmpdir(), "dod-guard-release-helper-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const helper = join(root, "skills", "publish", "scripts", "preflight-installation.mjs");
+  const manifest = JSON.stringify({ name: "dod-guard", version: "5.4.56" });
+  await mkdir(join(root, "skills", "publish", "scripts"), { recursive: true });
+  await mkdir(join(root, ".codex-plugin"), { recursive: true });
+  await mkdir(join(root, ".claude-plugin"), { recursive: true });
+  await Promise.all([
+    copyFile(fileURLToPath(new URL("./preflight-installation.mjs", import.meta.url)), helper),
+    writeFile(join(root, "skills", "publish", "SKILL.md"), "# publish fixture\n"),
+    writeFile(join(root, ".codex-plugin", "plugin.json"), manifest),
+    writeFile(join(root, ".claude-plugin", "plugin.json"), manifest),
+  ]);
+  return { root, helper };
+}
+
+export function runReleaseVerification(failureStage = "", fixture = undefined) {
   const harness = [RELEASE_1, RELEASE_2, RELEASE_3, RELEASE_4, RELEASE_5].join("");
   const result = runPowerShell(harness, {
     DOD_GUARD_RELEASE_VERIFICATION: releaseVerificationPath,
     DOD_GUARD_FAILURE_STAGE: failureStage,
+    DOD_GUARD_FIXTURE_ROOT: fixture?.root ?? "",
+    DOD_GUARD_FIXTURE_HELPER: fixture?.helper ?? "",
   });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   const lines = result.stdout.trim().split(/\r?\n/);

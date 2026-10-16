@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { parsePowerShellFile, runPowerShell } from "./maintenance-harness.mjs";
-import { releaseVerificationPath, runReleaseVerification } from "./release-harness.mjs";
+import { createRealHelperFixture, releaseVerificationPath, runReleaseVerification } from "./release-harness.mjs";
 
 test("release verification parses and proves the complete read-only evidence boundary", {
   skip: process.platform !== "win32",
@@ -34,7 +34,8 @@ test("release verification parses and proves the complete read-only evidence bou
 
 test("release verification fails closed before parsing incomplete or mismatched evidence", {
   skip: process.platform !== "win32",
-}, () => {
+}, async (t) => {
+  const realHelper = await createRealHelperFixture(t);
   const cases = [
     ["command", /git-head failed with exit code 7/, "git-head", 7],
     ["head", /current Git HEAD/, "git-head", 0],
@@ -47,30 +48,37 @@ test("release verification fails closed before parsing incomplete or mismatched 
     ["identity", /Codex registration identity/, "codex-preflight", 0],
     ["preflight-malformed", /codex installation preflight returned malformed JSON/, "codex-preflight", 0],
     ["inventory", /claude-preflight failed with exit code 1/, "claude-inventory", 9],
-    ["codex-inventory-nonzero-missing", /codex-preflight failed with exit code 1/, "codex-inventory", 1],
-    ["codex-inventory-nonzero-malformed", /codex-preflight failed with exit code 1/, "codex-inventory", 1],
   ];
   for (const [failureStage, errorPattern, commandName, exitCode] of cases) {
-    const outcome = runReleaseVerification(failureStage);
+    const fixture = failureStage === "inventory" ? realHelper : undefined;
+    const outcome = runReleaseVerification(failureStage, fixture);
     assert.equal(outcome.Success, false, failureStage);
     assert.match(outcome.Error, errorPattern, failureStage);
     assert.equal(outcome.Commands[commandName].ExitCode, exitCode, failureStage);
     if (failureStage === "inventory") assert.equal(outcome.Stage, "claude-preflight", failureStage);
-    if (failureStage.startsWith("codex-inventory-nonzero"))
-      assert.equal(outcome.Stage, "codex-preflight", failureStage);
   }
 });
 
-test("a non-zero codex inventory is tolerated only when the helper accepts the captured registry", {
+test("a non-zero codex inventory is judged by the real preflight helper", {
   skip: process.platform !== "win32",
-}, () => {
-  const outcome = runReleaseVerification("codex-inventory-nonzero");
-  assert.equal(outcome.Success, true, outcome.Error);
-  assert.equal(outcome.Stage, "complete");
-  assert.equal(outcome.Commands["codex-inventory"].ExitCode, 1);
-  assert.equal(outcome.Commands["codex-inventory"].StderrPresent, true);
-  assert.equal(outcome.Clients.codex.InventoryStatus, 1);
-  assert.equal(outcome.Clients.codex.PluginIdentity.pluginId, "dod-guard@dod-guard-monorepo");
+}, async (t) => {
+  const fixture = await createRealHelperFixture(t);
+
+  const tolerated = runReleaseVerification("codex-inventory-nonzero", fixture);
+  assert.equal(tolerated.Success, true, tolerated.Error);
+  assert.equal(tolerated.Stage, "complete");
+  assert.equal(tolerated.Commands["codex-inventory"].ExitCode, 1);
+  assert.equal(tolerated.Commands["codex-inventory"].StderrPresent, true);
+  assert.equal(tolerated.Clients.codex.InventoryStatus, 1);
+  assert.equal(tolerated.Clients.codex.PluginIdentity.pluginId, "dod-guard@dod-guard-monorepo");
+
+  for (const failureStage of ["codex-inventory-nonzero-missing", "codex-inventory-nonzero-malformed"]) {
+    const rejected = runReleaseVerification(failureStage, fixture);
+    assert.equal(rejected.Success, false, failureStage);
+    assert.equal(rejected.Stage, "codex-preflight", failureStage);
+    assert.match(rejected.Error, /codex-preflight failed with exit code 1/, failureStage);
+    assert.equal(rejected.Commands["codex-inventory"].ExitCode, 1, failureStage);
+  }
 });
 
 test("the native command helper keeps stderr out of stdout and returns the real exit status", {

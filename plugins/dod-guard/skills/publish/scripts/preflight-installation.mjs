@@ -391,16 +391,22 @@ async function resolveSkillPath(client, requested, installation, manifest) {
   return { skillPath };
 }
 
-async function resolvePreflight(args) {
-  const { client, requested } = args;
-  if (args.error) return failure(client, requested, args.error, { registry: "unavailable" });
+async function locateInstallation(client, requested) {
   const entries = await readRegistry(client, requested);
   if (!Array.isArray(entries)) return entries;
   const installation = selectRegistration(client, requested, entries);
   if (installation.ok === false) return installation;
   const pluginRoot = await resolvePluginRoot(client, requested, installation);
   if (typeof pluginRoot !== "string") return pluginRoot;
-  installation.pluginRoot = pluginRoot;
+  return { ...installation, pluginRoot };
+}
+
+async function resolvePreflight(args) {
+  const { client, requested } = args;
+  if (args.error) return failure(client, requested, args.error, { registry: "unavailable" });
+  const installation = await locateInstallation(client, requested);
+  if (installation.ok === false) return installation;
+  const { pluginRoot } = installation;
   const manifest = await readManifest(client, requested, installation, pluginRoot);
   if (manifest.ok === false) return manifest;
   const skill = await resolveSkillPath(client, requested, installation, manifest.manifest);
@@ -420,7 +426,7 @@ async function resolvePreflight(args) {
 async function preflight(args) {
   const result = await resolvePreflight(args);
   const raw = args.requested?.inventoryStatus;
-  // ASSUMPTION: when argument parsing already failed, the parse error is the only reason reported; the status is not applied to it.
+  // ASSUMPTION: a parse error is reported alone; the inventory status is not applied to it.
   if (raw === undefined || args.error) return result;
   const status = Number(raw);
   if (result.ok) return { ...result, inventoryStatus: status };

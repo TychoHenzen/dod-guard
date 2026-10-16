@@ -322,35 +322,30 @@ test("inventory status 0 behaves as before", async (t) => {
   }
 });
 
+function wrapRegistry(client, entries) {
+  return client === "codex" ? { installed: entries } : entries;
+}
+
+function rejectedRegistrations(client, pluginRoot) {
+  const [entry] = client === "codex" ? registryFor(client, pluginRoot).installed : registryFor(client, pluginRoot);
+  const wrongIdentity =
+    client === "codex" ? { marketplaceName: "other-marketplace" } : { id: "dod-guard@other-marketplace" };
+  const cases = [
+    { name: "missing registration", registry: wrapRegistry(client, []) },
+    { name: "duplicate registrations", registry: wrapRegistry(client, [entry, structuredClone(entry)]) },
+    { name: "disabled registration", registry: registryFor(client, pluginRoot, { enabled: false }) },
+    { name: "wrong identity", registry: registryFor(client, pluginRoot, wrongIdentity) },
+  ];
+  if (client === "codex") {
+    cases.push({ name: "uninstalled registration", registry: registryFor(client, pluginRoot, { installed: false }) });
+  }
+  return cases;
+}
+
 test("non-zero inventory status still rejects bad registrations and names the status", async (t) => {
   for (const client of ["codex", "claude"]) {
     const fixture = await createInstall(t, client);
-    const valid = registryFor(client, fixture.pluginRoot);
-    const entry = client === "codex" ? valid.installed[0] : valid[0];
-    const cases = [
-      { name: "missing registration", registry: client === "codex" ? { installed: [] } : [] },
-      {
-        name: "duplicate registrations",
-        registry: client === "codex" ? { installed: [entry, structuredClone(entry)] } : [entry, structuredClone(entry)],
-      },
-      { name: "disabled registration", registry: registryFor(client, fixture.pluginRoot, { enabled: false }) },
-      {
-        name: "wrong identity",
-        registry: registryFor(
-          client,
-          fixture.pluginRoot,
-          client === "codex" ? { marketplaceName: "other-marketplace" } : { id: "dod-guard@other-marketplace" },
-        ),
-      },
-    ];
-    if (client === "codex") {
-      cases.push({
-        name: "uninstalled registration",
-        registry: registryFor(client, fixture.pluginRoot, { installed: false }),
-      });
-    }
-
-    for (const item of cases) {
+    for (const item of rejectedRegistrations(client, fixture.pluginRoot)) {
       const result = runPreflight(fixture, client, item.registry, ["--inventory-status", "3"]);
       assertRejected(result, /Inventory command exited with status 3;/, `${client}: ${item.name}`);
       assert.equal(result.response.observed.inventoryStatus, 3, `${client}: ${item.name}`);
