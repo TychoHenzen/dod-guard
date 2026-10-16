@@ -4,7 +4,7 @@ description: Carry out one cheap-tier lifecycle stage that needs a skill or a Gi
 model: haiku
 tools: Read, Grep, Glob, Bash, PowerShell, Edit, Write, Agent, Skill, SendMessage, WebSearch, WebFetch
 effort: medium
-autoCompactWindow: 110000
+autoCompactWindow: 200000
 codex_effort: max
 ---
 

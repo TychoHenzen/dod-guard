@@ -34,14 +34,17 @@ test("each tier agent pins its model and effort for Claude Code and Codex", asyn
 });
 
 // Haiku charges five times more for a request whose prompt passes 100,000
-// tokens, so the haiku workers compact below that line. Claude Code reads
-// autoCompactWindow only as a plain integer from 100000 to 1000000 and ignores
-// a value such as `200k`, so the test pins the digits. The window is the lower
-// of this field and the user's per-model window, which a probe on Claude Code
-// 2.1.299 confirmed for a subagent run under a model override.
+// tokens, so the lean haiku workers compact below that line. The skill-capable
+// haiku worker starts near 58,000 tokens and compacts at window minus 33,000, so
+// a window of 110000 left it 19,000 tokens of room and it died thrashing; it
+// declares 200000. Claude Code reads autoCompactWindow only as a plain integer
+// from 100000 to 1000000 and ignores a value such as `200k`, so the test pins the
+// digits. The window is the lower of this field and the user's per-model window,
+// which a probe on Claude Code 2.1.299 confirmed for a subagent run under a model
+// override.
 const COMPACT_WINDOWS = {
   "stage-cheap": 110_000,
-  "stage-cheap-skill": 110_000,
+  "stage-cheap-skill": 200_000,
   "read-cheap": 110_000,
   "stage-standard": 250_000,
 };
@@ -58,14 +61,21 @@ test("long-running agents declare a plain-integer autoCompactWindow", async () =
   }
   for (const phrase of [
     "Haiku 5.5 charges five times more for every request whose prompt passes 100,000 tokens",
-    "A Claude Code agent compacts at the lower of its `autoCompactWindow` frontmatter field " +
+    "A Haiku request over that line still costs about half as much as a Sonnet request of the same size",
+    "A Claude Code agent compacts when its context reaches its window minus 33,000 tokens",
+    "Its window is the lower of its `autoCompactWindow` frontmatter field " +
       "and the window of the model it runs on",
     "The field is a plain integer of tokens from 100000 to 1000000",
-    "The three Haiku agents, `dod-guard:stage-cheap`, `dod-guard:stage-cheap-skill`, and " +
-      "`dod-guard:read-cheap`, declare 110000",
-    "whatever window the user has set for Haiku",
+    "A window must leave room above the start size of the agent",
+    'the run ends with the error "Autocompact is thrashing"',
+    "The lean Haiku agents, `dod-guard:stage-cheap` and `dod-guard:read-cheap`, " +
+      "start near 30,000 tokens and declare 110000",
+    "The skill-capable Haiku agent, `dod-guard:stage-cheap-skill`, starts near 58,000 tokens",
+    "so it declares 200000 and compacts at 167,000 tokens",
+    "The user's window for Haiku must be at least 200000 for that value to apply",
     "`dod-guard:stage-standard` declares 250000",
-    "One agent cannot declare both windows, which is why the cheap tier has its own skill-capable agent",
+    "One agent cannot declare both a Sonnet window and a Haiku window, " +
+      "which is why the cheap tier has its own skill-capable agent",
     "The `CLAUDE_CODE_AUTO_COMPACT_WINDOW` environment variable overrides all of these",
   ]) {
     assert.match(standard, prose(phrase), phrase);
