@@ -2,32 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { scannerCandidates } from "./finding-ids.mjs";
-import { buildReview } from "./review-findings.mjs";
-import { complete, findingsFixture } from "./review-pr.test-support.mjs";
-import { slotsByLens } from "./review-slots.mjs";
-import { parseChangedLines } from "./unified-diff.mjs";
-
-const { HEAD, PBI, question, hunk } = findingsFixture;
-const LENSES = ["feature", "design", "reliability", "hygiene"].map((lens) => `review-pr-${lens}`);
-
-// One added line per file, one scanner check question per file slot listing
-// that file's S ids, and every lens asked about the criterion so no judge idles.
-function scannerReview({ files, line, violations, rule }) {
-  const diff = files.flatMap((file) => hunk(file, line)).join("\n");
-  const candidates = scannerCandidates({ violations }, parseChangedLines(diff));
-  const idsOf = (file) => candidates.filter((item) => item.file === file).map(({ id }) => id);
-  const slot = (file, index) => {
-    const asked = { ...question(`Q${index + 1}`, "review-pr-hygiene"), files: [file] };
-    return { slot: `file:${file}`, questions: [{ ...asked, scanner: idsOf(file) }] };
-  };
-  const criterion = LENSES.map((lens, index) => question(`C${index + 1}`, lens));
-  const plan = [...files.map(slot), { slot: "criterion:1", questions: criterion }];
-  const results = complete([], slotsByLens(plan));
-  const scanner = files.map((file, index) => rule(idsOf(file), index));
-  const inputs = { headSha: HEAD, scan: { violations }, diff, plan, pbi: PBI, subIssues: [] };
-  return buildReview({ ...inputs, results, merge: { groups: [], scanner } });
-}
+import { scannerReview } from "./scanner-review.test-support.mjs";
 
 // PR #933: a line the PR added at the reviewed head was 121 characters long.
 test("the #933 line-length violation ruled KEEP posts MAJOR under the unchanged rule", () => {
