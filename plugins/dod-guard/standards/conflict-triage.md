@@ -11,9 +11,12 @@ tier each stage uses. `/complete-pr` owns the trigger.
 The triage runs when the `/complete-pr` helper stops with `merge_conflict` on
 an open pull request whose head is the trusted PBI head. It never runs for a
 fork head, a base other than the default branch, or a pull request that is not
-open. The thread that runs `/complete-pr` owns the triage. When
-`dod-guard:goal-sdlc` runs it, that thread is the `dod-guard:stage-standard`
-stage worker, as "Who dispatches" in `standards/model-routing.md` says.
+open. The thread that runs `/complete-pr` owns the triage, unless that run is
+on the cheap model: a cheap-model `/complete-pr` run stops at `merge_conflict`
+and reports the stop to its dispatcher, which runs the triage as its own stage.
+When `dod-guard:goal-sdlc` runs it, that thread is the `dod-guard:stage-standard`
+stage worker at the standard tier, as "Who dispatches" in
+`standards/model-routing.md` says.
 
 The git steps run through `scripts/conflict-triage.mjs` in the complete-pr
 skill directory. Keep its state file and every input file in the caller's

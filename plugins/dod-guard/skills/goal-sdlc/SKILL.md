@@ -78,21 +78,34 @@ owner, as `standards/model-routing.md` says. Each row runs at this tier:
 | Stage | Tier |
 |---|---|
 | Queue snapshot read | cheap |
+| Refinement: owner thread (dispatch, verify, labels, Todo) | standard |
 | Refinement: plan research questions | standard |
 | Refinement: investigate code, callers, and tests | cheap |
 | Refinement: decide classification and criteria | standard |
+| `/next-ticket`: owner thread (start ticket, matrix, preflight, handoff) | standard |
 | `/next-ticket`: write the step plan for one task | standard |
 | `/next-ticket`: implement one task from its plan | cheap |
 | `/next-ticket`: run validations and regenerate artifacts | cheap |
-| `/submit-draft-pr` | standard |
+| `/submit-draft-pr` | cheap |
+| `/review-pr`: owner thread (scripts, dispatch, citation checks, build, post) | cheap |
 | `/review-pr`: plan | standard |
 | `/review-pr`: investigate | cheap |
-| `/review-pr`: judge | standard |
-| `/fix-pr-review` | standard |
+| `/review-pr`: judge and merge pass | standard |
+| `/fix-pr-review`: owner thread (revalidate, classify, plan fixes, verify, reply) | standard |
 | `/fix-pr-review`: apply a written per-finding fix | cheap |
-| `/complete-pr`: guarded merge and Project finalization | standard |
+| `/complete-pr`: guarded merge and Project finalization | cheap |
+| Merge conflict triage: owner thread, plan, and judge | standard |
+| Merge conflict triage: investigate and apply | cheap |
 | `/add-backlog-idea`, including the friction log | cheap |
-| Merge conflict on a PBI head | per `standards/conflict-triage.md`; unresolvable conflicts stop and report, and a verified push re-enters at `/submit-draft-pr` |
+
+A cheap row that needs a skill, a GitHub write, or an MCP connector
+(`/submit-draft-pr`, the `/review-pr` owner thread, `/complete-pr`, and
+`/add-backlog-idea`) runs on `dod-guard:stage-standard` with `model: haiku`. A
+`/complete-pr` run on the cheap model stops at `merge_conflict` and reports the
+stop; this thread then runs the conflict triage as its own stage, owned by a
+`dod-guard:stage-standard` worker at the standard tier, as
+`standards/conflict-triage.md` says. A rerun of any row, such as a refreshed
+handoff or a second `/complete-pr`, takes that row's tier.
 
 Dispatch each row as `standards/model-routing.md` says: pass its model and
 effort to the Agent call in Claude Code, or use the registered tier agent in

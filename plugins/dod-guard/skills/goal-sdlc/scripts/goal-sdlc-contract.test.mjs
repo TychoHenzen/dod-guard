@@ -86,10 +86,11 @@ test("goal-sdlc keeps its sections short and its own", () => {
     "## Reporting",
     "## Stop condition",
   ]);
-  // 167: the plan and fix-apply rows and the escalation sentence (#944) spent
-  // the five lines of headroom above the earlier 162.
+  // 180: the plan and fix-apply rows and the escalation sentence (#944) spent
+  // the headroom above 162; the owner-thread and triage rows (#958) added
+  // thirteen more lines.
   const lineCount = skill.split("\n").length;
-  assert.ok(lineCount <= 167, "goal-sdlc grew past an orchestrator");
+  assert.ok(lineCount <= 180, "goal-sdlc grew past an orchestrator");
   // Rules that belong to an owner must not come back here.
   for (const owned of [
     "## Acceptance matrix",
@@ -161,19 +162,24 @@ test("goal-sdlc keeps one daily friction log and a strict stop", () => {
 
 const ROUTES = [
   ["Queue snapshot read", "cheap"],
+  ["Refinement: owner thread (dispatch, verify, labels, Todo)", "standard"],
   ["Refinement: plan research questions", "standard"],
   ["Refinement: investigate code, callers, and tests", "cheap"],
   ["Refinement: decide classification and criteria", "standard"],
+  ["`/next-ticket`: owner thread (start ticket, matrix, preflight, handoff)", "standard"],
   ["`/next-ticket`: write the step plan for one task", "standard"],
   ["`/next-ticket`: implement one task from its plan", "cheap"],
   ["`/next-ticket`: run validations and regenerate artifacts", "cheap"],
-  ["`/submit-draft-pr`", "standard"],
+  ["`/submit-draft-pr`", "cheap"],
+  ["`/review-pr`: owner thread (scripts, dispatch, citation checks, build, post)", "cheap"],
   ["`/review-pr`: plan", "standard"],
   ["`/review-pr`: investigate", "cheap"],
-  ["`/review-pr`: judge", "standard"],
-  ["`/fix-pr-review`", "standard"],
+  ["`/review-pr`: judge and merge pass", "standard"],
+  ["`/fix-pr-review`: owner thread (revalidate, classify, plan fixes, verify, reply)", "standard"],
   ["`/fix-pr-review`: apply a written per-finding fix", "cheap"],
-  ["`/complete-pr`: guarded merge and Project finalization", "standard"],
+  ["`/complete-pr`: guarded merge and Project finalization", "cheap"],
+  ["Merge conflict triage: owner thread, plan, and judge", "standard"],
+  ["Merge conflict triage: investigate and apply", "cheap"],
   ["`/add-backlog-idea`, including the friction log", "cheap"],
 ];
 // Effort is not repeated here: each tier agent's frontmatter owns it.
@@ -194,14 +200,7 @@ function routingRows(text) {
 
 test("goal-sdlc routes every stage to one tier", () => {
   const rows = routingRows(skill);
-  assert.deepEqual(rows, [
-    ...ROUTES.map(([stage, tier]) => [stage, tier]),
-    [
-      "Merge conflict on a PBI head",
-      "per `standards/conflict-triage.md`; unresolvable conflicts stop and report, " +
-        "and a verified push re-enters at `/submit-draft-pr`",
-    ],
-  ]);
+  assert.deepEqual(rows, ROUTES);
   assert.match(skill, prose("Each stage runs in one fresh subagent as one step of"));
   assert.match(skill, prose("A stage's split rows are dispatched by its owner"));
   assert.match(skill, prose("Dispatch each row as `standards/model-routing.md` says"));
