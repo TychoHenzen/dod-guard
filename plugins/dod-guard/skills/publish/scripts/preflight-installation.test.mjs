@@ -299,3 +299,83 @@ test("the skill blocks release work on preflight failure and documents exact cal
   assert.match(usage, /path=<absolute-path-to-skills\/publish\/SKILL\.md>/);
   assert.match(usage, /The path\s+pin is the skill file, not its plugin root/);
 });
+
+test("tolerates a non-zero inventory status for one valid registration", async (t) => {
+  for (const client of ["codex", "claude"]) {
+    const fixture = await createInstall(t, client);
+    const result = runPreflight(fixture, client, registryFor(client, fixture.pluginRoot), ["--inventory-status", "1"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.response.ok, true);
+    assert.equal(result.response.inventoryStatus, 1);
+  }
+});
+
+test("inventory status 0 behaves as before", async (t) => {
+  for (const client of ["codex", "claude"]) {
+    const fixture = await createInstall(t, client);
+    const result = runPreflight(fixture, client, registryFor(client, fixture.pluginRoot), ["--inventory-status", "0"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.response.ok, true);
+    assert.equal(result.response.inventoryStatus, 0);
+  }
+});
+
+test("non-zero inventory status still rejects bad registrations and names the status", async (t) => {
+  for (const client of ["codex", "claude"]) {
+    const fixture = await createInstall(t, client);
+    const valid = registryFor(client, fixture.pluginRoot);
+    const entry = client === "codex" ? valid.installed[0] : valid[0];
+    const cases = [
+      { name: "missing registration", registry: client === "codex" ? { installed: [] } : [] },
+      {
+        name: "duplicate registrations",
+        registry: client === "codex" ? { installed: [entry, structuredClone(entry)] } : [entry, structuredClone(entry)],
+      },
+      { name: "disabled registration", registry: registryFor(client, fixture.pluginRoot, { enabled: false }) },
+      {
+        name: "wrong identity",
+        registry: registryFor(
+          client,
+          fixture.pluginRoot,
+          client === "codex" ? { marketplaceName: "other-marketplace" } : { id: "dod-guard@other-marketplace" },
+        ),
+      },
+    ];
+    if (client === "codex") {
+      cases.push({
+        name: "uninstalled registration",
+        registry: registryFor(client, fixture.pluginRoot, { installed: false }),
+      });
+    }
+
+    for (const item of cases) {
+      const result = runPreflight(fixture, client, item.registry, ["--inventory-status", "3"]);
+      assertRejected(result, /Inventory command exited with status 3;/, `${client}: ${item.name}`);
+      assert.equal(result.response.observed.inventoryStatus, 3, `${client}: ${item.name}`);
+    }
+  }
+});
+
+test("non-zero inventory status rejects empty and malformed stdout", async (t) => {
+  for (const client of ["codex", "claude"]) {
+    const fixture = await createInstall(t, client);
+    const registry = JSON.stringify(registryFor(client, fixture.pluginRoot));
+    for (const rawInput of ["", "{", `warning: bad marketplace\n${registry}`]) {
+      const result = runPreflight(fixture, client, null, ["--inventory-status", "3"], rawInput);
+      assertRejected(result, /Inventory command exited with status 3;.*(missing or malformed)/, client);
+    }
+  }
+});
+
+test("rejects a non-integer inventory status", async (t) => {
+  for (const client of ["codex", "claude"]) {
+    const fixture = await createInstall(t, client);
+    const result = runPreflight(fixture, client, registryFor(client, fixture.pluginRoot), [
+      "--inventory-status",
+      "abc",
+    ]);
+    assertRejected(result, /inventory-status/i);
+  }
+});

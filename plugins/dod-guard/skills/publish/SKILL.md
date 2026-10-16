@@ -39,10 +39,17 @@ Treat any caller-supplied version or path as an exact pin. A path pin is the
 absolute path to `skills/publish/SKILL.md`, not the plugin root. Pass only pins
 that the caller supplied; omit the corresponding flag otherwise:
 
-Run the client inventory command first and check its exit status before passing
-captured JSON to Node. A direct pipeline can hide a failed inventory command.
-Use the snippet for the active shell, set the client to codex or claude, and
-append only exact pins supplied by the caller to the helper command:
+Run the client inventory command, capture its stdout and exit status
+before passing captured JSON to Node, and pass that status to the helper with
+`--inventory-status` instead of stopping on it. Capture stdout and status before
+piping; do not pipe the client command directly, because a direct pipeline can
+hide a failed inventory command. Keep stderr out of the captured JSON. A
+non-zero inventory status is tolerated only when the captured stdout still
+parses and holds exactly one installed and enabled registration with the
+expected identity. Empty or unparseable stdout, and a missing, duplicate,
+disabled, or wrong-identity record, still fail, and the helper's failure names
+the status. Use the snippet for the active shell, set the client to codex or
+claude, and append only exact pins supplied by the caller to the helper command:
 
 All commands in this skill also follow the repository's
 [command-composition contract](../../docs/command-composition.md). In
@@ -55,8 +62,7 @@ PowerShell:
 $client = 'codex' # use 'claude' in Claude Code
 $inventory = & $client plugin list --json
 $clientStatus = $LASTEXITCODE
-if ($clientStatus -ne 0) { throw "$client plugin list failed with exit code $clientStatus" }
-$inventory | node "<skill-dir>/scripts/preflight-installation.mjs" $client
+$inventory | node "<skill-dir>/scripts/preflight-installation.mjs" $client --inventory-status $clientStatus
 if ($LASTEXITCODE -ne 0) { throw "Installation preflight failed; stop before release mutations" }
 ```
 
@@ -66,11 +72,7 @@ POSIX shell:
 client=codex # use claude in Claude Code
 inventory=$("$client" plugin list --json)
 client_status=$?
-if [ "$client_status" -ne 0 ]; then
-  printf '%s plugin list failed with exit code %s\n' "$client" "$client_status" >&2
-  exit "$client_status"
-fi
-printf '%s\n' "$inventory" | node "<skill-dir>/scripts/preflight-installation.mjs" "$client"
+printf '%s\n' "$inventory" | node "<skill-dir>/scripts/preflight-installation.mjs" "$client" --inventory-status "$client_status"
 preflight_status=$?
 if [ "$preflight_status" -ne 0 ]; then
   exit "$preflight_status"

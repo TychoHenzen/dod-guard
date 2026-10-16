@@ -108,6 +108,10 @@ test("publish resolves the exact active installation before release work", async
   assert.match(preflight, /absolute path to `skills\/publish\/SKILL\.md`/);
   assert.match(preflight, /If the helper exits non-zero[\s\S]+then stop/);
   assert.match(preflight, /use the\s+returned `pluginRoot` for every later `<plugin-root>` path/);
+  assert.match(preflight, /--inventory-status \$clientStatus/);
+  assert.match(preflight, /--inventory-status "\$client_status"/);
+  assert.doesNotMatch(preflight, /plugin list failed with exit code/);
+  assert.match(preflight, /unparseable stdout/);
   assert.ok(usage.includes("Use the installed `/dod-guard:publish` entry point"));
   assert.ok(usage.includes("version=<exact-version>"));
   assert.ok(usage.includes("path=<absolute-path-to-skills/publish/SKILL.md>"));

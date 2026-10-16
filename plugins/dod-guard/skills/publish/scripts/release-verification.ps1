@@ -19,6 +19,7 @@ function Invoke-ReleaseVerificationNativeCommand {
         [AllowNull()][string]$InputText
     )
 
+    $ErrorActionPreference = 'Continue'
     $output = @()
     $global:LASTEXITCODE = 0
     if ($null -eq $InputText) {
@@ -26,10 +27,22 @@ function Invoke-ReleaseVerificationNativeCommand {
     } else {
         $output = @($InputText | & $Executable @Arguments 2>&1)
     }
+    $exitCode = [int]$global:LASTEXITCODE
+
+    $stdoutItems = @()
+    $stderrItems = @()
+    foreach ($item in $output) {
+        if ($item -is [System.Management.Automation.ErrorRecord]) {
+            $stderrItems += $item.ToString()
+        } else {
+            $stdoutItems += $item
+        }
+    }
 
     [pscustomobject]@{
-        ExitCode = [int]$global:LASTEXITCODE
-        Output = ConvertTo-ReleaseVerificationText $output
+        ExitCode = $exitCode
+        Output = ConvertTo-ReleaseVerificationText $stdoutItems
+        Stderr = ConvertTo-ReleaseVerificationText $stderrItems
     }
 }
 
@@ -50,7 +63,8 @@ function Invoke-ReleaseVerificationCommand {
         [Parameter(Mandatory = $true)][string]$Executable,
         [Parameter(Mandatory = $true)][string[]]$Arguments,
         [AllowNull()][string]$InputText,
-        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$Evidence
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$Evidence,
+        [switch]$AllowNonZeroExit
     )
 
     $command = Get-ReleaseVerificationCommandText $Executable $Arguments
@@ -61,6 +75,7 @@ function Invoke-ReleaseVerificationCommand {
             Command = $command
             ExitCode = $null
             OutputPresent = $false
+            StderrPresent = $false
         }
         throw "$Name failed before exit status was captured: $($_.Exception.Message)"
     }
@@ -70,18 +85,21 @@ function Invoke-ReleaseVerificationCommand {
             Command = $command
             ExitCode = $null
             OutputPresent = $false
+            StderrPresent = $false
         }
         throw "$Name returned no exit status"
     }
 
     $exitCode = [int]$response.ExitCode
     $output = if ($null -eq $response.PSObject.Properties["Output"]) { "" } else { [string]$response.Output }
+    $stderr = if ($null -eq $response.PSObject.Properties["Stderr"]) { "" } else { [string]$response.Stderr }
     $Evidence[$Name] = [ordered]@{
         Command = $command
         ExitCode = $exitCode
         OutputPresent = -not [string]::IsNullOrEmpty($output)
+        StderrPresent = -not [string]::IsNullOrEmpty($stderr)
     }
-    if ($exitCode -ne 0) {
+    if ($exitCode -ne 0 -and -not $AllowNonZeroExit) {
         throw "$Name failed with exit code $exitCode"
     }
     return $output
@@ -396,11 +414,13 @@ function Invoke-ReleaseVerification {
         foreach ($client in @("codex", "claude")) {
             $inventoryName = "$client-inventory"
             $evidence.Stage = $inventoryName
-            $inventory = Invoke-ReleaseVerificationCommand $InvokeCommand $inventoryName $client @("plugin", "list", "--json") $null $evidence.Commands
+            # The helper owns the non-zero inventory tolerance rule; stderr stays out of the JSON.
+            $inventory = Invoke-ReleaseVerificationCommand $InvokeCommand $inventoryName $client @("plugin", "list", "--json") $null $evidence.Commands -AllowNonZeroExit
+            $inventoryStatus = $evidence.Commands[$inventoryName].ExitCode
             $preflightName = "$client-preflight"
             $evidence.Stage = $preflightName
             $preflightPath = Join-Path $PSScriptRoot "preflight-installation.mjs"
-            $preflightOutput = Invoke-ReleaseVerificationCommand $InvokeCommand $preflightName "node" @($preflightPath, $client) $inventory $evidence.Commands
+            $preflightOutput = Invoke-ReleaseVerificationCommand $InvokeCommand $preflightName "node" @($preflightPath, $client, "--inventory-status", [string]$inventoryStatus) $inventory $evidence.Commands
             try {
                 $preflight = $preflightOutput | ConvertFrom-Json
             } catch {

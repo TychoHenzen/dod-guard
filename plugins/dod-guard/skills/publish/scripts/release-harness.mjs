@@ -90,13 +90,22 @@ const RELEASE_3 = String.raw`$invokeCommand = {
   }
   if ($Executable -eq 'gh') { return (& $answerGh $Arguments) }
   if ($Executable -eq 'codex' -and $Arguments[0] -eq 'plugin') {
+    if ($fixtureStage -eq 'codex-inventory-nonzero') {
+      return [pscustomobject]@{ ExitCode = 1; Output = $codexRegistry; Stderr = 'warning: marketplace broken' }
+    }
+    if ($fixtureStage -eq 'codex-inventory-nonzero-missing') {
+      return [pscustomobject]@{ ExitCode = 1; Output = '{"installed":[]}' }
+    }
+    if ($fixtureStage -eq 'codex-inventory-nonzero-malformed') {
+      return [pscustomobject]@{ ExitCode = 1; Output = 'warning: marketplace broken' }
+    }
     return [pscustomobject]@{ ExitCode = 0; Output = $codexRegistry }
   }
   if ($Executable -eq 'claude' -and $Arguments[0] -eq 'plugin') {
     if ($fixtureStage -eq 'inventory') { return [pscustomobject]@{ ExitCode = 9; Output = '' } }
     return [pscustomobject]@{ ExitCode = 0; Output = $claudeRegistry }
   }
-  if ($Executable -eq 'node') { return (& $answerPreflight $Arguments[1]) }
+  if ($Executable -eq 'node') { return (& $answerPreflight $Arguments[1] $Arguments $InputText) }
   throw ('unexpected command: ' + $key)
 }
 `;
@@ -124,7 +133,15 @@ const RELEASE_4 = String.raw`$answerGh = {
 `;
 
 const RELEASE_5 = String.raw`$answerPreflight = {
-  param([string]$Client)
+  param([string]$Client, [string[]]$Arguments, [AllowNull()][string]$InputText)
+  $inventoryIndex = [array]::IndexOf($Arguments, '--inventory-status')
+  if ($inventoryIndex -ge 0 -and $Arguments[$inventoryIndex + 1] -ne '0') {
+    $inventory = $null
+    try { $inventory = $InputText | ConvertFrom-Json } catch { $inventory = $null }
+    if ($null -eq $inventory -or $null -eq $inventory.installed -or @($inventory.installed | Where-Object { $_.name -eq 'dod-guard' }).Count -eq 0) {
+      return [pscustomobject]@{ ExitCode = 1; Output = '' }
+    }
+  }
   if ($fixtureStage -eq 'preflight-malformed' -and $Client -eq 'codex') {
     return [pscustomobject]@{ ExitCode = 0; Output = '{' }
   }
