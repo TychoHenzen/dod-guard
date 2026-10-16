@@ -98,6 +98,22 @@ function unverifiedClosed(context) {
   return reports;
 }
 
+// A repair needs a closed, unplanned issue whose Project item is readable and not Done.
+function repairTarget(context, number) {
+  const issue = issueFor(context.index, number);
+  const item = itemFor(context.index, number);
+  if (!issue || isOpen(issue) || planned(context, number)) return null;
+  if (!item?.id || statusUnreadable(item)) return null;
+  const status = itemStatus(item);
+  if (status === "Done") return null;
+  return { issue, item, status };
+}
+
+function helperMadeVerifiedClose(context, number, issue) {
+  if (recordComments(issue.comments, "closure").length !== 1) return false;
+  return closureEvidence(context, number).verified;
+}
+
 // A close posts its evidence comment, closes the issue, and then sets Project Done. A run
 // that stops after the close but before Done leaves a closed issue that no plan closes again,
 // so a fresh snapshot must surface it here for apply to finish the Done write. The evidence
@@ -106,16 +122,10 @@ function unverifiedClosed(context) {
 function statusRepairs(context) {
   const repairs = [];
   for (const number of context.index.order) {
-    const issue = issueFor(context.index, number);
-    const item = itemFor(context.index, number);
-    if (!issue || isOpen(issue) || planned(context, number) || !item?.id) continue;
-    if (statusUnreadable(item)) continue;
-    const status = itemStatus(item);
-    if (status === "Done") continue;
-    if (recordComments(issue.comments, "closure").length !== 1) continue;
-    if (!closureEvidence(context, number).verified) continue;
+    const target = repairTarget(context, number);
+    if (!target || !helperMadeVerifiedClose(context, number, target.issue)) continue;
     if (admitWrite(context, number, "Project Done repair refused: issue is held")) {
-      repairs.push({ issue: number, itemId: item.id, status });
+      repairs.push({ issue: number, itemId: target.item.id, status: target.status });
     }
   }
   return repairs;
