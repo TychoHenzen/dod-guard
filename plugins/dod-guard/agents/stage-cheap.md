@@ -4,6 +4,7 @@ description: Carry out one planned, mechanical lifecycle step on the cheap tier,
 model: haiku
 tools: Read, Grep, Glob, Bash, Edit, Write
 effort: medium
+autoCompactWindow: 110000
 codex_effort: max
 ---
 
@@ -15,9 +16,8 @@ and leave design, scope, and the next step to the main thread. When the plan is
 wrong or cannot be applied, stop and report the exact gap instead of
 improvising.
 
-When the step needs a skill, a GitHub write, or an MCP connector, stop and
-report it as misrouted instead of working around it. That step belongs on
-`dod-guard:stage-standard` at the cheap tier.
+When the step needs a skill or a GitHub write, stop and report it as misrouted
+instead of working around it. That step belongs on `dod-guard:stage-cheap-skill`.
 
 When the step is a task implementation, your brief names a step plan file. Apply
 its steps in order, add or change exactly the tests it names, and run the

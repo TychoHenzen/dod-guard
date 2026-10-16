@@ -97,7 +97,7 @@ judges, and owns the stages that write plans or absorb a failed row. The strong
 tier (Opus, `gpt-5.6-sol` in Codex) is reached only by escalation after a lower
 tier failed its check twice. The main thread checks cheap-tier output before
 anything relies on it and reads back each stage's commit. A stage whose owner
-splits its work, such as `/review-pr`, runs on the all-tools stage agent at the
+splits its work, such as `/review-pr`, runs on the skill-capable agent of the
 owner's own tier, and that agent dispatches the split rows itself. Run the
 `/goal` session itself on a standard-tier model: the loop only sequences stages
 and checks their results. The final

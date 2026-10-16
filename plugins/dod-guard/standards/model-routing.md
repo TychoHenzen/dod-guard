@@ -30,11 +30,11 @@ A rerun of a row takes that row's tier. A refreshed handoff, a fresh head and
 CI run, or a second `/complete-pr` run is the same row again, so it does not
 fall back to the standard tier.
 
-| Tier | Claude Code `model`, `effort` | Codex agent file | Write-capable agent | Read-only agent |
-|---|---|---|---|---|
-| standard | `sonnet`; effort from frontmatter | `gpt-5.6-terra`; effort from frontmatter | `dod-guard:stage-standard` | `dod-guard:read-standard` |
-| cheap | `haiku`; effort from frontmatter | `gpt-5.6-luna`; `codex_effort` | `dod-guard:stage-cheap` | `dod-guard:read-cheap` |
-| strong | `opus`, effort `high` | `gpt-5.6-sol`, effort `high` | `dod-guard:stage-standard` with `model: opus` | `dod-guard:read-standard` with `model: opus` |
+| Tier | Claude Code `model`, `effort` | Codex agent file | Write-capable agent | Skill-capable agent | Read-only agent |
+|---|---|---|---|---|---|
+| standard | `sonnet`; effort from frontmatter | `gpt-5.6-terra`; effort from frontmatter | `dod-guard:stage-standard` | `dod-guard:stage-standard` | `dod-guard:read-standard` |
+| cheap | `haiku`; effort from frontmatter | `gpt-5.6-luna`; `codex_effort` | `dod-guard:stage-cheap` | `dod-guard:stage-cheap-skill` | `dod-guard:read-cheap` |
+| strong | `opus`, effort `high` | `gpt-5.6-sol`, effort `high` | `dod-guard:stage-standard` with `model: opus` | `dod-guard:stage-standard` with `model: opus` | `dod-guard:read-standard` with `model: opus` |
 
 The tier agent's frontmatter is the single source for the standard and cheap
 values. Its `model` and `effort` are the Claude Code values. Its
@@ -74,17 +74,41 @@ no pinned file and the named values at spawn time, and record the override as
 report the override as applied. Record the override, and how it was applied,
 in the progress message.
 
-A skill-capable stage runs on `dod-guard:stage-standard` at its own tier's
-model and effort, cheap, standard, or strong. A stage is skill-capable when it
-invokes a skill, writes issue, pull request, or Project state, or needs an MCP
-connector: `dod-guard:stage-cheap` and the read-only agents have no Skill tool
-or MCP connector, and their own text rules out GitHub writes even through Bash,
-so capability follows the agent and cost follows the model. In Claude Code,
+A skill-capable stage runs on its tier's skill-capable agent at that tier's
+model and effort: `dod-guard:stage-standard` for the standard tier,
+`dod-guard:stage-cheap-skill` for the cheap tier, and `dod-guard:stage-standard`
+with `model: opus` for the strong tier. A stage is skill-capable when it
+invokes a skill or writes issue, pull request, or Project state:
+`dod-guard:stage-cheap` and the read-only agents have no Skill tool, and their
+own text rules out GitHub writes even through Bash, so capability follows the
+agent and cost follows the model. In Claude Code,
 pass the tier's `model` and `effort` on the Agent call. In Codex, the
-registered stage-standard file pins the standard tier, so spawn a cheap-tier
-skill-capable stage without that file, with `gpt-5.6-luna` and `max` at spawn
-time, and record it as "requested, not pinned". Spawn a strong-tier stage the
-same way with `gpt-5.6-sol` and `high`.
+registered files pin the standard and cheap tiers, so spawn a strong-tier stage
+without a pinned file, with `gpt-5.6-sol` and `high` at spawn time, and record
+it as "requested, not pinned".
+
+No tier agent holds an MCP connector, which keeps each first call small. A proof
+that calls a runtime MCP tool, as `/next-ticket` describes for a game, an app,
+or an emulator, is a misrouted step for the agent that reaches it: the agent
+stops there and reports the exact call and its arguments. Its dispatcher, which
+holds the session's own MCP tools, makes that call on its own thread and passes
+the result in the brief when the same stage resumes at its checkpoint.
+
+Context size sets cost. Haiku 5.5 charges five times more for every request
+whose prompt passes 100,000 tokens, and each call of an agent is one request.
+A Claude Code agent compacts at the lower of its `autoCompactWindow` frontmatter
+field and the window of the model it runs on, which the user sets per model
+under `modelSettings` in their settings file. The field is a plain integer of
+tokens from 100000 to 1000000; a value written as `200k` is ignored. The three
+Haiku agents, `dod-guard:stage-cheap`, `dod-guard:stage-cheap-skill`, and
+`dod-guard:read-cheap`, declare 110000, so a Haiku run compacts before the price
+increase whatever window the user has set for Haiku. `dod-guard:stage-standard`
+declares 250000, the window where a replay of measured Sonnet sessions was
+cheapest. One agent cannot declare both windows, which is why the cheap tier has
+its own skill-capable agent. The window caps one run of one agent; it does not
+replace the rule in `goal-sdlc` to retire a subagent between stages once its
+context passes about 100,000 tokens. The `CLAUDE_CODE_AUTO_COMPACT_WINDOW`
+environment variable overrides all of these, so leave it unset.
 
 ## Who dispatches
 
@@ -92,16 +116,14 @@ Only the thread that owns a skill's procedure dispatches its subagents.
 When `dod-guard:goal-sdlc` reaches a stage whose owner splits its work into
 routed rows (refinement research, `/next-ticket` tasks, `/review-pr`, or the
 conflict triage in `standards/conflict-triage.md`), it runs that stage on
-`dod-guard:stage-standard`, the only tier agent that inherits every
-tool, including Agent and MCP connectors. The Agent call passes the model of the
-stage's own tier, so an owner whose tier is cheap, such as the `/review-pr`
-owner, runs on `dod-guard:stage-standard` with `model: haiku`. That stage
-worker is the owner's main thread: it dispatches each row at its tier and runs
-the verification below. A
-worker dispatched for one row never dispatches further, even on
-`dod-guard:stage-standard`. In Codex, when a spawned agent cannot spawn agents of
-its own, goal-sdlc's main thread runs that owner's procedure itself and
-dispatches each row directly. In this standard, "main thread" means the thread
+the skill-capable agent of the stage's tier: `dod-guard:stage-standard`, or
+`dod-guard:stage-cheap-skill` for an owner whose tier is cheap, such as the
+`/review-pr` owner. Those two are the only tier agents that hold the Agent and
+Skill tools. That stage worker is the owner's main thread: it dispatches each
+row at its tier and runs the verification below. A worker dispatched for one row
+never dispatches further, even on a skill-capable agent. In Codex, when a
+spawned agent cannot spawn agents of its own, goal-sdlc's main thread runs that
+owner's procedure itself and dispatches each row directly. In this standard, "main thread" means the thread
 that dispatched the work.
 
 ## Plan, investigate, judge
@@ -121,8 +143,8 @@ handoff file, such as a questions or decisions file, from that text.
 ## Verify cheap-tier output
 
 Cheap-output verification applies by model tier, not by agent type: the main
-thread checks a cheap-model `dod-guard:stage-standard` run like any other
-cheap-tier output. Before any later stage relies on cheap-tier output, the main
+thread checks a `dod-guard:stage-cheap-skill` run, or a cheap-model run of any
+other agent, like any other cheap-tier output. Before any later stage relies on cheap-tier output, the main
 thread checks that:
 
 - every answer maps to a planned question or plan step;
@@ -151,9 +173,9 @@ escalates the stage under "Escalation", and a failure on the strong rung stops
 that stage as a blocker.
 
 A `dod-guard:stage-cheap` report that a step is misrouted is not a failed
-check. The main thread redispatches that step once on `dod-guard:stage-standard`
-at the same tier, as a skill-capable stage, and verifies the result as
-cheap-tier output.
+check. The main thread redispatches that step once on
+`dod-guard:stage-cheap-skill`, as a skill-capable stage, and verifies the result
+as cheap-tier output.
 
 ## Verify standard-tier and strong-tier output
 
@@ -218,8 +240,8 @@ record, carries out the task itself. When a standard-tier stage escalates, the
 thread that dispatched the stage runs it again on `dod-guard:stage-standard`
 with `model: opus` and the strong effort.
 
-A cheap-model skill-capable stage, which runs on `dod-guard:stage-standard`
-with `model: haiku`, never carries out a failed row itself. It stops and
+A cheap-model skill-capable stage, which runs on `dod-guard:stage-cheap-skill`,
+never carries out a failed row itself. It stops and
 reports the failure record to its dispatcher, and the dispatcher takes the
 numbered order above with that stage as the stalled one. It sends the stage back
 once at haiku with the exact gap, then runs it again on

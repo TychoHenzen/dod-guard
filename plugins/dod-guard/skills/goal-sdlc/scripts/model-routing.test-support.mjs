@@ -29,6 +29,13 @@ export const TIER_AGENTS = [
     sandbox: "workspace-write",
   },
   {
+    name: "stage-cheap-skill",
+    model: "haiku",
+    codex: "gpt-5.6-luna",
+    codexEffort: "max",
+    sandbox: "workspace-write",
+  },
+  {
     name: "read-standard",
     model: "sonnet",
     codex: "gpt-5.6-terra",
