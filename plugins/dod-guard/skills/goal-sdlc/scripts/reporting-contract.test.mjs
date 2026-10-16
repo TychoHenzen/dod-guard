@@ -39,7 +39,7 @@ test("goal-sdlc reports parent and child completions only in the final report", 
     "The cheap tier (Haiku, `gpt-5.6-luna` in Codex) implements every task from a written step plan",
     "The standard tier (Sonnet, `gpt-5.6-terra` in Codex) plans, decides, and judges, " +
       "and owns the stages that write plans or absorb a failed row",
-    "runs on the `stage-standard` agent at the owner's own tier",
+    "runs on the skill-capable agent of the owner's own tier",
     "The strong tier (Opus, `gpt-5.6-sol` in Codex) is reached only by escalation",
     "Run the `/goal` session itself on a standard-tier model",
     `The final report says how many parent and child PBIs reached Done. That figure counts ${SCOPE}`,

@@ -59,8 +59,8 @@ const ESCALATION = [
   "the owner, already a standard-tier thread that holds the plan and the",
   "failure record, carries out the task itself",
   "with `model: opus` and the strong effort",
-  "A cheap-model skill-capable stage, which runs on `dod-guard:stage-standard`",
-  "with `model: haiku`, never carries out a failed row itself.",
+  "A cheap-model skill-capable stage, which runs on `dod-guard:stage-cheap-skill`,",
+  "never carries out a failed row itself.",
   "It stops and reports the failure record to its dispatcher",
   "A failure on the opus run stops the stage as a blocker.",
   "Dispatching a read-only row one rung up is not carrying out a failed row.",
@@ -122,8 +122,8 @@ async function textsThatNameAgents() {
   ]);
 }
 
-const AGENT_REFERENCE = /dod-guard:((?:stage|read)-[a-z]+)/g;
-const CODEX_REFERENCE = /`(dod_guard_(?:stage|read)_[a-z]+)`/g;
+const AGENT_REFERENCE = /dod-guard:((?:stage|read)(?:-[a-z]+)+)/g;
+const CODEX_REFERENCE = /`(dod_guard_(?:stage|read)(?:_[a-z]+)+)`/g;
 const NAMES_TITLE = "every tier agent a skill or standard names exists";
 
 test(NAMES_TITLE, async () => {
@@ -147,7 +147,7 @@ const OWNER_PRINCIPLE = [
   "such as drafting a pull request from a handoff or the guarded merge.",
   "A rerun of a row takes that row's tier.",
   "so it does not fall back to the standard tier.",
-  "runs on `dod-guard:stage-standard` with `model: haiku`",
+  "`dod-guard:stage-cheap-skill` for an owner whose tier is cheap",
 ];
 
 test("the tiers follow the owner principle and a rerun keeps its tier", () => {
@@ -158,13 +158,22 @@ test("the tiers follow the owner principle and a rerun keeps its tier", () => {
   assert.doesNotMatch(tiers, prose("owning a stage, drafting a pull request, remediation"));
 });
 
-test("stage-standard describes itself as the skill-capable worker for any tier", async () => {
+test("stage-standard describes itself as the skill-capable worker for the standard and strong tiers", async () => {
   const source = await readFile(new URL("agents/stage-standard.md", pluginRoot), "utf8");
   assertPhrases(source, [
-    "It is the skill-capable worker for any tier: the dispatcher passes the tier's",
-    "model and effort on the Agent call.",
+    "It is the skill-capable worker for the standard and strong tiers: the dispatcher passes the strong",
+    "tier's model and effort on the Agent call.",
     "stop and report the failure record to your dispatcher instead of carrying the row out",
   ]);
   assert.doesNotMatch(source, prose("judgement-heavy"));
   assert.doesNotMatch(source, prose("drafting a pull request"));
+});
+
+test("stage-cheap-skill describes itself as the skill-capable worker for the cheap tier", async () => {
+  const source = await readFile(new URL("agents/stage-cheap-skill.md", pluginRoot), "utf8");
+  assertPhrases(source, [
+    "Carry out one cheap-tier lifecycle stage that needs a skill or a GitHub write",
+    "stop and report the failure record to your dispatcher instead of carrying the row out",
+  ]);
+  assert.doesNotMatch(source, prose("judgement-heavy"));
 });

@@ -15,8 +15,7 @@ wrong or cannot be applied, stop and report the exact gap instead of
 improvising.
 
 When the step needs a skill or a GitHub write, stop and report it as misrouted
-instead of working around it. That step belongs on `dod-guard:stage-standard`
-at the cheap tier.
+instead of working around it. That step belongs on `dod-guard:stage-cheap-skill`.
 
 When the step is a task implementation, your brief names a step plan file. Apply
 its steps in order, add or change exactly the tests it names, and run the
