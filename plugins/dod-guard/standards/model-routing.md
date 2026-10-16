@@ -88,13 +88,19 @@ same way with `gpt-5.6-sol` and `high`.
 
 Context size sets cost. Haiku 5.5 charges five times more for every request
 whose prompt passes 100,000 tokens, and each call of an agent is one request.
-Each Claude Code agent that runs a long loop declares `autoCompactWindow` in its
-frontmatter as a plain integer of tokens from 100000 to 1000000; a value written
-as `200k` is ignored. `dod-guard:stage-cheap` and `dod-guard:read-cheap` declare
-100000, so a Haiku worker shrinks its context before the price increase.
-`dod-guard:stage-standard` declares 250000, the window where a replay of
-measured Sonnet sessions was cheapest. The `CLAUDE_CODE_AUTO_COMPACT_WINDOW`
-environment variable overrides the field, so leave it unset.
+A Claude Code agent compacts at the lower of its `autoCompactWindow` frontmatter
+field and the window of the model it runs on, which the user sets per model
+under `modelSettings` in their settings file. The field is a plain integer of
+tokens from 100000 to 1000000; a value written as `200k` is ignored.
+`dod-guard:stage-cheap` and `dod-guard:read-cheap` declare 110000, so a Haiku
+worker compacts before the price increase. `dod-guard:stage-standard` declares
+250000, the window where a replay of measured Sonnet sessions was cheapest. It
+also runs the skill-capable Haiku rows through a model override, and those rows
+get the lower of 250000 and the user's own Haiku window, so set that window to
+110000 as well. The window caps one run of one agent; it does not replace the
+rule in `goal-sdlc` to retire a subagent between stages once its context passes
+about 100,000 tokens. The `CLAUDE_CODE_AUTO_COMPACT_WINDOW` environment variable
+overrides all of these, so leave it unset.
 
 ## Who dispatches
 

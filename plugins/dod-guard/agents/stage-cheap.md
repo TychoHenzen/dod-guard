@@ -4,7 +4,7 @@ description: Carry out one planned, mechanical lifecycle step on the cheap tier,
 model: haiku
 tools: Read, Grep, Glob, Bash, Edit, Write
 effort: medium
-autoCompactWindow: 100000
+autoCompactWindow: 110000
 codex_effort: max
 ---
 

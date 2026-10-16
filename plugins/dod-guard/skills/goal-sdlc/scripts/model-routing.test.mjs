@@ -13,6 +13,7 @@ import {
 } from "./model-routing.test-support.mjs";
 
 const EFFORT_LEVELS = new Set(["low", "medium", "high", "xhigh", "max"]);
+const INHERIT_ALL_TOOLS = /^inheritAllTools:/m;
 
 test("each tier agent pins its model and effort for Claude Code and Codex", async () => {
   for (const agent of TIER_AGENTS) {
@@ -35,32 +36,34 @@ test("each tier agent pins its model and effort for Claude Code and Codex", asyn
 // Haiku charges five times more for a request whose prompt passes 100,000
 // tokens, so the haiku workers compact below that line. Claude Code reads
 // autoCompactWindow only as a plain integer from 100000 to 1000000 and ignores
-// a value such as `200k`, so the test pins the digits.
+// a value such as `200k`, so the test pins the digits. The window is the lower
+// of this field and the user's per-model window, which a probe on Claude Code
+// 2.1.299 confirmed for a subagent run under a model override.
 const COMPACT_WINDOWS = {
-  "stage-cheap": 100000,
-  "read-cheap": 100000,
-  "stage-standard": 250000,
+  "stage-cheap": 110_000,
+  "read-cheap": 110_000,
+  "stage-standard": 250_000,
 };
 
 test("long-running agents declare a plain-integer autoCompactWindow", async () => {
   for (const agent of TIER_AGENTS) {
     const source = await agentText(agent.name);
-    const declared = frontmatterValue(source, "autoCompactWindow");
     const expected = COMPACT_WINDOWS[agent.name];
-    if (expected === undefined) {
-      assert.equal(declared, undefined, `${agent.name} declares no autoCompactWindow`);
-      continue;
-    }
-    assert.match(declared ?? "", /^\d{6,7}$/, `${agent.name} autoCompactWindow must be a plain integer`);
-    assert.equal(Number(declared), expected, agent.name);
-    assert.ok(Number(declared) >= 100000 && Number(declared) <= 1000000, agent.name);
+    assert.equal(
+      frontmatterValue(source, "autoCompactWindow"),
+      expected === undefined ? undefined : String(expected),
+      agent.name,
+    );
   }
   for (const phrase of [
     "Haiku 5.5 charges five times more for every request whose prompt passes 100,000 tokens",
-    "declares `autoCompactWindow` in its frontmatter as a plain integer of tokens from 100000 to 1000000",
-    "`dod-guard:stage-cheap` and `dod-guard:read-cheap` declare 100000",
+    "A Claude Code agent compacts at the lower of its `autoCompactWindow` frontmatter field " +
+      "and the window of the model it runs on",
+    "The field is a plain integer of tokens from 100000 to 1000000",
+    "`dod-guard:stage-cheap` and `dod-guard:read-cheap` declare 110000",
     "`dod-guard:stage-standard` declares 250000",
-    "The `CLAUDE_CODE_AUTO_COMPACT_WINDOW` environment variable overrides the field",
+    "get the lower of 250000 and the user's own Haiku window, so set that window to 110000 as well",
+    "The `CLAUDE_CODE_AUTO_COMPACT_WINDOW` environment variable overrides all of these",
   ]) {
     assert.match(standard, prose(phrase), phrase);
   }
@@ -113,7 +116,7 @@ test(DISPATCH_TITLE, async () => {
     const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
     const tools = source.match(/^tools: (.+)$/m)?.[1].split(", ");
     assert.ok(tools, `${agent.name} must declare a tools allowlist`);
-    assert.equal(/^inheritAllTools:/m.test(source), false, `${agent.name} must not inherit every tool`);
+    assert.equal(INHERIT_ALL_TOOLS.test(source), false, `${agent.name} must not inherit every tool`);
     assert.equal(
       tools.some((tool) => tool.startsWith("mcp__")),
       false,
