@@ -52,7 +52,9 @@ Quality Guard structural, test-quality, coverage, audit, and readability results
 are diagnostic evidence. They do not accept commits or merges and do not write
 persisted quality state. Build/test, plugin configuration, workflow validation,
 lockfile, generated-file, bundle/package-integrity, and Biome-error checks retain
-correctness authority.
+correctness authority. The dependency audit report (critical, high, and moderate
+production advisories) appears in the preflight output and in the static-analysis
+job step summary on the CI run page; it is report-only and never gates a merge.
 
 ## GitHub delivery
 
