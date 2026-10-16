@@ -58,9 +58,10 @@ Before reporting a ticket as ready, read its body and require:
 - a short description of the intended change;
 - implementation notes;
 - acceptance criteria written as checkboxes with observable outcomes;
-- one `## Step plan: <task-id>` comment on the issue for every task in its task
-  list, written by `dod-guard:refine-backlog-item`; a PBI with no task list has
-  one task, `task-1`.
+- one step plan for every task in its task list, a `## Step plan: <task-id>`
+  comment that `dod-guard:refine-backlog-item` wrote and that the step plan rule
+  in `standards/project-workflow.md` accepts by its author; a PBI with no task
+  list has one task, `task-1`.
 
 For an ordinary parent, require every linked sub-issue to be open or closed
 with pushed implementation evidence. A parent PBI with no linked sub-issues is
@@ -105,10 +106,12 @@ The same functional-slice and lens-ownership handoff is consumed by
 delivery boundary aligned when changing this contract.
 
 Stop and name the missing section when the issue is incomplete. Do not invent
-requirements. A missing step plan, or a step plan that leaves a design decision
-open, is the stop `step-plan-missing`: name the task, change nothing, and report
-the stop to your dispatcher, which runs `dod-guard:refine-backlog-item` on the
-parent. Never write or complete a step plan yourself.
+requirements. A missing step plan, a comment with the heading from an author
+that the step plan rule does not accept, or a step plan that leaves a design
+decision open, is the stop `step-plan-missing`: name the task, change nothing,
+and report the stop to your dispatcher, which runs
+`dod-guard:refine-backlog-item` on the parent. Never write or complete a step
+plan yourself.
 
 Resolve the active dod-guard plugin root from the directory containing this skill,
 then read `<plugin-root>/standards/project-workflow.md` and classify the PBI
@@ -198,7 +201,7 @@ when its requirement is contradicted or its evidence is missing.
 
 Dispatch every task, including the single task of a one-task PBI, to
 `dod-guard:stage-cheap` from the task's step plan, the `## Step plan: <task-id>`
-comment that `dod-guard:refine-backlog-item` wrote on the issue. When the task
+comment that the step plan rule in `standards/project-workflow.md` accepts. When the task
 list has more than one task, run each task in order as one step
 of [dod-guard:step-by-step](../step-by-step/SKILL.md), passing the task list
 as a calling-skill plan with a commit per step: one fresh subagent per task.

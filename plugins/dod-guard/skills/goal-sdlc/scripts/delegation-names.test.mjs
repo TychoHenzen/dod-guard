@@ -127,6 +127,53 @@ test("the routing standard defines the stage brief and checks the worker's first
   assert.match(modelRouting, prose(...STAGE_BRIEF));
 });
 
+const BRIEF_FORMS = [
+  "The opening words of the row pick its form:",
+  "`Read <plugin-root>/standards/<file>.md, then follow it.`",
+  "`Read <plugin-root>/skills/<name>/SKILL.md, then follow only <section>.`",
+  "Every later sentence of the row's cell follows as the next line of the brief.",
+  "`<plugin-root>` is the plugin root it resolved from the directory of the skill it loaded itself",
+  "The one exception is a step plan comment that the step plan rule in `standards/project-workflow.md` accepts",
+];
+
+test("the routing standard gives every row form a brief line and absolute paths", () => {
+  assert.match(modelRouting, prose(...BRIEF_FORMS));
+  assert.match(
+    modelRouting,
+    prose(
+      "a skill-capable worker's report starts with the `Skill loaded:` or `Standard followed:` line",
+      'that "Stage brief" requires;',
+    ),
+  );
+});
+
+// The first sentence of a Runs cell picks one brief form. A row that fits none
+// would leave the dispatcher to improvise a brief, which issue 974 removes.
+const FORMS = [
+  ["skill", /^Skill `dod-guard:[a-z-]+[^`]*`$/],
+  ["standard", /^Follow `standards\/[a-z-]+\.md`$/],
+  ["section", /^Follow .+ in `dod-guard:[a-z-]+`$/],
+  ["plan", /^Follow the (?:step|fix) plan in <scratch file>$/],
+];
+
+test("every Delegation row fits exactly one brief form on an agent that can read what it names", async () => {
+  for (const [stage, , agents, runs] of delegationRows(goalSdlc)) {
+    const first = runs.split(". ")[0];
+    const forms = FORMS.filter(([, pattern]) => pattern.test(first)).map(([name]) => name);
+    assert.equal(forms.length, 1, `${stage}: "${first}" fits ${forms.length} brief forms`);
+    if (forms[0] === "plan") {
+      assert.equal(agents, "`dod-guard:stage-cheap`", `${stage}: a saved plan is applied by the cheap worker`);
+    }
+    if (forms[0] === "section") {
+      const [name] = namesIn(first);
+      const skill = await read(`skills/${name}/SKILL.md`);
+      for (const [, quoted] of first.matchAll(/"([^"]+)"/g)) {
+        assert.ok(skill.includes(quoted), `${stage}: skills/${name}/SKILL.md has no "${quoted}"`);
+      }
+    }
+  }
+});
+
 const WORKER_RULES = [
   'Your brief has the shape that "Stage brief" in `standards/model-routing.md` defines.',
   "your first tool call loads that skill: the Skill tool in Claude Code, or a read of its SKILL.md file under the plugin root in Codex, which has no Skill tool.",
@@ -148,8 +195,36 @@ test("each skill-capable worker follows its brief's skill first and reports the 
   }
 });
 
+// Every parent state meets exactly one owner. A Todo parent whose step plans
+// were never written, for example one refined before plans existed, goes to
+// next-ticket, which stops with `step-plan-missing`, and that stop is the one
+// condition that hands the parent to refinement.
+const OWNER_CONDITIONS = {
+  "dod-guard:refine-backlog-item":
+    "the parent has Status Backlog, or `dod-guard:next-ticket` stopped with `step-plan-missing`",
+  "dod-guard:next-ticket": "the parent has Status Todo, or In Progress with no pushed handoff",
+  "dod-guard:submit-draft-pr":
+    "the parent has Status In Progress, a pushed handoff, and no converged draft pull request",
+  "dod-guard:review-pr": "the parent has a converged draft pull request and no review",
+  "dod-guard:fix-pr-review": "the parent has a review with unresolved `BLOCKER` or `MAJOR` findings",
+  "dod-guard:complete-pr":
+    "the parent's pull request has a review and no unresolved `BLOCKER` or `MAJOR` finding; `MINOR` notes never block",
+  "dod-guard:add-backlog-idea": "work has no issue yet, or today's friction log is missing",
+};
+
+test("each owner's Runs when condition is pinned and none requires step plans before next-ticket", () => {
+  const start = goalSdlc.indexOf("| Owner | Runs when |");
+  const rows = goalSdlc
+    .slice(start, goalSdlc.indexOf("\n\n", start))
+    .split("\n")
+    .slice(2)
+    .map((row) => row.split("|").map((cell) => cell.trim()));
+  const found = Object.fromEntries(rows.map((cells) => [cells[1].match(/\[(dod-guard:[a-z-]+)\]/)[1], cells[2]]));
+  assert.deepEqual(found, OWNER_CONDITIONS);
+  assert.doesNotMatch(found["dod-guard:next-ticket"], /plan/i);
+});
+
 test("a parent without step plans in Todo or In Progress has a path back to refinement", async () => {
-  assert.match(goalSdlc, prose("or Todo or In Progress after `step-plan-missing`"));
   assert.match(
     goalSdlc,
     prose(

@@ -139,8 +139,8 @@ instruction that applies to touched files. When you have written a per-finding
 fix plan (file, edit, test, validation command, expected result), you may
 dispatch applying it to `dod-guard:stage-cheap` on the cheap tier. The brief is
 the one "Stage brief" in `standards/model-routing.md` defines: its first line
-says `Follow` the plan, which you save unchanged to a scratch file outside the
-repository. Verify that output as cheap-tier output, then commit and push
+reads `Follow the fix plan in <scratch file>.`, and the file holds the plan,
+saved unchanged outside the repository. Verify that output as cheap-tier output, then commit and push
 yourself.
 
 For code shape, prefer small pure functions with explicit inputs and outputs,

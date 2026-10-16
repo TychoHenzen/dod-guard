@@ -330,8 +330,11 @@ applies it without choosing anything. Settle an open decision under "Research
 and discovery triage"; never leave it to the reader of the plan.
 
 On re-refinement, replace the comment of a task that changed and keep the rest.
-Read every comment back before the Status changes, or before you report when
-the Status stays as it is.
+Post as the authenticated user, and write a plan for every task that has no
+comment the step plan rule in `standards/project-workflow.md` accepts, so a
+heading comment from an author that rule rejects does not count as a plan. Read
+every comment back, with its author, before the Status changes, or before you
+report when the Status stays as it is.
 
 ## Apply labels and verify before Todo
 

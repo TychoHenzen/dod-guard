@@ -68,14 +68,16 @@ referenced skill from the active plugin root before invoking it.
    this pull request, including when it contains findings. Read the
    recommendation and reviewed commit back from the remote PR; no local ledger
    is needed. If `dod-guard:review-pr` stops without posting a review, record its
-   reason and the PR URL as a durable blocker and stop. For findings, invoke
+   reason and the PR URL as a durable blocker and stop. For `BLOCKER` and `MAJOR`
+   findings, the ones with a `GH-<id>` thread (a `MINOR` note has no thread and
+   blocks nothing), invoke
    `dod-guard:fix-pr-review <pull-request> <finding-ids>` with every valid unresolved
    finding, rerun affected checks, and respond to and resolve each finding. It
    fixes the actionable ones and declines the rest with evidence, resolving the
    thread of both.
    Do not invoke another review after those fixes.
-6. Invoke `dod-guard:complete-pr <pull-request>` once every finding is fixed and
-   resolved, or recorded as not actionable with evidence, all required checks
+6. Invoke `dod-guard:complete-pr <pull-request>` once every `BLOCKER` and `MAJOR`
+   finding is fixed and resolved, or recorded as not actionable with evidence, all required checks
    pass, and the head is the one the fixes pushed. Its guarded merge is the
    acceptance boundary authorized by this skill. When `dod-guard:complete-pr` stops on
    `unresolved-review-threads`, clear the named threads with

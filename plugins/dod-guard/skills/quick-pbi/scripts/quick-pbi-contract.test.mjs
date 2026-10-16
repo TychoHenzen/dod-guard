@@ -78,7 +78,11 @@ test("resolves findings without a second review", () => {
     /respond to and resolve each finding/,
     /Do not invoke another review after those fixes/,
   ]);
-  assert.match(skill, /every finding is fixed and\s+resolved, or recorded as not actionable with evidence/);
+  assert.match(
+    skill,
+    /every `BLOCKER` and `MAJOR`\s+finding is fixed and\s+resolved, or recorded as not actionable with evidence/,
+  );
+  assert.match(skill, /`MINOR` note has no thread and\s+blocks nothing/);
   assert.match(usage, /uses that completed review's recommendation[\s\S]*does\s+not invoke another review after fixes/);
   assert.doesNotMatch(usage, /repeats review before the guarded merge/);
 });

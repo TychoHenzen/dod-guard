@@ -168,8 +168,10 @@ const ROUTES = [
     "Queue snapshot read",
     "cheap",
     "`dod-guard:read-cheap`",
-    "Follow Loop step 2 of this skill, but run only its `closure.mjs` and `select-next.mjs` commands and " +
-      "return their output; the close delegation stays with this thread",
+    "Follow Loop step 2 in `dod-guard:goal-sdlc`. This thread dispatches the row twice, and the close " +
+      "delegation stays with this thread: first to run only `closure.mjs snapshot` and `closure.mjs plan` " +
+      "and return the plan, then, after the closes, to run only a fresh `closure.mjs snapshot`, " +
+      "`closure.mjs annotate`, and `select-next.mjs` and return the selection",
   ],
   [
     "Refinement: owner thread (dispatch, verify, labels, step plans, Todo)",
@@ -190,13 +192,13 @@ const ROUTES = [
     "`dod-guard:next-ticket`: implement one task from its step plan",
     "cheap",
     "`dod-guard:stage-cheap`",
-    "Follow the task's `## Step plan: <task-id>` comment, saved unchanged to a scratch file",
+    "Follow the step plan in <scratch file>. The file holds the task's `## Step plan: <task-id>` comment, saved unchanged",
   ],
   [
     "`dod-guard:next-ticket`: run validations and regenerate artifacts",
     "cheap",
     "`dod-guard:stage-cheap`",
-    "Follow the validation commands of that step plan",
+    "Follow the step plan in <scratch file>. Run only its validation commands",
   ],
   [
     "`dod-guard:submit-draft-pr`",
@@ -239,7 +241,7 @@ const ROUTES = [
     "`dod-guard:fix-pr-review`: apply a written per-finding fix",
     "cheap",
     "`dod-guard:stage-cheap`",
-    "Follow the owner's per-finding fix plan",
+    "Follow the fix plan in <scratch file>. The file holds the owner's per-finding fix plan, saved unchanged",
   ],
   [
     "`dod-guard:complete-pr`: guarded merge and Project finalization",
@@ -251,7 +253,7 @@ const ROUTES = [
     "`dod-guard:complete-pr`: close delivered issues (Loop step 2)",
     "cheap",
     "`dod-guard:stage-cheap-skill`",
-    'Skill `dod-guard:complete-pr`, section "Close delivered issues for goal-sdlc" only',
+    'Skill `dod-guard:complete-pr`. Follow only its section "Close delivered issues for goal-sdlc"',
   ],
   [
     "Merge conflict triage: owner thread, plan, and judge",

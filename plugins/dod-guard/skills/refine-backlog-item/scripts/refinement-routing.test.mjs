@@ -91,7 +91,9 @@ test("writes only the missing step plans for a Todo or In Progress parent after 
     skill,
     prose(
       "Write one comment per task on the parent issue, headed `## Step plan: <task-id>`,",
-      "Read every comment back before the Status changes, or before you report when the Status stays as it is.",
+      "Post as the authenticated user, and write a plan for every task that has no comment the step plan rule in",
+      "`standards/project-workflow.md` accepts,",
+      "Read every comment back, with its author, before the Status changes, or before you report when the Status stays as it is.",
     ),
   );
 });
