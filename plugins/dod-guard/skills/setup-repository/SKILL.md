@@ -9,241 +9,125 @@ description: >-
 
 # Setup repository
 
-Setup ends with a pushed, protected GitHub repository that `dod-guard:add-backlog-idea`,
-`dod-guard:refine-backlog-item`, `dod-guard:next-ticket`, `dod-guard:submit-draft-pr`,
-`dod-guard:review-pr`, and `dod-guard:complete-pr` can run against.
+Turn the local project into a pushed GitHub repository that works with the six workflow skills (section 4). Read and apply `standards/working-defaults.md` and `standards/github-request-discipline.md` (plugin root). Where this skill is stricter, it wins.
 
-Before any call, read `standards/working-defaults.md` and `standards/github-request-discipline.md` from the plugin root. Where this skill is stricter, this skill wins. `standards/project-workflow.md` maps the stages. The existing repository instructions are the project-principles source, so setup adds no second constitution and no planning system of its own.
+## Rules
 
-## Boundaries
+- `AGENTS.md` and `CLAUDE.md` are the source of project principles. Keep both when each has unique guidance. Add no second constitution or planning system.
+- Invocation authorizes the setup changes. Ask only when required repository identity is missing or existing state has incompatible meanings. Never replace working state to make setup uniform.
+- Treat history, remotes, `.gitignore`, workflows, instruction files, lockfiles, and tool config as merge inputs. Keep the project's formatter, linter, test runner, package manager, and build tool.
+- Never change app behavior, clean existing debt, rewrite history, force-push, weaken protection, install global plugins, or accept a non-GitHub remote.
+- A repository this skill creates is public: send `private: false` explicitly, never infer, omit, or override it, and never ask about visibility. An existing remote keeps its visibility; never make a private repository public.
+- Read state back after every mutation. Never claim an unavailable plan feature worked; stop and report the exact API result.
+- After the first write, keep a mutation ledger. On failure report completed local and GitHub mutations, the failed operation, and leftover state. Never roll back automatically.
 
-What this run may do:
+## 1. Inventory
 
-- Make the setup changes described below. Ask one short question only when the repository identity is missing or two existing states contradict each other.
-- Treat history, remotes, ignore rules, workflows, instruction files, lockfiles, and tool configuration as inputs to merge. Working state stays, even if that leaves the project less uniform.
-- Work in a dirty tree. A dirty worktree is allowed because setup may be the first commit. Commit only reviewed setup paths and leave unrelated pending edits alone.
-
-What it must never do:
-
-- change application behavior or pay down existing code debt
-- rewrite history or force-push
-- weaken protection or install global plugins
-- accept a non-GitHub remote
-- swap an already-chosen formatter, linter, test runner, package manager, or build tool
-- claim success for a GitHub plan feature that is unavailable; stop and report the exact API result
-
-Bookkeeping: after the first write, keep a ledger of every local and GitHub mutation. If something fails, report what completed, which operation failed, and what state remains. Do not roll back.
-
-Visibility: this skill creates public repositories only. Send `private: false` explicitly. Never infer it, omit it, override it, or ask the user to choose. An existing remote keeps whatever visibility it has. Do not make an existing private repository public as part of setup.
-
-## 1. Inventory before mutation
-
-In Claude Code the skill directory is `${CLAUDE_PLUGIN_ROOT}/skills/setup-repository`. In Codex it is the directory that holds the loaded SKILL.md. This text calls it `<skill-dir>`.
-
-Start with the summary form:
+Resolve the skill directory first: `${CLAUDE_PLUGIN_ROOT}/skills/setup-repository` in Claude Code, the directory holding the loaded `SKILL.md` in Codex.
 
 ```text
 node <skill-dir>/scripts/inspect-repository.mjs --summary <project-root>
-```
-
-It reports only the project root, compact Git state, and fixed inventory counts. It leaves out per-file arrays and credential values. Full mode remains required for `credentialFindings`, staged-file review, and any other step that needs per-file evidence.
-
-```text
 node <skill-dir>/scripts/inspect-repository.mjs <project-root>
 ```
 
-Neither form changes anything. Then collect:
+Summary mode suits routine checks. Use full mode for `credentialFindings`, staged-file review, and any per-file evidence. Neither mode changes GitHub state.
 
-- Git: tracked, modified, staged, and untracked files (if a worktree exists); commits, branches, remotes, upstreams, tags, the configured default branch
-- instructions: every file that governs a path setup may touch
-- tooling: manifests, lockfiles, workflows, ignore files, quality-tool config
-- source extensions, ignoring generated, fixture, archive, dependency, and vendored directories
+Also inspect file state (when a worktree exists), commits, branches, remotes, upstreams, tags, instruction files, manifests, lockfiles, workflows, ignore files, quality-tool config, and maintained source. Do not stage or init Git yet. A dirty worktree is fine. Separate intended files from generated files, secrets, and unrelated work, and stop for one scope decision only if you cannot.
 
-Neither stage nor initialize Git here. Sort files into intended project files, generated output, local secrets, and unrelated work. Ask for a scope decision only if the sort cannot be made safely.
+Verify GitHub MCP identity and repository, Project, and workflow access, falling back to `gh auth status`. Stop if auth or a scope is missing.
 
-Confirm the GitHub MCP identity can reach the repository, Project, and workflows. With no MCP, run `gh auth status`. A missing login or scope stops setup.
+## 2. Identity
 
-## 2. Resolve repository identity
+With a GitHub remote, read metadata through MCP, else `gh repo view --json nameWithOwner,defaultBranchRef,url,visibility`. Check it against the fetch and push URLs. `nameWithOwner` is the identity. Keep every remote, the default branch, and history. If `origin` names a different repository, stop. If the verified remote has another name and `origin` is absent, add `origin` with the same URL. If any required remote is not GitHub, stop.
 
-### Existing GitHub remote
+Without one:
 
-Read the repository through MCP, or run `gh repo view --json nameWithOwner,defaultBranchRef,url,visibility`. Compare the result with the real fetch and push URLs. `nameWithOwner` is the identity.
+1. Settle owner, name, and default branch before creating anything. Infer only unambiguous values.
+2. Check that owner/name is free. Init Git with that default branch, only if the project is not a worktree.
+3. Create the repository without pushing: `{ "name": "<name>", "private": false, "auto_init": false }`. The MCP spelling is `autoInit`. Add `organization` only for an org owner.
+4. Read it back. Require owner/name, `private: false`, and public visibility before recording success.
+5. Add `origin` without replacing any remote. Verify owner, name, visibility, URL, and default branch.
 
-| Situation | Action |
-|---|---|
-| `origin` names a different repository | stop |
-| Verified GitHub remote under another name, no `origin` | add `origin` with the same URL |
-| A required remote is not GitHub | stop |
-| Anything else | keep all remotes, the default branch, and the history; rename nothing |
+`scripts/repository-visibility.mjs` owns the create and readback boundary and fails closed. After a failed or ambiguous create, read back once before any retry. After a failed public readback, do not add `origin`, push, link a Project, enable security, or protect a branch. Push only after the section 6 review passes.
 
-### No GitHub remote
+## 3. Applicability and workflows
 
-Settle three values, inferring only what is unambiguous: owner (the authenticated user), repository name (the directory name, if valid and unused), and default branch (the current unborn branch). Confirm `owner/name` is free. Run `git init` with that branch only when the directory is not yet a worktree.
-
-Create the repository with no push. The payload is below, and MCP spells the last key `autoInit`. Add `organization` only when the owner is an organization.
-
-```json
-{ "name": "<name>", "private": false, "auto_init": false }
-```
-
-Use `scripts/repository-visibility.mjs` for the call. It reads before creation, mutates only an absent target, records the attempted mutation, reads back after the mutation, and fails closed on a missing, contradictory, or failed response. After a failed or ambiguous create, read the target back once before any retry, and keep the raw provider error out of diagnostics.
-
-Record success only when the readback shows the resolved owner and name, `private: false`, and `visibility: "public"`. Next add `origin` (never replacing a remote), query again, and check owner, name, public visibility, remote URL, and default branch.
-
-Do not add `origin`, push, link a Project, enable security, or protect a branch after a failed public-visibility readback. Do not push at all until step 6 passes.
-
-## 3. Build the local setup from existing choices
-
-Begin with the applicability table: one row per maintained language, with manifests, lockfiles, source, and existing commands as evidence.
+Build one row per maintained language from manifests, lockfiles, sources, and existing commands. Generated, vendored, archive, snapshot, and fixture files do not count.
 
 ```text
 language | evidence | format | lint | type | test | coverage | dependency | CodeQL | reason skipped
 ```
 
-Generated files, vendored code, archives, snapshots, and test fixtures are not maintained languages. The inspector still lists and credential-scans them, but it drops the path segments `generated`, `fixture(s)`, `archive(s)`, `dependency/dependencies`, `deps`, `snapshot(s)`, and `test-fixtures` from language detection.
+Per applicable category, prefer the project's strict stable native tool, then existing scripts or config that enforce it, then the smallest local config or dependency.
 
-### Choosing each gate
+- Pin tools in the manifest and lockfile. Pin every Action to a full commit SHA with the release tag in a comment.
+- CI formatters run check-only. CI never writes formatting, generated files, lockfiles, or persisted quality state.
+- Every skip needs a concrete language, platform, manifest, or tool-conflict reason; "not configured" is invalid. Type check is inapplicable only without a meaningful static check; CodeQL only when GitHub lacks support.
+- One actionlint job covers workflow syntax and embedded shell. Dependency checks use the project's ecosystem and fail on actionable vulnerabilities.
+- Give each job a stable unique name and minimal permissions, raised per job: CodeQL gets `security-events: write`, build and test read-only contents. Exclude generated, fixture, archive, dependency, and vendored paths from analysis.
+- Run each generated command locally first. If a strict check exposes existing debt, stop; never weaken it.
 
-For every applicable category, take the first that fits: the project's strict stable native tool; an existing script or config that really enforces the category; the smallest new repo-local config or dependency.
-
-- Pin tools in the manifest and the lockfile.
-- Pin each GitHub Action to a full commit SHA and note the release tag in a comment.
-- CI formatter commands only check. CI must not write formatting, generated files, lockfiles, or persisted quality state.
-- A skipped category needs a concrete language, platform, manifest, or tool-conflict reason. "Not configured" does not count.
-- Skip type checking only when the language has no meaningful static check here. Skip CodeQL only when GitHub does not support the language.
-- One actionlint job covers workflow syntax and embedded shell.
-- Dependency checks follow the project's ecosystem and fail on actionable vulnerabilities.
-
-### Workflow files
-
-Build them from the commands you detected. Give jobs stable, unique names. Set minimal top-level permissions and raise them per job: `security-events: write` for CodeQL, read-only contents for build and test. Where the tool allows exclusions, leave generated, fixture, archive, dependency, and vendored paths out.
-
-### The `quality-guard` job
-
-Any repository with maintained source gets a `quality-guard` job. It runs on `pull_request` only, checks out with `fetch-depth: 0`, and runs:
+Every repository with maintained source gets a `quality-guard` job. It runs on `pull_request` only, uses `fetch-depth: 0`, checks out dod-guard at a pinned commit beside the project, and runs:
 
 ```text
 node <dod-guard-checkout>/packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs --base=<base sha> --root=<source root>
 ```
 
-The gate compares the PR-changed files at the merge base and at HEAD. It fails if the PR adds a medium or high finding, or if it removes fewer than one medium or high finding (three low) from those files. Findings already present are listed in the report only, so diagnostic output remains visible.
+Options: `--report=<file>`, `--comment=<file>`, `--report-link=<run url>`, `--block-on`, `--rule-block-on=<rule>:<severity>`. The gate fails when the PR adds a medium or high finding, or removes fewer than one medium or high (or three low) of the findings already in the changed files. Upload the report as an artifact. Post the `--comment` file with `quality-pr-gate-comment.mjs --repo=<owner/name> --pr=<number> --body=<file>` to keep one comment per PR; that job needs `pull-requests: write`. Never copy the scanner or register a quality-guard PostToolUse hook. Existing findings do not stop setup. Put the job on the default branch before section 9.
 
-Options:
+## 4. Ignore rules and instructions
 
-- `--report=<file>`: upload as a build artifact
-- `--comment=<file>` plus `--report-link=<run url>`: keep one gate comment per PR, posted by `quality-pr-gate-comment.mjs --repo=<owner/name> --pr=<number> --body=<file>`; that job needs `pull-requests: write`
-- `--block-on` and `--rule-block-on=<rule>:<severity>`: adjust limits
+- Merge missing `.gitignore` entries for build outputs, caches, editor state, local credentials, and OS files. Keep existing patterns and comments. Once Git exists, run `git check-ignore -v` on representative paths to confirm no pattern hides intended source, manifests, lockfiles, tests, fixtures, workflows, or instruction files.
+- Merge one concise section into the canonical instruction file without replacing guidance. It states the flow: ideas enter via `dod-guard:add-backlog-idea` as Backlog issues; `dod-guard:refine-backlog-item` makes a Todo PBI and writes step plans; `dod-guard:next-ticket` implements and pushes one issue branch; `dod-guard:submit-draft-pr` creates the draft PR; `dod-guard:review-pr` reviews, read-only until explicit acceptance; `dod-guard:complete-pr` alone owns ready, merge, issue confirmation, and branch deletion.
+- Keep shared workflow text in the canonical file. Use an import convention only if the repository already does.
 
-Check out dod-guard at a pinned commit next to the project. Do not copy the scanner and do not register a quality-guard PostToolUse hook. Step 9 makes this job a required check.
-
-Run each generated command locally before trusting its workflow form. If a strict applicable check turns up old debt, stop; do not loosen the check or fix unrelated code. Quality output is diagnostic, and the correctness checks stay in charge.
-
-## 4. Merge ignore rules and repository instructions
-
-Add any missing `.gitignore` entries for build output, caches, editor state, local credentials, and OS files, and keep the patterns and comments already there. Once Git exists, test each new pattern against representative paths with `git check-ignore -v`. It must not hide source, manifests, lockfiles, tests, fixtures, workflows, or repository instructions.
-
-Pick the canonical instruction file and merge in one short section, leaving existing guidance alone. When `AGENTS.md` and `CLAUDE.md` each hold unique guidance, keep both. Shared workflow text goes in the canonical file; use imports only if the repository already does. The section names the skills:
-
-| Skill | Role |
-|---|---|
-| `dod-guard:add-backlog-idea` | puts ideas into the linked Project as Backlog issues |
-| `dod-guard:refine-backlog-item` | makes a Todo PBI and writes its step plans |
-| `dod-guard:next-ticket` | implements and pushes one issue branch |
-| `dod-guard:submit-draft-pr` | creates its draft pull request |
-| `dod-guard:review-pr` | reviews it, read-only until explicit acceptance |
-| `dod-guard:complete-pr` | alone owns ready, merge, issue confirmation, and branch deletion |
-
-## 5. Resolve one linked GitHub Project and common labels
-
-Ask the repository which Project is linked:
+## 5. Project and labels
 
 ```text
 node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>
 ```
 
-Act on what it reports:
+Branch on the outcome (`projects` lists owner, number, title):
 
-- `several` (exit 1): stop and list each owner, number, and title from its `projects`.
-- `resolved` (exit 0): preserve that Project and merge the required status options.
-- `none` (exit 1): create one under the resolved repository owner, link it with `gh project link`, and rerun the command as the readback; it must report `resolved`.
-- Exit 2: stop with its message.
+- `several` (exit 1): stop and list them.
+- `resolved` (exit 0): preserve it and merge status options.
+- `none` (exit 1): create a Project under the repository owner, run `gh project link`, rerun as a readback. It must report `resolved`.
+- Exit 2: stop with the message.
 
-Finding a Project by owner or title alone does not prove it is linked.
+Read fields through the typed connector or REST ProjectsV2. The final Project has exactly one `Status` field with exactly one case-insensitive option each for `Backlog`, `Todo`, `In Progress`, `Done`. In a new empty Project, replace the unused default Status field if needed. In an existing one, never delete a populated field; use the supported update to keep every option id, name, color, and description. Stop if duplicate statuses cannot merge without changing item meaning. Re-query through the repository link; finding it by owner and title is not proof.
 
-The finished Project holds one `Status` field, and that field has exactly one option, matched without regard to case, for each of `Backlog`, `Todo`, `In Progress`, and `Done`. Read fields and options through the typed connector or the REST ProjectsV2 field endpoints.
+Labels: read live labels (name, description, color) and `scripts/workflow-labels.json`. Through the labels REST endpoint, create missing catalog labels and normalize the description and color of existing ones. Never delete, rename, or alter non-catalog labels. Re-read all; catalog labels must match exactly.
 
-- Empty new Project: swap out the unused default Status field if necessary and create a single-select Status with the four options.
-- Existing Project: never delete a field that holds data. Through the supported REST field update or the typed connector, add or rename only the options required, and keep each existing option's id, name, color, and description. If duplicate statuses cannot merge without changing what an item means, stop.
+## 6. Credential and staged review
 
-After the Status options are created or merged, re-query the Project through the repository link with the command above. A Project found only by owner or title is not proof it is linked.
+- Rerun the full inspector after local edits. Any `credentialFindings` entry blocks staging until you review its file and signal. Never print matched values. Run a repo-local secret scanner if configured.
+- Before the first push, check every tracked and untracked file for keys, tokens, `.env` files, connection strings, and high-entropy values. Fixtures use clearly fake values.
+- Review the full diff. Stage explicit reviewed paths only: never `git add .`, `-A`, a glob, or the root. Stage project files in a no-commit repository and setup files otherwise, never generated output, env files, credentials, archives, or unrelated edits.
 
-### Establish the common workflow labels
+## 7. Commit, push, checks
 
-The canonical shared taxonomy is `<skill-dir>/scripts/workflow-labels.json`. Read every live label with its name, description, and color, plus that catalog. Through the repository labels REST endpoint, create each missing catalog label and normalize the description and color of each existing one.
+Make one initial commit if none exists; otherwise commit only reviewed setup changes, using the repository's commit workflow if any. Push without force and set `origin/<default>` as upstream. Verify origin, branch, upstream, remote default branch, last commit, and worktree, which must be clean.
 
-Preserve every label outside that exact catalog: no deletes, renames, or edits. Read all labels again afterward. Each catalog label must carry the exact canonical metadata, and each preserved label must be unchanged. If the readback fails, stop and do not say the taxonomy exists.
+Wait for every workflow on the pushed commit, querying workflow runs and check runs. A queued, skipped, cancelled, neutral, stale, or missing required job is not success. On failure report the exact job and stop before protection. Take required check names from this commit's successful check runs, matched to the generated job names.
 
-## 6. Review credentials and staged content
+## 8. Security
 
-Run the full inspector again once local edits are done. A `credentialFindings` entry blocks staging until you have reviewed the file and the exact signal. Never print a matched value. Summary mode is not a substitute for this per-file credential evidence.
+Use the current REST API. Enable dependency graph, Dependabot alerts and security updates, secret scanning, push protection, and CodeQL (committed workflow or compatible config), and confirm each by readback. If plan, visibility, owner, or API limits block a setting, record the exact response and stop.
 
-Beyond the inspector:
+## 9. Protection
 
-- read through the whole tracked and untracked file list
-- run the repository's own secret scanner if there is one
-- before the first push, look for private keys, tokens, credentials, `.env` files, connection strings, and high-entropy values
-- keep any example or fixture secret plainly fake
+1. Write a temporary snapshot outside the project, with only `projects` and `checks`:
 
-Read the full diff. Stage named, reviewed paths only; `git add .`, `git add -A`, globs, and the repository root are forbidden. What may be staged:
+   ```json
+   {"projects":[{"closed":false,"statusOptions":["Backlog","Todo","In Progress","Done"]}],"checks":[{"name":"observed job name","conclusion":"SUCCESS"}]}
+   ```
 
-- no commits yet: the intended project files
-- existing history: setup files and nothing else
-- never: generated output, a local env file, a credential, an archive, or an unrelated edit
+2. Run `node <skill-dir>/scripts/inspect-repository.mjs --github-snapshot <snapshot.json>`. Proceed only if `readyForProtection` is true. A malformed or incomplete snapshot is a blocker with no payload.
+3. Apply `protectionPayload` unedited to the default branch through the branch protection REST endpoint.
+4. Query again and confirm: PRs required; strict required checks including every observed generated check; admins included; `required_approving_review_count` explicitly `0` for a solo owner; force pushes and deletion disabled.
 
-## 7. Commit, push, and prove the generated checks
+The PR-only `quality-guard` job is absent from the default-branch snapshot, so require it by name after a PR has run it green. Zero approvals does not bypass independent review or the exact-current-head check gate. Delete only the temporary snapshot, never the repository or Project.
 
-With no commits, make one initial commit. Otherwise commit only the reviewed setup changes, through the repository's commit workflow if it has one. Push without force and make `origin/<default>` the upstream. Before moving on, confirm origin, local branch, upstream, remote default branch, last commit, and a clean worktree.
+## 10. Report
 
-Wait for all workflows on the pushed commit and query both workflow runs and check runs. Queued, skipped, cancelled, neutral, stale, or missing required jobs are not successes. If a workflow fails, name the job and stop short of branch protection. Required check names come from this commit's successful check runs, matched against the generated stable job names, never from another repository.
-
-## 8. Enable security before protection
-
-Use the current repository REST API and query again after every change. Turn on each supported item: dependency graph, Dependabot alerts and security updates, secret scanning, push protection, and CodeQL (a committed workflow or a compatible current config). A successful HTTP status proves nothing; read the security state and confirm every supported feature is on. When the plan, visibility, owner type, or an API limit blocks a required setting, record the exact response and stop.
-
-## 9. Protect the observed default branch
-
-Save a snapshot outside the project, shaped exactly like this:
-
-```json
-{
-  "projects": [{ "closed": false, "statusOptions": ["Backlog", "Todo", "In Progress", "Done"] }],
-  "checks": [{ "name": "observed job name", "conclusion": "SUCCESS" }]
-}
-```
-
-```text
-node <skill-dir>/scripts/inspect-repository.mjs --github-snapshot <snapshot.json>
-```
-
-Go on only when `readyForProtection` is true. A malformed or incomplete snapshot is a blocker and yields no payload. Send its `protectionPayload` to the branch protection REST endpoint for the resolved default branch, leaving generated check names untouched. Then query again and confirm these outcomes:
-
-- pull requests are required
-- required status checks are strict and list every observed generated check; add `quality-guard` when it was generated (it runs only on PRs, so the default-branch snapshot lacks it; require it by name once a PR has run it green)
-- the rules apply to administrators
-- `required_approving_review_count` is explicitly `0` for a solo owner who cannot self-approve; zero approvals does not bypass the workflow's independent review or exact-current-head required-check gate
-- force pushes and branch deletion are disabled
-
-When verified, delete the snapshot file and nothing else. Never delete the repository or the Project.
-
-## Result
-
-Final report contents:
-
-- local path, repository URL, default branch, pushed commit, and evidence of a clean worktree
-- visibility: public for a repository this run created, the preserved visibility for an existing remote
-- the linked Project and its status options
-- shared labels and the preserved repository-specific labels
-- the applicability table, each skipped check with its concrete reason, and the checks that passed
-- security settings and protection settings, including zero approvals for a solo owner
-
-Say that independent review and exact-current-head required checks still gate delivery. After a partial failure, open with the failed operation, then list every completed mutation and the exact state left. Do not report completion while any required proof is missing.
+Report the path, URL, visibility (public if new, preserved if existing), default branch, pushed commit, Project and status options, labels, applicability table with skip reasons, passing checks, security and protection settings (including zero approvals), and clean worktree evidence. State that independent review and exact-current-head checks still gate delivery. On partial failure, lead with the failed operation. Never report complete with proof missing.

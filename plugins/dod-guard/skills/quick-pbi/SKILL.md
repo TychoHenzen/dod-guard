@@ -6,40 +6,32 @@ argument-hint: "<requested outcome>"
 
 # Quick PBI
 
-Take one requested outcome and carry it to a merged pull request. Read `standards/working-defaults.md` and `standards/github-request-discipline.md` from the plugin root first. Load each skill named below from the active plugin root before you invoke it.
+Read `standards/working-defaults.md` and `standards/github-request-discipline.md` from the plugin root and apply them. Load each skill below from the active plugin root before you invoke it. This skill chains those skills and never replaces their gates or evidence rules.
 
-## Interaction contract
+## Authority
 
-A concrete feature request authorizes the routine lifecycle. Invoking this skill authorizes every commit, push, review publication, and the final `dod-guard:complete-pr` run on the verified final head. Do not pause for ceremonial confirmation. Ask no confirmation between stages.
+Invoking this skill authorizes the whole lifecycle: commits, pushes, review publication, and the guarded merge of the verified head. Never ask for confirmation between stages. The one permitted interaction is the single batched clarification round that `refine-backlog-item` owns.
 
-The only allowed user interaction is the clarification round that `dod-guard:refine-backlog-item` owns. Collect all currently independent questions in one round, ask them together, then resume the same issue with the answers. Ask nowhere else. If a material answer stays unavailable, leave the issue in its real state and stop.
+Target the current repository, or one the user names. Never invent a requirement. If the target, linked Project, credentials, branch, head, or required evidence cannot be resolved, stop and report the exact blocker. Never ask the user to pick a fallback, and never continue silently past a failed gate.
 
-Use the current repository, or the one the user names. If the target, Project, credentials, branch, head, or evidence cannot be resolved, stop and report the exact blocker. Do not ask for a fallback. Never invent a requirement, and never continue past a failed gate.
+## Shape of the work
 
-Shape the work this way:
+A concrete feature request needs no second planning or permission round. Create or reuse exactly one parent PBI and move it to `In Progress`. Deliver it through one branch, one commit series, and one draft PR.
 
-- Create or reuse one associated parent PBI for the request, and move it to `In Progress`.
-- Use one branch, its commit series, and one draft PR for the whole parent.
-- Open a child PBI only for a functional slice that can be delivered and verified on its own. Keep dependent atomic steps in the parent checklist.
-- Treat a linked child as checklist work on the parent's branch and PR.
-- Assess four lenses: `implementation`, `wiring/usability`, `quality`, and `reliability`. Attach each concern to the slice or task that owns it. Create no child issue for a lens.
-- Under `wiring/usability`, require proof that the feature is reachable from its intended UI or supported user-facing surface.
-- Under `quality`, include cleanup.
-- Under `reliability`, cover failure and recovery beyond the happy path.
+During refinement, create child PBIs only for slices that are independently deliverable and verifiable. Keep dependent atomic steps in the parent checklist. Children are checklist work delivered on the parent's branch and PR.
 
-## Run the lifecycle
+Assess four lenses: `implementation`, `wiring/usability` (proof the feature is reachable from its intended user-facing surface), `quality`, and `reliability` (failure and recovery). Attach each concern to the slice or parent task that owns it. Never create category-named children.
 
-This skill coordinates the existing delivery skills. It does not replace their safety gates or evidence requirements. Run the stages in this order. Pass each stage's result to the next one.
+## Stages
 
-1. Capture. Invoke `dod-guard:add-backlog-idea` once, with the whole request. If it creates several independent issues, keep its feature split and issue mappings, and process them one at a time in creation order. If part of the text cannot be assigned to a feature, stop with that blocker, and do not ask and do not guess.
-2. Refine. Invoke `dod-guard:refine-backlog-item <issue-number>`. When refinement finishes, the issue moves to `Todo` before the next stage starts.
-3. Implement. Invoke `dod-guard:next-ticket <issue-number>`. Its pushed branch, commit, and checks are the handoff. Choose no other ticket.
-4. Open the PR. Invoke `dod-guard:submit-draft-pr <issue-number>`. Keep the pull request number and head it reports.
-5. Review and fix.
-   - Invoke `dod-guard:review-pr <pull-request>`. It scans the changed files, runs the reviewer agents, and posts one comment-only review. It yields exactly one review. A completed `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` recommendation is the one review, even when it carries findings.
-   - If the review stops without posting a review, record the reason and the PR URL as a durable blocker and stop.
-   - Read the recommendation and reviewed commit back from the remote PR; no local ledger is needed.
-   - For every valid unresolved finding (`BLOCKER` or `MAJOR`), invoke `dod-guard:fix-pr-review <pull-request> <finding-ids>`, with ids in the form `GH-<id>`. Fix each actionable finding. Decline any other with evidence. Then rerun affected checks, respond to and resolve each finding, and push. Do not invoke another review after those fixes.
-6. Merge. Invoke `dod-guard:complete-pr <pull-request>` once every `BLOCKER` and `MAJOR` finding is fixed and resolved, or recorded as not actionable with evidence. Also require that the required checks pass and that the PR head is the head the fixes pushed. A `MINOR` note has no thread and blocks nothing. If `complete-pr` reports `unresolved-review-threads`, clear them with `dod-guard:fix-pr-review <pull-request> <finding-ids>` and invoke `dod-guard:complete-pr <pull-request>` again.
+1. Run `dod-guard:add-backlog-idea` once with the complete request. Keep its feature split and issue mappings. For several independent issues, process them one at a time in creation order. If it reports text that fits no feature, stop with that blocker.
+2. Run `dod-guard:refine-backlog-item <issue-number>` for each issue. Ask all independent questions in one round, wait, then resume the same issue. Ask nothing in any other stage. If a material answer stays unavailable, leave the issue in its actual state and stop.
+3. Run `dod-guard:next-ticket <issue-number>` only after refinement moves the issue to `Todo`. Take its pushed branch, commit, and checks as the handoff. Never select another ticket.
+4. Run `dod-guard:submit-draft-pr <issue-number>`. Keep the returned pull request and head.
+5. Run `dod-guard:review-pr <pull-request>`. A completed `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` counts as the one review, even with findings. Read the recommendation and reviewed commit back from the remote PR, with no local ledger. If review-pr stops without posting, record its reason and the PR URL as a durable blocker and stop.
+   Only `BLOCKER` and `MAJOR` findings have a `GH-<id>` thread. `MINOR` has none and blocks nothing. Run `dod-guard:fix-pr-review <pull-request> <finding-ids>` once with every valid unresolved `BLOCKER` and `MAJOR` id. It fixes or declines each finding with evidence and resolves the thread. Rerun affected checks. Never run another review.
+6. Run `dod-guard:complete-pr <pull-request>` only when every `BLOCKER` and `MAJOR` is resolved or recorded not-actionable with evidence, required checks pass, and the head is the one the fixes pushed. Its guarded merge is the acceptance boundary this skill authorizes. If it stops on `unresolved-review-threads`, clear the named threads with fix-pr-review and run it again.
 
-If any stage fails, stop without rollback or duplicate issues. Then report these items: issue, branch, PR, commit, review, check, Project, and merge state, plus the failed stage and the next evidence needed.
+## Failure
+
+On any stage failure, stop. Do not roll back and do not create duplicate issues. Report the completed state (issue, branch, PR, commit, review, checks, Project, merge) and the exact failed stage with the next evidence or decision it needs.
