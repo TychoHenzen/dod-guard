@@ -1,8 +1,5 @@
 // Shared by the model-routing test files. The name does not match the test
 // glob, so the runner does not treat it as a suite.
-import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { prose } from "../../../lib/skill-text.mjs";
 
 // Codex ignores or caps spawn-time model overrides, so each tier is pinned in
 // its agent file. The tests pin both the Claude source and the generated
@@ -59,12 +56,3 @@ export function frontmatterValue(source, key) {
   const match = source.match(new RegExp(`^${key}: (.+)$`, "m"));
   return match ? match[1].trim() : undefined;
 }
-
-export function assertPhrases(text, phrases, label) {
-  for (const phrase of phrases) {
-    assert.match(text, prose(phrase), `${label}: ${phrase}`);
-  }
-}
-
-const STANDARD = new URL("standards/model-routing.md", pluginRoot);
-export const standard = await readFile(STANDARD, "utf8");

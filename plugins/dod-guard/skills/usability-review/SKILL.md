@@ -5,105 +5,96 @@ description: Review a user-facing interface or workflow for usability, accessibi
 
 # Usability review
 
-Review whether a user can understand and complete the intended task. This is
-a practical, evidence-aware review, not a visual design system or a formal
-accessibility conformance audit.
+Read and apply `standards/working-defaults.md` from the plugin root (stricter skill boundaries win).
 
-Read and apply `standards/working-defaults.md` from the plugin root. Stricter
-boundaries in this skill win.
+## When it runs
 
-## Establish the task
+This skill runs only when someone asks for it with `/usability-review`, or when another task calls for it explicitly or as a contextual review. Nothing triggers it automatically, and no hook does.
 
-Read the feature request, PBI, acceptance criteria, and relevant repository
-instructions. State:
+## What it will not do
 
-- the intended user and their primary task;
-- the expected successful outcome;
-- the surface type: CLI, API, documentation flow, graphical interface, or
-  another workflow;
-- the evidence available and the evidence that cannot be observed.
+- Do not implement findings. The output is a critique, and any change is a separate task.
+- Do not require a browser, MCP server, external dependency, or provider-specific UI tool, and never invent a dependency.
+- It is not a visual design system review or a formal accessibility conformance audit.
+- Do not claim that an unobserved state passes. If you did not see it, say so.
+- A usability review does not establish WCAG conformance. Heuristic findings stay separate from claims about a formal standard.
+- It does not stand in for product research, security review, performance testing, or functional testing.
+- It does not push your taste. Judge the interface by whether the user can finish the task, not by style.
 
-Do not infer a visual surface, browser, design system, user goal, or product
-requirement that the request and repository do not establish.
+## Settle the scope first
 
-## Select evidence
+Before you judge anything, read the request, the PBI, the acceptance criteria, and the repository instructions. Then record four things:
 
-Use the strongest available evidence for the surface:
+1. The intended user and their primary task, plus the outcome they expect.
+2. The surface type: CLI, API, docs, GUI, or other.
+3. The evidence you have.
+4. The evidence you do not have.
 
-- source, command help, API descriptions, configuration, and documentation for
-  CLI, API, and non-visual workflows;
-- screenshots or mockups for static visual review;
-- live interaction for behavior, focus, responsive, loading, and recovery
-  states when a live surface is available.
+Take only what the request and the repository establish. Never infer a visual surface, a browser, a design system, a goal, or a requirement they leave out.
 
-If a screenshot, mockup, or live surface is unavailable, record that limit and
-review the evidence that exists. Do not claim that an unobserved state passes.
-Do not require a browser, MCP server, external dependency, or provider-specific
-UI tool.
+## Match the evidence to the surface
 
-## Review the task journey
+| Surface | Evidence to use |
+|---|---|
+| No visual layer | source, command help, API descriptions, configuration, and documentation |
+| Static visual | screenshots or mockups |
+| Running interface | live interaction: behavior, focus, responsive layout, loading, and recovery |
 
-Follow the user's task from start to finish. Check only the states and surfaces
-that apply:
+Use the live row only when something live exists. When a surface is missing, record that as a limit and review what remains. A gap in evidence is a result of the review, not a reason to stop.
 
-1. Discoverability: can the user find the feature and understand its purpose?
-2. Hierarchy and wording: are labels, instructions, and choices clear?
-3. Affordances and input burden: does the surface show what is actionable and
-   request only the information needed?
-4. Progress and empty states: does loading, waiting, or no-result state explain
-   what is happening and what the user can do next?
-5. Success and feedback: does completion show the result and the next useful
-   action?
-6. Error and recovery: does failure explain the problem, preserve safe state,
-   and offer a correction, retry, undo, or support path?
+## What to ask along the journey
 
-## Review accessibility and interaction
+Follow the user from first contact to finished task. Ask each question only for states that apply to this feature.
 
-For graphical or interactive surfaces, inspect applicable evidence for semantic
-structure, accessible names and labels, keyboard operation, visible focus,
-contrast, target size, responsive behavior, and reduced motion. Check these
-only when the relevant surface and evidence exist. For CLI, API, and
-documentation workflows, review equivalent clarity and operability without
-applying visual checks that do not fit.
+- Discoverability: Can the user find the feature, and do they see what it is for?
+- Hierarchy and wording: Do the labels, instructions, and choices read clearly?
+- Affordances and input burden: Is it obvious what can be acted on, and is the user asked only for input the task needs?
+- Progress and empty states: When the interface is loading, waiting, or has nothing to show, does it say what is going on and what to do next?
+- Success and feedback: After the task works, does the user see the result and a useful next step?
+- Error and recovery: When something fails, does the interface explain the problem, leave the user in a safe state, and offer a way to correct, retry, undo, or get help?
 
-When the feature uses AI, also check for applicable trust cues: consent,
-disclosure, cost, uncertainty, verification, undo, and control over generated
-changes or external actions.
+## Accessibility
 
-Keep heuristic findings separate from formal standards claims. This skill does
-not establish WCAG conformance or replace product research, security,
-performance, or functional testing.
+Apply these checks only to a graphical or interactive surface, and only with evidence in hand:
 
-## Report findings
+- semantic structure
+- accessible names and labels
+- keyboard operation
+- visible focus
+- contrast
+- target size
+- responsive behavior
+- reduced motion
 
-Prioritize findings by user impact:
+A CLI, an API, or a document gets the matching checks for clarity and operability. It gets none of the visual ones.
 
-- `high`: blocks the primary task, hides a critical state, or creates a serious
-  accessibility, trust, or recovery barrier;
-- `medium`: causes substantial confusion, extra work, or an avoidable error;
-- `low`: a smaller clarity or efficiency improvement.
+## AI trust cues
 
-Return a concise report with this shape:
+If the feature uses AI, check how it handles consent, disclosure, cost, uncertainty, verification, undo, and control over generated changes or external actions. If it does not use AI, leave this out.
+
+## Severity scale
+
+- high: the problem blocks the primary task, hides a critical state, or forms a serious accessibility, trust, or recovery barrier.
+- medium: the problem causes substantial confusion, extra work, or an error the user could have avoided.
+- low: a smaller gain in clarity or efficiency.
+
+## Write the report
+
+Keep it short and put the findings with the most user impact first. Show which parts of the journey and which states you covered, even when you found no problems. Flag anything you could not observe.
 
 ```text
 ## Usability review
-- Intended user and task: ...
-- Surface: ...
-- Evidence used: ...
-- Evidence unavailable: ... or none
+
+Intended user and task: <who, and what they are trying to do>
+Surface: <CLI | API | docs | GUI | other>
+Evidence used: <what you read or saw>
+Evidence unavailable: <what you could not observe, or none>
 
 ### Findings
-- [high|medium|low] Short finding
-  - Impact: ...
-  - Evidence: path:line, heading, screenshot region, or observed state
-  - Minimal change: ...
-  - Verification: ...
+
+- [high|medium|low] <short title>
+  Impact: <what the user loses or risks>
+  Evidence: <path:line, heading, screenshot region, or observed state>
+  Minimal change: <the smallest change that removes the problem>
+  Verification: <how to confirm the change worked>
 ```
-
-Include the relevant user journey and state coverage even when no finding
-exists. Mark unobserved evidence explicitly. Do not implement findings, impose
-aesthetic preferences, invent a dependency, apply visual checks to a
-non-visual surface, or claim formal WCAG conformance.
-
-Run this skill explicitly or as a contextual review during planning,
-implementation, review, or handoff. It has no automatic hook.

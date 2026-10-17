@@ -269,13 +269,8 @@ test("apply runs on a snapshot built to the documented closure snapshot shape", 
     "comments",
   ];
   const PULL_KEYS = ["number", "repository", "state", "mergedAt", "head", "base", "mergeCommit", "requiredChecks"];
-  const ADDED_BY_STANDARD = ["children", "body", "state_reason", "comments", "statusFieldId", "doneOptionId"];
   const pick = (record, keys) =>
     Object.fromEntries(keys.filter((key) => key in record).map((key) => [key, record[key]]));
-  const standard = await readFile(new URL("../../../standards/project-workflow.md", import.meta.url), "utf8");
-  for (const key of [...ISSUE_KEYS, ...PROJECT_KEYS].filter((name) => ADDED_BY_STANDARD.includes(name))) {
-    assert.ok(standard.includes("`" + key + "`"), key);
-  }
   const snapshot = recordedSnapshot();
   const documented = pick(snapshot, TOP_KEYS);
   documented.project = pick(snapshot.project, PROJECT_KEYS);

@@ -5,344 +5,93 @@ description: Execute a refined GitHub Project PBI through implementation, verifi
 
 # Next ticket
 
-Use the repository's main checkout as the source of truth for ordinary ticket
-work. Before selection, run `git worktree list --porcelain`; its first worktree
-is the main checkout. When it can safely create the selected branch from the
-fetched default, run there. For a locked, unavailable, active, or unsafe
-user-owned main checkout, stop and report the reason, affected checkout, and
-recovery path; never create a worktree. Never reset, stash, overwrite,
-move, or silently include user-owned changes. Never choose a project by title
-similarity or from a remembered owner.
+Take one ready PBI from `Todo` to a pushed branch: branch, assign, `In Progress`, implement, verify, commit, push.
 
-After selection, create the PBI's feature branch, assign the issue, move it
-to In Progress, implement it, verify it, review completion, commit it, and push
-the branch.
+Resolve the plugin root from this skill's directory. Before editing, read `standards/working-defaults.md`, `standards/github-request-discipline.md` (section "Resolve the repository and Project"), and `standards/project-workflow.md`. Do not assume the target repository has them. Where this skill is stricter, it wins. Keep the one-parent-branch, one-PR boundary aligned with refine-backlog-item, submit-draft-pr, complete-pr, and project-workflow.
 
-Read and apply `standards/working-defaults.md` and
-`standards/github-request-discipline.md` from the plugin root. Stricter
-boundaries in this skill win.
+## Checkout and safety
 
-## Preconditions
+- The current directory must be inside a Git worktree.
+- Run `git worktree list --porcelain`. Work in the first entry, the main checkout, when it can safely create the branch from the fetched default. If it is locked, unavailable, active, or unsafe and user-owned, stop and report the reason, the checkout, and the recovery path.
+- Never create a worktree.
+- Run `git status --short --branch` and classify every pending path. A dirty tree alone is not a blocker.
+- Ordinary changes that clearly belong to the work stay uncommitted until the ticket branch exists, then are committed there. Never commit them on the current or default branch to clear status.
+- Preserve and report secrets, destructive intent, unrelated changes, and work that cannot be separated safely. Never reset, stash, overwrite, move, or silently include user-owned changes.
+- Never create a tracked planning file; keep temporary notes outside the repo or remove them before commit.
+- Follow any smaller-step boundary in repository instructions.
+- Never bypass stops for credentials, destructive or authority-bound actions, unrelated work, provider or head mismatch, or missing high-risk evidence.
 
-1. Confirm the current directory is inside a Git worktree.
-2. Read `git status --short --branch` and classify every pending path. A dirty
-   worktree is not a blocker by itself. If ordinary pending changes clearly
-   belong to the requested work, keep them uncommitted until the ticket branch
-   exists, then stage and commit them there with the ticket's other reviewed
-   changes.
-   Do not commit them on the current or default branch to clear status.
-   Preserve and report secrets, destructive intent, unrelated changes, or work
-   that cannot be separated safely.
+## Project and ticket
 
-## Resolve the repository and Project
+Run `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`. Stop on outcome `none`, outcome `several`, or exit 2. Never pick a Project by title similarity or from a remembered owner. Report the Project owner, number, and title, then use it for lookup.
 
-Resolve the repository, its linked Project, and the `Todo` and `In Progress`
-statuses as described under "Resolve the repository and Project" in
-`standards/github-request-discipline.md`. For the Project, run
-`node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`
-and stop on outcome `none` or `several` or on exit 2. Report the Project's
-owner, number, and title, then use it for ticket lookup.
+A user-supplied issue number must belong to this repository and appear in the linked Project. Without one, list open Project items from this repository, keep unassigned issues with Status exactly `Todo`, drop pull requests, and show number, title, assignee, status. Select a lone result automatically. Otherwise the user chooses.
 
-## Select a ticket
+## Readiness
 
-If the user supplied an issue number, verify that it belongs to this repository
-and appears in the linked project.
+A small clear fix may take the ordinary path. A feature or materially ambiguous PBI uses the seven records in project-workflow as its handoff (`requirements` through `planned-acceptance-matrix`, including `lens-ownership`).
 
-Without an issue number, list open project items from this repository. Keep
-only unassigned issues whose Status is exactly `Todo`, and exclude pull
-requests. Show the issue number, title, assignee, and status. If exactly one
-issue remains, select it. Otherwise let the user choose.
+A ready ticket has a change description, implementation notes, checkbox acceptance criteria with observable outcomes, and one `## Step plan: <task-id>` comment per task (`task-1` for a PBI with no task list). Linked sub-issues are open, or closed with pushed implementation evidence; a parent with none is valid as one coherent slice. In a structured PBI each child is actionable, `Todo`, owned by a task, and maps to exactly one independently deliverable slice, and `lens-ownership` maps `implementation`, `wiring/usability`, `quality`, and `reliability` to a task or slice with observable acceptance or verification evidence. A task owning cross-cutting parent work with no child carries `parentLevel: "convergence"`.
 
-Before reporting a ticket as ready, read its body and require:
+Stop before implementation when the issue is incomplete (name the missing section, never invent requirements), a child is duplicated, mis-mapped, or not actionable, or a lens has no owner.
 
-- a short description of the intended change;
-- implementation notes;
-- acceptance criteria written as checkboxes with observable outcomes;
-- one step plan for every task in its task list, a `## Step plan: <task-id>`
-  comment that `dod-guard:refine-backlog-item` wrote and that the step plan rule
-  in `standards/project-workflow.md` accepts by its author; a PBI with no task
-  list has one task, `task-1`.
+A missing step plan, a plan from an author the step plan rule does not accept, or a plan that leaves a design decision open is stop `step-plan-missing`. Name the task, change nothing, and report to the dispatcher, which runs `dod-guard:refine-backlog-item` on the parent. Never write or complete a step plan.
 
-For an ordinary parent, require every linked sub-issue to be open or closed
-with pushed implementation evidence. A parent PBI with no linked sub-issues is
-valid when it is one coherent implementation slice. For a structured PBI,
-require the task list's functional decomposition and verify every linked child,
-if any, is actionable and `Todo`, maps to exactly one independently deliverable
-slice, and has an owning task. Before implementation, verify the named
-`lens-ownership` record maps each required lens to an existing task or slice and
-observable acceptance or verification evidence; stop on any actionable
-remainder from the structural phase of the executable convergence proof. Before
-the branch exists, save the issue body read back from GitHub to a local UTF-8 file and
-run that phase as one command:
+Before the branch exists, save the issue body as read back from GitHub to a UTF-8 file and run:
 
-```text
-node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]
-```
+`node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]`
 
-Pass `--children` a JSON array of the linked functional-slice children, each
-with its slice id and evidence, when any exist. The command reads the named
-records, including `acceptance-evidence` and `planned-acceptance-matrix`, and
-checks records, slice ownership, lens ownership, evidence shape, the planned
-matrix, and the lens-row rules that complete-pr's finalization gate applies,
-without an exact head. It prints `{outcome, remainder}` and exits 0 only on
-`verified`. Stop on exit 1 (an actionable remainder) or exit 2 (a usage or
-parse error that names the argument or record). The command refuses a file
-that is not UTF-8, such as the UTF-16 that a Windows PowerShell 5.1 `>`
-redirect writes, with exit 2; a UTF-8 byte-order mark is accepted. After the handoff is
-pushed, rerun the proof with the exact head and matrix and require their
-freshness. Require pushed implementation evidence before a
-commit or PR handoff, not before execution. Do not require a fixed child count
-or category set; stop before implementation when a child is
-duplicated, mis-mapped, or not actionable, or when the implementation, wiring
-and end-to-end usability, code quality, or failure/recovery concern has no
-owning slice or parent-level task.
-Tasks that own cross-cutting parent work without a linked child must mark that
-task with `parentLevel: "convergence"`; otherwise every task names a functional
-slice. The required lens IDs are `implementation`, `wiring/usability`,
-`quality`, and `reliability`; descriptive prose maps to those IDs.
-The same functional-slice and lens-ownership handoff is consumed by
-`refine-backlog-item`, `submit-draft-pr`, `complete-pr`, and
-`standards/project-workflow.md`; keep their one-parent-branch and one-PR
-delivery boundary aligned when changing this contract.
+Pass `--children` as a JSON array of linked functional-slice children (slice id plus evidence) when any exist. It prints `{outcome, remainder}`: exit 0 is `verified`, exit 1 an actionable remainder, exit 2 a usage or parse error. Stop on 1 or 2. It rejects non-UTF-8 files such as PowerShell 5.1 `>` UTF-16, and accepts a UTF-8 BOM. After the handoff is pushed, rerun it with the exact head and matrix and require freshness. Implementation evidence must be pushed before commit or PR handoff, not before execution.
 
-Stop and name the missing section when the issue is incomplete. Do not invent
-requirements. A missing step plan, a comment with the heading from an author
-that the step plan rule does not accept, or a step plan that leaves a design
-decision open, is the stop `step-plan-missing`: name the task, change nothing,
-and report the stop to your dispatcher, which runs
-`dod-guard:refine-backlog-item` on the parent. Never write or complete a step
-plan yourself.
+## Prepare and start
 
-Resolve the active dod-guard plugin root from the directory containing this skill,
-then read `<plugin-root>/standards/project-workflow.md` and classify the PBI
-before editing. Do not assume the target checkout contains the shared standard.
-A small, clear fix may use the ordinary path. A feature or materially ambiguous
-PBI uses its `requirements`, `clarifications`, `implementation-plan`,
-`task-list`, `lens-ownership`, `acceptance-evidence`, and
-`planned-acceptance-matrix` records as the implementation handoff. Do not create a tracked
-planning file or bypass stops for credentials, destructive or authority-bound
-actions, unrelated work, provider or head mismatch, or missing high-risk
-evidence.
+Fetch the remote default branch first. Name the branch `codex/<issue-number>-<slug>`, under 64 characters. The slug is lowercase ASCII from the title (letters, digits, single hyphens, none leading or trailing). Shorten only the slug. The branch must not exist locally or on `origin`. Never create or switch to an existing branch.
 
-## Prepare the mutation
+The issue must currently be `Todo`. Resolve the project item id, numeric project number, live Status field id, and `In Progress` option id. Stop before any mutation if a value is missing or ambiguous. Never hardcode ids from an earlier run. Selecting the ticket authorizes the branch, assignment, and status changes, so ask no further confirmation. In order:
 
-Resolve every value before changing local or remote state:
+1. Create the local branch from the fetched remote default, keeping the classified in-scope pending changes. If Git cannot do that without losing them, stop. Do not stash, discard, or commit elsewhere.
+2. Push with upstream tracking to the same-named branch on `origin`.
+3. Assign the issue through the GitHub MCP assignee operation. Fall back to `gh issue edit` with `--add-assignee @me`.
+4. Run `node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <in-progress-option-id> "In Progress" <item-id>`. It reads the item back before you continue. Pass the numeric item id: a `PVTI_` id is found only through the items list, which can lag.
 
-1. Fetch the remote default branch.
-2. Turn the issue title into a lowercase ASCII slug. Keep letters, digits, and
-   single hyphens. Remove leading and trailing hyphens.
-3. Form the branch name `codex/<issue-number>-<slug>`. Keep the complete name
-   under 64 characters by shortening only the slug.
-4. Confirm that the branch name exists neither locally nor on `origin`.
-5. Confirm the selected PBI currently has Status `Todo`. Resolve its project
-   item id, the numeric project number, the live Status field id, and the In
-   Progress option id.
+After a failed, timed-out, or ambiguous action, read back the local and remote branch, assignee, and Project status, then resume only the missing action. Never create a second branch or repeat a mutation before its readback. Report which actions completed and keep the branch and remote state. Do not roll back.
 
-Stop before any mutation if a value is missing or ambiguous. Never hardcode a
-project, field, option, repository, default branch, or user id from an earlier
-run.
+## Implement
 
-Selecting a ticket authorizes the branch, assignment, and status mutations
-below. Do not ask for another confirmation when the requested ticket and every
-resolved value are unambiguous.
+The issue description, notes, and acceptance criteria are the task contract. Add no behavior it does not require. Read the repository instructions for every touched file, and inspect affected code, callers, and tests before editing. Implement every criterion, with automated tests where possible. Prefer small pure functions, I/O at the boundaries.
 
-## Start the ticket
+Dispatch every task, including a one-task PBI's single task, to `dod-guard:stage-cheap` from its step plan comment. Save the comment unchanged to a scratch file outside the repository. The brief is the "Stage brief" in `standards/model-routing.md`: first line `Follow the step plan in <scratch file>.`, then the branch and the proofs to return. With more than one task, run each as one step of [`dod-guard:step-by-step`](../step-by-step/SKILL.md), passing the task list as a calling-skill plan with a commit per step and one fresh subagent per task.
 
-Perform these actions in order:
+- This thread writes no step plan and decides no design question. Validations and artifact regeneration also go to `dod-guard:stage-cheap`.
+- Edit tracked files here only when the brief carries the failure record of an earlier cheap run of that task (a check failed twice, or a plan was reported unappliable).
+- When running as `dod-guard:stage-cheap-skill` and a task fails that way, stop the stage and report the failure record to the dispatcher, which reruns it under the Escalation section of model-routing.
+- Each task report names its dispatch (agent, model, effort) or the escalation record behind an owner edit. A report with neither is a failed check.
+- For a structured PBI, map each task to files, commit, and fresh verification. Never report a task complete when its requirement is contradicted or evidence is missing.
 
-1. Create the local branch from the fetched remote default branch while
-   retaining the classified in-scope pending changes. If Git cannot create the
-   branch without overwriting or losing them, stop rather than stash, discard,
-   or commit them on another branch.
-2. Push it with upstream tracking to the branch of the same name on `origin`.
-3. Assign the issue with the GitHub MCP assignee operation. If MCP is
-   unavailable, use `gh issue edit` with `--add-assignee @me`.
-4. Set the issue's project Status to `In Progress` with the shared status-write
-   runner, passing the project owner, numeric project number, Status field node
-   id, In Progress option id, expected status name, and the selected item id in
-   that order:
+## Verify
 
-   ```text
-   node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <in-progress-option-id> "In Progress" <item-id>
-   ```
+Use the repository's documented build, test, lint, and format commands: focused checks while working, then every pre-PR gate. Commands that cross PowerShell, native executables, or a POSIX shell follow [command composition](../../docs/command-composition.md).
 
-   The runner resolves the live REST field and item ids from the linked Project,
-   uses the numeric project number as the REST path identifier, and reads the
-   item back before the ticket-start sequence can continue. The item id may be
-   the Project item's numeric REST id or its `PVTI_` global node id; the runner
-   resolves either form to the same item. Pass the numeric id: the runner reads
-   it through the single-item endpoint, while a `PVTI_` id is found only through
-   the items list, which can lag behind a newly added item.
+- Confirm the test glob includes every new test or fixture before calling a suite green.
+- Do not rerun an unchanged full suite. A suite consuming a changed or added fixture, scene, seed, or shared test data is not unchanged: run every consumer before push.
+- A consumer suite that cannot run locally is named in the handoff as pending exact-head CI outside the acceptance matrix, and carried into the PR body. That alone does not stop PR handoff, but its exact-head CI must pass before review, with the run ID in the Preflight checkpoint (or the handoff if none).
+- On a failing test, update a stale expectation or fix the implementation. Never weaken or delete a test just to pass.
+- Generate tracked build outputs on the feature branch. Never rely on CI to write or repair them.
+- Quality diagnostics are report-only: generate or persist no metric state.
+- Live runtime tool proofs (MCP for a game, app, emulator): read the tool's schema (MCP `tools/list`) and send only declared arguments. Wait for its readiness signal, or record that none exists and use its documented ready condition or a no-op call. Failing to become ready is a failure under working-defaults failure-recovery. After a rejected or malformed call, never retry identical arguments: make one schema-corrected call or switch to the nearest supported proof, and record the switch and original error in the matrix row (or the `## Implementation handoff`).
 
-Do not create or switch to an existing branch. Report the exact completed
-actions if a later mutation fails. Keep the successfully created branch and
-remote state for diagnosis instead of attempting an automatic rollback.
+### Evidence records
 
-If a Start-the-ticket action fails, times out, or returns ambiguously, read back
-the local and remote branch, issue assignee, and Project status before retrying.
-Preserve the created branch and resume only the missing action from that
-observed checkpoint; never create a second branch, repeat an assignment, or
-repeat a status mutation before its readback.
+Map each acceptance criterion to fresh evidence. A structured PBI builds one `## Acceptance matrix` in the handoff: one row per criterion and mandatory user-facing path, with the fields in project-workflow and only the statuses `pass`, `unverified`, `failed`, `blocked`, `inapplicable` (the last needs a reason). Add identity/authorization, interactive-control, browser/E2E, data/error, and recovery rows when they apply, otherwise record why not. Validate every row against the checked-out and pushed head. Map every linked child to its task, files or state, commit, and verification.
 
-## Implement the issue
+Once the PR exists, a structured parent adds one `## Preflight checkpoint` to the same handoff, tied to the exact pushed head, with one row per required provider context (statuses `present`, `pending`, `failed`, `skipped`, `unavailable`). Dispatch a draft-skipped workflow only after readiness is read back, once per repository, ref, workflow, and head. Record base drift, merge conflicts with their `## Conflict triage` (see `standards/conflict-triage.md`) or unresolvable stop, unexpected movement, provider failure, and any recovery remainder.
 
-Read the repository instructions that apply to every file the issue touches.
-Treat the issue description, implementation notes, and acceptance criteria as
-the task contract. Do not add behavior that the issue does not require.
-
-Inspect the affected code, its callers, and its existing tests before editing.
-Implement every acceptance criterion. Add or update tests where an observable
-criterion can be checked automatically. Follow any smaller-step boundary in the
-repository's own instructions.
-
-For a structured PBI, map each task to the changed files, commit, and fresh
-verification evidence in the completion report. Do not report a task complete
-when its requirement is contradicted or its evidence is missing.
-
-Dispatch every task, including the single task of a one-task PBI, to
-`dod-guard:stage-cheap` from the task's step plan, the `## Step plan: <task-id>`
-comment that the step plan rule in `standards/project-workflow.md` accepts. When the task
-list has more than one task, run each task in order as one step
-of [dod-guard:step-by-step](../step-by-step/SKILL.md), passing the task list
-as a calling-skill plan with a commit per step: one fresh subagent per task.
-Before dispatching a task, save its step plan comment, unchanged, to a scratch
-file outside the repository. The brief is the one "Stage brief" in
-`standards/model-routing.md` defines: its first line reads `Follow the step plan
-in <scratch file>.`, then the branch and the proofs to return. This thread writes
-no step plan and decides no design question: the plan carries every design
-decision.
-Implementing the task from that plan uses the cheap tier on
-`dod-guard:stage-cheap`, and running its validations or
-regenerating artifacts uses the cheap tier on `dod-guard:stage-cheap`, as
-`standards/model-routing.md` defines them. Edit tracked files for
-implementation on this thread only when your brief carries the failure record of
-an earlier cheap run of the same task: the cheap model failed its check twice,
-or reported the plan unappliable, as the Escalation section of that standard
-says. When you run on `dod-guard:stage-cheap-skill` and a task fails that way,
-stop the stage and report the failure record to your dispatcher, which reruns
-the stage under that section. Each task report names its dispatch
-(agent, model, and effort) or the escalation record that explains an owner
-edit; a report with neither is a failed check. step-by-step's per-step
-commit makes every verified task a durable checkpoint before the next task
-starts.
-
-For code shape, prefer small pure functions with explicit inputs and outputs,
-keep external I/O at boundaries, and use ordinary loops or mutation when that
-is clearer. Do not require a functional language or dense composition.
-
-When a verification command crosses PowerShell, a native executable, or an
-explicitly selected POSIX shell, apply the repository's
-[command-composition contract](../../docs/command-composition.md). Preserve
-separate path arguments, required-argument checks, destination-parent
-preconditions, and producer exit status.
-
-When a test fails, compare its expectation with the clear task contract. Update
-a stale expectation and rerun it. Fix the implementation when it violates the
-contract. Never weaken or delete a test only to obtain a pass.
-
-Do not create a tracked planning document. Temporary working notes must stay
-outside the repository or be removed before the commit.
-
-## Verify and prepare generated files
-
-Use the repository's documented build, test, lint, and formatting commands.
-Run focused checks while implementing, then run every required pre-PR gate.
-Before calling a suite green, confirm the configured test glob includes every
-new test or fixture. Do not rerun an unchanged full suite for reassurance.
-
-A suite that consumes a changed fixture is not unchanged. When a change adds
-or modifies a fixture, scene, seed, or other shared test data, search for
-references to it and run every existing suite that consumes it before push.
-When such a suite cannot run locally, name it in the handoff as pending
-exact-head CI, outside the acceptance matrix, and carry that into the pull
-request body; that alone does not stop PR handoff. Its exact-head CI result
-must pass before review, recorded with its run ID in the Preflight checkpoint,
-or in the handoff when there is none.
-
-When a proof calls a live product or runtime tool, such as an MCP server for a
-game, an app, or an emulator, follow these rules:
-
-- Before the first proof call, read the tool's current schema (for MCP, its
-  live `tools/list` entry) and send only arguments it declares.
-- Wait for the tool's own readiness signal before the proof call. When the
-  tool declares none, record that, and treat its documented ready condition
-  or a successful no-op call as ready. A process exit, a startup error, or
-  the end of the tool's own ready window before readiness is a failure under
-  the failure-recovery rule in `standards/working-defaults.md`.
-- After an unsupported-argument rejection or a malformed result, never retry
-  identical arguments. Make one schema-corrected call, or switch to the
-  nearest supported proof path and record the switch and the original error
-  in the matrix row, or, for a PBI without a matrix, in the
-  `## Implementation handoff`.
-- GitHub and other provider calls keep the stop in
-  `standards/github-request-discipline.md`.
-
-Generate tracked build outputs on the feature branch when the repository
-requires them. Quality diagnostics are report-only evidence; do not generate or
-persist metric state as part of ticket delivery. Inspect generated changes as
-part of the same review.
-Do not rely on CI to write generated files or repair the branch.
-
-Map each acceptance criterion to fresh evidence. For a structured PBI, build
-one `## Acceptance matrix` in the handoff with one row per acceptance
-criterion and mandatory user-facing path. Each row records the contract or
-criterion, risk or user path, proof action, expected observable, observed
-result, status, evidence location, and exact pushed head SHA. Use only
-`pass`, `unverified`, `failed`, `blocked`, or `inapplicable`; an inapplicable
-row needs an explicit reason. Require explicit identity/authorization,
-interactive-control, browser/E2E, data/error, and recovery rows when those
-paths apply, and record why each does not apply otherwise. Validate every row
-against the checked-out and pushed head before committing or handing off.
-
-map every linked child to its owning task, changed files or verified remote
-state, commit, and fresh verification. Stop before committing or PR handoff
-when a matrix row, criterion, linked child, required check, or
-required proof is missing, failed, unverified, blocked, or head-mismatched.
-State the exact failed command or actionable remainder.
-
-For a structured parent, add one `## Preflight checkpoint` section to the same
-handoff record once the pull request exists. Keep it tied to the exact pushed
-head and record the branch ref and SHA, PR head SHA, base ref and SHA,
-mergeability, and one row for every required provider context. Each row carries
-the provider, workflow, run ID, ref, head SHA, and one of `present`, `pending`,
-`failed`, `skipped`, or `unavailable`. A draft-skipped workflow is dispatched
-only after readiness is read back and only once for the same repository, ref,
-workflow, and head; record the run and resulting head readback. The handoff
-must record base drift, a merge conflict and its triage (the `## Conflict
-triage` section that `standards/conflict-triage.md` defines) or its
-unresolvable stop, unexpected movement, provider failure, or
-bounded-recovery remainder explicitly rather than treating the acceptance
-matrix as still current. This is one evidence record, not a local review ledger.
+Stop before commit or PR handoff when any row, criterion, child, required check, or proof is missing, failed, unverified, blocked, or head-mismatched. State the exact failed command or remainder.
 
 ## Commit and push
 
-After implementation and required checks, include the classified pending
-changes only when they are in scope for this PBI and covered by the final diff.
+Include pending changes only if in scope and covered by the final diff. Inspect status, the complete diff, and the staged diff. Stage only reviewed files that belong to the issue, never in bulk. Write a concise commit message naming the outcome. Push to the existing upstream. Never force-push or rewrite commits.
 
-Inspect `git status`, the complete diff, and the staged diff. Preserve unrelated
-files and never use a blanket staging command. Stage only reviewed files that
-belong to the issue.
+After the push, create or update one parent-issue comment headed `## Implementation handoff`: an entry per ordered task and linked child (evidence, files, fresh result), then the single matrix, then the single checkpoint once the PR exists. The matrix is the durable acceptance record for submit-draft-pr and complete-pr, so never copy it to a local ledger or second issue. State the remainder, and write `none` only when everything is evidenced at the same head.
 
-Create a concise commit that names the implemented outcome; with more than one
-task, each task already has its own verified commit. Push the current branch
-to its existing upstream. Do not force-push or rewrite existing commits.
-
-After the verified implementation commit is pushed, create or update one
-parent-issue comment headed `## Implementation handoff` with one entry per
-ordered task and linked functional-slice child, followed by the single
-`## Acceptance matrix` and, when the PR exists, the single `## Preflight
-checkpoint`. Each entry names the commit or verified remote-state
-evidence, changed files or artifact, and the fresh check or user-path result.
-The matrix is the durable acceptance record consumed by `submit-draft-pr`
-convergence and `complete-pr`; do not copy it to a local ledger. Include the
-current remainder explicitly; use `none` only when every task, matrix row,
-acceptance criterion, required user path, and preflight checkpoint are
-evidenced at the same head.
-Do not create a local planning file or a second issue as a substitute.
-
-## Result
-
-Report the repository, linked project, selected issue, branch, commit, checks,
-and pushed branch, with each acceptance criterion mapped to its evidence. Name
-any check that could not run. Stop after the push. `dod-guard:review-pr` is the one
-independent review of this work.
+Report repository, Project, issue, branch, commit, checks, each criterion mapped to evidence, and any check that could not run. Stop after the push: `dod-guard:review-pr` is the one independent review.

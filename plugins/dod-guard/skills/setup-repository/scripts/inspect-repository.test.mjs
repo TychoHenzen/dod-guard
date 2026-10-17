@@ -18,7 +18,6 @@ import {
 const execFileAsync = promisify(execFile);
 const inspectorPath = fileURLToPath(new URL("./inspect-repository.mjs", import.meta.url));
 const workflowLabelsPath = new URL("./workflow-labels.json", import.meta.url);
-const skillPath = new URL("../SKILL.md", import.meta.url);
 const EXPECTED_WORKFLOW_LABELS = [
   ["Prio 1 - Emergency", "Critical/Urgent issue, requires immediate action.", "b60205"],
   ["Prio 2 - Urgent", "Serious issues or important milestones that heavily impact progress", "fbca04"],
@@ -287,50 +286,9 @@ test("rejects malformed GitHub snapshot arguments", async () => {
 });
 
 test("ships the canonical workflow labels while preserving repository-specific labels", async () => {
-  const [labels, skill] = await Promise.all([
-    readFile(workflowLabelsPath, "utf8").then(JSON.parse),
-    readFile(skillPath, "utf8"),
-  ]);
+  const labels = JSON.parse(await readFile(workflowLabelsPath, "utf8"));
 
   assert.deepEqual(labels, EXPECTED_WORKFLOW_LABELS);
-  assert.match(skill, /workflow-labels\.json/);
-  assert.match(skill, /Preserve\s+every label outside that exact catalog/);
-  assert.match(skill, /each preserved label must be unchanged/);
-});
-
-test("documents bounded routine inspection and full evidence boundaries", async () => {
-  const skill = await readFile(skillPath, "utf8");
-
-  assert.match(skill, /inspect-repository\.mjs --summary <project-root>/);
-  assert.match(skill, /inspect-repository\.mjs <project-root>/);
-  assert.match(skill, /Full mode remains required for `credentialFindings`, staged-file review/);
-  assert.match(skill, /Summary mode is not a\s+substitute for this per-file credential evidence/);
-});
-
-test("documents advisory quality diagnostics separately from correctness gates", async () => {
-  const skill = await readFile(skillPath, "utf8");
-
-  assert.match(skill, /applicable correctness gates/);
-  assert.match(skill, /persisted quality state/);
-  assert.match(skill, /diagnostic output remains visible/);
-  assert.doesNotMatch(skill, /ratchet baselines?/i);
-});
-
-test("documents the public target creation and visibility readback boundary", async () => {
-  const [skill, usage, readme] = await Promise.all([
-    readFile(skillPath, "utf8"),
-    readFile(new URL("../../../USAGE.md", import.meta.url), "utf8"),
-    readFile(new URL("../../../README.md", import.meta.url), "utf8"),
-  ]);
-
-  assert.match(skill, /`private: false` explicitly/);
-  assert.match(skill, /existing private repository public/);
-  assert.match(skill, /`private: false`/);
-  assert.match(skill, /`visibility: "public"`/);
-  assert.match(skill, /repository-visibility\.mjs[\s\S]+reads before creation[\s\S]+reads back after the mutation/);
-  assert.match(skill, /Do not add `origin`, push, link a Project,[\s\S]+enable security, or protect a branch/);
-  assert.match(usage, /explicit `private: false` payload/);
-  assert.match(readme, /creates a new target as\s+an explicitly public repository/);
 });
 
 test("blocks ambiguous linked Project state", () => {

@@ -5,87 +5,52 @@ description: Execute a short ordered plan one bounded step at a time through fre
 
 # Step by step
 
-Read and apply `standards/working-defaults.md` from the plugin root.
+Read and apply `standards/working-defaults.md` before starting. Run exactly one numbered plan, in order. This skill does not replace the repository's issue, branch, review, pull-request, or completion workflow.
 
-Execute one numbered plan in order. The main thread owns the plan, current
-step, evidence, repair decision, and completion state. A subagent owns exactly
-one bounded active step and never chooses the next step.
+The main thread owns the plan, current step, evidence, repair decision, and completion state. A subagent owns exactly one bounded active step, never picks the next step, and is never reused for a later step.
 
 ## Inputs
 
 Accept one of:
 
-- an explicit numbered plan in the user request;
-- one repository plan file that the user names explicitly; or
-- an ordered plan that a calling skill passes, such as the stage rows of
-  `dod-guard:goal-sdlc` or the task list of `dod-guard:next-ticket`, with a
-  proof for each step and whether each verified step is committed.
+- A numbered plan in the user request.
+- One repository plan file, only if the user names it.
+- An ordered plan from a calling skill (for example `dod-guard:goal-sdlc` stage rows or `dod-guard:next-ticket` tasks), with a proof per step and whether each verified step is committed.
 
-Do not search for plan files, infer a plan from a directory, invent missing
-steps, revive chunking/workflow machinery, or create a branch, pull request, or
-worktree for dispatch.
+Never search for plan files, infer a plan from a directory, or invent missing steps. Never revive chunking or workflow machinery. Never create a branch, pull request, or worktree for dispatch.
 
-Before dispatching, restate the ordered steps, the verification for each, and
-the current repository/branch. Stop for an empty, unordered, ambiguous, or
-unsafe plan.
+Before dispatch, restate the ordered steps, each step's verification, and the current repository and branch. Stop if the plan is empty, unordered, ambiguous, or unsafe.
 
-If the command tool returns an active session handle for dispatch or proof,
-treat it as in-progress: wait or poll that same handle to a terminal result,
-preserve the exact command and session evidence, and do not treat missing
-intermediate output as failure or dispatch another copy.
+## Command handles
+
+An active command-session handle, in dispatch or proof, is in-progress state. Wait or poll that same handle to a terminal result, and keep the exact command and session evidence. Missing intermediate output is not a failure. Never start a second copy or a second step meanwhile.
+
+Retry only after explicit cancellation or confirmed session failure. Record the exact command and handle first. Cancel only the process or session you own, and confirm it stopped.
 
 ## Execute one step
 
-For each step, in order:
+1. Record a checkpoint: step number, bounded objective, expected proof, current branch, prior completed steps.
+2. Dispatch one fresh subagent. Give it only the checkpoint, applicable repo instructions, owned files or responsibility, and a ban on branches, PRs, worktrees, and unrelated edits.
+3. Tell the worker to wait for every child it dispatched to reach a terminal result before returning.
+4. Tell the worker to finish each named proof in the foreground and include its final output and result in the report.
+5. Tell the worker to revert every temporary probe or mutation the step added, keeping pre-existing and unrelated work.
+6. Read the result and inspect the changed state.
+7. Run the named proof yourself before marking the step complete.
+8. If the plan asks for a commit per step and the step changed tracked files, commit the verified changes and read the commit back before the next step. A step that changes no tracked file records its evidence instead.
+9. Record result, evidence, and next step in the checkpoint.
 
-1. Record a compact checkpoint: step number, bounded objective, expected proof,
-   current branch, and prior completed steps.
-2. Dispatch one fresh subagent with only that checkpoint, applicable repository
-   instructions, owned files/responsibility, and a prohibition on branches,
-   pull requests, worktrees, or unrelated edits. The brief also tells the
-   worker, before it returns, to wait for every child it dispatched to reach a
-   terminal result, finish each named proof in the foreground, include each
-   named proof's final output and result in its report, and revert every
-   temporary probe or mutation the step introduced while preserving
-   pre-existing and unrelated work. When the calling skill routes its steps by
-   tier, as `dod-guard:goal-sdlc` does, the brief is instead the one "Stage
-   brief" in `standards/model-routing.md` defines, sent to the agent that the
-   caller's table names for the step: the skill or standard its first line
-   names carries the branch, pull request, and worktree rules of that step.
-3. Read the subagent result and inspect the changed state. Run the step's named
-   proof before marking it complete.
-4. When the plan asks for a commit per step and the step changed tracked
-   files, the main thread commits the verified changes and reads the commit
-   back before the next step starts. A step that changes no tracked file
-   records its evidence instead of a commit.
-5. Record the result, evidence, and next step in the main-thread checkpoint.
-
-Do not reuse a worker for an unrelated later step. Do not dispatch a second
-step while the active step lacks a terminal result or its command-session
-handle is still active.
+When the caller routes steps by tier, send the single "Stage brief" from `standards/model-routing.md` instead of steps 2 to 5, to the agent the caller's table names. The skill or standard named on its first line carries the branch, PR, and worktree rules.
 
 ## Failures and repair
 
-On a failed or incomplete step, preserve the checkpoint and exact failure. An
-active handle is not an incomplete result: continue waiting or polling that
-same invocation, and retry only after explicit cancellation or confirmed
-session failure. Record the exact command and handle; cancel only the
-invocation-owned process or session when required, confirm it stopped, then
-give one fresh bounded repair task the failed step, error, and required proof.
-A subagent result that names a live child, a pending named proof, or a
-still-applied temporary probe is incomplete but is not a failed step, and the
-fresh repair task above does not apply to it: the main thread resumes that same
-worker at the current checkpoint, for example by messaging it to finish, and
-dispatches nothing else, including a replacement, until that worker returns a
-terminal result.
-Do not skip forward or restart completed steps. If repair cannot establish the step's
-acceptance condition, stop with the checkpoint and the precise missing evidence,
-unless the calling skill routes its steps by tier: then the step climbs one tier
-under "Escalation" in `standards/model-routing.md` first, and stops only when
-that escalated run also fails or when it already ran on the strong tier.
+On a failed or incomplete step, keep the checkpoint and the exact failure.
+
+After a real failure, give one fresh bounded repair task the failed step, the error, and the required proof.
+
+A result that names a live child, a pending named proof, or a still-applied temporary probe is incomplete, not failed. Do not start a repair task. Resume the same worker at the current checkpoint (for example by messaging it to finish), and dispatch nothing else, including a replacement, until it returns a terminal result.
+
+Never skip forward or restart completed steps. If repair cannot establish the step's acceptance condition, stop and report the checkpoint plus the precise missing evidence. Tier-routed callers first climb one tier under "Escalation" in `standards/model-routing.md`, and stop only if that run also fails or already ran on the strong tier.
 
 ## Finish
 
-After every step has fresh proof, report the ordered step results and any
-unresolved boundary. This skill does not replace the repository's issue, branch,
-review, pull-request, or completion workflow.
+After every step has fresh proof, report the ordered step results and any unresolved boundary.

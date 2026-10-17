@@ -3,400 +3,102 @@ name: refine-backlog-item
 description: Research a backlog item and give it justified priority, Fibonacci effort, and classification labels before moving the refined PBI to Todo. Use before next-ticket, not for implementation.
 ---
 
-# Refine backlog item
+# Refine a backlog item
 
-Turn one existing backlog issue into an implementation-ready parent PBI. Its
-repository is the issue's target repository. Do not create a branch, assign the
-PBI, change it to In Progress, implement code, or open a pull request.
+Turn one existing Backlog issue into an implementation-ready parent PBI, in the issue's own target repository. Never create a branch, assign the PBI, set In Progress, implement code, or open a PR.
 
-Read and apply `standards/working-defaults.md` and
-`standards/github-request-discipline.md` from the plugin root. Stricter
-boundaries in this skill win.
+Resolve the plugin root from this skill's directory. Read and apply `standards/working-defaults.md` and `standards/github-request-discipline.md`. Where this skill is stricter, it wins. After a failed or ambiguous write, read the resource back before you retry.
 
 ## Preconditions
 
-1. Resolve the repository, its linked Project, and the `Backlog` and `Todo`
-   statuses as described under "Resolve the repository and Project" in
-   `standards/github-request-discipline.md`. For the Project, run
-   `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`
-   and stop on outcome `none` or `several` or on exit 2.
-2. Verify the specified issue belongs to the repository, appears in that
-   Project, and has Status `Backlog`. The one other case is a parent in `Todo`
-   or `In Progress` after `dod-guard:next-ticket` stopped with
-   `step-plan-missing`: run only "Write the step plans" for it, leave its Status
-   as it is, and change nothing else.
-3. Query all live labels in the target repository, including descriptions:
+1. Resolve the repository, linked Project, and Backlog and Todo statuses per the discipline standard ("Resolve the repository and Project"). Get the Project from `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`. Stop on outcome `none` or `several`, or on exit 2.
+2. Verify the issue is in the repository, is in that Project, and has Status `Backlog`. Drafts are not accepted.
+   - Exception: a parent in `Todo` or `In Progress` after `dod-guard:next-ticket` stopped with `step-plan-missing`. Run only "Write the step plans", leave Status unchanged, and change nothing else.
+3. Fetch all live labels with descriptions: GitHub MCP, else `gh api --paginate "repos/{owner}/{repo}/labels?per_page=100"`.
+4. Check that each label below has exactly one exact-name match and a nonempty description. Otherwise stop before any mutation.
+   - Priority: `Prio 1 - Emergency`, `Prio 2 - Urgent`, `Prio 3 - Standard`, `Prio 4 - Non-Urgent`, `Prio 5 - Planned`, `Prio 6 - Unknown`
+   - Effort: `Effort 1 - Trivial`, `Effort 2 - Easy`, `Effort 3 - Medium`, `Effort 5 - Large`, `Effort 8 - Huge`, `Effort 13 - Epic`
+   - Standard: `bug`, `documentation`, `duplicate`, `enhancement`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`
 
-   Use the GitHub MCP repository-resource operation with the labels endpoint.
-   If MCP is unavailable, use:
-
-   ```text
-   gh api --paginate "repos/{owner}/{repo}/labels?per_page=100"
-   ```
-
-   Substitute the resolved repository. Require exactly one exact-name match
-   and a nonempty description for every label in both scales below. Stop
-   before mutations if a label is missing or ambiguous. Do not create labels,
-   duplicate labels, Project fields, or another estimation scale.
-
-Stop and report the missing or ambiguous value. Do not infer product decisions.
-Do not accept a draft issue. Backlog items are repository issues so their target
-repository stays explicit.
+Never create labels, duplicate labels, Project fields, or another estimation scale. On any missing or ambiguous value, stop and report it. Never infer product decisions.
 
 ## Research and discovery triage
 
-Read the issue, relevant repository instructions, the affected code, callers,
-and existing tests before classifying any missing context or finalizing
-priority, effort, or implementation direction. For documentation or skill
-work, read the affected instructions, their entry points, and existing
-validation. Record absent code or test coverage instead of assuming it exists.
+Before you classify gaps or settle priority, effort, or direction, read the issue, repo instructions, affected code, callers, and existing tests (for docs or skill work: the affected instructions, entry points, and validation). Record absent coverage. Never assume it exists.
 
-Run that research as the plan, investigate, and judge split in
-`standards/model-routing.md`. Dispatch the planner and the judge on
-`dod-guard:read-standard` and the investigators on `dod-guard:read-cheap`, each
-with the brief that "Stage brief" in that standard defines. A standard planner
-writes the research questions from the issue. Cheap investigators read the
-code, callers, tests, and history and answer each question with cited evidence.
-After the main thread verifies
-those answers, the standard tier decides the discovery triage, classification,
-and acceptance criteria. Verified citations become `research-source` entries;
-the `discovery-triage` and `research-source` records keep their meaning.
+Run research as plan, investigate, judge, each stage given the Stage brief (`standards/model-routing.md`, "Stage brief"). The planner and judge run on `dod-guard:read-standard`, investigators on `dod-guard:read-cheap`. The planner writes questions from the issue, investigators answer each with cited evidence, the main thread verifies, and the judge decides triage, classification, and acceptance criteria. Verified citations become `research-source` entries.
 
-After that repository and issue research, state a discovery triage in the
-implementation notes. Classify each unresolved point as one of these:
+Then write a `discovery-triage` in the implementation notes. Put each unresolved point in one category: `user constraints or priorities`, `external facts or context`, `genuine tradeoff`, or `no gap`. A PBI may need several routes. Settle user constraints and external facts before any debate. On `no gap`, continue without a discovery workflow.
 
-- `user constraints or priorities`: the user's intended behavior, priority, or
-  acceptance boundary is missing;
-- `external facts or context`: the repository cannot establish a fact needed to
-  choose or describe the implementation;
-- `genuine tradeoff`: the relevant facts and user constraints are known, but a
-  concrete decision still has multiple plausible options with unclear tradeoffs;
-- `no gap`: the task and evidence support one clear direction.
+Run triage again after every interview, research, advisor, or debate round. Never turn a new gap into a silent assumption. Never ask dependent questions, or finalize labels or Todo, while a material answer is missing. Never ask the user for facts the repo, the web, or Context7 can establish.
 
-A PBI may need more than one route. Resolve user constraints and external facts
-before using debate. Do not ask the user for facts that repository inspection,
-the web, or Context7 can establish. When the result is `no gap`, continue
-without invoking a discovery workflow.
+- External facts: inspect code, callers, tests, and architecture first. Use the web or Context7 only for facts outside the repo or needing current evidence. Record each source and finding in `research-source`.
+- User constraints, interactive: ask in ordinary conversation after research. Put all currently independent questions in one round, each with several concrete options and a marked recommended default. Hold dependent questions for a later round, and wait for the round's answers before using any answer-dependent option. Record the result as an `interview-contract` note.
+- User constraints, active goal or non-interactive: invoke exactly one fresh `dod-guard:codex-advisor` instead of asking (it owns the model: `gpt-5.6-sol` at `max` reasoning effort, Codex fallback only). Brief it with only the batched independent questions, candidates and a recommended default, repo and PBI context, researched evidence, and the affected acceptance boundary and constraints. It gives advice only and cannot replace user authority. Never invoke another advisor to retry, vote, or refine. Record an `advisor-decision` note. If it cannot settle a user-authority question, fails, or returns something unusable, record an `unresolved-decision` (with the exact failure). Never depend on a provider-specific AskUserQuestion tool.
+- Genuine tradeoff: debate one concrete decision, only after facts and user constraints are known. Use three to five named real experts whose documented positions match the competing concerns. Run at least two rounds (position, then challenge to the strongest opposing position), then a synthesis. Record the result as `debate-synthesis`, `accepted-option`, and `rejected-option` notes. Record a new tradeoff the debate exposes and continue the same decision. Keep raw scratch files outside the repository. Never turn expert speculation into a requirement.
+- Unresolved items: keep the issue in Backlog when a material requirement cannot be stated without inventing it. Document the exact gap, fallback, impact, and next step. An unresolved item does not block Todo if the PBI is independently deliverable, outcome, scope, and criteria are coherent, and no requirement was invented.
 
-When user constraints or priorities are missing, choose the route from the
-current run mode. In ordinary interactive refinement, ask the user through
-ordinary conversation, after research: never ask what the repository, the web,
-or Context7 can answer. Ask every currently independent clarification question in one round, give each
-question multiple concrete options, and mark the recommended default. Defer
-questions whose options depend on an earlier answer to a later round. Record
-the resulting behavioral contract in an `interview-contract` implementation
-note. Wait for the current round's answers before using an answer-dependent
-option.
+## Choose labels
 
-During an active goal or explicitly non-interactive refinement, invoke exactly
-one fresh `dod-guard:codex-advisor` instead of asking the user. It uses
-Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5.6-sol` at
-`max` reasoning effort. Give the advisor only the unresolved
-question, candidate answers and recommended default, repository and PBI context,
-the researched evidence, and the affected acceptance boundary and constraints.
-Batch every currently independent question into that one advisor brief. Defer a
-question whose options depend on an advisor answer until triage runs again.
-The advisor is advice-only and cannot replace user authority. Record an
-`advisor-decision` implementation note with the advisor used, briefing scope,
-advice, and the evidence for accepting or rejecting it. Do not invoke another
-advisor to retry, vote, or refine its answer.
+The live label descriptions are the classification contract. Pick exactly one priority and one effort label whose descriptions fit the researched impact, urgency, scope, dependencies, risk, and uncertainty. The scales are independent: never infer urgency from effort, or estimate from the title alone. Use `Prio 6 - Unknown` only when evidence supports no other priority, and say in the notes what information would let you reassess. Pick one or more standard labels, never the whole set. Stop if no label's description supports the classification.
 
-Re-run triage after either route. Do not ask dependent questions or finalize
-labels or `Todo` while a material answer is missing. If the advisor cannot
-resolve a user-authority question, record an `unresolved-decision` with the
-question, evidence, impact, and next required authority, then keep the issue in
-`Backlog`. If the advisor invocation fails or its response is unusable, record
-an `unresolved-decision` with the question, researched evidence, exact advisor
-failure, impact, and next required authority, then keep the issue in `Backlog`.
+## Refine the PBI body
 
-Do not require a provider-specific `AskUserQuestion` tool. Keep the issue in
-Backlog when a material requirement cannot be stated without inventing it.
+Give the parent issue `## Outcome` (the observable result), `## Scope` (included behavior and explicit non-goals), `## Implementation notes`, `## Acceptance criteria` (checkboxes with observable outcomes), and `## Verification` (checks that can prove each criterion).
 
-When external facts or context are missing, perform targeted research. Inspect
-the code, callers, tests, and current architecture first. Use the web or
-Context7 only when the missing fact is outside the repository or needs current
-external evidence. Record each source and its relevant finding in a
-`research-source` implementation note. Do not ask the user for a fact that this
-research can answer.
+Implementation notes hold the triage and record summaries (one short entry each, fields per `standards/project-workflow.md`), code, caller, and test evidence, the priority and effort rationale tied to label descriptions, and the standard-label rationale.
 
-When a genuine tradeoff remains, frame one concrete decision and debate it
-only after the required facts and user constraints
-are available. Select three to five named real experts whose documented
-positions match the competing concerns. Run at least two rounds: each expert
-states a position from their lens, then challenges the strongest opposing
-position. Then synthesize. Record each expert's name, lens,
-competing concern, and why that lens applies, plus the challenges, acknowledged
-uncertainty, synthesis, accepted option, and rejected options in
-`debate-synthesis`, `accepted-option`, and `rejected-option` implementation
-notes. Keep raw debate scratch files
-outside the repository, and do not turn expert speculation into a requirement.
+Ask for direction when a missing choice changes observable behavior, a public interface, data handling, or an acceptance test. Never write a false choice as a requirement.
 
-After each interview, research, or debate round, run the triage again. If new
-evidence exposes a missing user constraint or external fact, return to the
-matching route before finalizing the PBI. If debate reveals a new tradeoff,
-record it and continue the same decision. Do not silently convert a new gap
-into an assumption.
+**Children.** Children are checklist work on the parent's one branch and one PR, never child branches or PRs. Reuse an existing child that owns a unit. Never duplicate one. Each new child gets minimal parent context, scope, criteria, and verification.
 
-Use the live label descriptions as the classification contract. Select exactly
-one priority and one effort label whose description fits the researched
-impact, urgency, scope, dependencies, risk, and uncertainty. Do not infer
-urgency from effort or choose estimates from the title alone.
+- Ordinary parent: create linked sub-issues only for criteria that can be completed, committed, and closed independently. Dependent steps stay in the parent. Add no administrative subtasks.
+- Structured parent: decompose by user action into a small set of coherent slices, only down to what can be implemented, tested, and verified alone. A cohesive feature may stay one checklist. Never add a child to fill a category list.
+- Each slice leaves the system working with tests green. The first is the thinnest end-to-end path through the supported surface. Name a slice by the behavior it adds. One nameable only by position or layer is mis-cut.
+- For repeated variants, the first slice introduces the shared boundary and converts one variant. The rest are local slices behind it.
+- Keep a concept's validation and error behavior in its slice. A slice that replaces old structure also migrates callers and deletes obsolete parts. Add nothing for speculative variants.
 
-| Priority labels | Fibonacci effort labels |
-|---|---|
-| `Prio 1 - Emergency` | `Effort 1 - Trivial` |
-| `Prio 2 - Urgent` | `Effort 2 - Easy` |
-| `Prio 3 - Standard` | `Effort 3 - Medium` |
-| `Prio 4 - Non-Urgent` | `Effort 5 - Large` |
-| `Prio 5 - Planned` | `Effort 8 - Huge` |
-| `Prio 6 - Unknown` | `Effort 13 - Epic` |
+Every structured PBI assesses four lenses: implementation; wiring and end-to-end usability (proof it is reachable from its intended UI or user-facing surface); refactoring and code quality; and failure and recovery reliability. Attach each lens to the child or parent-level task that owns it, with observable acceptance and verification. Lenses are not child categories. A sub-issue being refined into a PBI gets the same research, sections, and label rules.
 
-The columns are independent scales. `Prio 6 - Unknown` is valid only when
-the evidence cannot support another priority. State the missing information
-needed for reassessment in the implementation notes.
+**Feature records.** For feature work or material ambiguity, read `standards/project-workflow.md` from the plugin root. Never assume the target checkout has it. Keep these as distinct subsections of Implementation notes, with discovery markers as evidence inside them: `requirements`, `clarifications`, `implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, `planned-acceptance-matrix`. Small, clear fixes need none of them.
 
-Select one or more appropriate existing standard labels by exact name and
-description from `bug`, `documentation`, `duplicate`, `enhancement`,
-`good first issue`, `help wanted`, `invalid`, `question`, and `wontfix`.
-Do not apply the whole set. Stop if no available label has a description
-that supports the classification. Do not create missing standard labels.
+- `acceptance-evidence` gives each acceptance checkbox id its evidence id. `planned-acceptance-matrix` plans every row before any proof runs.
+- The task list names dependencies, marks a task `independent` only if it can be committed and closed separately, keeps order stable, and maps each task to a functional slice or to a parent-level task with `parentLevel: "convergence"`.
+- `lens-ownership` says where each lens is covered, or why not.
 
-## Refine the PBI
+**Re-refinement.** Compare existing discovery notes to current code, tests, sources, and decisions. Reuse current evidence, repeat only stale or newly triggered phases, and update summaries in place, and replace the prior priority and effort rationale rather than appending. Create no duplicate sub-issues or scale labels.
 
-After a failed, timed-out, or ambiguous write, follow the shared GitHub
-standard: read back that resource before retrying or issuing another write.
+## Effort 13 and splitting
 
-Update the parent issue with these sections:
+`Effort 13 - Epic` blocks the move to Todo. Keep the issue in Backlog and split it into independently deliverable linked issues (or explicitly linked replacements), each researched and estimated separately. Dependent subtasks do not clear the block. The original may reach Todo only if its remaining scope is independently deliverable and evidence supports a lower effort label.
 
-- `## Outcome`: the observable user or system result;
-- `## Scope`: included behavior and explicit non-goals;
-- `## Implementation notes`: the discovery triage and applicable interview,
-  research, debate, option, and unresolved-decision summaries, plus affected
-  boundaries and constraints, researched code/caller/test evidence, the
-  selected priority and effort with supporting evidence tied to their live
-  descriptions, standard classification rationale, and the evidence
-  supporting the implementation direction;
-- `## Acceptance criteria`: checkboxes with observable outcomes;
-- `## Verification`: the checks that can prove each criterion.
+Each replacement delivery root records the issues it replaces in one `supersedes` record under its Implementation notes (format in `standards/project-workflow.md`).
 
-Ask for direction when a missing choice changes observable behavior, a public
-interface, data handling, or an acceptance test. Do not write a false choice as
-a requirement.
+- An original that still owns delivery scope stays open. `dod-guard:complete-pr` closes it after verified delivery.
+- An original that is a pure hierarchy record (no linked PR, no unchecked criterion outside its sub-issues, every sub-issue settled or named by a replacement root's `supersedes`) closes now as `not_planned`, with an evidence comment. Run these in order, building the snapshot after the replacement roots carry their records:
+  1. `node <plugin-root>/skills/complete-pr/scripts/closure.mjs snapshot --repository=<owner/name> --output=<file>`
+  2. `node <plugin-root>/skills/complete-pr/scripts/closure.mjs plan --snapshot=<file> --hierarchy=<issue>`
+  3. `node <plugin-root>/skills/complete-pr/scripts/closure.mjs apply --snapshot=<file> --hierarchy=<issue>`
 
-For an ordinary parent, create linked GitHub sub-issues only when a criterion
-can be completed, committed, and closed independently. Each sub-issue needs
-its own outcome, implementation notes, acceptance criteria, and verification.
-Keep dependent steps in the parent PBI instead of inventing administrative
-subtasks.
-
-For a structured parent PBI, use functional decomposition: start from the
-user actions and split the outcome into a small set of coherent functional
-slices. Decompose each slice only to a useful level that can be independently
-implemented, tested, and verified; avoid tiny administrative subtasks. Create
-one linked child per useful unit only when it warrants independent tracking;
-keep dependent steps in the parent checklist. A cohesive feature may remain
-one parent-level checklist, and no child is required merely to fill a fixed
-category list. Reuse an existing child when its outcome and acceptance
-criteria already own the unit. Never duplicate a unit, and give every created
-child minimal parent context, scope, acceptance criteria, and verification.
-
-Decompose by successive refinement, not by up-front partitioning:
-
-- Order slices so that each one leaves the system working with its tests
-  green. Make the first slice the thinnest end-to-end path through the
-  supported surface, and let later slices extend that running path rather
-  than build parts that only work once everything lands.
-- Name each slice by the behavior it adds. A slice that can only be named by
-  its position or layer ("part two", "the parsing layer", "backend changes")
-  is cut in the wrong place.
-- Look for a repeated shape before splitting by variant. When every variant
-  (each format, type, provider, or command) needs the same steps in several
-  places, the first slice introduces the shared boundary that owns those
-  steps and converts one existing variant to it. Each remaining variant is
-  then a local slice behind that boundary, not a new branch in every caller.
-- Keep a concept's validation and error behavior with the slice that owns
-  the concept, so the main path stays readable and a failure is reported
-  where its cause is known.
-- When a slice replaces old structure, the same slice migrates the callers
-  and deletes what it made obsolete, such as duplicate maps, forwarding
-  code, or a superseded path. Do not leave the deletion for a later cleanup
-  child.
-- Stop decomposing when each slice is clear enough to implement and verify
-  for the current outcome. Do not invent abstractions or children for
-  speculative future variants.
-
-For every structured PBI, explicitly assess implementation, wiring and
-end-to-end usability (including proof that the feature is reachable from its
-intended UI or supported user-facing surface), refactoring and code quality,
-and failure/recovery reliability beyond the happy path. Attach each concern to the
-functional child or parent-level task that owns it, with observable acceptance and verification;
-these are review lenses, not mandatory child categories. Linked children are
-checklist work within the parent's one branch and one PR; they do not
-authorize child branches or pull requests.
-
-Apply the same research, sections, and label requirements to any sub-issue
-being refined into a PBI. Reuse appropriate existing linked issues.
-
-`Effort 13 - Epic` blocks the epic's transition to `Todo`. Keep it in
-`Backlog` and split it into independently deliverable linked issues, or
-explicitly linked replacement issues. Research and estimate each resulting
-PBI separately before it can move to `Todo`. Merely adding dependent subtasks
-does not clear the block. The original issue can move to `Todo` only if its
-remaining scope is independently deliverable and evidence supports a lower
-effort label.
-
-Every replacement delivery root records the issues it replaces in one
-`supersedes` record under its `## Implementation notes`, as
-`standards/project-workflow.md` defines. An original that still owns delivery
-scope stays open; `dod-guard:complete-pr` closes it once its root's delivery is
-verified. When the split leaves the original as a pure hierarchy record, with
-no linked pull request, no unchecked criterion outside its sub-issues, and
-every sub-issue settled or named by a replacement root's `supersedes` record,
-close it now through the closure helper as `not_planned` with its evidence
-comment:
-
-```text
-node <plugin-root>/skills/complete-pr/scripts/closure.mjs snapshot --repository=<owner/name> --output=<file>
-node <plugin-root>/skills/complete-pr/scripts/closure.mjs plan --snapshot=<file> --hierarchy=<issue>
-node <plugin-root>/skills/complete-pr/scripts/closure.mjs apply --snapshot=<file> --hierarchy=<issue>
-```
-
-The snapshot is the closure snapshot that `standards/project-workflow.md`
-defines, built after the replacement roots carry their `supersedes` records. If
-snapshot exits non-zero, stop and report its error; never plan or apply on an
-older file. Report any hold with its reasons instead of closing by hand.
-
-## Record discovery and re-refinement state
-
-Keep concise discovery evidence in `## Implementation notes`. Include a
-`discovery-triage` result and, when applicable, these named summaries:
-
-- `interview-contract`: the questions asked, options, recommended defaults,
-  answers, and deferred dependent questions;
-- `advisor-decision`: the advisor used (Claude advisor tool, or the Codex
-  model and effort), bounded briefing scope,
-  advice, and the evidence for accepting or rejecting it;
-- `research-source`: the source, relevant finding, and remaining uncertainty;
-- `debate-synthesis`: the decision, each named expert's lens and why it applies
-  to a competing concern, challenges, uncertainty, and synthesis;
-- `accepted-option`: the chosen option and the evidence supporting it;
-- `rejected-option`: each rejected option and the reason it was rejected;
-- `unresolved-decision`: what remains unclear, why, its impact, and the next
-  decision or evidence needed.
-
-If a question, fact, or tradeoff remains unresolved, or a named workflow was
-unavailable, document the exact gap, fallback, impact, and next step. An
-unresolved item does not by itself block `Todo` when the PBI is independently
-deliverable, its outcome, scope, and acceptance criteria remain coherent, and
-no material requirement was invented. Keep the issue in `Backlog` when those
-requirements cannot be stated safely.
-
-For feature work or material ambiguity, resolve the active dod-guard plugin root
-from the directory containing this skill, then read
-`<plugin-root>/standards/project-workflow.md`. Do not assume the target checkout
-contains the shared standard. Keep these named records in
-`## Implementation notes`: `requirements`, `clarifications`,
-`implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, and
-`planned-acceptance-matrix`. Use the existing discovery markers as
-the evidence inside those records. `acceptance-evidence` gives each acceptance
-criterion checkbox id its evidence id, and `planned-acceptance-matrix` plans
-every acceptance-matrix row before any proof runs; the standard defines both. The task list must identify dependencies and
-mark a task `independent` only when it can be committed and closed separately.
-Write each record as a distinct named subsection, keep the task order stable,
-and map every task to its functional slice or explicitly mark it as a
-parent-level convergence task. Record where the implementation, wiring and
-end-to-end usability, code quality, and reliability lenses are covered, or why
-one is not applicable. Functional-slice children are checklist work on the
-parent's one branch and one pull request, not separate delivery units.
-Small, clear fixes may use the ordinary path and do not need these records.
-
-For re-refinement, read the existing discovery notes and compare them with the
-current requirements, code, callers, tests, sources, and decisions. Reuse
-evidence that is still current. Repeat only phases made stale or newly
-triggered, and update the existing summaries instead of appending conflicting
-assumptions. Do not create duplicate linked sub-issues or scale labels.
+If the snapshot exits non-zero, stop and report. Never plan or apply from an older file. Report any hold with reasons. Never close by hand.
 
 ## Write the step plans
 
-Write one comment per task on the parent issue, headed `## Step plan: <task-id>`,
-with the id the `task-list` record gives the task (`task-1` for a PBI with no
-task list). The standard tier writes the plans on this thread, because
-`dod-guard:next-ticket` runs on the cheap tier and plans nothing. For every step
-of the task, a comment holds the file, the edit (symbol and intent), the test to
-add or change (name and assertion), the validation command, and the expected
-result. Use fenced code blocks only and no indented code blocks, and keep each
-batch of steps small. The plan carries every design decision, so a cheap model
-applies it without choosing anything. Settle an open decision under "Research
-and discovery triage"; never leave it to the reader of the plan.
+Write one comment per task on the parent, headed `## Step plan: <task-id>`, with the id from the `task-list` record (`task-1` when there is no task list). Write them on this thread at the standard tier, because `dod-guard:next-ticket` runs cheap and plans nothing.
 
-On re-refinement, replace the comment of a task that changed and keep the rest.
-Post as the authenticated user, and write a plan for every task that has no
-comment the step plan rule in `standards/project-workflow.md` accepts, so a
-heading comment from an author that rule rejects does not count as a plan. Read
-every comment back, with its author, before the Status changes, or before you
-report when the Status stays as it is.
+Per step, give the file, the edit (symbol and intent), the test to add or change (name and assertion), the validation command, and the expected result. Use fenced code blocks only, never indented ones, and keep each batch small. The plan carries every design decision, so a cheap model chooses nothing.
 
-## Apply labels and verify before Todo
+Post as the authenticated user. Write a plan for every task lacking a comment that the step-plan rule in `standards/project-workflow.md` accepts. On re-refinement, replace a changed task's comment only. Read every comment back with its author before the Status changes, or before you report when Status stays.
 
-Read the issue's current labels, then add the chosen priority,
-effort, and standard labels with the GitHub MCP issue update operation. If MCP is
-unavailable, use `gh issue edit {issue-number} --repo {owner}/{repo}`.
-Remove every other current priority or effort label, including stale scale
-variants with a `Prio <number>` or `Effort <number>` prefix. Use repeated
-`--add-label` and `--remove-label` arguments in the same edit. Preserve
-unrelated labels. Remove obsolete standard classifications only when the
-research establishes that they no longer apply.
+## Apply labels and verify
 
-For re-refinement, the issue must still satisfy the `Backlog` precondition (the
-`step-plan-missing` case in Preconditions is the one exception).
-Replace previous estimates and their rationale instead of accumulating them.
-Reuse current discovery evidence and replace only stale or newly triggered
-summaries.
+1. Read the current labels. Add the chosen ones through the GitHub MCP issue update, else `gh issue edit {issue-number} --repo {owner}/{repo}` with repeated `--add-label` and `--remove-label`.
+2. In the same edit, remove every other priority or effort label, including stale `Prio <number>` and `Effort <number>` variants. Keep unrelated labels. Remove an obsolete standard label only when research shows it no longer applies.
+3. Read back the body, labels, linked sub-issues, step-plan comments, and Project status. Confirm the sections, evidence, a step-plan comment per task, linked sub-issues, Status still Backlog, exactly one label per scale plus a standard label, and effort below 13. An unknown priority must explain the missing evidence.
+4. For a structured PBI also confirm that the seven records are coherent, each linked child matches one independently deliverable slice and is actionable and Todo, and each lens has an owner.
+5. Save the readback body as a UTF-8 file and run `node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]`, passing `outcome: "verified"`. With children, `--children` is a JSON array of slice id and evidence per child. Exit 0 is ok, 1 is an actionable remainder, 2 is a missing or invalid record or argument (including a UTF-16 file, as PowerShell 5.1 `>` writes). On exit 1 or 2, correct the records and rerun. Stop on any actionable remainder.
+6. Move to Todo only on exit 0 with outcome `verified`, using the shared REST Project status writer. Read back the final Project status.
 
-Read back the issue body, labels, linked sub-issues, step plan comments, and
-Project status from GitHub. Confirm all required sections and evidence exist,
-every task has its `## Step plan: <task-id>` comment, sub-issues are
-linked, the PBI is still in Backlog, exactly one label from each scale remains,
-and at least one standard
-label applies. Confirm unknown priority explains missing evidence and effort
-is below 13 before moving that PBI to `Todo` with the shared REST Project status
-writer.
-For a structured PBI, also confirm the named `requirements`, `clarifications`,
-`implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, and
-`planned-acceptance-matrix` records are present and coherent; every
-linked child matches one independently deliverable functional slice (each is separately tracked)
-in the task list, is actionable, and is `Todo`; and the four review lenses each have
-an owning child or parent-level task plus mapped observable acceptance or
-verification evidence. Pass the complete task, slice, owner, and evidence mapping
-through the same executable convergence proof used by `next-ticket` before moving
-the parent to `Todo`. Save the issue body read back above to a local UTF-8 file and run:
+If an edit fails or a readback disagrees, stop before the status change, report the actual partial state, and never claim readiness.
 
-```text
-node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]
-```
-
-Pass `--children` a JSON array of the linked functional-slice children, each
-with its slice id and evidence, when any exist. Move the parent to `Todo` only
-when the command exits 0 with `outcome: "verified"`. Exit 1 names an actionable
-remainder, such as a lens that does not own its required path rows; exit 2
-names the missing or invalid record or argument, including a file that is not
-UTF-8, such as the UTF-16 that a Windows PowerShell 5.1 `>` redirect writes.
-Correct the records and rerun.
-`submit-draft-pr` and `complete-pr` consume or revalidate the
-resulting handoff after implementation and PR creation. Stop on any actionable
-remainder. Do not require a fixed
-child count or create category placeholders. When no linked child represents
-cross-cutting parent work, record an explicit parent-level task with
-`parentLevel: "convergence"` so that ownership remains visible and verifiable.
-The executable proof rejects duplicate or missing slice links, unowned slices,
-duplicate evidence, missing or duplicate review lenses, invalid acceptance IDs,
-lenses that do not own their required path rows, and incomplete or stale
-acceptance-matrix rows.
-If an edit fails or readback disagrees, stop before the status change and
-report the actual partial state. Do not claim the PBI is ready.
-
-Read back the final Project status after the transition. Report the PBI,
-priority, effort, standard labels, linked or replacement issues, and unresolved
-decisions. Stop before implementation.
-
-For regression verification, exercise [the refinement fixtures](fixtures.md).
+Final report: PBI, priority, effort, standard labels, linked or replacement issues, and unresolved decisions. Then stop before implementation. Regression checks use [the refinement fixtures](fixtures.md).

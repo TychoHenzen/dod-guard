@@ -10,106 +10,47 @@ description: >-
 
 # Codex Migrate
 
-Treat migration as a sequence of user-directed slices. Preserve deliberate collaboration rules,
-including mandatory check-ins. Replace only assumptions tied to an unavailable interface.
+Read and apply `standards/working-defaults.md` from the plugin root; where this skill is stricter, it wins. Migration is user-directed slices. Keep deliberate collaboration rules, including check-ins. Replace only assumptions tied to an unavailable interface.
 
-Read and apply `standards/working-defaults.md` from the plugin root. Stricter
-boundaries in this skill win.
+## Inventory (read-only)
 
-## 1. Inventory without editing
+1. Run `node <skill-directory>/scripts/scan-agent-setup.mjs <project-root>`.
+2. Read every reported instruction file. Follow references into agents, skills, hooks, MCP config, and scripts. A matching token alone never proves a change is needed.
+3. For Claude agent definitions, generate Codex agents:
+   ```bash
+   node <skill-directory>/scripts/convert-claude-agents.mjs \
+     --source=<claude-agent-directory> --output=<project-root>/.codex/agents
+   ```
+   `--check` detects missing, stale, or unexpected agents. Claude Markdown stays canonical; never hand-edit generated TOML.
+4. Classify each item: `portable` (works in both), `claude-only` or `codex-only` (tied to that environment), `shared-risk` (looks portable, differs in discovery, precedence, or availability).
+5. Show the user paths and findings.
 
-Run:
+## Proposal
 
-```bash
-node <skill-directory>/scripts/scan-agent-setup.mjs <project-root>
-```
+- Prefer `AGENTS.md` as the shared file. Where Claude supports imports, propose a `CLAUDE.md` holding only:
+  ```md
+  @AGENTS.md
+  ```
+- Move unique `CLAUDE.md` content to `AGENTS.md` or a Claude-only adapter first.
+- Word shared behavior by capability; keep tool names in environment sections.
+- Put judgment in instructions, workflows in skills, mechanical checks in hooks, rules, scripts, or CI, and external systems in MCP config.
+- Present files, open choices, and trade-offs. Ask which slice to apply, then stop.
 
-Read every instruction file reported by the scanner. Follow references from those files to agent
-definitions, skills, hooks, MCP configuration, and scripts. Do not treat a matching token as proof
-that a change is needed.
+## Applying
 
-When the project contains Claude agent definitions, generate project-scoped Codex agents with:
+Change only files the answer covers, keep unrelated edits, and do not widen scope. Run slices approved together back to back; "apply all" authorizes that.
 
-```bash
-node <skill-directory>/scripts/convert-claude-agents.mjs \
-  --source=<claude-agent-directory> --output=<project-root>/.codex/agents
-```
+Migrated instructions keep the check-in contract: the user navigates, the agent builds. Pause before implementing and at each meaningful decision. Report discoveries that change the solution. Apply one agreed piece at a time, verify it, show the result, and ask what next. Ask with `AskUserQuestion` (Claude) or `request_user_input` (Codex); with neither, end the turn with one concise question. Never weaken this into autonomy unless the user asks.
 
-Use `--check` with the same arguments to detect missing, stale, or unexpected generated agents.
-Keep the Claude Markdown definitions canonical. Do not edit generated TOML by hand.
+## Verification (each slice)
 
-Classify each relevant item:
+- Re-run the scanner and project tests covering changed files.
+- Inspect the diff for dropped instructions, duplicate sources of truth, unresolved environment names, and scope creep.
+- Ask Codex to name its active instruction sources and summarize guidance; ask Claude to show `CLAUDE.md` imports it. If a runtime is unavailable, say what went unobserved; never infer a pass.
+- Report changed files, scanner output, checks, and remaining findings. Ask again only if an unapproved slice remains.
 
-- `portable`: works in both environments unchanged.
-- `claude-only`: depends on Claude syntax, paths, tools, or lifecycle behavior.
-- `codex-only`: depends on Codex syntax, paths, tools, or lifecycle behavior.
-- `shared-risk`: looks portable but has different discovery, precedence, or availability.
+## Never
 
-Show the input paths and the classified findings. Do not edit during inventory.
-
-## 2. Propose the shared shape
-
-Prefer `AGENTS.md` as the canonical shared instruction file. When Claude supports the import in
-the target project, propose this complete `CLAUDE.md` adapter:
-
-```md
-@AGENTS.md
-```
-
-Do not replace `CLAUDE.md` until its unique instructions have moved to `AGENTS.md` or an explicit
-Claude-only adapter. Keep tool-dependent wording capability-based when the behavior is shared.
-Keep exact tool names inside environment-specific sections when their semantics differ.
-
-Separate configuration by responsibility:
-
-- Instructions describe judgment, collaboration, and project conventions.
-- Skills describe reusable workflows.
-- Hooks, rules, scripts, and CI enforce mechanical checks.
-- MCP configuration connects external systems.
-
-Present the proposed files, unresolved choices, and trade-offs. Ask which migration slice to apply.
-Stop until the user answers.
-
-## 3. Apply the approved slices
-
-Change only the files covered by the user's answer. Preserve unrelated edits. If the user approves
-several slices together, execute them continuously and verify each one. Do not request approval
-between those slices. Do not broaden the work because another cleanup looks convenient.
-
-For shared check-ins, preserve this contract:
-
-- The user navigates. The agent builds.
-- Pause before implementation and at every meaningful decision.
-- Report discoveries that change the likely solution.
-- Apply one agreed piece at a time.
-- Verify the piece, show its concrete result, and ask what happens next.
-- Use `AskUserQuestion` in Claude or `request_user_input` in Codex when available.
-- If neither tool is available, end the turn with one concise question.
-
-Never weaken this contract into autonomous implementation unless the user explicitly requests that
-change. A request to apply all proposed slices is explicit authority to continue through them.
-
-## 4. Verify the slice
-
-Run the scanner again. Run project tests that cover changed scripts or configuration. Inspect the
-diff for dropped instructions, duplicated sources of truth, unresolved environment names, and
-accidental scope expansion.
-
-For an instruction migration, verify both paths when their runtimes are available:
-
-- Ask Codex to identify its active instruction sources and summarize the effective guidance.
-- Ask Claude to show that `CLAUDE.md` imports the canonical guidance.
-
-If one runtime is unavailable, state which verification remains unobserved. Do not infer it passed.
-
-Report the changed files, scanner output, checks, and remaining findings. Ask about another slice
-only when an unapproved slice remains.
-
-## Boundaries
-
-- Keep the process read-only until the first user decision.
-- Do not delete Claude support unless the user chooses a Codex-only target.
-- Do not rewrite working instructions merely to shorten them.
-- Do not replace deliberate user control with model autonomy.
-- Do not install plugins, alter global configuration, or change permissions without separate
-  approval.
+- Delete Claude support unless the user picks a Codex-only target.
+- Rewrite working instructions merely to shorten them.
+- Install plugins, alter global config, or change permissions without separate approval.

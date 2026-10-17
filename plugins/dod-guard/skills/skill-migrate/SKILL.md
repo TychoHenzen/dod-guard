@@ -11,204 +11,75 @@ description: >-
   transcripts (that is /skill-debug).
 ---
 
-# Skill Migrate
+# Skill migrate
 
-One artifact per invocation. Phases execute in numeric order, 0 through 9. Do not apply every
-result automatically. Show the diff instead and let the caller decide.
+Migrate one artifact per call; batching is out of scope. Run phases 0 to 9 in order. Read and apply `standards/working-defaults.md`; stricter rules here win. Never apply the result: the migration ends at the diff, and the caller decides whether to land it. A migration that grows the artifact has failed; shorter is success.
 
-Read and apply `standards/working-defaults.md` from the plugin root. Stricter
-boundaries in this skill win.
+## Paths and agents
 
-## Runtime paths
+- `<skill-dir>`: `${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate` (Claude) or the directory holding the loaded SKILL.md (Codex).
+- `<dod-guard-skills-dir>`: the parent of `<skill-dir>`.
+- `<agent-definitions-dir>`: `${CLAUDE_PLUGIN_ROOT}/agents` (Claude) or the `agents` directory beside the parent `skills` directory (Codex).
 
-Resolve `<skill-dir>` before running a bundled script. In Claude, use
-`${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate`. In Codex, use the directory containing this loaded
-`SKILL.md`. Resolve `<dod-guard-skills-dir>` as the parent of `<skill-dir>`. Confirm each resolved
-script exists. If a path does not resolve, end the turn with the missing path.
+Resolve these and confirm each script exists before running any. If one fails, end the turn naming the path.
 
-## Agent dispatch compatibility
+Spend at most four dispatches: `dod-guard:blind-prose-contract-extractor`, `dod-guard:migration-analyst`, `dod-guard:blind-prose-writer`, and `dod-guard:blind-gap-auditor`. On Codex use `dod_guard_<name>`. With no registered custom agent, read `<agent-definitions-dir>/<name>.md` and spawn `explorer` (no Write or Edit in its tools) or `worker`, embedding the definition body and briefing. Clean-context, model-separation, dispatch-cap, and return-shape rules still hold.
 
-### Codex lifecycle
+On Codex, inspect the active agent list and reuse a related agent where practical. Size each wave to free slots, wait, record all results, then close finished agents (interrupt unneeded ones if close is unavailable). A returned result does not prove a slot is free: if full, release unneeded agents and retry once, else reuse an agent by follow-up.
 
-Before a Codex dispatch, inspect the active agent list. Reuse a related agent when practical.
+## Phases
 
-Limit each parallel wave to the free agent slots. Wait for the wave, record every result, then close completed agents with the runtime's close action when available. If only interruption is available, interrupt agents whose work is no longer needed.
-
-Do not assume a returned result freed a slot. If capacity is full, release unneeded agents and retry once. If closure is unavailable, reuse an existing agent through a follow-up instead of spawning another.
-
-Resolve `<agent-definitions-dir>` before dispatching a dod-guard agent. In Claude, use
-`${CLAUDE_PLUGIN_ROOT}/agents`. In Codex, use the `agents` directory beside the parent `skills`
-directory that contains this loaded `SKILL.md`.
-
-For every `dod-guard:<name>` dispatch:
-
-- Claude uses `dod-guard:<name>`.
-- Codex uses `dod_guard_<name>`, with hyphens converted to underscores, when that custom agent is
-  registered.
-- If the Codex custom agent is unavailable, read `<agent-definitions-dir>/<name>.md` completely.
-  Spawn `explorer` when its `tools` omit `Write` and `Edit`. Spawn `worker` otherwise.
-  Include the definition body and task briefing in the spawn message.
-- Preserve every clean-context, model-separation, dispatch-cap, and return-shape rule below.
-
-## Four gates that reject a migration
-
-Every migrated artifact must clear four automated gates before the report ships. Fix every
-failure before moving on.
-
-### Overlap gate (Phase 6)
+**0. Inventory.** Read the target, then run:
 
 ```bash
-node "<dod-guard-skills-dir>/blind-rewrite/scripts/overlap-scan.mjs" \
-  --mode=prose \
-  --original=.skill-migrate/quarantine/original.md \
-  --rewrite=.skill-migrate/migrated.md \
-  --contract-file=<path-to-verbatim-file>
+node "<skill-dir>/scripts/migration-check.mjs" <path-to-target> --save=.skill-migrate/baseline.json
 ```
 
-Exit 0 means the text is a genuine rewrite. Exit 1 means the text is cosmetic - too close to
-the original. On exit 1, redispatch `dod-guard:blind-prose-writer`. Tell it the result was too
-close. Give it no other detail about how it was close.
+It prints the kind (`skill`, `agent`, `claude-md`, `memory`, `instinct`); override with `--kind=<k>`. Pass the kind to every agent. Trace by kind: skill, each `subagent_type` and script call to its file; agent, its dispatching skills and the report format its caller parses; CLAUDE.md, the commands, paths, and gates named; memory or instinct, whether each fact still holds. Write an inventory: one-sentence goal, trace, dispatches with return shapes, script exit codes, rules.
 
-### Gap audit (Phase 7)
+**1. Contract.** Dispatch the extractor with inventory and kind. It returns REQUIRED claims, OBSERVED claims, verbatim text, a dependency census, and banned vocabulary.
 
-Dispatch `dod-guard:blind-gap-auditor` with both versions and the pruned contract. It reports
-claims the new text dropped. Repair every gap it finds.
+**2. Classification.** Dispatch `migration-analyst` with contract, inventory, and kind. It labels each OBSERVED item ESSENTIAL, SCAFFOLDING (compensates for 4.6 limits), or ACCIDENTAL (phrasing artifact, dropped automatically). Advisory.
 
-The user may confirm dropping an item tagged SCAFFOLDING or ACCIDENTAL. For a skill, agent, or
-CLAUDE.md that is no gap. For a memory or instinct file every dropped claim is a gap. That
-exemption does not carry over. A memory that loses a fact is worthless.
+**3. Human confirmation.** The only step that blocks on the user. Show all REQUIRED claims, every tagged OBSERVED claim, and the full SCAFFOLDING list. Ask which SCAFFOLDING to cut, which OBSERVED items are missed requirements, and whether any REQUIRED claim is wrong. Wait for the answers.
 
-### Regression gate (Phase 8)
+**4. Blind rewrite.** Move the source to `.skill-migrate/quarantine/original.md` and clear its body below the frontmatter. Dispatch the writer with the pruned contract (REQUIRED plus approved OBSERVED), inventory, targets below, audience (Claude model in Claude Code), direct technical register, and banned read paths (quarantine directory, plugin-cache copies). Merge the original frontmatter with its output into `.skill-migrate/migrated.md`.
 
-```bash
-node "<skill-dir>/scripts/migration-check.mjs" \
-  .skill-migrate/migrated.md \
-  --before=.skill-migrate/baseline.json
-```
+Post-4.6 targets:
 
-Exit 0 means no regressions against the Phase 0 baseline. Exit 1 means a check that passed
-before now fails. Fix every regression before reporting.
-
-The checker resolves the artifact kind (skill, agent, claude-md, memory, or instinct). Each kind
-scores against its own weighted checklist, renormalized to 100 so kinds compare on one number.
-The checklist skips frontmatter checks entirely for a CLAUDE.md. `--before` against a baseline
-of a different kind refuses the comparison and exits 3. The score covers body length and
-frontmatter shape. It also checks content hygiene. That means no `@`-imports, no scaffolding
-patterns, no cross-phase back-references, no near-duplicates, and no dated references. Bare
-negatives need alternatives, scope needs a word like every or all, and caps emphasis stops at 2.
-An agent must declare `tools`, except one that deliberately inherits every tool: it omits the
-`tools` line and sets `inheritAllTools: true`, and combining the two fails as a contradiction.
-
-### Claim coverage (Phase 5)
-
-Match each REQUIRED claim and each kept OBSERVED claim to a specific sentence in the migrated
-artifact. Any unanchored claim is a gap. Send the writer back with that claim identified.
-
-## Human confirmation (Phase 3)
-
-The only step that blocks on user input. Display all REQUIRED claims, every tagged OBSERVED
-claim, and the full SCAFFOLDING list. Collect three answers: which SCAFFOLDING to cut, which
-OBSERVED are missed requirements, and whether any REQUIRED claim is incorrect. Proceed only
-after the user responds.
-
-## How each actor contributes
-
-Cap: four agent dispatches total across the entire migration.
-
-### Contract extraction (Phase 1)
-
-Dispatch `dod-guard:blind-prose-contract-extractor` on the target artifact with the Phase 0
-inventory and its kind. It produces REQUIRED claims, OBSERVED claims, verbatim text, dependency
-census, and banned vocabulary.
-
-For a memory or instinct file, every factual assertion belongs in the Verbatim section. A fact
-means a path, a number, a command, a flag, a date, or a name.
-
-### Classification (Phase 2)
-
-Dispatch `dod-guard:migration-analyst` with contract, inventory, and kind. It labels each
-OBSERVED item:
-
-- **ESSENTIAL** - behavior or fact the artifact depends on. Survives the rewrite.
-- **SCAFFOLDING** - compensates for 4.6 limitations. Candidate for removal at the human gate.
-  For a memory or instinct file, a fact is never SCAFFOLDING - only the framing around it can be.
-- **ACCIDENTAL** - phrasing artifact. Dropped automatically.
-
-### Blind rewrite (Phase 4)
-
-Quarantine the source to `.skill-migrate/quarantine/original.md` and clear the body below the
-frontmatter. The writer reads only the pruned contract. The quarantined file and any
-plugin-cache copy stay off limits.
-
-Dispatch `dod-guard:blind-prose-writer` with a briefing that contains:
-
-- Pruned contract: REQUIRED claims plus user-approved OBSERVED claims
-- Inventory: script paths with exit codes, agent names with return shapes, the frontmatter block
-- The 10 post-4.6 targets
-- Audience: Claude model in Claude Code
-- Register: direct, technical
-- Body length ceiling: 50-70% of source line count
-- Banned read paths: quarantine directory and plugin-cache copies
-- For a memory or instinct file: reproduce every Verbatim string exactly and rewrite only the
-  framing around it
-
-Merge the frontmatter with the writer output. Save to `.skill-migrate/migrated.md`.
-
-## Inventory and baseline (Phase 0)
-
-Start by reading the target artifact, then resolve its kind:
-
-```bash
-node "<skill-dir>/scripts/migration-check.mjs" \
-  <path-to-target> \
-  --save=.skill-migrate/baseline.json
-```
-
-The command prints the resolved kind (skill, agent, claude-md, memory, or instinct). Pass
-`--kind=<k>` to override. Carry the resolved kind in every agent briefing from here on.
-
-Trace what the kind implies. A skill traces every `subagent_type` reference to its agent
-definition and every runtime path or `node` invocation to its script file. An agent
-definition traces the skills that dispatch it and the report format its caller parses. A
-CLAUDE.md traces the commands, paths, and gates it names. A memory or instinct file traces
-whether each fact it states still holds.
-
-Compile an inventory: one-sentence goal, the trace above, agent dispatches with return shapes,
-script calls with exit-code semantics, and the rules.
-
-## Working paths
-
-| Path | Purpose |
-|---|---|
-| `.skill-migrate/quarantine/original.md` | Quarantined original |
-| `.skill-migrate/migrated.md` | Writer output |
-| `.skill-migrate/baseline.json` | Phase 0 migration-check snapshot |
-
-## Post-4.6 targets
-
-Bundle these 10 numbered items into the writer briefing.
-
-1. Cut to 50-70% of the source line count.
-2. Describe outcomes and acceptance criteria. Let the model choose methods.
-3. Drop verification scaffolding. Post-4.6 models self-check.
-4. Name the scope where the source left it implied.
-5. Favor a guiding principle over an enumerated checklist.
-6. Point at a script gate rather than restating its logic in prose.
+1. Cut to 50-70% of source lines.
+2. Describe outcomes and acceptance criteria; let the model pick methods.
+3. Drop verification scaffolding.
+4. Name scope left implied.
+5. Prefer a principle over an enumerated checklist.
+6. Point at a script gate instead of restating it.
 7. Set an explicit ceiling on subagent dispatches.
-8. Each phase carries its full context. No backward pointers.
+8. Give each phase full context, no backward pointers.
 9. Resolve contradictions and overlapping directives.
-10. Omit long worked examples that funnel the model toward one solution.
+10. Omit long worked examples that funnel toward one solution.
 
-## Deliver the result (Phase 9)
+Memory and instinct files: put every factual assertion (path, number, command, flag, date, name) in Verbatim; the writer reproduces each exactly and rewrites only the framing. A fact is never SCAFFOLDING. In phase 7 every dropped claim is a gap.
 
-Summarize before and after numbers. Append the migration check comparison output, then the full
-diff of original against migrated. Stop there. The caller decides whether to land the change.
+**5. Claim coverage.** Map each REQUIRED and kept OBSERVED claim to a sentence in `migrated.md`. Name any unmapped claim and send the writer back.
 
-## Constraints
+**6. Overlap.**
 
-- Handle a single artifact each time. Batching across artifacts is out of scope.
-- Quarantine the file and clear its body before any writer dispatch. Exposure to the source
-  text turns a rewrite into a copy.
-- Classification is advisory. Pruning decisions belong to the user.
-- The migration ends at the diff. Applying it is the caller's job.
-- Shorter output signals success. A migration that grows the artifact failed.
+```bash
+node "<dod-guard-skills-dir>/blind-rewrite/scripts/overlap-scan.mjs" --mode=prose --original=.skill-migrate/quarantine/original.md --rewrite=.skill-migrate/migrated.md --contract-file=<path-to-verbatim-file>
+```
+
+Exit 0 is a genuine rewrite. Exit 1 is cosmetic: redispatch the writer, saying only "too close".
+
+**7. Gap audit.** Dispatch `blind-gap-auditor` with both versions and the pruned contract. Repair every dropped claim. For skill, agent, or CLAUDE.md, a SCAFFOLDING or ACCIDENTAL item the user confirmed dropping is no gap.
+
+**8. Regression.**
+
+```bash
+node "<skill-dir>/scripts/migration-check.mjs" .skill-migrate/migrated.md --before=.skill-migrate/baseline.json
+```
+
+Exit 0 passes. Exit 1 means a previously passing check now fails; fix every one. Exit 3 means the baseline is a different kind, so the comparison is refused. The script scores everything else. An agent declares `tools`, or omits it and sets `inheritAllTools: true`; both fails.
+
+All four gates (claim coverage, overlap, gap audit, regression) must pass before the report ships.
+
+**9. Deliver.** Summarize before and after numbers, append the migration-check output, then the full diff. Stop.

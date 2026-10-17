@@ -5,329 +5,77 @@ description: Hunt duplicate and obsolete implementations with git archaeology, t
 
 # Clean house
 
-Your product is a deletion. You find pairs where one implementation
-superseded another. You decide from git history which side is dead. You
-rescue work that landed on the dead side by mistake. Then you get approval
-and delete.
+Read and apply `standards/working-defaults.md`; stricter rules here win.
 
-Say at the start that you are running an aggressive cleanup and that
-nothing is sacred. The user should know the default before you start.
+The deliverable is a deletion of the dead side of a superseded pair. Say up front this is an aggressive cleanup where nothing is sacred. Backwards compatibility alone never keeps a file; only a named live consumer does. Once evidence is in, delete by default: git history is the safety net.
 
-Backwards compatibility alone never saves a file. Keep it only when
-somebody names a live consumer. Git history is the safety net, so once
-the evidence is in, deletion is the default answer.
-
-Two cases are out of scope. Skip a published library or SDK. A
-deprecated export there may have consumers you cannot see. Skip a pair
-that turns out to be a facade over an implementation. That is one design,
-not two.
-
-Read and apply `standards/working-defaults.md` from the plugin root. Stricter
-boundaries in this skill win.
+Skip published libraries and SDKs (deprecated exports may have unseen consumers). Skip pairs where one side is a facade over the other.
 
 ## Local deletion exception
 
-This skill has a local deletion exception. Inspect `git status --short` before
-the archaeology stages, report every pending path, and preserve or stop for
-secrets, unapproved destructive intent, unrelated work, or changes that cannot
-be separated from the proposed deletion. `git rm` is allowed only for the
-exact items the user approves. It does not authorize unrelated dirty changes.
-
-## Ground rules
-
-Git and a repo-wide text search are the whole floor. Two extras help when
-the project has them, and neither is required.
-
-- `mcp__code-review-graph__refactor_tool` with `mode="dead_code"` names
-  symbols nothing reaches.
-- `mcp__code-review-graph__get_impact_radius_tool` answers the call-path
-  question for one symbol.
-- `jscpd` measures copy-paste.
+Before any archaeology, run `git status --short` and report every pending path. Preserve the path or stop if it holds secrets, unapproved destructive intent, unrelated work, or changes inseparable from the deletion. `git rm <path>` covers only user-approved items, never unrelated dirty changes.
 
-Those two graph entries are MCP tools. Call them as tools. They are not
-shell commands and they fail in a shell.
+## Tooling
 
-Every command below runs on the user's machine, which may be Windows.
-There the shell can be PowerShell, Git Bash, or cmd.exe, depending on the
-client and tool. PowerShell and cmd.exe have no `grep`, `head`, `tail`,
-`uniq`, or POSIX `sort`. cmd.exe's `find` searches file contents, not names,
-and cmd.exe has no single-quote grouping, so `'...'` makes it look for a
-program with that name.
-
-So use `rg` for every scan, including scans over file names. Quote with
-double quotes. Never pipe into `grep`, `head`, `tail`, or `uniq`. To narrow
-git output, use git's own flags such as `-n`, `--author`, `--format`, and
-`--diff-filter`.
-
-Two ripgrep traps. `rg --files` prints the native path separator, so a
-pattern holding a forward slash matches nothing on Windows. Match one path
-segment instead. Ripgrep globs are case sensitive and skip dotfiles, and
-`*.Makefile` never matches a file called `Makefile`.
+Git plus repo-wide text search is the floor. `mcp__code-review-graph__refactor_tool` with `mode="dead_code"`, `mcp__code-review-graph__get_impact_radius_tool`, and `jscpd` are optional. Call graph tools as MCP tools, never from a shell.
 
-## Stage 1, collect candidate pairs
-
-A candidate is a pair. Name the older thing and the thing that replaced it.
-Every later stage runs per pair.
-
-Gather from at least two independent signals. Start with the two that need
-nothing but git and ripgrep.
+The shell may be PowerShell, Git Bash, or cmd.exe, without grep, head, tail, uniq, or POSIX sort. Use `rg` for every scan, file names included, with double quotes. Never pipe into grep, head, tail, uniq, or a pager (it hangs). Narrow git output with `-n`, `--author`, `--format`, `--diff-filter`. `rg --files` prints native separators, so match one path segment. `rg` globs are case sensitive and skip dotfiles.
 
-```
-rg --files | rg -i "[-_](v[0-9]|old|new|legacy|copy|compat|shim|deprecated|bak)\b"
-```
+## Stage 1: candidate pairs
 
-```
-rg --files | rg -i "^(old|legacy|compat|shims|deprecated|v[0-9])$|[\\/](old|legacy|compat|shims|deprecated|v[0-9])[\\/]"
-```
-
-```
-rg -ln "_v[0-9]|[a-z](V[0-9]|Legacy|Compat|Shim)\b" -g "*.{ts,tsx,js,jsx,py,rs,go,cs,rb,java,kt,swift}"
-```
-
-```
-rg -n "(function|class|const|def|fn|type) +shipRate\b"
-```
-
-The first names files whose names admit a successor. The second names
-whole directories that read as obsolete, matching one path segment so it
-works on either separator. The third finds two implementations living in
-one file, which no filename scan reaches. The fourth finds one symbol
-defined in two places, so feed it names you already suspect.
-
-On a web project, add a route scan. Two handlers on one URL path is a
-pair even when both filenames look clean. Use route-registration patterns
-for the project's framework, e.g. `router.get(`, `@Get(`, `@app.route(`,
-`r.HandleFunc(`. Group the hits by URL path. The same path under two
-prefixes, or under two version segments, is a candidate pair.
-
-Also look for a barrel or re-export file still forwarding something that
-is gone. Search for re-export patterns in the project's language, e.g.
-`export .* from` in JS/TS, `__all__` in Python, `pub use` in Rust.
-
-If the project has a copy-paste detection tool (jscpd, CPD, etc.), run it
-for another signal.
-
-Test a name pattern before you trust it. Run it, then count the lines it
-printed. A pattern that names a large share of the repository is measuring
-the naming convention, not decay. Drop it and say so.
-
-Never pipe a long result into a pager. `less` and `more` wait for a
-keypress that never comes, and the session hangs.
-
-Give every pair a stated confidence and say what earned it. Strong means
-one side is unreferenced, the other has tests, and one author wrote both.
-Fair means the evidence points one way with a gap in it. Weak means
-anything less. Report weak pairs in one line each and investigate no
-further.
-
-## Stage 2, date each pair
-
-Find the creation commit of each side. The last line of this output is the
-oldest entry.
-
-```
-git log --diff-filter=A --format="%h %ad %s" --date=short -- src/pricing/shipping-rate.ts
-```
+A candidate pairs the older thing with its replacement; later stages run per pair. Use at least two independent signals:
 
-Do not add `--follow`. Git documents it as working with exactly one
-pathspec, and it is unreliable across renames.
+- `rg --files | rg -i "[-_](v[0-9]|old|new|legacy|copy|compat|shim|deprecated|bak)\b"`
+- `rg --files | rg -i "^(old|legacy|compat|shims|deprecated|v[0-9])$|[\\/](old|legacy|compat|shims|deprecated|v[0-9])[\\/]"`
+- `rg -ln "_v[0-9]|[a-z](V[0-9]|Legacy|Compat|Shim)\b" -g "*.{ts,tsx,js,jsx,py,rs,go,cs,rb,java,kt,swift}"`
+- One symbol defined twice, per suspected name: `rg -n "(function|class|const|def|fn|type) +shipRate\b"`
+- `jscpd` output.
+- Web projects: route registrations grouped by URL path (`router.get(`, `@Get(`, `@app.route(`). One path under two prefixes or version segments is a pair.
+- Barrel files forwarding gone things (`export .* from`, `__all__`, `pub use`).
 
-Now ask whether the older side kept taking work after the newer side
-existed. Pass the newer side's creation date.
+Count each name pattern's output. If it matches a large share of the repo, it measures naming convention; drop it and say so.
 
-```
-git log --format="%h %ad %s" --date=short --since=2025-11-04 -- src/pricing/shipping-rate.ts
-```
+State a confidence and evidence per pair. Strong: one side unreferenced, the other tested, one author wrote both. Fair: evidence one way with a gap. Weak: anything less; report it in one line and stop.
 
-For staleness, read the last commit that touched each side.
+## Stage 2: dating
 
-```
-git log -n 1 --format="%h %ad %s" --date=short -- src/pricing/rates.ts
-```
+- Creation commit: `git log --diff-filter=A --format="%h %ad %s" --date=short -- <path>`. The last line is oldest. Never use `--follow`: single pathspec only, unreliable across renames.
+- Commits after the newer side existed: `git log --format="%h %ad %s" --date=short --since=<newer-side-creation-date> -- <path>`
+- Staleness: `git log -n 1 --format="%h %ad %s" --date=short -- <path>`
+- If the older side has the newer commits, the pair may be inverted (an abandoned rewrite). Check which side is imported, tested, and in the deployed build first. Deleting a live implementation is the worst outcome.
+- Authorship: `git shortlog -sn HEAD -- <path>`. Always pass a revision, or it reads stdin. Run it over `HEAD` with no path first; if one name owns the repo, drop the signal and say so.
+- Drift: `git diff --no-index <older> <newer>` (exit 1 on a difference is normal).
 
-Read that result carefully, because it can invert the pair. When the older
-side holds the more recent commits, the newer side may be the abandoned
-one. Somebody started a rewrite and dropped it. Check three things before
-you call the older side dead. Which side does the codebase import. Which
-side has tests. Which side does the deployed build include. Deleting
-a live implementation because a dead rewrite has a later creation date is
-the worst outcome this skill can produce.
+Classify each commit the older side took after the newer side existed. Fixes to shared behavior get ported to the newer side first. Changes specific to the dying interface die with it. Never assume a rescue is owed.
 
-To ask whether one author owns the file, always pass a revision.
+Port one change at a time: port, run the newer side's tests, commit, repeat. When moving tests, break the covered behavior to confirm each moved test fails.
 
-```
-git shortlog -sn HEAD -- src/pricing/rates.ts
-```
+## Stage 3: prove removal safe
 
-Without a revision range `git shortlog -sn` reads standard input. In an
-agent shell that returns nothing and exits 0, which reports no dominant
-author for every repository.
+Sweep the whole repo for each dying name and read hits in source, tests, config, docs, and build scripts. Report each live reference, never an unmeasured absence.
 
-One author across both sides raises confidence, because one person
-rewriting their own work rarely means two live designs. That only counts
-where authorship discriminates. Run the same command over `HEAD` with no
-path first. If one name owns the whole repository, this signal says
-nothing here, so drop it and say so.
+- First pass, no other filter, so extensionless build scripts are reached: `rg -n --hidden -g "!.git" "<symbol>"`
+- Narrowing later: `rg -n --hidden -g "!.git" -g "Makefile*" -g "Dockerfile*" -g "*.yml" -g "*.toml" "<symbol>"`
+- Sweep the stem too, with no slash, since importers name the file: `rg -n --hidden -g "!.git" "<file-stem>"`
 
-To see how far the two sides drifted, diff them directly.
+A live reference is usually work: if the newer side offers the same behavior, update the referencing site and list that edit beside the deletion it unblocks. A reference blocks only when nothing can replace it. Four blockers: a package this repo publishes exports the name; production config points at it and cannot change this pass; a route or endpoint still takes live traffic (no sweep shows these three); user-relied-upon docs describe it (update docs first).
 
-```
-git diff --no-index src/pricing/shipping-rate.ts src/pricing/rates.ts
-```
+Confirm the replacement has tests: `rg --files -g "*shipping-rate*" -g "*rates*" -g "*.{test,spec}.*"` (adapt names). If it has none, port tests first or stop and report.
 
-`--no-index` is load-bearing. Without it git reads both paths as pathspecs
-and diffs the working tree against the index, which answers another
-question entirely. It exits 1 when the files differ. That is the normal
-result, not an error.
+Confirm with impact radius and `dead_code` if available, else trace the call path by hand. Dependencies whose only consumer is the dying side (sweep package names) join the batch.
 
-Every commit the older side took after the newer side existed is a
-decision. Classify each one. A change that fixes shared behavior belongs in
-the newer side, so port it first. A change specific to the dying interface
-dies with it. Check which kind it is before you move anything. Never assume
-a rescue is owed.
+## Stage 4: approval and delete
 
-Move every belonging change in this order, one at a time. Port it. Run the
-newer side's tests. Commit. Only then move to the next one. Porting the
-whole set and deleting before you run anything hides a change that does
-not compile against the new interface. By then the source is gone.
+Show the exact list of files, data files, and orphaned dependencies, and wait. Give each item's superseding file, creation gap, ported fixes, and reference count.
 
-If test cases have to move from the dying file onto its replacement, port
-them one at a time. Break the behavior each one covers and confirm it fails,
-so a moved test still tests something on its new target.
+Delete only what the user approves. A partial yes binds, and a named live consumer keeps its item. If new dead files appear or the plan proves wrong, return with a corrected list; never fold new items into an approved run.
 
-## Stage 3, prove removal is safe
+- Delete whole files with `git rm <path>`; never empty a file and leave it. Delete tests, fixtures, mocks, and data that covered only the dying side.
+- Remove an orphaned dependency with the project's package manager (`npm remove`, `cargo remove`, `pip uninstall`).
+- Recover a wrong deletion before commit with `git checkout HEAD -- <path>`. After commit, run `git log -n 1 --diff-filter=D --format=%h -- <path>`, then `git checkout <hash>~1 -- <path>`. Use `~1`, never `^`.
 
-Nothing goes while a reference still points at it. Sweep the whole
-repository for each dying name.
+## After deleting
 
-```
-rg -n --hidden -g "!.git" "shipRate"
-```
+Run the build, full test suite, and linter (it catches leftover imports). Re-run the stage 3 sweep for removed names. `rg <symbol>` exit 1 is gone, 0 is a surviving reference, 2 is a failed search.
 
-`--hidden` is what reaches `.env` and other dotfiles. Passing no `-g`
-filter is what reaches `Makefile`, `Dockerfile`, and every other
-extensionless build script. Add glob filters only to narrow a second pass,
-and write them to match real names.
-
-```
-rg -n --hidden -g "!.git" -g "Makefile*" -g "Dockerfile*" -g "*.yml" -g "*.toml" "shipRate"
-```
-
-Importers usually name the file, not the symbol. Sweep the file stem as
-one segment, with no slash in the pattern.
-
-```
-rg -n --hidden -g "!.git" "shipping-rate"
-```
-
-Read the hits across source, tests, config, docs, and build scripts. Report
-each live reference you find. Never report absence you did not measure.
-
-A live reference is usually work, not a wall. Where the newer side offers
-the same behavior, update the referencing site to call it. List that edit
-in the plan beside the deletion it unblocks. A reference only blocks
-when nothing can replace it.
-
-Four kinds do block, and no repo-wide sweep can see the first three.
-
-1. The dying name is exported from a package this repository publishes.
-   Somebody outside can import it, and your search cannot reach them.
-2. Production configuration points at it and you cannot change that
-   configuration in this pass.
-3. A route or endpoint still takes live traffic.
-4. Documentation users rely on describes it. Update the documentation
-   first, then delete.
-
-Confirm the replacement carries tests before you delete the tested side.
-
-```
-rg --files -g "*shipping-rate*" -g "*rates*" -g "*.{test,spec}.*"
-```
-
-Deleting a tested implementation in favour of an untested one trades
-working code for a guess. When the survivor has no tests, port the tests
-first or stop and report it.
-
-When code-review-graph is available, confirm with
-`mcp__code-review-graph__get_impact_radius_tool` on the dying symbol, and
-with `mcp__code-review-graph__refactor_tool` at `mode="dead_code"`.
-
-Without it, trace the call path by hand. Find where the application wires
-things up, then follow the chain from there to the dying name.
-
-Search for the project's route or service registration patterns (e.g.
-`registerRoutes`, `app.use`, `app.route`, `r.HandleFunc`, `#[get(`).
-Use `rg` with a glob matching the project's source file extensions.
-
-Last, list dependencies whose only consumer is the dying side. Run the same
-sweep against the package name. A dependency left with no consumer goes in
-the same batch.
-
-## Stage 4, ask, then delete
-
-Show the exact list and wait. Delete only what the user approves.
-
-```
-Ready to delete, 3 items:
-
-1. src/pricing/shipping-rate.ts
-   Superseded by src/pricing/rates.ts, created 3 months later.
-   2 later fixes ported already. 0 references outside its own test.
-2. src/pricing/legacy-zone-table.json
-   Read only by item 1. No other reference.
-3. dependency "zone-lookup" in package.json
-   Only import was item 1.
-
-Delete all three?
-
-User: yes to 1 and 2, leave the dependency, our build script shells out to it
-
-Deleting items 1 and 2. Keeping "zone-lookup", live consumer named.
-```
-
-A partial yes binds. Delete the approved items and nothing else.
-
-Anything the user did not see in that list does not go this pass. If the
-migration turns up another dead file, or shows the plan was wrong, come
-back to the user with a corrected list. Never fold a new item into a run
-that was already approved.
-
-Delete whole files. Never empty a file and leave it in place.
-
-```
-git rm src/pricing/shipping-rate.ts
-```
-
-Delete the test files that only covered the dying side, along with its
-fixtures, mocks, and test data. Those hits appear in your stage 3 sweep
-and would otherwise read as live references that block the removal.
-
-Remove a dependency whose only consumer just went, using the project's
-package manager (e.g. `npm remove`, `cargo remove`, `pip uninstall`).
-
-If a deletion turns out wrong before it is committed, restore it from
-`HEAD`. After the commit, restore it from the parent of the commit that
-deleted it, which `--diff-filter=D` finds even when later commits followed.
-
-```
-git checkout HEAD -- src/pricing/shipping-rate.ts
-git log -n 1 --diff-filter=D --format=%h -- src/pricing/shipping-rate.ts
-git checkout <that-hash>~1 -- src/pricing/shipping-rate.ts
-```
-
-Write `~1`, not `^`: cmd.exe treats `^` as its escape character and drops it.
-
-## After the delete
-
-Confirm the state you are about to report. Run the project's build. Run its
-full test suite. Run its linter, because a removal leaves imports behind
-that only the linter names. Then sweep the removed names once more with the
-stage 3 command and read the output.
-
-To prove the symbol is gone, run `rg shipRate` and expect exit code 1,
-which is ripgrep's answer for no match. Exit code 0 means a reference
-survived, and exit code 2 means the search itself failed.
-
-Report what you deleted, what you kept and why, what you ported before
-deleting, and every weak pair you left alone. Include any reusable lesson in
-the final report so a later cleanup can apply it.
+Report what you deleted, kept and why, ported, weak pairs left alone, and any lesson.
