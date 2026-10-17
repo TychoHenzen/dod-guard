@@ -5,8 +5,6 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 
-const skillPath = new URL("../SKILL.md", import.meta.url);
-
 function git(cwd, args) {
   return spawnSync("git", args, {
     cwd,

@@ -64,5 +64,5 @@ npm run test:dod-guard-skills
 ```
 
 Keep manifest skill and agent counts aligned with the directories that ship.
-Every shipped skill reads `standards/working-defaults.md`; keep the policy
-inventory test aligned with that standard and with the delivery exceptions.
+Every shipped skill reads `standards/working-defaults.md`. Skills and standards
+are prose, so no test checks their wording.

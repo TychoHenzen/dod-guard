@@ -8,8 +8,6 @@ import { fileURLToPath } from "node:url";
 
 const sourceHelper = fileURLToPath(new URL("./preflight-installation.mjs", import.meta.url));
 const sourceArguments = fileURLToPath(new URL("./preflight-arguments.mjs", import.meta.url));
-const skillPath = new URL("../SKILL.md", import.meta.url);
-const usagePath = new URL("../../../USAGE.md", import.meta.url);
 
 async function createInstall(t, client) {
   const temporaryRoot = await mkdtemp(join(tmpdir(), "dod-guard-publish-preflight-"));
@@ -284,22 +282,6 @@ test("reports stale pins and malformed inventories without changing the installa
     assert.equal(await readFile(fixture.manifestPath, "utf8"), manifestBefore);
     assert.equal(await readFile(fixture.skillFile, "utf8"), skillBefore);
   }
-});
-
-test("the skill blocks release work on preflight failure and documents exact caller pins", async () => {
-  const [skill, usage] = await Promise.all([readFile(skillPath, "utf8"), readFile(usagePath, "utf8")]);
-  const procedureOffset = skill.indexOf("## Procedure");
-  const preflightOffset = skill.indexOf("## Installation identity preflight");
-  const preflight = skill.slice(preflightOffset, procedureOffset);
-
-  assert.ok(preflightOffset >= 0 && procedureOffset > preflightOffset);
-  assert.match(preflight, /preflight-installation\.mjs/);
-  assert.match(preflight, /If the helper exits non-zero[\s\S]+then stop/);
-  assert.match(preflight, /Do not run the procedure or any Git,[\s\S]+client-cache mutation/);
-  assert.match(preflight, /use the\s+returned `pluginRoot` for every later `<plugin-root>` path/);
-  assert.match(usage, /version=<exact-version>/);
-  assert.match(usage, /path=<absolute-path-to-skills\/publish\/SKILL\.md>/);
-  assert.match(usage, /The path\s+pin is the skill file, not its plugin root/);
 });
 
 test("tolerates a non-zero inventory status for one valid registration", async (t) => {
