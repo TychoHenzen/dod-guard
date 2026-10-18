@@ -55,9 +55,12 @@ agent when it has one.
 The two runtimes resolve a requested model differently:
 
 - In Claude Code, the Agent call's `model` and `effort` override the agent's
-  frontmatter. Every routed Agent call therefore passes both values, read from the
-  tier agent's frontmatter (or from the strong row above), and the progress
-  message names the stage, tier, model, and effort.
+  frontmatter, so a typed value that differs from the agent file silently
+  changes the tier. A standard or cheap row passes neither value: the agent file
+  pins them. A strong row passes `model: opus` and `effort: high`, and a model
+  or effort the user names passes as named. The progress message names the
+  stage, tier, model, and effort, read from the agent's frontmatter (or from
+  the strong row above).
 - In Codex, spawn-time model and effort values can be ignored or capped, and
   the values in a registered agent file take precedence. A Codex stage is
   pinned only when it runs through a registered agent whose
@@ -85,7 +88,7 @@ invokes a skill or writes issue, pull request, or Project state:
 `dod-guard:stage-cheap` and the read-only agents have no Skill tool, and their
 own text rules out GitHub writes even through Bash, so capability follows the
 agent and cost follows the model. In Claude Code,
-pass the tier's `model` and `effort` on the Agent call. In Codex, the
+pass `model` and `effort` only for the strong tier, as above. In Codex, the
 registered files pin the standard and cheap tiers, so spawn a strong-tier stage
 without a pinned file, with `gpt-5.6-sol` and `high` at spawn time, and record
 it as "requested, not pinned".
