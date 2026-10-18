@@ -33,7 +33,7 @@ Repeat until a stop condition holds. Take one parent at a time, in the current c
 
 ## Delegation
 
-The main thread sequences and checks. Subagents are Agent-tool subagents in Claude Code and spawned agents in Codex; user-visible threads (`create_thread`, `fork_thread`, `send_message_to_thread`, `codex://threads/...`) are not subagents. Each stage runs in one fresh subagent as one step of `dod-guard:step-by-step`. Dispatch, stage briefs, overrides, checks, and "Escalation" follow `standards/model-routing.md`. Build each brief from the Runs column and add nothing else. Write no template, copy, summary, or rules file of a skill. Name stage, tier, model, and effort in progress messages. A rerun uses its row's tier.
+The main thread sequences and checks. Subagents are Agent-tool subagents in Claude Code and spawned agents in Codex; user-visible threads (`create_thread`, `fork_thread`, `send_message_to_thread`, `codex://threads/...`) are not subagents. Each stage runs in one fresh subagent as one step of `dod-guard:step-by-step`. Dispatch, stage briefs, overrides, checks, and "Escalation" follow `standards/model-routing.md`. Build each brief from the Runs column and add nothing else. Dispatch each row on the agent in its Agent column, never on another agent. Pass no `model` or `effort` unless the row is strong or the user named one: the agent file pins them, so a cheap row runs on Haiku. Write no template, copy, summary, or rules file of a skill. Name stage, tier, model, and effort in progress messages. A rerun uses its row's tier.
 
 - No row starts on the strong tier.
 - A stage report naming a live child, a pending named proof, or a still-applied temporary probe is incomplete. Resume that stage at its checkpoint. Launch no replacement.
