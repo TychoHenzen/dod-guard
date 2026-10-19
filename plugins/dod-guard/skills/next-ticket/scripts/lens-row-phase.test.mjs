@@ -11,6 +11,7 @@ const issue904 = JSON.parse(await readFile(new URL("./fixtures/issue-904-handoff
 
 const PUSHED_HEAD = "0123456789abcdef0123456789abcdef01234567";
 const RECOVERY_REMAINDER = "reliability review lens must cover required path(s): recovery";
+const OWNER_REMAINDER = "reliability owner task needs mapped acceptance evidence ev-path-data-error";
 const lensRemainder = (result) => result.remainder.filter((entry) => entry.includes("review lens"));
 
 test("planned-mode convergence rejects the #855 pre-correction shape on the recovery path", () => {
@@ -53,6 +54,19 @@ test("post-push convergence applies the same lens-path rule as finalization", ()
   const result = proof.evaluateConvergence(observedFromPlanned(issue855Shape(), PUSHED_HEAD));
 
   assert.deepEqual(result.remainder, [RECOVERY_REMAINDER]);
+});
+
+test("a lens owner task that omits mapped acceptance evidence fails in planned mode as in finalization", () => {
+  const input = issue855Shape({ corrected: true });
+  input.tasks[0].acceptanceEvidence = input.tasks[0].acceptanceEvidence.filter((id) => id !== "ev-path-data-error");
+  input.records["task-list"] = input.tasks;
+
+  const refinement = proof.evaluateConvergence(input);
+  const finalization = evaluateStructuredFinalization(observedFromPlanned(input, PUSHED_HEAD));
+
+  assert.equal(refinement.outcome, "actionable remainder");
+  assert.deepEqual(refinement.remainder, [OWNER_REMAINDER]);
+  assert.deepEqual(finalization.remainder, refinement.remainder);
 });
 
 test("a lens row must name its path exactly while matrix coverage accepts an alias, in both modes", () => {
