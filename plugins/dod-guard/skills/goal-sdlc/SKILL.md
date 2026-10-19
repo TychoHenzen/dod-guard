@@ -17,6 +17,10 @@ Read `standards/working-defaults.md` and `standards/github-request-discipline.md
 - [complete-pr](../complete-pr/SKILL.md): reviewed, no unresolved BLOCKER or MAJOR. MINOR never blocks.
 - [add-backlog-idea](../add-backlog-idea/SKILL.md): work has no issue, or today's friction log is missing.
 
+## Tool availability
+
+The pooled HTTP MCP servers (code-explorer, quality-guard, knowledge-base, serena, code-review-graph) refuse connections with ECONNREFUSED when no Codex session started the port-21720 pool. Do not wait for them or retry them. Use `gh`, Grep, Read, and the plugin-scoped knowledge-base server instead, and name that fallback in the first progress message of the run.
+
 ## Loop
 
 Repeat until a stop condition holds. Take one parent at a time, in the current checkout, on one branch and one PR. Never create or use a Git worktree.
