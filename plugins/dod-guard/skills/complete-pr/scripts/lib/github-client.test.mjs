@@ -68,12 +68,15 @@ test("GitHubClient forwards every method to its resource with the injected runne
     ["deleteBranchRef", () => client.deleteBranchRef("codex/24-x"), "repos/owner/repo/git/refs/heads/codex/24-x"],
   ];
 
-  for (const [, call, marker] of rows) {
+  for (const [name, call, marker] of rows) {
     calls.length = 0;
-    // ASSUMPTION: the marker is matched against the joined argument string, because a
-    // substring such as "repos/owner/repo/pulls/24" is not an exact element of the args array.
+    // The marker is matched against the joined argument string, because a substring such as
+    // "repos/owner/repo/pulls/24" is not an exact element of the args array.
     assert.throws(call, /stop after the first request/);
-    assert.ok(calls[0].join(" ").includes(marker), `first request ${JSON.stringify(calls[0])} lacks ${marker}`);
+    assert.ok(
+      calls[0].join(" ").includes(marker),
+      `${name}: first request ${JSON.stringify(calls[0])} lacks ${marker}`,
+    );
   }
 
   assert.deepEqual(rows.map(([name]) => name).sort(), [
@@ -96,7 +99,7 @@ test("GitHubClient forwards every method to its resource with the injected runne
   ]);
 });
 
-test("GitHubClient keeps the source and base aliases on the branch ref reader and waits on a timer", async () => {
+test("GitHubClient keeps the source and base aliases on the branch ref reader and wait resolves", async () => {
   const requests = [];
   const client = new GitHubClient("owner/repo", 24, (args) => {
     requests.push(args);

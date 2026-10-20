@@ -95,24 +95,18 @@ const ITEM_STATUS_STOPS = {
   disagree: "one non-contradictory Status field/value",
 };
 
-// The Status name of one item read with ?fields=<statusFieldId>. The item must carry exactly that one
-// field, and its value must flatten to one name; an absent value is a stop here, not null.
-function projectStatusName(item, statusFieldId, endpoint) {
-  if (!Array.isArray(item?.fields) || item.fields.length !== 1) {
-    throw githubResponseContractError(endpoint, "exactly one Status field/value");
-  }
-  const [statusField] = item.fields;
-  if (
-    String(statusField?.id ?? "") !== String(statusFieldId) ||
-    typeof statusField?.name !== "string" ||
-    statusField.name.toLowerCase() !== "status"
-  ) {
-    throw githubResponseContractError(endpoint, "exactly one Status field/value");
-  }
+function isStatusField(field, statusFieldId) {
+  return (
+    String(field?.id ?? "") === String(statusFieldId) &&
+    typeof field?.name === "string" &&
+    field.name.toLowerCase() === "status"
+  );
+}
 
-  let name;
+// A contract stop for a malformed Status value; any other error passes through unchanged.
+function itemStatusValueName(value, endpoint) {
   try {
-    name = statusValueName(statusField.value);
+    return statusValueName(value);
   } catch (error) {
     const stop = ITEM_STATUS_STOPS[error?.statusValueReason];
     if (stop !== undefined) {
@@ -120,6 +114,20 @@ function projectStatusName(item, statusFieldId, endpoint) {
     }
     throw error;
   }
+}
+
+// The Status name of one item read with ?fields=<statusFieldId>. The item must carry exactly that one
+// field, and its value must flatten to one name; an absent value is a stop here, not null.
+function projectStatusName(item, statusFieldId, endpoint) {
+  if (!Array.isArray(item?.fields) || item.fields.length !== 1) {
+    throw githubResponseContractError(endpoint, "exactly one Status field/value");
+  }
+  const [statusField] = item.fields;
+  if (!isStatusField(statusField, statusFieldId)) {
+    throw githubResponseContractError(endpoint, "exactly one Status field/value");
+  }
+
+  const name = itemStatusValueName(statusField.value, endpoint);
   if (name === null) {
     throw githubResponseContractError(endpoint, "exactly one non-blank Status field/value");
   }
@@ -162,10 +170,14 @@ function repositoryName(value) {
   return typeof value === "string" && value.trim().length > 0 ? value.trim().toLowerCase() : null;
 }
 
+function commandFailureDetail(result) {
+  return result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`;
+}
+
 function ghJsonLines(endpoint, filter, commandRunner) {
   const result = commandRunner(["api", "--paginate", "--jq", filter, endpoint], [0]);
   if (result.status !== 0) {
-    throw new Error(result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`);
+    throw new Error(commandFailureDetail(result));
   }
   const lines = String(result.stdout ?? "")
     .split(JSON_LINE_SEPARATOR)

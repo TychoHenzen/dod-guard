@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
+import { GitHubClient } from "./github-client.mjs";
 import { okResponse } from "./github-client.test-support.mjs";
 import { readRequiredChecks } from "./required-checks.mjs";
 
@@ -159,7 +160,10 @@ function readsCheckRunsOrStatuses(calls) {
 // readRequiredChecks is the reader the closure snapshot calls; getRequiredChecks is complete-pr's way in.
 const requiredCheckReaders = [
   ["readRequiredChecks", (runner) => readRequiredChecks("owner/repo", exactHeadPullRequest(), runner)],
-  ["getRequiredChecks", (runner) => readRequiredChecks("owner/repo", exactHeadPullRequest(), runner)],
+  [
+    "getRequiredChecks",
+    (runner) => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
+  ],
 ];
 
 const protectionFailures = [

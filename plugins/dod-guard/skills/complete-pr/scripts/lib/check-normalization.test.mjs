@@ -4,8 +4,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { normalizeCheckRun, normalizeRequiredChecks } from "./check-normalization.mjs";
 import { GitHubClient } from "./github-client.mjs";
-
-const headShaField = "head_sha";
+import { headShaField } from "./github-client.test-support.mjs";
 
 test("normalizes workflow run status with the same exact-head check rules", () => {
   const queuedRun = {

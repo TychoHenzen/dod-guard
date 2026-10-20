@@ -71,7 +71,16 @@ test("getPullRequest reads the pull endpoint and normalizes it", () => {
   const runner = (args) => {
     calls.push(args);
     return okResponse(
-      '{"number":24,"state":"open","draft":true,"mergeable":null,"mergeable_state":"blocked","html_url":"https://github.com/owner/repo/pull/24","head":{"ref":"codex/24-x","sha":"head-1","repo":{"full_name":"owner/repo"}},"base":{"ref":"master","sha":"base-1"}}',
+      JSON.stringify({
+        number: 24,
+        state: "open",
+        draft: true,
+        mergeable: null,
+        mergeable_state: "blocked",
+        html_url: "https://github.com/owner/repo/pull/24",
+        head: { ref: "codex/24-x", sha: "head-1", repo: { full_name: "owner/repo" } },
+        base: { ref: "master", sha: "base-1" },
+      }),
     );
   };
 
@@ -150,7 +159,13 @@ test("mergePullRequest throws unexpected_head_change when the merged readback sh
   const { runner } = mergeRunner(
     { status: 1, stderr: "HTTP 502: Bad Gateway", stdout: "" },
     okResponse(
-      '{"number":24,"state":"closed","merged_at":"2026-10-01T00:00:00Z","head":{"ref":"codex/24-x","sha":"head-2","repo":{"full_name":"owner/repo"}},"base":{"ref":"master","sha":"base-1"}}',
+      JSON.stringify({
+        number: 24,
+        state: "closed",
+        merged_at: "2026-10-01T00:00:00Z",
+        head: { ref: "codex/24-x", sha: "head-2", repo: { full_name: "owner/repo" } },
+        base: { ref: "master", sha: "base-1" },
+      }),
     ),
   );
 

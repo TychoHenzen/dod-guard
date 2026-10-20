@@ -17,35 +17,46 @@ function readExactHeadCheckRuns(endpoint, commandRunner) {
   });
 }
 
+function pageStatuses(page) {
+  if (Array.isArray(page?.statuses)) {
+    return page.statuses;
+  }
+  return [];
+}
+
+function protectionReadError(protectionEndpoint, result) {
+  const detail = result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`;
+  return new Error(`Failed to read branch protection at ${protectionEndpoint}: ${detail}`);
+}
+
+function readCommitStatuses(repository, headSha, commandRunner) {
+  const statusEndpoint = `repos/${repository}/commits/${headSha}/status?per_page=100`;
+  const statusPages = readNamed("commit statuses", statusEndpoint, () =>
+    ghJsonPagesData(statusEndpoint, commandRunner),
+  );
+  const statusSha = statusPages.map((page) => page?.sha).find(Boolean) ?? null;
+  return statusPages.flatMap((page) =>
+    pageStatuses(page).map((status) => ({ ...status, sha: status.sha ?? statusSha })),
+  );
+}
+
 export function readRequiredChecks(repository, pullRequest, commandRunner) {
   const branch = encodeBranch(pullRequest.baseBranch);
   const protectionEndpoint = `repos/${repository}/branches/${branch}/protection/required_status_checks`;
   const protectionResponse = readNamed("branch protection", protectionEndpoint, () =>
     ghJson(["api", protectionEndpoint], [0, 1], commandRunner),
   );
-  if (protectionResponse.result.status === 1 && isHttpNotFound(protectionResponse.result)) {
+  if (isHttpNotFound(protectionResponse.result)) {
     return [];
   }
   if (protectionResponse.result.status !== 0) {
-    const { result } = protectionResponse;
-    const detail = result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`;
-    throw new Error(`Failed to read branch protection at ${protectionEndpoint}: ${detail}`);
+    throw protectionReadError(protectionEndpoint, protectionResponse.result);
   }
   const protection = protectionResponse.data ?? {};
   const checkRuns = readExactHeadCheckRuns(
     `repos/${repository}/commits/${pullRequest.headSha}/check-runs?per_page=100`,
     commandRunner,
   );
-  const statusEndpoint = `repos/${repository}/commits/${pullRequest.headSha}/status?per_page=100`;
-  const statusPages = readNamed("commit statuses", statusEndpoint, () =>
-    ghJsonPagesData(statusEndpoint, commandRunner),
-  );
-  const statusSha = statusPages.map((page) => page?.sha).find(Boolean) ?? null;
-  const statuses = statusPages.flatMap((page) =>
-    (Array.isArray(page?.statuses) ? page.statuses : []).map((status) => ({
-      ...status,
-      sha: status.sha ?? statusSha,
-    })),
-  );
+  const statuses = readCommitStatuses(repository, pullRequest.headSha, commandRunner);
   return normalizeRequiredChecks(protection, checkRuns, statuses, pullRequest.headSha);
 }

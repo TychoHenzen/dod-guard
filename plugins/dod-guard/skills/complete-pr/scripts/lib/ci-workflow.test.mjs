@@ -22,12 +22,7 @@ test("lists ci.yml workflow runs for the trusted head SHA", () => {
 
   assert.deepEqual(readCiWorkflowRuns("owner/repo", "head-1", runner), [run]);
   assert.deepEqual(calls, [
-    [
-      "api",
-      "--paginate",
-      "--slurp",
-      "repos/owner/repo/actions/workflows/ci.yml/runs?" + "head_sha=head-1&per_page=100",
-    ],
+    ["api", "--paginate", "--slurp", "repos/owner/repo/actions/workflows/ci.yml/runs?head_sha=head-1&per_page=100"],
   ]);
 });
 

@@ -73,12 +73,22 @@ function pullRequestRefsEndpoint(repository, pullNumber) {
   return `repos/${repository}/git/matching-refs/pull/${pullNumber}/`;
 }
 
+function mergeableName(mergeable) {
+  if (mergeable === true) {
+    return "MERGEABLE";
+  }
+  return mergeable === false ? "CONFLICTING" : "UNKNOWN";
+}
+
+function pullRequestState(data) {
+  if (data.merged_at) {
+    return "MERGED";
+  }
+  return data.state?.toUpperCase() ?? null;
+}
+
 export function normalizePullRequest(data, repository) {
   const headRepository = data.head?.repo?.full_name ?? null;
-  let state = data.state?.toUpperCase() ?? null;
-  if (data.merged_at) {
-    state = "MERGED";
-  }
 
   return {
     baseBranch: data.base?.ref ?? null,
@@ -90,9 +100,9 @@ export function normalizePullRequest(data, repository) {
     isDraft: data.draft === true,
     mergeCommitSha: data.merge_commit_sha ?? null,
     mergeState: data.mergeable_state?.toUpperCase() ?? null,
-    mergeable: data.mergeable === true ? "MERGEABLE" : data.mergeable === false ? "CONFLICTING" : "UNKNOWN",
+    mergeable: mergeableName(data.mergeable),
     number: data.number,
-    state,
+    state: pullRequestState(data),
     url: data.html_url ?? null,
   };
 }
@@ -104,7 +114,7 @@ export function readPullRequest(repository, pullNumber, commandRunner) {
 
 export function readPullRequestRefs(repository, pullNumber, commandRunner) {
   const { data, result } = ghJson(["api", pullRequestRefsEndpoint(repository, pullNumber)], [0, 1], commandRunner);
-  if (result.status === 1 && isHttpNotFound(result)) {
+  if (isHttpNotFound(result)) {
     return [];
   }
   if (result.status !== 0) {

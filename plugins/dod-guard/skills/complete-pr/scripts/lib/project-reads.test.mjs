@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { CompletionError } from "./completion-error.mjs";
+import { okResponse } from "./github-client.test-support.mjs";
 import {
   contentRepository,
   ProjectReadError,
@@ -11,10 +12,6 @@ import {
   sameRepository,
   statusValueName,
 } from "./project-reads.mjs";
-
-function okResponse(stdout) {
-  return { stderr: "", status: 0, stdout };
-}
 
 // A runner that answers each endpoint from a table and throws for any endpoint it does not know, so a
 // read the test does not expect fails it.
@@ -382,7 +379,16 @@ test("reads linked Project statuses through REST without GraphQL", () => {
     ["users/owner/projectsV2/2/fields?per_page=100", '[[{"id":407,"name":"Status","data_type":"single_select"}]]'],
     [
       "users/owner/projectsV2/2/items/1701?fields=407",
-      '{"id":1701,"node_id":"PVTI_item-1701","content":{"number":24,"repository":{"full_name":"owner/repo"},"repository_url":"https://api.github.com/repos/owner/repo"},"fields":[{"id":407,"name":"Status","value":{"id":"done","name":{"raw":"Done"}}}]}',
+      JSON.stringify({
+        id: 1701,
+        node_id: "PVTI_item-1701",
+        content: {
+          number: 24,
+          repository: { full_name: "owner/repo" },
+          repository_url: "https://api.github.com/repos/owner/repo",
+        },
+        fields: [{ id: 407, name: "Status", value: { id: "done", name: { raw: "Done" } } }],
+      }),
     ],
   ]);
   const runner = (args) => {

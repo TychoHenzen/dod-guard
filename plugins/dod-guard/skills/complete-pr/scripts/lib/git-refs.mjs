@@ -8,16 +8,20 @@ export function encodeBranch(branchName) {
     .join("/");
 }
 
+function isNonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 export function readBranchRef(repository, branchName, commandRunner) {
   const encodedBranch = encodeBranch(branchName);
   const { data, result } = ghJson(["api", `repos/${repository}/git/ref/heads/${encodedBranch}`], [0, 1], commandRunner);
-  if (result.status === 1 && isHttpNotFound(result)) {
+  if (isHttpNotFound(result)) {
     return null;
   }
   if (result.status !== 0) {
     throw new Error(result.stderr.trim() || "Failed to read remote branch ref.");
   }
-  if (typeof data?.object?.sha !== "string" || data.object.sha.trim().length === 0) {
+  if (!isNonEmptyString(data?.object?.sha)) {
     throw githubResponseContractError(
       `repos/${repository}/git/ref/heads/${encodedBranch}`,
       "a branch ref with a commit SHA",
