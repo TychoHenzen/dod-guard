@@ -3,9 +3,9 @@
 // user because git does not track them.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { toPosix, walkFiles } from "./fs-utils.mjs";
+import { inIgnoredDir, toPosix, walkFiles } from "./fs-utils.mjs";
 
 // Placeholder home directory names that appear in documentation on purpose.
 const GENERIC_USERS = new Set(["user", "username", "you", "youruser", "name", "me", "example", "runner", "home"]);
@@ -19,22 +19,49 @@ const PLACEHOLDER_VALUE = /^(\$|<|\{|your|example|changeme|redacted|placeholder|
 // root marketplace manifest.
 const CONTENT_ROOTS = ["packages", "plugins", ".claude-plugin"];
 
-function shippedTextFiles(root) {
-  return CONTENT_ROOTS.map((dir) => join(root, dir))
-    .flatMap((dir) => walkFiles(dir))
+/**
+ * Every file a clean checkout would hold: tracked files plus untracked files git
+ * does not ignore (so a new file is checked before its first commit). Ignored
+ * build output and leftover directories are not counted, which keeps a local run
+ * comparable with CI. Returns absolute paths, or null after reporting why git
+ * could not list them.
+ */
+export function listCheckedFiles(root, report) {
+  let listing;
+  try {
+    listing = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
+      cwd: root,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    });
+  } catch (err) {
+    report(root, `cannot list git files: ${err.message}`);
+    return null;
+  }
+  return [...new Set(listing.split("\0").filter(Boolean))]
+    .map((relativePath) => join(root, relativePath))
+    .filter((file) => existsSync(file) && !inIgnoredDir(root, file));
+}
+
+function underContentRoot(root, file) {
+  const relativePath = toPosix(root, file);
+  return CONTENT_ROOTS.some((dir) => relativePath.startsWith(`${dir}/`));
+}
+
+function shippedTextFiles(root, files) {
+  return files
+    .filter((file) => underContentRoot(root, file))
     .filter((file) => file.endsWith(".md") || file.endsWith(".json"))
     .filter((file) => basename(file) !== "package-lock.json");
 }
 
 /** A JSON file that does not parse breaks whatever reads it, often silently. */
-export function checkJsonSyntax(root, report) {
-  const files = CONTENT_ROOTS.flatMap((dir) => walkFiles(join(root, dir)));
-  for (const entry of readdirSync(root)) {
-    const full = join(root, entry);
-    if (entry.endsWith(".json") && statSync(full).isFile()) files.push(full);
-  }
+export function checkJsonSyntax(root, report, files) {
+  const candidates = files.filter(
+    (file) => file.endsWith(".json") && (underContentRoot(root, file) || !toPosix(root, file).includes("/")),
+  );
   let checked = 0;
-  for (const file of files.filter((f) => f.endsWith(".json"))) {
+  for (const file of candidates) {
     checked += 1;
     try {
       JSON.parse(readFileSync(file, "utf8"));
@@ -49,9 +76,9 @@ export function checkJsonSyntax(root, report) {
  * skills/ or agents/ next to no plugin.json means the content ships nowhere:
  * Claude Code only loads them relative to a plugin manifest.
  */
-export function checkOrphanPluginContent(root, report) {
+export function checkOrphanPluginContent(root, report, files) {
   const parents = new Set();
-  for (const file of walkFiles(join(root, "packages"))) {
+  for (const file of files.filter((f) => toPosix(root, f).startsWith("packages/"))) {
     const rel = toPosix(root, file);
     // Non-greedy: the first skills/ or agents/ segment is the plugin root, so a
     // nested agents/ directory inside a skill does not look like its own plugin.
@@ -81,16 +108,16 @@ function scanLine(line) {
 }
 
 /** Shipped markdown and JSON must carry no credentials and no developer's home path. */
-export function checkShippedContent(root, report) {
-  const files = shippedTextFiles(root);
-  for (const file of files) {
+export function checkShippedContent(root, report, files) {
+  const textFiles = shippedTextFiles(root, files);
+  for (const file of textFiles) {
     const lines = readFileSync(file, "utf8").split(/\r?\n/);
     for (const [index, line] of lines.entries()) {
       const problem = scanLine(line);
       if (problem) report(file, `line ${index + 1}: ${problem}`);
     }
   }
-  return files.length;
+  return textFiles.length;
 }
 
 /**

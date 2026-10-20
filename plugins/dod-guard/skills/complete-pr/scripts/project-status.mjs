@@ -35,6 +35,12 @@ function requireText(value, name) {
   return value;
 }
 
+function requireProjectNumber(projectNumber) {
+  if (projectNumber === undefined || projectNumber === null || String(projectNumber).length === 0) {
+    throw new Error("projectNumber must be a non-empty value.");
+  }
+}
+
 function parseJson(result, operation) {
   if (result?.status !== 0) {
     throw new Error(`${operation} did not complete successfully.`);
@@ -108,10 +114,12 @@ function parseArrayResponse(result, operation) {
   return pages.flat();
 }
 
+function hasNodeOrRestId(entry, id) {
+  return String(entry?.node_id ?? "") === id || String(entry?.id ?? "") === id;
+}
+
 function resolveStatusField(fields, statusFieldId) {
-  const matches = fields.filter(
-    (field) => String(field?.node_id ?? "") === statusFieldId || String(field?.id ?? "") === statusFieldId,
-  );
+  const matches = fields.filter((field) => hasNodeOrRestId(field, statusFieldId));
   if (matches.length !== 1) {
     throw new Error(`Status field ${statusFieldId} must resolve to exactly one REST field.`);
   }
@@ -139,8 +147,24 @@ function resolveStatusOption(statusField, statusOptionId, expectedStatus) {
   return option;
 }
 
+// Read-only: stages list the Status options here so none writes its own reader.
+function listStatusOptions({ owner, projectNumber, statusFieldId, commandRunner = runGh }) {
+  requireText(owner, "owner");
+  requireProjectNumber(projectNumber);
+  requireText(statusFieldId, "statusFieldId");
+  const fields = parseArrayResponse(commandRunner(buildProjectFieldsCommand(owner, projectNumber)), "Project fields");
+  const statusField = resolveStatusField(fields, statusFieldId);
+  return statusField.options.map((option) => {
+    const name = nameOrNull(option);
+    if (name === null) {
+      throw new Error(`Status option ${String(option?.id ?? "")} has no readable name.`);
+    }
+    return { id: String(option.id), name };
+  });
+}
+
 function findProjectItem(items, itemId) {
-  const matches = items.filter((item) => String(item?.node_id ?? "") === itemId || String(item?.id ?? "") === itemId);
+  const matches = items.filter((item) => hasNodeOrRestId(item, itemId));
   if (matches.length !== 1) {
     return null;
   }
@@ -340,20 +364,9 @@ function readBackItem({ listRead, readSingle }, itemId, identity) {
   return findReadbackProjectItem([item], itemId, identity);
 }
 
-function writeProjectStatuses({
-  owner,
-  projectNumber,
-  statusFieldId,
-  statusOptionId,
-  expectedStatus,
-  itemIds,
-  commandRunner = runGh,
-  sleep = blockingSleep,
-}) {
+function requireWriteRequest({ owner, projectNumber, statusFieldId, statusOptionId, expectedStatus, itemIds }) {
   requireText(owner, "owner");
-  if (projectNumber === undefined || projectNumber === null || String(projectNumber).length === 0) {
-    throw new Error("projectNumber must be a non-empty value.");
-  }
+  requireProjectNumber(projectNumber);
   requireText(statusFieldId, "statusFieldId");
   requireText(statusOptionId, "statusOptionId");
   requireText(expectedStatus, "expectedStatus");
@@ -367,7 +380,41 @@ function writeProjectStatuses({
   if (new Set(itemIds).size !== itemIds.length) {
     throw new Error("itemIds must contain unique item IDs.");
   }
+}
 
+// Sends one edit and always reads the item back, because a failed edit can still have landed.
+function applyStatusMutation({ commandRunner, reads, editCommand, itemId, identity, statusFieldId, expectedStatus }) {
+  let mutationError;
+  try {
+    runStatusMutation(commandRunner, editCommand);
+  } catch (error) {
+    mutationError = error;
+  }
+  const item = reads.readBack(itemId, identity);
+  const status = readProjectItemStatus(item, itemId, statusFieldId);
+  if (status === expectedStatus) {
+    return status;
+  }
+  if (mutationError) {
+    throw new Error(
+      `Project item ${itemId} status mutation failed (${mutationError.message}); read back ${status}, expected ${expectedStatus}.`,
+      { cause: mutationError },
+    );
+  }
+  throw new Error(`Project item ${itemId} read back ${status}, expected ${expectedStatus}.`);
+}
+
+function writeProjectStatuses({
+  owner,
+  projectNumber,
+  statusFieldId,
+  statusOptionId,
+  expectedStatus,
+  itemIds,
+  commandRunner = runGh,
+  sleep = blockingSleep,
+}) {
+  requireWriteRequest({ owner, projectNumber, statusFieldId, statusOptionId, expectedStatus, itemIds });
   const project = parseJson(commandRunner(buildProjectViewCommand(owner, projectNumber)), "Project view");
   const projectId = resolveProjectNodeId(project);
   const statusField = resolveStatusField(
@@ -396,32 +443,21 @@ function writeProjectStatuses({
       continue;
     }
 
-    let mutationError;
-    try {
-      runStatusMutation(
-        commandRunner,
-        buildProjectItemEditCommand({
-          owner,
-          projectNumber,
-          itemId: identity.id,
-          statusFieldId: restStatusFieldId,
-          statusOptionId,
-        }),
-      );
-    } catch (error) {
-      mutationError = error;
-    }
-    const item = reads.readBack(itemId, identity);
-    const status = readProjectItemStatus(item, itemId, restStatusFieldId);
-    if (status !== expectedStatus) {
-      if (mutationError) {
-        throw new Error(
-          `Project item ${itemId} status mutation failed (${mutationError.message}); read back ${status}, expected ${expectedStatus}.`,
-          { cause: mutationError },
-        );
-      }
-      throw new Error(`Project item ${itemId} read back ${status}, expected ${expectedStatus}.`);
-    }
+    const status = applyStatusMutation({
+      commandRunner,
+      reads,
+      editCommand: buildProjectItemEditCommand({
+        owner,
+        projectNumber,
+        itemId: identity.id,
+        statusFieldId: restStatusFieldId,
+        statusOptionId,
+      }),
+      itemId,
+      identity,
+      statusFieldId: restStatusFieldId,
+      expectedStatus,
+    });
     mutations.push({ itemId, status });
   }
 
@@ -454,7 +490,44 @@ function usage() {
     "Usage: node project-status.mjs <owner> <project-number> <status-field-node-id> <status-option-id> " +
       "<expected-status> <item-id>...",
     "  <item-id> is a Project item's numeric REST id or its PVTI_ global node id.",
+    "       node project-status.mjs --list-options <owner> <project-number> <status-field-id>",
+    "  --list-options prints each Status option as JSON {id, name} and writes nothing.",
   ].join("\n");
+}
+
+function printUsageFailure() {
+  process.stderr.write(`${usage()}\n`);
+  process.exitCode = 2;
+}
+
+function printResult(produce) {
+  try {
+    process.stdout.write(`${JSON.stringify(produce(), null, 2)}\n`);
+  } catch (error) {
+    process.stderr.write(`project-status failed: ${error.message}\n`);
+    process.exitCode = 1;
+  }
+}
+
+function runCli(args) {
+  if (args[0] === "--list-options") {
+    const [owner, projectNumber, statusFieldId] = args.slice(1);
+    if ([owner, projectNumber, statusFieldId].some((argument) => !argument)) {
+      printUsageFailure();
+      return;
+    }
+    printResult(() => listStatusOptions({ owner, projectNumber, statusFieldId }));
+    return;
+  }
+  const [owner, projectNumber, statusFieldId, statusOptionId, expectedStatus, ...itemIds] = args;
+  const requiredArguments = [owner, projectNumber, statusFieldId, statusOptionId, expectedStatus];
+  if (requiredArguments.some((argument) => !argument) || itemIds.length === 0) {
+    printUsageFailure();
+    return;
+  }
+  printResult(() =>
+    writeProjectStatuses({ owner, projectNumber, statusFieldId, statusOptionId, expectedStatus, itemIds }),
+  );
 }
 
 let entrypoint = "";
@@ -463,37 +536,13 @@ if (process.argv[1]) {
 }
 const modulePath = resolve(fileURLToPath(import.meta.url));
 if (entrypoint === modulePath) {
-  const [owner, projectNumber, statusFieldId, statusOptionId, expectedStatus, ...itemIds] = process.argv.slice(2);
-  const requiredArguments = [owner, projectNumber, statusFieldId, statusOptionId, expectedStatus];
-  if (requiredArguments.some((argument) => !argument) || itemIds.length === 0) {
-    process.stderr.write(`${usage()}\n`);
-    process.exitCode = 2;
-  } else {
-    try {
-      process.stdout.write(
-        `${JSON.stringify(
-          writeProjectStatuses({
-            owner,
-            projectNumber,
-            statusFieldId,
-            statusOptionId,
-            expectedStatus,
-            itemIds,
-          }),
-          null,
-          2,
-        )}\n`,
-      );
-    } catch (error) {
-      process.stderr.write(`project-status failed: ${error.message}\n`);
-      process.exitCode = 1;
-    }
-  }
+  runCli(process.argv.slice(2));
 }
 
 export {
   buildProjectItemEditCommand,
   buildProjectItemReadCommand,
+  listStatusOptions,
   PROJECT_ITEM_READ_ATTEMPTS,
   PROJECT_ITEM_RETRY_DELAY_MS,
   writeProjectStatuses,

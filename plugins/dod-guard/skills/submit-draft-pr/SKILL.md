@@ -13,7 +13,7 @@ Resolve the plugin root from this skill's directory; the target checkout may lac
 
 All must hold, in order, before any PR write.
 
-1. Resolve repository, default branch, linked Project, and `In Progress` status (heading "Resolve the repository and Project"). Run `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`. Stop on outcome `none`, `several`, or exit code 2.
+1. Resolve repository, default branch, linked Project, and `In Progress` status (heading "Resolve the repository and Project"). Run `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`. Stop on outcome `none`, `several`, or exit code 2. To read the Status option names, run `project-status.mjs --list-options` (see "ProjectV2 status writes" in `standards/github-request-discipline.md`); never write a reader.
 2. Confirm the parent issue belongs to the repository, sits in that Project, and has Status `In Progress`.
 3. Run `git status --short` and classify pending paths. A dirty worktree alone is not a blocker. Leave in-scope ordinary changes uncommitted until branch, PBI, and acceptance evidence are verified. Stop for secrets, destructive intent, unrelated changes, or inseparable work.
 4. Confirm the branch is the PBI's `codex/<issue>-<slug>`, has an `origin` upstream, and has pushed commits ahead of the default branch.
@@ -51,7 +51,7 @@ After the draft exists, before `dod-guard:review-pr` or guarded `complete-pr`, c
 1. Run head convergence at one exact pushed SHA.
 2. Record base ref, base SHA, mergeability, and one row per required context: name, provider, workflow, run ID, branch ref, exact head SHA, and state (`present`, `pending`, `failed`, `skipped`, `unavailable`). Missing, malformed, stale, duplicate, forked, or provider-mismatched evidence stops.
 3. If a draft-skipped required workflow is dispatchable, read back readiness, then route exactly one dispatch (same repository, branch ref, workflow, exact head) through the existing guarded owner. Read back and record the run. A second dispatch, unavailable provider, or failed readback stops with no review, merge, cleanup, or generated-ref change.
-4. Compare the recorded base and head with the current PR. Base advancement invalidates earlier acceptance: route one bounded sync through `complete-pr`, then rerun checks and acceptance proof at the final head.
+4. Compare the recorded base and head with the current PR. Base advancement invalidates earlier acceptance: route one bounded branch synchronization through `complete-pr`, then rerun checks and acceptance proof at the final head.
 5. Send a merge conflict to `standards/conflict-triage.md`, then converge on the new head. If triage cannot resolve it, or the branch moves unexpectedly, stop and report expected and observed refs and SHAs.
 
 ## Create or update the draft

@@ -212,6 +212,12 @@ handoff file, such as a questions or decisions file, from that text. Read-only
 agents create and delete no file; the dispatching main thread owns every
 scratch file and removes only the files it wrote.
 
+Cap each investigator at eight questions and ask for a report under 20 KB.
+When a stage has more questions, split them into batches by slot or file. If a
+report comes back over the cap, split that batch and rerun it; never accept the
+long report. Dispatch independent batches in one message (in Codex, in one
+turn) so they run in parallel: investigators are read-only and share no state.
+
 ## Verify cheap-tier output
 
 Cheap-output verification applies by model tier, not by agent type: the main
@@ -233,7 +239,9 @@ thread checks that:
 After every check passes, the dispatching main thread commits the verified
 changes with its own attribution trailer, and pushes when the owning skill
 pushes. A brief that makes a thread commit carries the attribution line from the
-main session's attribution reminder verbatim. A worker dispatched for one
+main session's attribution reminder verbatim. A thread that commits writes
+exactly the line its brief gives and never a trailer from its own model or
+session. A worker dispatched for one
 planned step or row never commits or pushes, whatever its tier or agent; the
 dispatching main thread does. A run that owns a skill's procedure, such as
 `dod-guard:complete-pr` or `dod-guard:fix-pr-review`, is that skill's main thread even on the

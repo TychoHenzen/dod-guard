@@ -13,6 +13,14 @@ The default endpoints are:
 - `quality-guard`: `http://127.0.0.1:21720/servers/quality-guard/mcp`
 - `knowledge-base`: `http://127.0.0.1:21721/servers/knowledge-base/mcp`
 
+Port 21720 is bound by the PM2 `dod-guard-quality-guard` app, and a Codex project pool can bind it too. The pool derives its proxy
+port from the project root, and for some roots that port is 21720. If both
+bind it, the second fails to start. Start only the app the machine needs, for
+example `pm2 start tools/mcp-host/ecosystem.config.cjs --only
+dod-guard-knowledge-base`, or set `MCP_HOST_QUALITY_GUARD_PORT` to a free port
+and render matching registrations with `node tools/mcp-host/launcher.mjs
+--print-config`.
+
 Set `MCP_HOST_BUNDLE_ROOTS` or the service-specific `MCP_HOST_*_BUNDLE`
 variable when the installed cache is elsewhere. Same-version candidates are
 rejected as ambiguous instead of being selected by directory order. Set

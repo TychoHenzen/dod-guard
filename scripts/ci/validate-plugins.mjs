@@ -13,6 +13,7 @@
 //   3  usage error
 
 import { dirname, join, relative, resolve } from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import {
   checkGitTracked,
@@ -20,6 +21,7 @@ import {
   checkOrphanPluginContent,
   checkShippedContent,
   createTrackedPredicate,
+  listCheckedFiles,
 } from "./lib/content-checks.mjs";
 import { createPluginChecks } from "./lib/plugin-checks.mjs";
 import { checkStandalonePlugins, loadStandalonePlugins } from "./lib/standalone-checks.mjs";
@@ -67,9 +69,10 @@ async function main() {
 
   const standaloneCounts = checkStandalonePlugins(standalone, report);
   for (const plugin of standalone) await checkOpenCodeAdapter(plugin);
-  const jsonCount = checkJsonSyntax(ROOT, report);
-  checkOrphanPluginContent(ROOT, report);
-  const contentCount = checkShippedContent(ROOT, report);
+  const checkedFiles = listCheckedFiles(ROOT, report) ?? [];
+  const jsonCount = checkJsonSyntax(ROOT, report, checkedFiles);
+  checkOrphanPluginContent(ROOT, report, checkedFiles);
+  const contentCount = checkShippedContent(ROOT, report, checkedFiles);
   checkGitTracked([...packages, ...standalone], report, isTracked);
 
   return emitResult(

@@ -26,7 +26,7 @@ Never create labels, duplicate labels, Project fields, or another estimation sca
 
 Before you classify gaps or settle priority, effort, or direction, read the issue, repo instructions, affected code, callers, and existing tests (for docs or skill work: the affected instructions, entry points, and validation). Record absent coverage. Never assume it exists.
 
-Run research as plan, investigate, judge, each stage given the Stage brief (`standards/model-routing.md`, "Stage brief"). The planner and judge run on `dod-guard:read-standard`, investigators on `dod-guard:read-cheap`. The planner writes questions from the issue, investigators answer each with cited evidence, the main thread verifies, and the judge decides triage, classification, and acceptance criteria. Verified citations become `research-source` entries.
+Run research as plan, investigate, judge, each stage given the Stage brief (`standards/model-routing.md`, "Stage brief"). The planner and judge run on `dod-guard:read-standard`, investigators on `dod-guard:read-cheap`. The planner writes questions from the issue, investigators answer each with cited evidence, the main thread verifies, and the judge decides triage, classification, and acceptance criteria. Verified citations become `research-source` entries. Batch the investigators and dispatch them as "Plan, investigate, judge" in `standards/model-routing.md` says: at most eight questions and 20 KB per report, and every independent batch in one message.
 
 Then write a `discovery-triage` in the implementation notes. Put each unresolved point in one category: `user constraints or priorities`, `external facts or context`, `genuine tradeoff`, or `no gap`. A PBI may need several routes. Settle user constraints and external facts before any debate. On `no gap`, continue without a discovery workflow.
 
@@ -65,7 +65,7 @@ Every structured PBI assesses four lenses: implementation; wiring and end-to-end
 **Feature records.** For feature work or material ambiguity, read `standards/project-workflow.md` from the plugin root. Never assume the target checkout has it. Keep these as distinct subsections of Implementation notes, with discovery markers as evidence inside them: `requirements`, `clarifications`, `implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, `planned-acceptance-matrix`. Small, clear fixes need none of them.
 
 - `acceptance-evidence` gives each acceptance checkbox id its evidence id. `planned-acceptance-matrix` plans every row before any proof runs.
-- The task list names dependencies, marks a task `independent` only if it can be committed and closed separately, keeps order stable, and maps each task to a functional slice or to a parent-level task with `parentLevel: "convergence"`.
+- The task list names dependencies, marks a task `independent` only if it can be committed and closed separately, keeps order stable, and maps each task to a functional slice or to a parent-level task with `parentLevel: "convergence"`. A task with no sub-issue is never `independent`; the refinement proof reports it.
 - `lens-ownership` says where each lens is covered, or why not.
 
 **Re-refinement.** Compare existing discovery notes to current code, tests, sources, and decisions. Reuse current evidence, repeat only stale or newly triggered phases, and update summaries in place, and replace the prior priority and effort rationale rather than appending. Create no duplicate sub-issues or scale labels.

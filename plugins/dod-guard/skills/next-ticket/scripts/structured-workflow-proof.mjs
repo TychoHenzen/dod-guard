@@ -1,4 +1,5 @@
 import path from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { ACCEPTANCE_MATRIX_PATHS, validateAcceptanceMatrix } from "../../../lib/acceptance-matrix.mjs";
 
@@ -103,24 +104,34 @@ function validateLensOwnershipRecord(record, reviewLenses, section, addRemainder
   }
 }
 
+// One problem per task: the first failing check decides, so one cause never yields two remainders.
+function taskMappingProblem({ task, slice, childIds }) {
+  if (task.child !== undefined && !slice) {
+    return "needs a functional slice id";
+  }
+  if (task.parentLevel !== undefined && task.parentLevel !== "convergence") {
+    return "uses an unknown parent-level marker";
+  }
+  if (slice && task.parentLevel === "convergence") {
+    return "cannot combine a functional slice with the parent-level convergence marker";
+  }
+  if (slice && !childIds.has(slice)) {
+    return `references missing functional slice ${slice}`;
+  }
+  if (!slice && task.parentLevel !== "convergence") {
+    return "needs a functional slice or parent-level convergence marker";
+  }
+  if (task.independent === true && !slice) {
+    return "is marked independent but has no linked child issue";
+  }
+  return null;
+}
+
 function validateTaskMapping({ task, taskId, childIds, addRemainder }) {
   const slice = normalizedIdentifier(task.child);
-  if (task.child !== undefined && !slice) {
-    addRemainder("Functional decomposition", `${taskId ?? "task"} needs a functional slice id`);
-  } else if (task.parentLevel !== undefined && task.parentLevel !== "convergence") {
-    addRemainder("Functional decomposition", `${taskId ?? "task"} uses an unknown parent-level marker`);
-  } else if (slice && task.parentLevel === "convergence") {
-    addRemainder(
-      "Functional decomposition",
-      `${taskId ?? "task"} cannot combine a functional slice with the parent-level convergence marker`,
-    );
-  } else if (slice && !childIds.has(slice)) {
-    addRemainder("Functional decomposition", `${taskId ?? "task"} references missing functional slice ${slice}`);
-  } else if (!slice && task.parentLevel !== "convergence") {
-    addRemainder(
-      "Functional decomposition",
-      `${taskId ?? "task"} needs a functional slice or parent-level convergence marker`,
-    );
+  const problem = taskMappingProblem({ task, slice, childIds });
+  if (problem) {
+    addRemainder("Functional decomposition", `${taskId ?? "task"} ${problem}`);
   }
 }
 
@@ -178,7 +189,7 @@ function lensOwnerTask({ id, lens, taskList, normalizedTaskIds, addRemainder }) 
 // naming the problem.
 function firstLensId(lens, seenLenses, addRemainder) {
   const id = normalizedIdentifier(lens.id ?? lens.name);
-  if (!id || !REQUIRED_REVIEW_LENSES.includes(id)) {
+  if (!(id && REQUIRED_REVIEW_LENSES.includes(id))) {
     addRemainder("Functional decomposition", "review-lens ownership uses an unknown lens");
     return null;
   }
@@ -602,7 +613,7 @@ export function evaluateConvergence({
 
 // The handoff comment already maps every task and criterion; the PR only points at it.
 function renderVerifiedConvergence({ url, headSha } = {}) {
-  if (!url || !headSha) throw new Error("A verified convergence needs the handoff URL and head SHA.");
+  if (!(url && headSha)) throw new Error("A verified convergence needs the handoff URL and head SHA.");
   return ["## Convergence", `- Handoff: ${url} (head ${headSha})`, "- Remainder: none"].join("\n");
 }
 

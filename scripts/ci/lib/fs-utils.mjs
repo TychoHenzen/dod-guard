@@ -24,6 +24,14 @@ export function walkFiles(dir) {
   return out;
 }
 
+/** True when a directory segment of `file` below `root` is one of IGNORED_DIRS. */
+export function inIgnoredDir(root, file) {
+  return toPosix(root, file)
+    .split("/")
+    .slice(0, -1)
+    .some((segment) => IGNORED_DIRS.has(segment));
+}
+
 export function toPosix(root, file) {
   return relative(root, file).split("\\").join("/");
 }

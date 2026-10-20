@@ -103,8 +103,8 @@ head SHA, and one of `present`, `pending`, `failed`, `skipped`, or
 evidence is not acceptance evidence. A draft-skipped workflow may be dispatched
 once only after readiness is read back for the same repository, ref, and head;
 the dispatch and resulting run are recorded in this record. Base drift
-invalidates the acceptance matrix and routes one bounded synchronization through
-`complete-pr`. A merge conflict on the PBI head goes to the triage in
+invalidates the acceptance matrix and routes one bounded branch synchronization
+through `complete-pr`. A merge conflict on the PBI head goes to the triage in
 `standards/conflict-triage.md`; an unresolvable conflict or unexpected branch
 movement stops the workflow.
 
@@ -118,7 +118,9 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
   `unresolved-decision` entries when a decision is not safe to invent.
 - `implementation-plan`: affected owners, approach, and verification approach.
 - `task-list`: ordered tasks with a clear dependency and an `independent`
-  marker only when a task can be committed and closed separately.
+  marker only when a task can be committed and closed separately. A task with
+  no linked sub-issue never can be, so the proof reports `independent: true`
+  on it.
 - `lens-ownership`: an array containing exactly one `implementation`,
   `wiring/usability`, `quality`, and `reliability` (failure/recovery) entry.
   Each entry repeats its

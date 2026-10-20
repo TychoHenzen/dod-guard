@@ -123,6 +123,9 @@ from an earlier run.
 - Pass each item's numeric REST item `id` (from the add response or the
   membership read), the Status-field id from that snapshot, and the scalar
   single-select option id for the requested value.
+- To read the Status option names and ids, run
+  `node <plugin-root>/skills/complete-pr/scripts/project-status.mjs --list-options <owner> <project-number> <status-field-id>`.
+  Write no ad hoc reader: the runner already flattens every REST name spelling.
 - `project-status.mjs` reads a numeric item id through the single-item endpoint
   `users/{owner}/projectsV2/{number}/items/{id}`, within its bounded attempts,
   because that endpoint sees a newly added item before the items list does. A
@@ -163,6 +166,12 @@ from an earlier run.
 - Pass the item id from a successful add, or from the membership read, to
   `skills/complete-pr/scripts/project-status.mjs`. Pass the Project item's
   numeric REST `id`, not its `node_id`, as "ProjectV2 status writes" explains.
+- Never put `-q` or `--jq` on a write. A jq error after a request that succeeded
+  looks like a failed write and invites a duplicate. Send a body with
+  `--input <file>` or `-F body=@<file>`, then read the resource back. After posting
+  a comment, read the comments back and confirm exactly one carries the posted
+  heading before any retry. With zero, repost once and read again. With two or
+  more, keep the earliest, report the duplicates, and post nothing more.
 - Re-read only the mutated resource for safety. Do not rebuild the whole
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.
