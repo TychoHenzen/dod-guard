@@ -1621,3 +1621,282 @@ test("a review-threads-unavailable error from the reader stops before any mutati
     [],
   );
 });
+
+const sequenceCases = [
+  ["cross_repository_head", { pullOverrides: { isCrossRepository: true } }],
+  ["wrong_base_branch", { pullOverrides: { baseBranch: "release" } }],
+  ["default_branch_head", { pullOverrides: { headBranch: "master" } }],
+  ["missing_permission", { repository: { canPush: false } }],
+];
+
+for (const [code, { pullOverrides, repository }] of sequenceCases) {
+  test(`completePullRequest stops with ${code} before any mutation`, async () => {
+    const client = new FixtureClient({ pulls: [pull(pullOverrides)], repository });
+
+    await assert.rejects(completePullRequest(client, immediateOptions), { code });
+    assert.deepEqual(
+      client.calls.filter(([name]) => mutationCallNames.includes(name)),
+      [],
+    );
+  });
+}
+
+for (const [code, { pullOverrides, repository }] of sequenceCases) {
+  test(`waitForHeadConvergence of a merged pull request stops with ${code}`, async () => {
+    const client = new FixtureClient({ repository });
+
+    await assert.rejects(
+      waitForHeadConvergence(client, {
+        allowMerged: true,
+        initialPullRequest: pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED", ...pullOverrides }),
+        options: { headPollLimit: 1, pollMs: 0 },
+        repository: client.repositoryDetails,
+      }),
+      { code },
+    );
+  });
+}
+
+for (const [code, { pullOverrides, repository }] of sequenceCases) {
+  test(`recoverMergedPullRequest stops with ${code} before any cleanup`, async () => {
+    const localGit = createFixtureLocalGit();
+    const client = new FixtureClient({
+      pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED", ...pullOverrides })],
+      repository,
+    });
+
+    await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), { code });
+    assert.deepEqual(localGit.calls, []);
+    assert.equal(
+      client.calls.some(([name]) => name === "deleteBranchRef"),
+      false,
+    );
+  });
+}
+
+test("completePullRequest stops with not_open_pull_request before any mutation", async () => {
+  const client = new FixtureClient({ pulls: [pull({ state: "CLOSED" })] });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "not_open_pull_request" });
+  assert.deepEqual(
+    client.calls.filter(([name]) => mutationCallNames.includes(name)),
+    [],
+  );
+});
+
+test("recoverMergedPullRequest stops with not_merged_pull_request for an open pull request", async () => {
+  const client = new FixtureClient({ pulls: [pull()] });
+
+  await assert.rejects(recoverMergedPullRequest(client, immediateOptions), { code: "not_merged_pull_request" });
+});
+
+test("recoverMergedPullRequest stops with unverified_merge when the merge commit is missing", async () => {
+  const client = new FixtureClient({ pulls: [pull({ isDraft: false, mergeCommitSha: null, state: "MERGED" })] });
+
+  await assert.rejects(recoverMergedPullRequest(client, immediateOptions), {
+    code: "unverified_merge",
+    message: /trusted head or merge commit/,
+  });
+});
+
+test("recoverMergedPullRequest stops with unverified_merge when required checks are still pending", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    checks: [pendingChecks],
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+  });
+
+  await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), {
+    code: "unverified_merge",
+    message: /complete required-check evidence/,
+  });
+  assert.deepEqual(localGit.calls, []);
+});
+
+test("recoverMergedPullRequest stops with linked_issue_open when the closing issue stays open", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    issues: [[{ number: 24, state: "OPEN", url: "issue" }]],
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+  });
+
+  await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), {
+    code: "linked_issue_open",
+  });
+  assert.equal(
+    client.calls.some(([name]) => name === "deleteBranchRef"),
+    false,
+  );
+});
+
+test("completePullRequest stops with merge_timeout when the checks never finish", async () => {
+  const client = new FixtureClient({ checks: [pendingChecks], pulls: [pull(), pull({ isDraft: false })] });
+
+  await assert.rejects(completePullRequest(client, { ...immediateOptions, pollLimit: 2 }), { code: "merge_timeout" });
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
+  assert.equal(client.calls.filter(([name]) => name === "wait").length, 2);
+});
+
+test("completePullRequest stops with unverified_merge when a merged read has pending checks", async () => {
+  const ready = pull({ isDraft: false });
+  const client = new FixtureClient({
+    checks: [pendingChecks],
+    pulls: [pull(), ready, ready, pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), {
+    code: "unverified_merge",
+    message: /complete required-check evidence/,
+  });
+  assert.equal(
+    client.calls.some(([name]) => name === "deleteBranchRef"),
+    false,
+  );
+});
+
+test("completePullRequest stops with base_update_timeout when GitHub never publishes the updated head", async () => {
+  const ready = pull({ isDraft: false });
+  const client = new FixtureClient({
+    pulls: [pull(), ready, ready, pull({ isDraft: false, mergeState: "BEHIND" })],
+  });
+
+  await assert.rejects(completePullRequest(client, { ...immediateOptions, updatePollLimit: 2 }), {
+    code: "base_update_timeout",
+  });
+  assert.deepEqual(
+    client.calls.filter(([name]) => name === "updateBranch"),
+    [["updateBranch", 24, "head-1"]],
+  );
+});
+
+test("completePullRequest stops with ci_workflow_dispatch_ambiguous when dispatch and readback both fail", async () => {
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false })],
+    workflowDispatchError: new Error("HTTP 403: dispatch rejected"),
+    workflowRuns: [
+      [],
+      () => {
+        throw new Error("HTTP 502: readback failed");
+      },
+    ],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), {
+    code: "ci_workflow_dispatch_ambiguous",
+    message: /Dispatch failed \(HTTP 403: dispatch rejected\); readback failed \(HTTP 502: readback failed\)/,
+  });
+});
+
+test("waitForHeadConvergence stops with head_branch_not_found when the source branch is gone", async () => {
+  const client = new FixtureClient({ sourceRefs: [null] });
+
+  await assert.rejects(
+    waitForHeadConvergence(client, {
+      expectedHead: "head-1",
+      initialPullRequest: pull({ isDraft: false }),
+      options: { headPollLimit: 1, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
+    { code: "head_branch_not_found", message: /codex\/24-complete-pr/ },
+  );
+});
+
+test("waitForHeadConvergence stops at once on a wrong merge-ref parent when identities already converged", async () => {
+  const client = new FixtureClient({
+    commits: { "merge-ref": { parents: ["base-1", "other-head"], sha: "merge-ref" } },
+    pullRefs: [
+      [
+        { kind: "head", ref: "refs/pull/24/head", sha: "head-2" },
+        { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-ref" },
+      ],
+    ],
+    sourceRefs: [{ sha: "head-2" }],
+  });
+
+  await assert.rejects(
+    waitForHeadConvergence(client, {
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-2", isDraft: false }),
+      options: { headPollLimit: 2, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
+    { code: "head_merge_ref_mismatch" },
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "wait"),
+    false,
+  );
+});
+
+test("waitForHeadConvergence stops with head_branch_changed before the temporary refs are read", async () => {
+  const client = new FixtureClient({ sourceRefs: [{ sha: "head-3" }] });
+
+  await assert.rejects(
+    waitForHeadConvergence(client, {
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-2", isDraft: false }),
+      options: { headPollLimit: 1, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
+    { code: "head_branch_changed", message: /moved from head-2 to head-3/ },
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "getPullRequestRefs"),
+    false,
+  );
+});
+
+test("waitForHeadConvergence stops with head_branch_changed for a merged head and a missing branch", async () => {
+  const client = new FixtureClient({ sourceRefs: [null] });
+
+  await assert.rejects(
+    waitForHeadConvergence(client, {
+      allowMerged: true,
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-3", isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+      options: { headPollLimit: 1, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
+    { code: "head_branch_changed", message: /moved from head-2 to head-3/ },
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "getPullRequestRefs"),
+    false,
+  );
+});
+
+test("a missing closing issue stops before the temporary refs are read", async () => {
+  const client = new FixtureClient({ issues: [[]], pulls: [pull()] });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "missing_linked_issue" });
+  assert.equal(
+    client.calls.some(([name]) => name === "getPullRequestRefs"),
+    false,
+  );
+});
+
+test("an unresolved thread stops before the ci.yml run is read", async () => {
+  const client = new FixtureClient({ pulls: [pull()], reviewThreads: [[unresolvedThread()]] });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "unresolved-review-threads" });
+  assert.equal(
+    client.calls.some(([name]) => name === "getCiWorkflowRuns"),
+    false,
+  );
+});
+
+test("a moved head with a changed base reports the head change first", async () => {
+  const ready = pull({ isDraft: false });
+  const client = new FixtureClient({
+    pulls: [ready, ready, pull({ baseBranch: "release", headSha: "head-2", isDraft: false })],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "unexpected_head_change" });
+  assert.equal(
+    client.calls.some(([name]) => name === "mergePullRequest"),
+    false,
+  );
+});
