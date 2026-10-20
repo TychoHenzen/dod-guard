@@ -163,31 +163,30 @@ function addPullRequestItem(pages) {
   pages.at(-1).push(item);
 }
 
+// Variants that change the item pages themselves, before any route serializes them.
+const PAGE_VARIANTS = {
+  ...DEPARTURES,
+  "contradictory-status": (pages) => {
+    setStatus(pages, "PVTI_t11", { id: "opt-done", name: { raw: "Done", html: "Todo" } });
+  },
+  "blank-status": (pages) => {
+    setStatus(pages, "PVTI_t11", { id: "opt-done", name: { raw: "", html: "" } });
+  },
+  "absent-parent-url": (pages) => {
+    withoutKey(pages, "PVTI_t10", "parent_issue_url");
+  },
+  "missing-body": (pages) => {
+    withoutKey(pages, "PVTI_t11", "body");
+  },
+  archived: archiveItems,
+  "pull-request-item": addPullRequestItem,
+};
+
 // The healthy fixture, or one deliberate departure named by variant.
 function fixtureRoutes(variant = "healthy") {
   const pages = valuePages();
-  if (variant === "contradictory-status") {
-    setStatus(pages, "PVTI_t11", { id: "opt-done", name: { raw: "Done", html: "Todo" } });
-  }
-  if (variant === "blank-status") {
-    setStatus(pages, "PVTI_t11", { id: "opt-done", name: { raw: "", html: "" } });
-  }
   // Mutations must run before the routes below call ok(), which serializes its value at that moment.
-  if (variant === "absent-parent-url") {
-    withoutKey(pages, "PVTI_t10", "parent_issue_url");
-  }
-  if (variant === "missing-body") {
-    withoutKey(pages, "PVTI_t11", "body");
-  }
-  if (Object.hasOwn(DEPARTURES, variant)) {
-    DEPARTURES[variant](pages);
-  }
-  if (variant === "archived") {
-    archiveItems(pages);
-  }
-  if (variant === "pull-request-item") {
-    addPullRequestItem(pages);
-  }
+  PAGE_VARIANTS[variant]?.(pages);
   const routes = {
     [ENDPOINT.repository]: ok({ full_name: REPO, default_branch: "master" }),
     [ENDPOINT.linkedProjects]: linkedProjectsReply(LINKED),

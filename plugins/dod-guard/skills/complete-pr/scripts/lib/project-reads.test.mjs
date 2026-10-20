@@ -127,20 +127,21 @@ test("readIssueProjectStatuses stops on an item with no repository, because it c
 // Project 2 item 273009693 (PullRequest #946) as PROJECT_ITEM_IDENTITY_JQ projects it. The REST content has
 // no repository key, so every identity field is null.
 const PULL_REQUEST_ITEM = {
-  id: 273009693,
+  id: 273_009_693,
   node_id: "PVTI_lAHOAFboXs4BiVn2zhBFzB0",
   content_type: "PullRequest",
   content: { number: 946, repository: { full_name: null, fullName: null }, repository_url: null },
 };
 
+const DONE_FIELD = { id: 7, name: "Status", value: { name: { raw: "Done" } } };
+
 function membershipRunner(rows) {
+  const itemRead = JSON.stringify({ ...ISSUE_ITEM, fields: [DONE_FIELD] });
   return tableRunner({
     [LISTING]: okResponse(JSON.stringify([[{ number: 2, state: "open" }]])),
     [membership(2)]: okResponse(rows.map((row) => JSON.stringify(row)).join("\n")),
     [STATUS_FIELDS]: okResponse(JSON.stringify([[{ id: 7, name: "Status" }]])),
-    [ITEM_STATUS_READ]: okResponse(
-      JSON.stringify({ ...ISSUE_ITEM, fields: [{ id: 7, name: "Status", value: { name: { raw: "Done" } } }] }),
-    ),
+    [ITEM_STATUS_READ]: okResponse(itemRead),
   }).runner;
 }
 
@@ -158,6 +159,7 @@ test("readIssueProjectStatuses still stops on an Issue, DraftIssue, or untyped i
       (error) => {
         assert.ok(error instanceof CompletionError, String(error));
         assert.equal(error.code, "github_response_shape");
+        assert.match(error.message, /must include a non-blank repository identity/);
         return true;
       },
     );

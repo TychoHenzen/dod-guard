@@ -22,6 +22,7 @@ import { readRequiredChecks } from "./github-client.mjs";
 import {
   contentRepository,
   ProjectReadError,
+  PULL_REQUEST_CONTENT_TYPE,
   readSlurpedPages,
   sameRepository,
   statusValueName,
@@ -393,7 +394,7 @@ function isArchivedItem(raw) {
 // it has no issue record, and select-next would hold on it forever. The pull request records the snapshot
 // lists come from the Linked pull requests value of Issue items, never from a PullRequest item.
 function isPullRequestItem(raw) {
-  return isObject(raw) && raw.content_type === "PullRequest";
+  return isObject(raw) && raw.content_type === PULL_REQUEST_CONTENT_TYPE;
 }
 
 function isItemEntry(raw) {
