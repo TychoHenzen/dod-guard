@@ -17,6 +17,7 @@ Read `standards/working-defaults.md` and `standards/github-request-discipline.md
 - The root `.claude-plugin/marketplace.json` is the only marketplace manifest.
 - Each changed shipped code plugin needs one valid matching version in `package.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and any present adapter package. Versions are cache keys: without a bump a client may keep old content.
 - A paired version-only bump made just to invalidate cache stays maintenance-only. Any other manifest change is functional.
+- If the run may not change repository security settings, `enforce_admins` included, never start the maintenance path. Deliver the release through a release PBI and a version-bump pull request instead: refine the PBI, then `dod-guard:next-ticket`, `dod-guard:submit-draft-pr`, `dod-guard:review-pr`, `dod-guard:fix-pr-review`, and `dod-guard:complete-pr`, then steps 9 to 11 below. The release keeps its classification; only the delivery route changes. Only the user runs the `DELETE` and `POST` on `branches/master/protection/enforce_admins` (through `maintenance-publish.ps1`) and the Claude `/plugin` commands in step 10. The agent never changes protection on its own.
 
 ## Preflights
 
