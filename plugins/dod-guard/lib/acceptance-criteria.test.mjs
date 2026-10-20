@@ -140,3 +140,49 @@ test("an inline triple-backtick line does not hide the next checkbox", () => {
   );
   assert.deepEqual(acceptanceCriteria(body), [{ text: "AC-01 after inline", checked: false }]);
 });
+
+const WRAPPED_BODY = [
+  "## Acceptance criteria",
+  "",
+  "- [ ] AC-01 first line",
+  "  wrapped line",
+  "  - nested sub-bullet",
+  "",
+  "    - deeper bullet after a blank line",
+  "- [x] AC-02 second",
+  "- plain bullet ends the item",
+  "  - indented under the plain bullet",
+  "",
+  "## Verification",
+  "",
+  "  - not a criterion line",
+].join("\n");
+const WRAPPED = [
+  {
+    text: "AC-01 first line\n  wrapped line\n  - nested sub-bullet\n    - deeper bullet after a blank line",
+    checked: false,
+  },
+  { text: "AC-02 second", checked: true },
+];
+
+test("acceptanceCriteria keeps wrapped lines and nested bullets with their item", () => {
+  assert.deepEqual(acceptanceCriteria(WRAPPED_BODY), WRAPPED);
+});
+
+test("acceptanceCriteria keeps continuation lines in a CRLF body", () => {
+  assert.deepEqual(acceptanceCriteria(WRAPPED_BODY.replace(/\n/g, "\r\n")), WRAPPED);
+});
+
+test("a nested checkbox is its own item and takes the lines that follow it", () => {
+  const body = [
+    "## Acceptance criteria",
+    "",
+    "- [ ] AC-01 parent",
+    "  - [x] nested child",
+    "    detail of the child",
+  ].join("\n");
+  assert.deepEqual(acceptanceCriteria(body), [
+    { text: "AC-01 parent", checked: false },
+    { text: "nested child\n    detail of the child", checked: true },
+  ]);
+});

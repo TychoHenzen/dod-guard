@@ -7,6 +7,7 @@ import { closeSync, existsSync, openSync, readFileSync, writeFileSync } from "no
 import process from "node:process";
 import { parseArgs } from "../../../lib/args.mjs";
 import { candidates, json, pbiInputs, violations } from "./lib/candidate-commands.mjs";
+import { ignoredPaths, scanArguments } from "./lib/ignored-paths.mjs";
 import { buildReview, existingReview, postedFindings } from "./lib/review-findings.mjs";
 import { reviewSlots } from "./lib/review-slots.mjs";
 import { scannerPath } from "./lib/scanner-location.mjs";
@@ -53,7 +54,7 @@ function scan(args) {
     throw new Error(`quality-guard scanner not found at ${scanner}`);
   }
   const out = openSync(args.out, "w");
-  const result = spawnSync(process.execPath, [scanner, ".", `--root=${args.root}`, "--format=json"], {
+  const result = spawnSync(process.execPath, [scanner, ...scanArguments(args.root, ignoredPaths(args.root))], {
     cwd: args.root,
     stdio: ["ignore", out, "pipe"],
     shell: false,

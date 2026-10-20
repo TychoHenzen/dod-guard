@@ -18,14 +18,19 @@ import {
 } from "./rules-file-stateless.mjs";
 import { push } from "./violations.mjs";
 
+// `obj.name = () => ...` or `this.name = function () {}` writes a property, so
+// `name` is not a local declaration. The header match starts at the name, so
+// the text before it ends with the dot (`.`, or the dot of `?.`).
+const MEMBER_WRITE = /\.\s*$/;
+
 function unusedCandidate({ file, fn, context }) {
+  const before = context.code.slice(Math.max(0, fn.headerStart - 40), fn.headerStart);
   const guards = [
     !MODULE_SCOPED_LANGS.has(file.lang),
     file.isTest,
     IMPLICIT_CALLERS.has(fn.name),
-    EXPORT_KEYWORD.test(
-      context.code.slice(Math.max(0, fn.headerStart - 40), fn.headerStart),
-    ),
+    EXPORT_KEYWORD.test(before),
+    MEMBER_WRITE.test(before),
     enclosingClass(context.spans, fn) !== null,
   ];
   return !guards.some(Boolean);

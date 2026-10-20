@@ -61,15 +61,30 @@ function markdownSection(body, heading) {
 
 // A checkbox item at any indent, checked ([x] or [X]) or not ([ ]).
 const CHECKBOX_ITEM = /^\s*- \[([ xX])\](.*)$/;
+const INDENTED = /^[ \t]+\S/;
 
 // Returns every checkbox item under `## Acceptance criteria`, in document
 // order, as { text, checked }. A checkbox inside a fenced example is skipped.
+// An indented line after a checkbox line (a wrapped line or a nested bullet)
+// belongs to that item and joins its text with a newline, up to the next
+// checkbox item or the next unindented non-blank line. A nested checkbox is
+// its own item. Fenced lines are never part of an item.
 function acceptanceCriteria(body) {
-  return markedLines(markdownSection(body, "Acceptance criteria"))
-    .filter((line) => !line.fenced)
-    .map((line) => CHECKBOX_ITEM.exec(line.text))
-    .filter((match) => match !== null)
-    .map(([, mark, text]) => ({ text: text.trim(), checked: mark !== " " }));
+  const items = [];
+  let open = null;
+  const unfenced = markedLines(markdownSection(body, "Acceptance criteria")).filter((line) => !line.fenced);
+  for (const line of unfenced) {
+    const match = CHECKBOX_ITEM.exec(line.text);
+    if (match !== null) {
+      open = { first: match[2].trim(), rest: [], checked: match[1] !== " " };
+      items.push(open);
+    } else if (open !== null && INDENTED.test(line.text)) {
+      open.rest.push(line.text.trimEnd());
+    } else if (line.text.trim() !== "") {
+      open = null;
+    }
+  }
+  return items.map(({ first, rest, checked }) => ({ text: [first, ...rest].join("\n"), checked }));
 }
 
 export { acceptanceCriteria, lines, markdownSection, markedLines };
