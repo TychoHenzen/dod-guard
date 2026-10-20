@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -11,6 +12,8 @@ import { renderCompletionRecord } from "../../complete-pr/scripts/lib/closure-re
 const REPOSITORY = "TychoHenzen/dod-guard";
 const FOREIGN_REPOSITORY = "other/repo";
 const SCRIPT = fileURLToPath(new URL("./select-next.mjs", import.meta.url));
+const CALLBACK_FAILED = /callback failed/;
+const BOOM_STDERR = /boom/;
 
 function item(number, status, parentIssue = null, linked = []) {
   return {
@@ -52,16 +55,29 @@ function snapshot() {
   };
 }
 
+// Writes the snapshot into a private directory, hands the file path to one command, and removes the
+// directory whether the command, its assertion, or the caller's code throws. The assertion message still
+// carries the command's stderr, so a failure keeps its diagnostic after the directory is gone.
+async function withSnapshotFile(prefix, input, run) {
+  const directory = await mkdtemp(join(tmpdir(), prefix));
+  try {
+    const file = join(directory, "snapshot.json");
+    await writeFile(file, JSON.stringify(input));
+    return await run(file, directory);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+
 // Runs the command on one snapshot and returns its raw stdout, so a test can compare bytes.
-async function stdoutOf(input) {
-  const directory = await mkdtemp(join(tmpdir(), "select-next-"));
-  const file = join(directory, "snapshot.json");
-  await writeFile(file, JSON.stringify(input));
-  const run = spawnSync(process.execPath, [SCRIPT, `--snapshot=${file}`], {
-    encoding: "utf8",
+function stdoutOf(input) {
+  return withSnapshotFile("select-next-", input, (file) => {
+    const run = spawnSync(process.execPath, [SCRIPT, `--snapshot=${file}`], {
+      encoding: "utf8",
+    });
+    assert.equal(run.status, 0, run.stderr);
+    return run.stdout;
   });
-  assert.equal(run.status, 0, run.stderr);
-  return run.stdout;
 }
 
 async function selectNext(input) {
@@ -190,13 +206,12 @@ function recordedDelivery(pendingRows = []) {
   return input;
 }
 
-async function annotated(input) {
-  const directory = await mkdtemp(join(tmpdir(), "annotate-"));
-  const file = join(directory, "snapshot.json");
-  await writeFile(file, JSON.stringify(input));
-  const run = spawnSync(process.execPath, [CLOSURE, "annotate", `--snapshot=${file}`], { encoding: "utf8" });
-  assert.equal(run.status, 0, run.stderr);
-  return JSON.parse(run.stdout);
+function annotated(input) {
+  return withSnapshotFile("annotate-", input, (file) => {
+    const run = spawnSync(process.execPath, [CLOSURE, "annotate", `--snapshot=${file}`], { encoding: "utf8" });
+    assert.equal(run.status, 0, run.stderr);
+    return JSON.parse(run.stdout);
+  });
 }
 
 test("a snapshot annotated from completion records classifies the delivery complete", async () => {
@@ -327,4 +342,40 @@ test("the command rejects a missing snapshot flag", () => {
   const usage = spawnSync(process.execPath, [SCRIPT], { encoding: "utf8" });
   assert.equal(usage.status, 2);
   assert.match(usage.stderr, /usage: select-next\.mjs --snapshot=<file\.json>/);
+});
+
+test("the snapshot directory is removed after the command succeeds", async () => {
+  let kept;
+  await withSnapshotFile("select-next-", snapshot(), (file, directory) => {
+    kept = directory;
+    assert.ok(existsSync(file));
+  });
+  assert.equal(existsSync(kept), false);
+});
+
+test("the snapshot directory is removed after the callback throws", async () => {
+  let failed;
+  await assert.rejects(
+    withSnapshotFile("select-next-", snapshot(), (_file, directory) => {
+      failed = directory;
+      throw new Error("callback failed");
+    }),
+    CALLBACK_FAILED,
+  );
+  assert.equal(existsSync(failed), false);
+});
+
+test("a command that exits non-zero reports its stderr and still removes the directory", async () => {
+  let failed;
+  await assert.rejects(
+    withSnapshotFile("select-next-", snapshot(), (_file, directory) => {
+      failed = directory;
+      const run = spawnSync(process.execPath, ["-e", "process.stderr.write('boom'); process.exit(3)"], {
+        encoding: "utf8",
+      });
+      assert.equal(run.status, 0, run.stderr);
+    }),
+    BOOM_STDERR,
+  );
+  assert.equal(existsSync(failed), false);
 });
