@@ -237,3 +237,400 @@ test("readIssueProjectStatuses rejects a user-owned listing that is not an array
     );
   }
 });
+
+const PROJECT_STATUS_FIELD_ID = 407;
+
+function linkedProjectItem(id, number = 24, repository = "owner/repo") {
+  return {
+    id,
+    node_id: `PVTI_item-${id}`,
+    content: {
+      number,
+      repository: { full_name: repository },
+      repository_url: `https://api.github.com/repos/${repository}`,
+    },
+  };
+}
+
+function projectStatusResponse(status, id = 1701, number = 24, repository = "owner/repo") {
+  return {
+    ...linkedProjectItem(id, number, repository),
+    fields: [
+      {
+        id: PROJECT_STATUS_FIELD_ID,
+        name: "Status",
+        value: { name: { raw: status } },
+      },
+    ],
+  };
+}
+
+function projectItemIdentity(item) {
+  return {
+    id: item.id,
+    node_id: item.node_id,
+    content: {
+      number: item.content?.number,
+      repository: {
+        full_name: item.content?.repository?.full_name,
+        fullName: item.content?.repository?.fullName,
+      },
+      repository_url: item.content?.repository_url,
+    },
+  };
+}
+
+function createProjectStatusReader({
+  projects = [{ number: 2, state: "open" }],
+  itemsByProject = new Map([["2", [linkedProjectItem(1701)]]]),
+  fieldsByProject = new Map([["2", [{ id: PROJECT_STATUS_FIELD_ID, name: "Status" }]]]),
+  itemResponses = new Map([["2/1701", projectStatusResponse("Done")]]),
+  itemPagesByProject = new Map(),
+  rateLimitedProjects = new Set(),
+} = {}) {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    assert.equal(args[0], "api");
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
+    if (endpoint === "users/owner/projectsV2?per_page=100") {
+      return { status: 0, stderr: "", stdout: JSON.stringify([projects]) };
+    }
+
+    const fieldsMatch = endpoint?.match(/^users\/owner\/projectsV2\/(\d+)\/fields\?/);
+    if (fieldsMatch) {
+      return { status: 0, stderr: "", stdout: JSON.stringify([fieldsByProject.get(fieldsMatch[1]) ?? []]) };
+    }
+
+    const itemListMatch = endpoint?.match(/^users\/owner\/projectsV2\/(\d+)\/items\?/);
+    if (itemListMatch) {
+      if (rateLimitedProjects.has(itemListMatch[1])) {
+        return { status: 1, stderr: "HTTP 403: API rate limit exceeded", stdout: "" };
+      }
+      const pages = itemPagesByProject.get(itemListMatch[1]);
+      const items = (pages ?? [itemsByProject.get(itemListMatch[1]) ?? []]).flat().map(projectItemIdentity);
+      return {
+        status: 0,
+        stderr: "",
+        stdout: items.map((item) => JSON.stringify(item)).join("\n"),
+      };
+    }
+
+    const itemMatch = endpoint?.match(/^users\/owner\/projectsV2\/(\d+)\/items\/(\d+)\?/);
+    if (itemMatch) {
+      const response = itemResponses.get(`${itemMatch[1]}/${itemMatch[2]}`);
+      if (!response) {
+        throw new Error(`Unexpected item endpoint: ${endpoint}`);
+      }
+      return { status: 0, stderr: "", stdout: JSON.stringify(response) };
+    }
+
+    throw new Error(`Unexpected command: ${args.join(" ")}`);
+  };
+  const read = (issueNumber = 24) => readIssueProjectStatuses("owner/repo", issueNumber, runner);
+  return { calls, read };
+}
+
+test("reads linked Project statuses through REST without GraphQL", () => {
+  const calls = [];
+  const responses = new Map([
+    ["users/owner/projectsV2?per_page=100", '[[{"number":2,"state":"open"}]]'],
+    ["users/owner/projectsV2/2/items?per_page=100", JSON.stringify(projectItemIdentity(linkedProjectItem(1701)))],
+    ["users/owner/projectsV2/2/fields?per_page=100", '[[{"id":407,"name":"Status","data_type":"single_select"}]]'],
+    [
+      "users/owner/projectsV2/2/items/1701?fields=407",
+      '{"id":1701,"node_id":"PVTI_item-1701","content":{"number":24,"repository":{"full_name":"owner/repo"},"repository_url":"https://api.github.com/repos/owner/repo"},"fields":[{"id":407,"name":"Status","value":{"id":"done","name":{"raw":"Done"}}}]}',
+    ],
+  ]);
+  const runner = (args) => {
+    calls.push(args);
+    assert.equal(args[0], "api");
+    const endpoint = args.find(
+      (value) => typeof value === "string" && (value.startsWith("users/") || value.startsWith("orgs/")),
+    );
+    const stdout = responses.get(endpoint);
+    if (!stdout) {
+      throw new Error(`Unexpected command: ${args.join(" ")}`);
+    }
+    return { status: 0, stderr: "", stdout };
+  };
+
+  assert.deepEqual(readIssueProjectStatuses("owner/repo", 24, runner), ["Done"]);
+  const itemCall = calls.find((args) => args.includes("users/owner/projectsV2/2/items?per_page=100"));
+  assert.deepEqual(itemCall.slice(0, 3), ["api", "--paginate", "--jq"]);
+  for (const field of [
+    ".id",
+    ".node_id",
+    ".content.number",
+    ".content.repository.full_name",
+    ".content.repository.fullName",
+    ".content.repository_url",
+  ]) {
+    assert.match(itemCall[3], new RegExp(field.replaceAll(".", "\\.")));
+  }
+  assert.doesNotMatch(itemCall[3], /\.content\.(body|title|user)/);
+  assert.equal(itemCall.at(-1), "users/owner/projectsV2/2/items?per_page=100");
+  assert.deepEqual(
+    calls.filter((args) => args !== itemCall),
+    [
+      ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"],
+      ["api", "--paginate", "--slurp", "users/owner/projectsV2/2/fields?per_page=100"],
+      ["api", "users/owner/projectsV2/2/items/1701?fields=407"],
+    ],
+  );
+  assert.equal(
+    calls.some((args) => args.includes("graphql") || args.includes("issue")),
+    false,
+  );
+});
+
+test("follows every Link-paginated Project item page without changing live IDs", () => {
+  const firstPage = [linkedProjectItem(1700, 23)];
+  const secondPage = [linkedProjectItem(1701)];
+  const { read, calls } = createProjectStatusReader({
+    itemPagesByProject: new Map([["2", [firstPage, secondPage]]]),
+  });
+
+  assert.deepEqual(read(24), ["Done"]);
+  const itemCall = calls.find((args) => args.some((value) => String(value).includes("/items?")));
+  assert.ok(itemCall.includes("--paginate"));
+  assert.ok(itemCall.includes("--jq"));
+  assert.equal(itemCall.includes("--slurp"), false);
+  assert.match(
+    itemCall.find((value) => String(value).includes(".content.number")),
+    /\.content\.repository/,
+  );
+  assert.equal(
+    itemCall.some((value) => /[?&]page=/.test(String(value))),
+    false,
+  );
+  assert.equal(
+    calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields=407"))),
+    true,
+  );
+});
+
+test("rejects contradictory membership identity and stale item readback", () => {
+  const contradictory = linkedProjectItem(1701);
+  contradictory.content.repository_url = "https://api.github.com/repos/other/repo";
+  const { read: readContradictory } = createProjectStatusReader({
+    itemPagesByProject: new Map([["2", [[contradictory]]]]),
+  });
+  assert.throws(() => readContradictory(24), /non-contradictory repository identity/);
+
+  const { read: readStale } = createProjectStatusReader({
+    itemResponses: new Map([["2/1701", projectStatusResponse("Done", 1702)]]),
+  });
+  assert.throws(() => readStale(24), /same Project item IDs/);
+});
+
+test("rejects malformed Project membership identity before status readback", () => {
+  const missingContent = linkedProjectItem(1701);
+  missingContent.content = undefined;
+  const missingIssueNumber = linkedProjectItem(1701);
+  missingIssueNumber.content.number = undefined;
+  const blankRepository = linkedProjectItem(1701);
+  blankRepository.content.repository.full_name = "   ";
+  blankRepository.content.repository_url = undefined;
+  const invalidRepositoryUrl = linkedProjectItem(1701);
+  invalidRepositoryUrl.content.repository_url = "https://example.test/repos/owner/repo";
+  const cases = [
+    { item: { ...linkedProjectItem(1701), id: undefined }, error: /items with IDs/ },
+    { item: { ...linkedProjectItem(1701), node_id: undefined }, error: /items with global IDs/ },
+    { item: missingContent, error: /repository identity/ },
+    { item: missingIssueNumber, error: /valid issue number/ },
+    { item: blankRepository, error: /non-blank repository identity/ },
+    { item: invalidRepositoryUrl, error: /canonical repository URL/ },
+  ];
+
+  for (const { item, error } of cases) {
+    const { read, calls } = createProjectStatusReader({ itemsByProject: new Map([["2", [item]]]) });
+    assert.throws(() => read(24), error);
+    assert.equal(
+      calls.some((args) => args.some((value) => String(value).includes("/fields?"))),
+      false,
+    );
+    assert.equal(
+      calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields="))),
+      false,
+    );
+  }
+});
+
+test("rejects contradictory repository identity casing before status readback", () => {
+  const contradictory = linkedProjectItem(1701);
+  contradictory.content.repository.fullName = "other/repo";
+  const { read, calls } = createProjectStatusReader({
+    itemsByProject: new Map([["2", [contradictory]]]),
+  });
+
+  assert.throws(() => read(24), /one non-contradictory repository identity/);
+  assert.equal(
+    calls.some((args) => args.some((value) => String(value).includes("/fields?"))),
+    false,
+  );
+  assert.equal(
+    calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields="))),
+    false,
+  );
+});
+
+test("rejects two open linked Projects even when their statuses disagree", () => {
+  const { read, calls } = createProjectStatusReader({
+    projects: [
+      { number: 2, state: "open" },
+      { number: 3, state: "open" },
+    ],
+    itemsByProject: new Map([
+      ["2", [linkedProjectItem(1701)]],
+      ["3", [linkedProjectItem(1702)]],
+    ]),
+    fieldsByProject: new Map([
+      ["2", [{ id: PROJECT_STATUS_FIELD_ID, name: "Status" }]],
+      ["3", [{ id: PROJECT_STATUS_FIELD_ID, name: "Status" }]],
+    ]),
+    itemResponses: new Map([
+      ["2/1701", projectStatusResponse("Done")],
+      ["3/1702", projectStatusResponse("In Progress")],
+    ]),
+  });
+
+  assert.throws(() => read(24), /exactly one open linked Project/);
+  assert.equal(
+    calls.some((args) => args.some((value) => String(value).includes("/fields?"))),
+    false,
+  );
+});
+
+test("rejects duplicate matching issue items before status readback", () => {
+  const { read, calls } = createProjectStatusReader({
+    itemsByProject: new Map([["2", [linkedProjectItem(1701), linkedProjectItem(1702)]]]),
+  });
+
+  assert.throws(() => read(24), /exactly one matching issue item/);
+  assert.equal(
+    calls.some((args) => args.some((value) => String(value).includes("/fields?"))),
+    false,
+  );
+});
+
+test("rejects missing, blank, and contradictory Status values", () => {
+  const responses = [
+    { fields: [] },
+    { fields: [{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: "   " } } }] },
+    {
+      fields: [
+        {
+          id: PROJECT_STATUS_FIELD_ID,
+          name: "Status",
+          value: { name: { raw: "Done", html: "In Progress" } },
+        },
+      ],
+    },
+  ];
+
+  for (const itemResponse of responses) {
+    const { read } = createProjectStatusReader({
+      itemResponses: new Map([
+        [
+          "2/1701",
+          {
+            ...linkedProjectItem(1701),
+            ...itemResponse,
+          },
+        ],
+      ]),
+    });
+    assert.throws(() => read(24), /Status field\/value/);
+  }
+});
+
+const PROJECT_ITEM_ENDPOINT = "users/owner/projectsV2/2/items/1701?fields=407";
+const PROJECTS_ENDPOINT = "users/owner/projectsV2";
+
+// The exact stop a Project read raises: a github_response_shape CompletionError naming its endpoint.
+function assertProjectShapeStop(read, endpoint, detail) {
+  assert.throws(read, (error) => {
+    assert.ok(error instanceof CompletionError, String(error));
+    assert.equal(error.code, "github_response_shape");
+    assert.equal(error.message, `GitHub response for ${endpoint} must include ${detail}.`);
+    return true;
+  });
+}
+
+function statusReaderWithFields(fields) {
+  return createProjectStatusReader({
+    itemResponses: new Map([["2/1701", { ...linkedProjectItem(1701), fields }]]),
+  }).read;
+}
+
+test("pins every Status field/value stop text and code on the item readback", () => {
+  const cases = [
+    [[], "exactly one Status field/value"],
+    [[{ id: 999, name: "Status", value: { name: "Done" } }], "exactly one Status field/value"],
+    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Priority", value: { name: "Done" } }], "exactly one Status field/value"],
+    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status" }], "exactly one non-blank Status field/value"],
+    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: null }], "exactly one non-blank Status field/value"],
+    [
+      [{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { id: "done" } }],
+      "exactly one non-blank Status field/value",
+    ],
+    [
+      [{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: " " } } }],
+      "exactly one non-blank Status field/value",
+    ],
+    [
+      [{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: "Done", html: "Todo" } } }],
+      "one non-contradictory Status field/value",
+    ],
+  ];
+  for (const [fields, detail] of cases) {
+    assertProjectShapeStop(() => statusReaderWithFields(fields)(24), PROJECT_ITEM_ENDPOINT, detail);
+  }
+});
+
+test("reads a Status spelled as a bare string, as {name}, or as {name: {raw, html}}", () => {
+  const spellings = ["Done", { name: "Done" }, { name: { raw: "Done", html: "Done" } }];
+  for (const value of spellings) {
+    const read = statusReaderWithFields([{ id: PROJECT_STATUS_FIELD_ID, name: "status", value }]);
+    assert.deepEqual(read(24), ["Done"]);
+  }
+});
+
+test("stops with the zero-linked-Project text when no open Project holds the issue", () => {
+  // The closed Project has no items, so reading them would still end in this stop and only the
+  // items-read check can catch it.
+  const cases = [
+    [{ projects: [] }, false],
+    [{ itemsByProject: new Map([["2", [linkedProjectItem(1701, 25)]]]) }, true],
+    [{ projects: [{ number: 2, state: "closed" }], itemsByProject: new Map([["2", []]]) }, false],
+  ];
+  for (const [options, readsItems] of cases) {
+    const { read, calls } = createProjectStatusReader(options);
+    assertProjectShapeStop(() => read(24), PROJECTS_ENDPOINT, "exactly one open linked Project");
+    const requested = (fragment) => calls.some((args) => args.some((value) => String(value).includes(fragment)));
+    assert.equal(requested("/fields?"), false);
+    assert.equal(requested("/items?"), readsItems);
+  }
+});
+
+test("stops on a listed Project without a number or an explicit state, and accepts a numeric string number", () => {
+  const cases = [
+    [[{ state: "open" }], "an array projects with a number"],
+    [[{ number: 2 }], "projects with an explicit state"],
+    [[{ number: 2, state: " " }], "projects with an explicit state"],
+    [[{ number: 3, state: "closed" }, { state: "closed" }], "an array projects with a number"],
+  ];
+  for (const [projects, detail] of cases) {
+    const { read } = createProjectStatusReader({ projects });
+    assertProjectShapeStop(() => read(24), PROJECTS_ENDPOINT, detail);
+  }
+  const { read } = createProjectStatusReader({ projects: [{ number: "2", state: "OPEN" }] });
+  assert.deepEqual(read(24), ["Done"]);
+});
+
+test("stops on a Project item rate-limit response", () => {
+  const { read } = createProjectStatusReader({ rateLimitedProjects: new Set(["2"]) });
+
+  assert.throws(() => read(24), /rate limit/i);
+});
