@@ -455,26 +455,42 @@ async function waitForGuardedUpdate(client, update) {
     requireDefaultBase(pullRequest, defaultBranch);
     if (pullRequest.headSha === previousHead) {
       await client.wait(options.pollMs);
-    } else {
-      const convergedPullRequest = await waitForHeadConvergence(client, {
-        expectedHead: pullRequest.headSha,
-        initialPullRequest: pullRequest,
-        options,
-        repository,
-      });
-      const commit = await client.getCommit(convergedPullRequest.headSha);
-      const parents = new Set(commit.parents);
-      if (commit.parents.length !== 2 || !parents.has(previousHead) || !parents.has(baseHead)) {
-        stop(
-          "untrusted_base_update",
-          `Updated head ${convergedPullRequest.headSha} is not the guarded merge of ${previousHead} and ${baseHead}.`,
-        );
-      }
-      return convergedPullRequest;
+      continue;
     }
+    const convergedPullRequest = await waitForHeadConvergence(client, {
+      expectedHead: pullRequest.headSha,
+      initialPullRequest: pullRequest,
+      options,
+      repository,
+    });
+    const commit = await client.getCommit(convergedPullRequest.headSha);
+    const parents = new Set(commit.parents);
+    if (commit.parents.length !== 2 || !parents.has(previousHead) || !parents.has(baseHead)) {
+      stop(
+        "untrusted_base_update",
+        `Updated head ${convergedPullRequest.headSha} is not the guarded merge of ${previousHead} and ${baseHead}.`,
+      );
+    }
+    return convergedPullRequest;
   }
 
   stop("base_update_timeout", "GitHub accepted the base update but did not publish its new head in time.");
+}
+
+function missingClosingIssueMessage(pullNumber) {
+  return (
+    `Pull request #${pullNumber} has no closing issue reference. complete-pr cannot finish a partial delivery. ` +
+    'Add "Closes #<parent>" to the pull request body, or split the undelivered scope into its own issue ' +
+    "and narrow the parent so this pull request delivers all of it."
+  );
+}
+
+// A merge cannot be undone, so a pull request that closes no issue must stop before the first mutation.
+async function requireClosingIssue(client, pullNumber) {
+  const issues = await client.getLinkedIssues(pullNumber);
+  if (issues.length === 0) {
+    stop("missing_linked_issue", missingClosingIssueMessage(pullNumber));
+  }
 }
 
 async function confirmClosedIssues(client, pullNumber, options) {
@@ -663,6 +679,7 @@ async function completePullRequest(client, overrides = {}) {
   const repository = await client.getRepository();
   let pullRequest = await client.getPullRequest();
   validateInitialState(repository, pullRequest);
+  await requireClosingIssue(client, pullRequest.number);
   pullRequest = await waitForHeadConvergence(client, {
     expectedHead: options.pushedHead ?? null,
     initialPullRequest: pullRequest,

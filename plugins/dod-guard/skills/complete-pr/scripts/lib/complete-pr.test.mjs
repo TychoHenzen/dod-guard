@@ -15,6 +15,8 @@ const workflowRunsPattern = /workflow_runs/;
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
 const PROJECT_STATUS_FIELD_ID = 407;
 const codexMethodPattern = /codex/i;
+const closesRemedyPattern = /Add "Closes #<parent>"/;
+const splitRemedyPattern = /split the undelivered scope/;
 
 function linkedProjectItem(id, number = 24, repository = "owner/repo") {
   return {
@@ -1191,6 +1193,20 @@ test("recovers a merged head with two passing runs of every required check throu
   assert.equal(result.branch, "deleted");
 });
 
+test("recovery of a merged pull request with no closing issue does not tell the user to edit the body", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    issues: [[]],
+    refs: [{ sha: "head-1" }, null],
+  });
+
+  const failure = await recoverMergedPullRequest(client, { ...immediateOptions, localGit }).catch((error) => error);
+
+  assert.equal(failure.code, "missing_linked_issue");
+  assert.doesNotMatch(failure.message, closesRemedyPattern);
+});
+
 test("stops recovery when the newest run of every required check failed through the REST reader", async () => {
   const localGit = createFixtureLocalGit();
   const client = new FixtureClient({
@@ -2188,10 +2204,12 @@ test("merges a draft with green checks and no unresolved thread without any Code
   );
 });
 
-for (const [label, pullRequest] of [
+const draftAndReadyPullRequests = [
   ["draft", pull()],
   ["ready", pull({ isDraft: false })],
-]) {
+];
+
+for (const [label, pullRequest] of draftAndReadyPullRequests) {
   test(`stops a ${label} pull request with an unresolved review thread before any mutation`, async () => {
     const client = new FixtureClient({
       pulls: [pullRequest],
@@ -2204,6 +2222,22 @@ for (const [label, pullRequest] of [
     assert.equal(failure.code, "unresolved-review-threads");
     assert.match(failure.message, discussionUrlPattern);
     assert.match(failure.message, sourcePathPattern);
+    assert.deepEqual(
+      client.calls.filter(([name]) => mutationCallNames.includes(name)),
+      [],
+    );
+  });
+}
+
+for (const [label, pullRequest] of draftAndReadyPullRequests) {
+  test(`stops a ${label} pull request with no closing issue reference before any mutation`, async () => {
+    const client = new FixtureClient({ pulls: [pullRequest], issues: [[]], workflowRuns: [[]] });
+
+    const failure = await completePullRequest(client, immediateOptions).catch((error) => error);
+
+    assert.equal(failure.code, "missing_linked_issue");
+    assert.match(failure.message, closesRemedyPattern);
+    assert.match(failure.message, splitRemedyPattern);
     assert.deepEqual(
       client.calls.filter(([name]) => mutationCallNames.includes(name)),
       [],

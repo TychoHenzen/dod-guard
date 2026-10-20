@@ -58,6 +58,8 @@ Ask for direction when a missing choice changes observable behavior, a public in
 - For repeated variants, the first slice introduces the shared boundary and converts one variant. The rest are local slices behind it.
 - Keep a concept's validation and error behavior in its slice. A slice that replaces old structure also migrates callers and deletes obsolete parts. Add nothing for speculative variants.
 
+**One parent, one closing PR.** A parent's scope must be what a single PR can fully deliver, because `dod-guard:complete-pr` finishes only a PR that closes its parent. Never refine a parent whose scope is meant for several PRs, and never plan a partial delivery. Split the scope into separately deliverable issues first.
+
 Every structured PBI assesses four lenses: implementation; wiring and end-to-end usability (proof it is reachable from its intended UI or user-facing surface); refactoring and code quality; and failure and recovery reliability. Attach each lens to the child or parent-level task that owns it, with observable acceptance and verification. Lenses are not child categories. A sub-issue being refined into a PBI gets the same research, sections, and label rules.
 
 **Feature records.** For feature work or material ambiguity, read `standards/project-workflow.md` from the plugin root. Never assume the target checkout has it. Keep these as distinct subsections of Implementation notes, with discovery markers as evidence inside them: `requirements`, `clarifications`, `implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, `planned-acceptance-matrix`. Small, clear fixes need none of them.
