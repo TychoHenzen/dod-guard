@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
 import process from "node:process";
-import { completePullRequest, recoverMergedPullRequest } from "./lib/complete-pr.mjs";
+import { completePullRequest } from "./lib/complete-pr.mjs";
 import { GitHubClient } from "./lib/github-client.mjs";
 import { LocalGit } from "./lib/local-git.mjs";
+import { recoverMergedPullRequest } from "./lib/merged-recovery.mjs";
 
 const [repository, pullNumberText, ...flags] = process.argv.slice(2);
 const pullNumber = Number.parseInt(pullNumberText, 10);
@@ -36,7 +37,10 @@ if (repository && Number.isInteger(pullNumber) && pullNumber > 0 && validFlags) 
   }
 } else {
   process.stderr.write(
-    "Usage: node complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha> | [--recover-merged [--dry-run]]\n",
+    [
+      "Usage: node complete-pr.mjs <owner/repository> <pull-request-number>",
+      "--pushed-head <verified-head-sha> | [--recover-merged [--dry-run]]\n",
+    ].join(" "),
   );
   process.exitCode = 2;
 }
