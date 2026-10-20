@@ -92,7 +92,9 @@ acceptance criterion and mandatory user-facing path. Each row records the
 contract or criterion, risk or path, proof action, expected and observed
 behavior, status, evidence location, and exact pushed head SHA. Missing,
 failed, unverified, blocked, or head-mismatched rows stop the handoff; an
-`inapplicable` row is valid only with an explicit reason.
+`inapplicable` row is valid only with an explicit reason. The matrix is one
+fenced `json` array of rows under that heading, each row holding every matrix
+field plus `observed`, `status`, and `headSha`; it replaces any markdown table.
 
 The same handoff also carries one `## Preflight checkpoint` record for the
 selected pull request once its branch exists. It records the exact branch and
@@ -158,6 +160,20 @@ parse error. Save both files as UTF-8; a UTF-8 byte-order mark is accepted,
 and UTF-16, which a Windows PowerShell 5.1 `>` redirect writes, exits 2.
 `refine-backlog-item` runs it before `Todo`, and `next-ticket` runs it before
 the branch exists.
+
+Post-push proof: after the implementation handoff is pushed, run the post-push
+variant against the saved issue body and the saved handoff comment, at the
+pushed head:
+
+```text
+node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]
+```
+
+The finalization variant takes the same options with the `finalization`
+subcommand; the complete-pr finalization gate runs it before it readies or
+merges. Both use the exit codes above. The proof binds every lens to
+`--head-sha`, so a push needs the rows re-observed at the new head and a rerun,
+never an edit of the issue body.
 
 Step plans are not one of the seven records and are not in the issue body. Each
 task has one `## Step plan: <task-id>` comment on the parent issue, written by
