@@ -3,7 +3,9 @@ import { test } from "node:test";
 import { scanViolations, tsFile } from "./rules-file-fixtures.test.mjs";
 
 function unusedLocals(code) {
-  return scanViolations(tsFile("src/runtime.ts", code)).filter((violation) => violation.rule === "unused-local");
+  return scanViolations(tsFile("src/runtime.ts", code)).filter(
+    (violation) => violation.rule === "unused-local",
+  );
 }
 
 test("a property assignment of an arrow function is not an unused local", () => {
@@ -31,7 +33,12 @@ test("a nested property assignment is not an unused local", () => {
 });
 
 test("an uncalled local function is still an unused local", () => {
-  const code = ["function helper() {", "  return 1;", "}", "export const value = 2;"].join("\n");
+  const code = [
+    "function helper() {",
+    "  return 1;",
+    "}",
+    "export const value = 2;",
+  ].join("\n");
   const found = unusedLocals(code);
   assert.equal(found.length, 1);
   assert.match(found[0].message, /^helper\(\)/);
