@@ -123,7 +123,9 @@ function parseIssueBodyRecords(body) {
 // matrix is dropped, since observed mode reads only the observed rows. A lens
 // entry holds no head of its own; the pushed head the caller passes is the
 // head every such lens is bound to. A lens that does store a different head
-// stays stale, so structured-workflow-proof.mjs reports it.
+// stays stale, so structured-workflow-proof.mjs reports it. The binding applies
+// to both sides of the lens comparison: the lens-ownership record and the
+// review lenses, so validateLensOwnershipRecord compares like with like.
 function bindLensHead(lens, headSha) {
   if (!lens || typeof lens !== "object") {
     return lens;
@@ -135,12 +137,19 @@ function bindLensHead(lens, headSha) {
 }
 
 function postPushInput({ input, rows, headSha }) {
+  const bindAll = (lenses) => lenses.map((lens) => bindLensHead(lens, headSha));
+  const lensRecord = input.records["lens-ownership"];
+  const records = { ...input.records };
+  if (Array.isArray(lensRecord)) {
+    records["lens-ownership"] = bindAll(lensRecord);
+  }
   return {
     ...input,
+    records,
     plannedAcceptanceMatrix: null,
     acceptanceMatrix: rows,
     headSha,
-    reviewLenses: input.reviewLenses.map((lens) => bindLensHead(lens, headSha)),
+    reviewLenses: bindAll(input.reviewLenses),
   };
 }
 

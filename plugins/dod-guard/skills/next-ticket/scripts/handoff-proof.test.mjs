@@ -16,6 +16,7 @@ const PRE_CORRECTION = fixture("issue-855-shape-body.md");
 const CORRECTED = fixture("issue-855-shape-corrected-body.md");
 const BODY_904 = path.join(here, "..", "..", "..", "lib", "fixtures", "issue-904-body.md");
 const HEAD_904 = "e7e22c4c54840c7983af67f8d631396cf5484999";
+const UNPUSHED_HEAD = "cccccccccccccccccccccccccccccccccccccccc";
 const ROWS_904 = JSON.parse(readFileSync(fixture("issue-904-handoff.json"), "utf8")).acceptanceMatrix;
 const STALE_ROW_ID = /\bR1\b/;
 const STALE_LENS = /review lens is not bound to handoff head/;
@@ -150,6 +151,7 @@ test("reads only local files: no network, process, or GitHub module is imported"
     "../../../lib/args.mjs",
     "../../../lib/handoff-matrix.mjs",
     "../../../lib/issue-body-records.mjs",
+    "../../complete-pr/scripts/finalization-gate.mjs",
     "./structured-workflow-proof.mjs",
   ]);
   assert.doesNotMatch(source, /\bimport\(|\bfetch\(|\brequire\(/);
@@ -160,11 +162,9 @@ test("exits 2 on a usage error and names the argument", async () => {
   const missing = path.join(here, "fixtures", "no-such-body.md");
 
   assert.deepEqual(run("refinement"), usage(["--body-file=<path> is required"]));
-  assert.deepEqual(run(), usage(["the first argument must be the refinement or post-push subcommand"]));
-  assert.deepEqual(
-    run("finalization", `--body-file=${CORRECTED}`),
-    usage(["the first argument must be the refinement or post-push subcommand"]),
-  );
+  const subcommandError = ["the first argument must be the refinement, post-push, or finalization subcommand"];
+  assert.deepEqual(run(), usage(subcommandError));
+  assert.deepEqual(run("finalize", `--body-file=${CORRECTED}`), usage(subcommandError));
   assert.deepEqual(run("refinement", CORRECTED), usage([`unexpected argument ${CORRECTED}`]));
   assert.deepEqual(run("refinement", `--body-file=${CORRECTED}`, "--head=abc"), usage(["unknown option --head"]));
   assert.deepEqual(run("refinement", `--body-file=${missing}`), usage([`cannot read --body-file ${missing}`]));
@@ -215,7 +215,7 @@ test("post-push names a stale lens", async () => {
       "post-push",
       `--body-file=${BODY_904}`,
       `--handoff-file=${handoff}`,
-      "--head-sha=0123456789abcdef",
+      `--head-sha=${UNPUSHED_HEAD}`,
     );
 
     assert.equal(status, 1);
@@ -249,5 +249,131 @@ test("post-push exits 2 on a missing option, a missing matrix block, or an unrea
         json: { outcome: "parse error", remainder: ["handoff has no ## Acceptance matrix section"] },
       },
     );
+  });
+});
+
+test("finalization verifies the 904 body at the head the handoff names", async () => {
+  await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
+    assert.deepEqual(
+      run("finalization", `--body-file=${BODY_904}`, `--handoff-file=${handoff}`, `--head-sha=${HEAD_904}`),
+      { status: 0, json: { outcome: "verified", remainder: [] } },
+    );
+  });
+});
+
+test("finalization stops on a stale head", async () => {
+  await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
+    const { status, json } = run(
+      "finalization",
+      `--body-file=${BODY_904}`,
+      `--handoff-file=${handoff}`,
+      `--head-sha=${UNPUSHED_HEAD}`,
+    );
+
+    assert.equal(status, 1);
+    assert.equal(json.outcome, "actionable remainder");
+    assert.ok(json.remainder.length > 0, JSON.stringify(json));
+  });
+});
+
+test("finalization exits 2 with no --head-sha", async () => {
+  await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
+    assert.deepEqual(run("finalization", `--body-file=${BODY_904}`, `--handoff-file=${handoff}`), {
+      status: 2,
+      json: { outcome: "usage error", remainder: ["--head-sha=<sha> is required"] },
+    });
+  });
+});
+
+test("finalization and post-push agree on the same inputs", async () => {
+  const staleRows = ROWS_904.map((row) => {
+    if (row.id !== "R1") {
+      return row;
+    }
+    return { ...row, headSha: "deadbeef" };
+  });
+  const cases = [ROWS_904, staleRows];
+  await Promise.all(
+    cases.map((rows) =>
+      withTempFile("handoff.md", buildHandoff(rows), (handoff) => {
+        const args = [`--body-file=${BODY_904}`, `--handoff-file=${handoff}`, `--head-sha=${HEAD_904}`];
+        const postPush = run("post-push", ...args);
+        const finalization = run("finalization", ...args);
+
+        assert.equal(finalization.status, postPush.status);
+        assert.equal(finalization.json.outcome, postPush.json.outcome);
+      }),
+    ),
+  );
+});
+
+const HEAD_B = "1111111111111111111111111111111111111111";
+const LENS_OWNERSHIP_BLOCK = /### lens-ownership\r?\n[\s\S]*?```json\r?\n([\s\S]*?)\r?\n```/;
+const bodyWithLensRecords = (transform) => {
+  const body = readFileSync(BODY_904, "utf8");
+  const [, block] = LENS_OWNERSHIP_BLOCK.exec(body);
+  const records = JSON.parse(block).map(transform);
+  return body.replace(block, JSON.stringify(records, null, 2));
+};
+
+test("a lens that stores no head passes, one that stores an older head fails", async () => {
+  const headless = bodyWithLensRecords(({ headSha, ...lens }) => lens);
+  await withTempFile("body.md", headless, async (bodyFile) => {
+    await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
+      assert.deepEqual(
+        run("finalization", `--body-file=${bodyFile}`, `--handoff-file=${handoff}`, `--head-sha=${HEAD_904}`),
+        { status: 0, json: { outcome: "verified", remainder: [] } },
+      );
+    });
+  });
+
+  const oneStale = bodyWithLensRecords(({ headSha, ...lens }, index) => {
+    if (index === 0) {
+      return { ...lens, headSha: HEAD_904 };
+    }
+    return lens;
+  });
+  await withTempFile("body.md", oneStale, async (bodyFile) => {
+    await withTempFile("handoff.md", buildHandoff(ROWS_904.map((row) => ({ ...row, headSha: HEAD_B }))), (handoff) => {
+      const { status, json } = run(
+        "finalization",
+        `--body-file=${bodyFile}`,
+        `--handoff-file=${handoff}`,
+        `--head-sha=${HEAD_B}`,
+      );
+      assert.equal(status, 1);
+      assert.ok(
+        json.remainder.some((entry) => STALE_LENS.test(entry)),
+        JSON.stringify(json.remainder),
+      );
+    });
+  });
+});
+
+// The CardCleaner 282 replay: the #904 body was checked at head A, and a merge
+// of head B must stop. Legacy bodies such as the #904 fixture store a headSha in
+// every lens-ownership record as well as in each handoff row, so the recovery
+// rewrites both the row headSha values and the lens headSha values to B.
+test("recovers the CardCleaner 282 case: rows and lenses re-observed at the new head pass", async () => {
+  await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
+    const { status, json } = run(
+      "finalization",
+      `--body-file=${BODY_904}`,
+      `--handoff-file=${handoff}`,
+      `--head-sha=${HEAD_B}`,
+    );
+    assert.equal(status, 1);
+    assert.equal(json.outcome, "actionable remainder");
+  });
+
+  const bodyAtB = bodyWithLensRecords((lens) => ({ ...lens, headSha: HEAD_B }));
+  const rowsAtB = ROWS_904.map((row) => ({ ...row, headSha: HEAD_B }));
+  await withTempFile("body.md", bodyAtB, async (bodyFile) => {
+    await withTempFile("handoff.md", buildHandoff(rowsAtB), (handoff) => {
+      assert.deepEqual(
+        run("finalization", `--body-file=${bodyFile}`, `--handoff-file=${handoff}`, `--head-sha=${HEAD_B}`),
+        { status: 0, json: { outcome: "verified", remainder: [] } },
+      );
+    });
   });
 });

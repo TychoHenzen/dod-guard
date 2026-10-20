@@ -41,6 +41,20 @@ After the head converges and before any mutation, read every review thread. Ever
 
 Reread them before each merge request and stop the same way.
 
+## Structured finalization proof
+
+Apply this section only when the linked parent PBI holds the seven records. Otherwise skip it.
+
+1. Read the parent body and the one `## Implementation handoff` comment to UTF-8 files. Get the body with `gh api repos/<owner>/<repo>/issues/<n> --jq .body`, and read the comments through `gh api -X GET`. Stop unless there is exactly one handoff comment.
+2. Read the PR head SHA.
+3. Run the finalization gate:
+
+```text
+node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs finalization --body-file=<body> --handoff-file=<handoff> --head-sha=<verified-head-sha> [--children=<path>]
+```
+
+Exit 0 with `verified` continues. Exit 1 or 2 stops with the printed remainder before any ready, auto-merge, CI dispatch, or merge. The `--head-sha` must equal the `--pushed-head` passed to the helper in "Run the helper"; a mismatch stops the run.
+
 ## Run the helper
 
 Resolve the skill directory from the loaded SKILL.md. Pass repository and PR number as separate native arguments. Keep a non-zero preflight result.
@@ -83,13 +97,7 @@ Start only after the helper returns a verified merge result. Never alter unrelat
 1. Read the linked parent PBI, its linked children, and their one shared Project. For a structured parent, each child must match one independently delivered and verified functional slice. No fixed child count or category set applies.
 2. Finalize every linked child and every parent-level task owning implementation, wiring and end-to-end usability, code quality, or failure/recovery.
 3. Resolve the Project number, item IDs, Status-field ID, and `Done` option ID once.
-4. For a structured parent, run the current handoff through the gate. Stop on any actionable remainder.
-
-```js
-import { evaluateStructuredFinalization } from "./scripts/finalization-gate.mjs";
-const result = evaluateStructuredFinalization(handoff);
-if (result.nextStep !== "project-status.mjs") throw new Error(result.remainder.join("; "));
-```
+4. For a structured parent, rerun the same finalization command at the merged head and stop on a non-zero exit.
 
 The gate calls `evaluateConvergence` from `next-ticket/scripts/structured-workflow-proof.mjs`. It needs `records`, `tasks`, `children`, `reviewLenses`, `acceptance`, `acceptanceMatrix`, and the exact pushed `headSha`, with `outcome: "verified"`. Any other outcome stops finalization, and Project readback never replaces it. Each parent-level task owning a review lens needs `acceptanceEvidence` and `verificationEvidence` in the durable handoff, even with no child commit. Lens `wiring/usability` binds to `interactive-control` and `browser/e2e` rows, and `reliability` to `data/error` and `recovery` rows. One row cannot cover several lenses.
 

@@ -4,6 +4,8 @@
 // Usage: node handoff-proof.mjs refinement --body-file=<path> [--children=<path>]
 //        node handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path>
 //          --head-sha=<sha> [--children=<path>]
+//        node handoff-proof.mjs finalization --body-file=<path> --handoff-file=<path>
+//          --head-sha=<sha> [--children=<path>]
 //
 // refinement reads the records of a body saved to a local file, plus the
 // linked functional-slice children from an optional JSON array file, and runs
@@ -11,8 +13,10 @@
 // matrix. post-push reads the same body and the acceptance matrix of the
 // implementation handoff saved to a local file, and checks every row and every
 // review lens against the pushed head SHA, so a row or lens bound to another
-// head is reported. Neither subcommand makes a network or GitHub call; fetching
-// the issue and the handoff belongs to the caller. Each prints one JSON object
+// head is reported. finalization is the same proof plus the complete-pr gate's
+// own head check; complete-pr runs it before it readies or merges. No subcommand
+// makes a network or GitHub call; fetching the issue and the handoff belongs to
+// the caller. Each prints one JSON object
 // {outcome, remainder} and exits:
 //   0  verified
 //   1  actionable remainder
@@ -23,12 +27,15 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
 import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
 import { parseIssueBodyRecords, postPushInput } from "../../../lib/issue-body-records.mjs";
+import { evaluateStructuredFinalization } from "../../complete-pr/scripts/finalization-gate.mjs";
 import { evaluateConvergence } from "./structured-workflow-proof.mjs";
 
 const EXIT_CODES = Object.freeze({ verified: 0, "actionable remainder": 1 });
+const POST_PUSH_OPTIONS = new Set(["body-file", "children", "handoff-file", "head-sha"]);
 const SUBCOMMANDS = Object.freeze({
   refinement: new Set(["body-file", "children"]),
-  "post-push": new Set(["body-file", "children", "handoff-file", "head-sha"]),
+  "post-push": POST_PUSH_OPTIONS,
+  finalization: POST_PUSH_OPTIONS,
 });
 
 class UsageError extends Error {}
@@ -43,31 +50,62 @@ function refinementProof({ body, children = [] }) {
   return { outcome: remainder.length === 0 ? "verified" : "actionable remainder", remainder };
 }
 
-// The post-push proof: the observed rows and the pushed head replace the
-// planned matrix, then the same convergence rules run at that head.
-function postPushProof({ body, handoff, headSha, children = [] }) {
+// The post-push input: the observed rows and the pushed head replace the
+// planned matrix. A body or handoff that cannot be read stops with a failure
+// result before any evaluation runs.
+function assembleInput({ body, handoff, headSha, children }) {
   const parsed = parseIssueBodyRecords(body);
   if (parsed.errors.length > 0) {
-    return { outcome: "parse error", remainder: parsed.errors };
+    return { failure: { outcome: "parse error", remainder: parsed.errors } };
   }
   const matrix = readHandoffMatrix(handoff);
   if (matrix.error) {
-    return { outcome: "parse error", remainder: [matrix.error] };
+    return { failure: { outcome: "parse error", remainder: [matrix.error] } };
   }
   const input = postPushInput({ input: parsed.input, rows: matrix.rows, headSha });
-  const convergence = evaluateConvergence({ ...input, children });
-  const remainder = [...parsed.remainder, ...convergence.remainder];
+  return { parsed, input: { ...input, children } };
+}
+
+// The post-push proof: the same convergence rules run at the pushed head.
+function outcomeOf(remainder) {
   if (remainder.length === 0) {
     return { outcome: "verified", remainder };
   }
   return { outcome: "actionable remainder", remainder };
 }
 
+function postPushProof({ body, handoff, headSha, children = [] }) {
+  const assembled = assembleInput({ body, handoff, headSha, children });
+  if (assembled.failure) {
+    return assembled.failure;
+  }
+  const { parsed, input } = assembled;
+  const convergence = evaluateConvergence(input);
+  return outcomeOf([...parsed.remainder, ...convergence.remainder]);
+}
+
+// finalization is the same proof as post-push minus the planned matrix, plus the
+// gate's own head check; it is the dry run complete-pr runs before the helper
+// readies or merges.
+function finalizationProof({ body, handoff, headSha, children = [] }) {
+  const assembled = assembleInput({ body, handoff, headSha, children });
+  if (assembled.failure) {
+    return assembled.failure;
+  }
+  const { parsed, input } = assembled;
+  const result = evaluateStructuredFinalization(input);
+  const remainder = [...parsed.remainder, ...result.remainder];
+  if (result.outcome !== "verified" && remainder.length === 0) {
+    remainder.push(`finalization gate reported ${result.outcome}`);
+  }
+  return outcomeOf(remainder);
+}
+
 function optionsFrom(argv) {
   const [subcommand, ...rest] = argv;
   const allowed = SUBCOMMANDS[subcommand];
   if (allowed === undefined) {
-    throw new UsageError("the first argument must be the refinement or post-push subcommand");
+    throw new UsageError("the first argument must be the refinement, post-push, or finalization subcommand");
   }
   const options = parseArgs(rest);
   if (options === null) {
@@ -84,7 +122,7 @@ function optionsFrom(argv) {
   if (!options["body-file"] || options["body-file"] === "true") {
     throw new UsageError("--body-file=<path> is required");
   }
-  if (subcommand === "post-push") {
+  if (subcommand !== "refinement") {
     if (!options["handoff-file"] || options["handoff-file"] === "true") {
       throw new UsageError("--handoff-file=<path> is required");
     }
@@ -136,11 +174,12 @@ function main(argv) {
     const { subcommand, options } = optionsFrom(argv);
     const body = readText(options["body-file"], "body-file");
     const children = readChildren(options.children);
-    if (subcommand === "post-push") {
-      const handoff = readText(options["handoff-file"], "handoff-file");
-      result = postPushProof({ body, handoff, headSha: options["head-sha"], children });
-    } else {
+    if (subcommand === "refinement") {
       result = refinementProof({ body, children });
+    } else {
+      const handoff = readText(options["handoff-file"], "handoff-file");
+      const proofs = { "post-push": postPushProof, finalization: finalizationProof };
+      result = proofs[subcommand]({ body, handoff, headSha: options["head-sha"], children });
     }
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
