@@ -3,279 +3,36 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { completePullRequest, recoverMergedPullRequest, waitForHeadConvergence } from "./complete-pr.mjs";
+import {
+  createFixtureLocalGit,
+  FixtureClient,
+  immediateOptions,
+  mutationCallNames,
+  newestRunFailsPerCheck,
+  passingChecks,
+  pendingChecks,
+  protectedRequiredChecks,
+  protectionEndpoint,
+  pull,
+  requiredCheckNames,
+  restChecksReader,
+  sequenceCases,
+  twoPassingRunsPerCheck,
+  unresolvedThread,
+} from "./complete-pr.test-support.mjs";
 import { CompletionError } from "./completion-error.mjs";
 import { GitHubClient } from "./github-client.mjs";
-import { headShaField, workflowRun } from "./github-client.test-support.mjs";
+import { workflowRun } from "./github-client.test-support.mjs";
 import { normalizePullRequest } from "./pull-requests.mjs";
 
-const pendingChecks = [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }];
-const passingChecks = [{ bucket: "pass", name: "build-test", state: "SUCCESS" }];
-const requiredCheckNames = ["build-test", "plugin-config", "static-analysis", "package-integrity"];
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
 const codexMethodPattern = /codex/i;
 const closesRemedyPattern = /Add "Closes #<parent>"/;
 const splitRemedyPattern = /split the undelivered scope/;
 
-function pull(overrides = {}) {
-  return {
-    baseBranch: "master",
-    baseSha: "base-1",
-    headBranch: "codex/24-complete-pr",
-    headRepository: "owner/repo",
-    headSha: "head-1",
-    isCrossRepository: false,
-    isDraft: true,
-    mergeCommitSha: null,
-    mergeState: "BLOCKED",
-    mergeable: "MERGEABLE",
-    number: 24,
-    state: "OPEN",
-    ...overrides,
-  };
-}
-
-function unresolvedThread(overrides = {}) {
-  return {
-    author: "pr-author",
-    id: "thread-1",
-    outdated: false,
-    path: "src/a.mjs",
-    url: "https://github.com/owner/repo/pull/24#discussion_r1",
-    ...overrides,
-  };
-}
-
-const mutationCallNames = ["markReady", "enableRepositoryAutoMerge", "dispatch", "mergePullRequest"];
 const discussionUrlPattern = /https:\/\/github\.com\/owner\/repo\/pull\/24#discussion_r1/;
 const sourcePathPattern = /src\/a\.mjs/;
 const liveBaseMergePattern = /guarded merge of head-1 and base-2/;
-
-function nextValue(values) {
-  if (values.length > 1) {
-    return values.shift();
-  }
-  return values[0];
-}
-
-class FixtureClient {
-  constructor(options = {}) {
-    this.repository = options.clientRepository ?? "owner/repo";
-    this.repositoryDetails = {
-      autoMergeAllowed: false,
-      canPush: true,
-      defaultBranch: "master",
-      nameWithOwner: "owner/repo",
-      ...options.repository,
-    };
-    this.pulls = [...(options.pulls ?? [])];
-    this.checks = [...(options.checks ?? [passingChecks])];
-    this.commits = options.commits ?? {};
-    this.issues = [...(options.issues ?? [[{ number: 24, state: "CLOSED", url: "issue" }]])];
-    this.projectStatuses = [...(options.projectStatuses ?? [["Done"]])];
-    this.refs = [...(options.refs ?? [{ sha: "head-1" }, null])];
-    this.sourceRefs = options.sourceRefs ? [...options.sourceRefs] : null;
-    this.baseRefs = options.baseRefs && [...options.baseRefs];
-    this.pullRefs = options.pullRefs ? [...options.pullRefs] : null;
-    this.lastPullHeadSha = "head-1";
-    this.lastPullBaseSha = "base-1";
-    this.workflowRuns = options.workflowRuns ?? null;
-    this.workflowDispatchError = options.workflowDispatchError;
-    this.enableRepositoryError = options.enableRepositoryError;
-    this.deleteBranchError = options.deleteBranchError;
-    this.requiredChecksError = options.requiredChecksError;
-    this.requiredChecksReader = options.requiredChecksReader;
-    this.projectStatusReader = options.projectStatusReader;
-    this.reviewThreads = [...(options.reviewThreads ?? [[]])];
-    this.calls = [];
-  }
-
-  getRepository() {
-    return this.repositoryDetails;
-  }
-
-  getPullRequest() {
-    const value = nextValue(this.pulls);
-    this.lastPullHeadSha = value.headSha;
-    this.lastPullBaseSha = value.baseSha;
-    this.calls.push(["getPullRequest", value.headSha, value.state]);
-    return value;
-  }
-
-  markReady(number) {
-    this.calls.push(["markReady", number]);
-  }
-
-  enableRepositoryAutoMerge() {
-    this.calls.push(["enableRepositoryAutoMerge"]);
-    if (this.enableRepositoryError) {
-      throw this.enableRepositoryError;
-    }
-  }
-
-  mergePullRequest(number, headSha) {
-    this.calls.push(["mergePullRequest", number, headSha]);
-  }
-
-  getRequiredChecks(pullRequest) {
-    this.calls.push(["getRequiredChecks"]);
-    if (this.requiredChecksError) {
-      throw this.requiredChecksError;
-    }
-    if (this.requiredChecksReader) {
-      return this.requiredChecksReader(pullRequest);
-    }
-    return nextValue(this.checks);
-  }
-
-  getCiWorkflowRuns(headSha) {
-    this.calls.push(["getCiWorkflowRuns", headSha]);
-    if (!this.workflowRuns) {
-      return [workflowRun(headSha)];
-    }
-    const runs = nextValue(this.workflowRuns);
-    return typeof runs === "function" ? runs(headSha) : runs;
-  }
-
-  dispatchCiWorkflow(branchName) {
-    this.calls.push(["dispatch", branchName]);
-    if (this.workflowDispatchError) {
-      throw this.workflowDispatchError;
-    }
-  }
-
-  updateBranch(number, headSha) {
-    this.calls.push(["updateBranch", number, headSha]);
-  }
-
-  getCommit(sha) {
-    return this.commits[sha];
-  }
-
-  getLinkedIssues() {
-    return nextValue(this.issues);
-  }
-
-  getIssueProjectStatuses(issueNumber) {
-    if (this.projectStatusReader) {
-      return this.projectStatusReader(issueNumber);
-    }
-    return nextValue(this.projectStatuses);
-  }
-
-  getBranchRef(branchName) {
-    this.calls.push(["getBranchRef", branchName]);
-    return nextValue(this.refs);
-  }
-
-  getSourceBranchRef(branchName) {
-    this.calls.push(["getSourceBranchRef", branchName]);
-    return this.sourceRefs ? nextValue(this.sourceRefs) : { sha: this.lastPullHeadSha };
-  }
-
-  // Without scripted base tips the live base branch matches the last pull request read.
-  getBaseBranchRef(branchName) {
-    this.calls.push(["getBaseBranchRef", branchName]);
-    if (this.baseRefs) {
-      return nextValue(this.baseRefs);
-    }
-    return { sha: this.lastPullBaseSha };
-  }
-
-  getPullRequestRefs(number) {
-    this.calls.push(["getPullRequestRefs", number]);
-    return this.pullRefs
-      ? nextValue(this.pullRefs)
-      : [{ kind: "head", ref: `refs/pull/${number}/head`, sha: this.lastPullHeadSha }];
-  }
-
-  getUnresolvedReviewThreads(number) {
-    this.calls.push(["getUnresolvedReviewThreads", number]);
-    const value = nextValue(this.reviewThreads);
-    if (value instanceof Error) {
-      throw value;
-    }
-    return value;
-  }
-
-  deleteBranchRef(branchName) {
-    this.calls.push(["deleteBranchRef", branchName]);
-    if (this.deleteBranchError) {
-      throw this.deleteBranchError;
-    }
-  }
-
-  wait() {
-    this.calls.push(["wait"]);
-  }
-}
-
-function createFixtureLocalGit(result = { branch: "deleted", currentCheckout: "switched_to_default" }) {
-  const calls = [];
-  return {
-    calls,
-    cleanupBranch(branchName, defaultBranch, options) {
-      calls.push([branchName, defaultBranch, options]);
-      return result;
-    },
-  };
-}
-
-const protectionEndpoint = "repos/owner/repo/branches/master/protection/required_status_checks";
-
-// Answers the REST required-check reads for head-1 and fails any other command, including gh pr checks.
-function restChecksRunner({ protection, checkRuns = [] }) {
-  return (args) => {
-    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
-    if (endpoint === protectionEndpoint) {
-      return protection;
-    }
-    if (endpoint === "repos/owner/repo/commits/head-1/check-runs?per_page=100") {
-      return { stderr: "", status: 0, stdout: JSON.stringify({ check_runs: checkRuns }) };
-    }
-    if (endpoint === "repos/owner/repo/commits/head-1/status?per_page=100") {
-      return { stderr: "", status: 0, stdout: JSON.stringify({ sha: "head-1", statuses: [] }) };
-    }
-    throw new Error(`Unexpected command: ${args.join(" ")}`);
-  };
-}
-
-function protectedRequiredChecks() {
-  const checks = requiredCheckNames.map((context) => ({ app_id: 15_368, context }));
-  return { stderr: "", status: 0, stdout: JSON.stringify({ checks }) };
-}
-
-// Each required check ran twice on the head, in two check suites, and passed both times.
-function twoPassingRunsPerCheck() {
-  return requiredCheckNames.flatMap((name, index) =>
-    [1000 + 2 * index, 1001 + 2 * index].map((id) => ({
-      id,
-      app: { id: 15_368 },
-      conclusion: "success",
-      [headShaField]: "head-1",
-      name,
-      status: "completed",
-    })),
-  );
-}
-
-// Each required check passed on the head, then failed on a later run.
-function newestRunFailsPerCheck() {
-  return twoPassingRunsPerCheck().map((run) => (run.id % 2 === 1 ? { ...run, conclusion: "failure" } : run));
-}
-
-// The real REST required-check reader over restChecksRunner, for FixtureClient's requiredChecksReader option.
-function restChecksReader(responses) {
-  const reader = new GitHubClient("owner/repo", 24, restChecksRunner(responses));
-  return (pullRequest) => reader.getRequiredChecks(pullRequest);
-}
-
-const immediateOptions = {
-  ciRunPollLimit: 2,
-  issuePollLimit: 2,
-  pollLimit: 8,
-  pollMs: 0,
-  updatePollLimit: 2,
-};
 
 test("waits for stale PR and temporary head refs to converge", async () => {
   const client = new FixtureClient({
@@ -1621,13 +1378,6 @@ test("a review-threads-unavailable error from the reader stops before any mutati
     [],
   );
 });
-
-const sequenceCases = [
-  ["cross_repository_head", { pullOverrides: { isCrossRepository: true } }],
-  ["wrong_base_branch", { pullOverrides: { baseBranch: "release" } }],
-  ["default_branch_head", { pullOverrides: { headBranch: "master" } }],
-  ["missing_permission", { repository: { canPush: false } }],
-];
 
 for (const [code, { pullOverrides, repository }] of sequenceCases) {
   test(`completePullRequest stops with ${code} before any mutation`, async () => {
