@@ -163,6 +163,9 @@ from an earlier run.
 - Pass the item id from a successful add, or from the membership read, to
   `skills/complete-pr/scripts/project-status.mjs`. Pass the Project item's
   numeric REST `id`, not its `node_id`, as "ProjectV2 status writes" explains.
+- Never put `-q` or `--jq` on a write. A jq error after a request that succeeded
+  looks like a failed write and invites a duplicate. Send a body with
+  `--input <file>` or `-F body=@<file>`, then read the resource back.
 - Re-read only the mutated resource for safety. Do not rebuild the whole
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.
