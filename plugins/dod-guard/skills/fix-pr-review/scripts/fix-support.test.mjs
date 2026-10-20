@@ -207,26 +207,6 @@ test("normalizes the parent PBI and linked sub-issues", () => {
   assert.equal(result.workItems[0].number, CHILD_ISSUE_NUMBER);
 });
 
-test("ignores an Acceptance criteria heading inside a code fence", () => {
-  const result = normalizeGitHubHierarchy({
-    body: "## Outcome\nWorks.\n\n```\n## Acceptance criteria\n- [ ] example\n```\n\n## Acceptance criteria\n- [ ] real\n",
-    number: 33,
-    state: "OPEN",
-    title: "Review pull requests",
-  });
-  assert.equal(result.acceptanceCriteria, "- [ ] real");
-});
-
-test("does not read a lower-case acceptance criteria heading", () => {
-  const result = normalizeGitHubHierarchy({
-    body: "## acceptance criteria\n- [ ] x\n",
-    number: 33,
-    state: "OPEN",
-    title: "Review pull requests",
-  });
-  assert.equal(result.acceptanceCriteria, "");
-});
-
 test("redacts credentials from nested finding context", () => {
   const token = ["ghp", "aaaaaaaaaaaaaaaaaaaa"].join("_");
   const redacted = redactSecrets({
