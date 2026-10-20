@@ -78,7 +78,7 @@
   },
   "overrides": [
     {
-      "includes": ["packages/code-explorer/scripts/build-browser.mjs"],
+      "includes": ["packages/code-explorer/scripts/build-browser.mjs", "scripts/build/**/*.mjs"],
       "linter": {
         "rules": {
           "correctness": {
