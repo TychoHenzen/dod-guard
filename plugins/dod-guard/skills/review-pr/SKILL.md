@@ -74,7 +74,7 @@ One `dod-guard:read-standard` planner returns a JSON array with one entry per sl
 
 ### Investigate
 
-`dod-guard:read-cheap` investigators answer every question, batched by slot, at most eight per investigator. Skip exclusions. Each answer gives slot, question id, cited path and line, and the fact found.
+`dod-guard:read-cheap` investigators answer every question, batched by slot, at most eight per investigator and a report under 20 KB, as "Plan, investigate, judge" in `standards/model-routing.md` says. Dispatch all batches in one message so they run in parallel. Skip exclusions. Each answer gives slot, question id, cited path and line, and the fact found.
 
 ### Verify
 

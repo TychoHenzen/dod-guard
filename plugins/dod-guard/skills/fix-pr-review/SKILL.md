@@ -56,7 +56,7 @@ Record exact evidence for each non-actionable finding, make no edit for it, and 
 
 Apply the smallest coherent batch. Add a user-path or edge-case test when the finding exposed missing proof. Follow repo instructions for touched files. Never weaken or delete a test to pass.
 
-Given a written fix plan per finding (file, edit, test, command, expected result), you may dispatch edits to `dod-guard:stage-cheap`. Save the plan unchanged outside the repo and use the Stage brief in `standards/model-routing.md`. The brief's first line is exactly `Follow the fix plan in <scratch file>.`. Verify its output. You commit and push.
+Given a written fix plan per finding (file, edit, test, command, expected result), you may dispatch edits to `dod-guard:stage-cheap`. Save the plan unchanged outside the repo and use the Stage brief in `standards/model-routing.md`. The brief's first line is exactly `Follow the fix plan in <scratch file>.`. Verify its output. You commit and push, with the attribution line your brief gives, verbatim.
 
 Run focused tests, then the repo's full pre-PR gates, and map each fixed finding to fresh evidence. Inspect the full diff, stage only reviewed files, commit concisely only after fixes and checks pass, and push to the existing upstream.
 
