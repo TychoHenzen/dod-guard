@@ -1,55 +1,14 @@
-import { CompletionError } from "./completion-error.mjs";
-import {
-  errorMessage,
-  ghJson,
-  ghJsonArrayPages,
-  ghJsonPages,
-  githubResponseContractError,
-  githubResponseError,
-  isHttpNotFound,
-  runGh,
-} from "./gh-runner.mjs";
+import { dispatchCiWorkflow, readCiWorkflowRuns } from "./ci-workflow.mjs";
+import { ghJson, ghJsonArrayPages, githubResponseContractError, isHttpNotFound, runGh } from "./gh-runner.mjs";
 import { encodeBranch } from "./git-refs.mjs";
 import { readIssueProjectStatuses } from "./project-reads.mjs";
+import { markReady, mergePullRequest, readPullRequest, readPullRequestRefs, updateBranch } from "./pull-requests.mjs";
+import { enableRepositoryAutoMerge, readRepository } from "./repository.mjs";
 import { readRequiredChecks } from "./required-checks.mjs";
 import { readUnresolvedReviewThreads } from "./review-threads.mjs";
 
 const CLOSING_REFERENCE =
   /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
-
-const PULL_REQUEST_REF_KINDS = new Set(["head", "merge"]);
-
-const READY_MUTATION = [
-  "mutation($pullRequestId: ID!) {",
-  "markPullRequestReadyForReview(input: { pullRequestId: $pullRequestId }) {",
-  "pullRequest { isDraft }",
-  "}",
-  "}",
-].join(" ");
-
-function readMergeAfterFailure(client, pullNumber, expectedHead, error) {
-  let pullRequest;
-  try {
-    pullRequest = client.getPullRequest(pullNumber);
-  } catch (readError) {
-    throw new CompletionError(
-      "merge_ambiguous",
-      `Merge failed (${errorMessage(error)}); pull request readback failed (${errorMessage(readError)}).`,
-      { cause: readError },
-    );
-  }
-  if (pullRequest.state === "MERGED") {
-    if (pullRequest.headSha !== expectedHead) {
-      throw new CompletionError(
-        "unexpected_head_change",
-        `Pull request head changed from ${expectedHead} to ${pullRequest.headSha}.`,
-        { cause: error },
-      );
-    }
-    return { merged: true, sha: pullRequest.mergeCommitSha };
-  }
-  throw error;
-}
 
 function closingIssueReferences(text, defaultRepository) {
   const references = new Map();
@@ -64,61 +23,6 @@ function closingIssueReferences(text, defaultRepository) {
   return [...references.values()];
 }
 
-function normalizePullRequestRefs(data, pullNumber, endpoint) {
-  if (!Array.isArray(data)) {
-    throw githubResponseError(endpoint, "an array of pull-request refs");
-  }
-
-  const prefix = `refs/pull/${pullNumber}/`;
-  const seen = new Set();
-  return data.map((ref) => {
-    if (!ref || typeof ref.ref !== "string" || !ref.ref.startsWith(prefix)) {
-      throw githubResponseContractError(endpoint, "well-formed pull-request refs");
-    }
-    const kind = ref.ref.slice(prefix.length);
-    if (!PULL_REQUEST_REF_KINDS.has(kind)) {
-      throw githubResponseContractError(endpoint, "only head and merge pull-request refs");
-    }
-    if (seen.has(ref.ref)) {
-      throw githubResponseContractError(endpoint, "unique pull-request refs");
-    }
-    seen.add(ref.ref);
-    const sha = ref.object?.sha;
-    if (typeof sha !== "string" || sha.trim().length === 0) {
-      throw githubResponseContractError(endpoint, "pull-request refs with commit SHAs");
-    }
-    return { kind, ref: ref.ref, sha };
-  });
-}
-
-function pullRequestRefsEndpoint(repository, pullNumber) {
-  return `repos/${repository}/git/matching-refs/pull/${pullNumber}/`;
-}
-
-export function normalizePullRequest(data, repository) {
-  const headRepository = data.head?.repo?.full_name ?? null;
-  let state = data.state?.toUpperCase() ?? null;
-  if (data.merged_at) {
-    state = "MERGED";
-  }
-
-  return {
-    baseBranch: data.base?.ref ?? null,
-    baseSha: data.base?.sha ?? null,
-    headBranch: data.head?.ref ?? null,
-    headRepository,
-    headSha: data.head?.sha ?? null,
-    isCrossRepository: headRepository !== repository,
-    isDraft: data.draft === true,
-    mergeCommitSha: data.merge_commit_sha ?? null,
-    mergeState: data.mergeable_state?.toUpperCase() ?? null,
-    mergeable: data.mergeable === true ? "MERGEABLE" : data.mergeable === false ? "CONFLICTING" : "UNKNOWN",
-    number: data.number,
-    state,
-    url: data.html_url ?? null,
-  };
-}
-
 export class GitHubClient {
   #commandRunner;
 
@@ -129,53 +33,19 @@ export class GitHubClient {
   }
 
   getRepository() {
-    const { data } = ghJson(["api", `repos/${this.repository}`], [0], this.#commandRunner);
-    return {
-      autoMergeAllowed: data.allow_auto_merge === true,
-      canPush: data.permissions?.push === true,
-      defaultBranch: data.default_branch,
-      nameWithOwner: data.full_name,
-    };
+    return readRepository(this.repository, this.#commandRunner);
   }
 
   getPullRequest(pullNumber = this.pullNumber) {
-    const { data } = ghJson(["api", `repos/${this.repository}/pulls/${pullNumber}`], [0], this.#commandRunner);
-    return normalizePullRequest(data, this.repository);
+    return readPullRequest(this.repository, pullNumber, this.#commandRunner);
   }
 
   getPullRequestRefs(pullNumber = this.pullNumber) {
-    const { data, result } = ghJson(
-      ["api", pullRequestRefsEndpoint(this.repository, pullNumber)],
-      [0, 1],
-      this.#commandRunner,
-    );
-    if (result.status === 1 && isHttpNotFound(result)) {
-      return [];
-    }
-    if (result.status !== 0) {
-      throw new Error(result.stderr.trim() || "Failed to read pull-request refs.");
-    }
-    return normalizePullRequestRefs(data, pullNumber, pullRequestRefsEndpoint(this.repository, pullNumber));
+    return readPullRequestRefs(this.repository, pullNumber, this.#commandRunner);
   }
 
   markReady(pullNumber) {
-    const pullEndpoint = `repos/${this.repository}/pulls/${pullNumber}`;
-    const { data: pullRequest } = ghJson(["api", pullEndpoint], [0], this.#commandRunner);
-    if (typeof pullRequest?.node_id !== "string" || pullRequest.node_id.trim().length === 0) {
-      throw githubResponseContractError(pullEndpoint, "a pull request node ID");
-    }
-
-    const { data } = ghJson(
-      ["api", "graphql", "-f", `query=${READY_MUTATION}`, "-F", `pullRequestId=${pullRequest.node_id}`],
-      [0],
-      this.#commandRunner,
-    );
-    if (data?.data?.markPullRequestReadyForReview?.pullRequest?.isDraft !== false) {
-      throw new CompletionError(
-        "ready_transition_failed",
-        `Pull request #${pullNumber} remained a draft after the ready transition.`,
-      );
-    }
+    markReady(this.repository, pullNumber, this.#commandRunner);
   }
 
   getUnresolvedReviewThreads(pullNumber = this.pullNumber) {
@@ -183,35 +53,11 @@ export class GitHubClient {
   }
 
   enableRepositoryAutoMerge() {
-    this.#commandRunner(["api", "--method", "PATCH", `repos/${this.repository}`, "-F", "allow_auto_merge=true"]);
+    enableRepositoryAutoMerge(this.repository, this.#commandRunner);
   }
 
   mergePullRequest(pullNumber, expectedHead) {
-    let data;
-    try {
-      ({ data } = ghJson(
-        [
-          "api",
-          "--method",
-          "PUT",
-          `repos/${this.repository}/pulls/${pullNumber}/merge`,
-          "-f",
-          `sha=${expectedHead}`,
-          "-f",
-          "merge_method=merge",
-        ],
-        [0],
-        this.#commandRunner,
-      ));
-    } catch (error) {
-      return readMergeAfterFailure(this, pullNumber, expectedHead, error);
-    }
-
-    if (data?.merged !== true) {
-      const message = data?.message ?? `Pull request #${pullNumber} was not merged.`;
-      throw new CompletionError("merge_failed", message);
-    }
-    return data;
+    return mergePullRequest(this.repository, pullNumber, expectedHead, this.#commandRunner);
   }
 
   getRequiredChecks(pullRequest) {
@@ -219,31 +65,15 @@ export class GitHubClient {
   }
 
   getCiWorkflowRuns(headSha) {
-    const workflowRunsPath = `repos/${this.repository}/actions/` + "workflows/ci.yml/runs";
-    const query = `?head_sha=${encodeURIComponent(headSha)}&per_page=100`;
-    return ghJsonPages(`${workflowRunsPath}${query}`, "workflow_runs", this.#commandRunner);
+    return readCiWorkflowRuns(this.repository, headSha, this.#commandRunner);
   }
 
   dispatchCiWorkflow(branchName) {
-    this.#commandRunner([
-      "api",
-      "--method",
-      "POST",
-      `repos/${this.repository}/actions/workflows/ci.yml/dispatches`,
-      "-f",
-      `ref=${branchName}`,
-    ]);
+    dispatchCiWorkflow(this.repository, branchName, this.#commandRunner);
   }
 
   updateBranch(pullNumber, expectedHead) {
-    this.#commandRunner([
-      "api",
-      "--method",
-      "PUT",
-      `repos/${this.repository}/pulls/${pullNumber}/update-branch`,
-      "-f",
-      `expected_head_sha=${expectedHead}`,
-    ]);
+    updateBranch(this.repository, pullNumber, expectedHead, this.#commandRunner);
   }
 
   getCommit(sha) {
