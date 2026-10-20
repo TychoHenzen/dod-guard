@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { escapeNonAscii } from "../build/ascii-output.mjs";
+import { toAsciiBundle } from "../build/ascii-output.mjs";
 import { bundlePackage } from "../build/bundle.mjs";
 import { findNonAscii } from "./lib/ascii-check.mjs";
 
@@ -15,6 +15,10 @@ const RIGHT_ARROW = 0x21_92;
 const BOM = 0xfe_ff;
 const GRINNING_FACE = 0x1_f6_00;
 const E_ACUTE = 0xe9;
+const DASH = String.fromCodePoint(EM_DASH);
+const TWO_OFFENDERS_ON_LINES_2_AND_3 = /in\.js:2:\d+ U\+2014[\s\S]*in\.js:3:\d+ U\+2014/;
+const CANNOT_PARSE_MESSAGE = /^in\.js: cannot parse/;
+const RAW_OUTPUT_MESSAGE = /bundle\.js:\d+:\d+ U\+2014/;
 
 // -z keeps git from C-quoting a path with non-ASCII, a quote, or a backslash;
 // a quoted path makes readFileSync throw ENOENT before any row is reported.
@@ -62,22 +66,73 @@ test("a tracked file with a non-ASCII name is read and its row reported", () => 
   }
 });
 
-test("escapeNonAscii turns an em-dash into a backslash-u escape", () => {
-  assert.equal(escapeNonAscii(`a ${String.fromCodePoint(EM_DASH)} b`), "a \\u2014 b");
+test("toAsciiBundle escapes an em-dash in line, block, and bang comments", () => {
+  const text = `// a ${DASH} b\n/* c ${DASH} d */\n/*! e ${DASH} f */\nconst x = 1;\n`;
+  const result = toAsciiBundle({ text, file: "in.js" });
+  assert.equal(result, text.replaceAll(DASH, "\\u2014"));
 });
 
-test("escapeNonAscii escapes an astral character as two surrogate escapes", () => {
-  assert.equal(escapeNonAscii(String.fromCodePoint(GRINNING_FACE)), "\\ud83d\\ude00");
+test("toAsciiBundle escapes an astral character in a comment as two surrogate escapes", () => {
+  const text = `// ${String.fromCodePoint(GRINNING_FACE)}\n`;
+  assert.equal(toAsciiBundle({ text, file: "in.js" }), "// \\ud83d\\ude00\n");
 });
 
-test("escapeNonAscii leaves ASCII, tab, LF, and CRLF unchanged", () => {
-  const text = "a\tb\nc\r\nd";
-  assert.equal(escapeNonAscii(text), text);
+test("toAsciiBundle returns ASCII text with tab, LF, and CRLF unchanged", () => {
+  const text = "const a = 1;\r\n\tconst b = 2;\n";
+  assert.equal(toAsciiBundle({ text, file: "in.js" }), text);
 });
 
-test("escapeNonAscii leaves ASCII control characters unchanged", () => {
-  const text = "a\u0001b\u001eb\u007fc";
-  assert.equal(escapeNonAscii(text), text);
+test("toAsciiBundle leaves ASCII control characters in a comment unchanged", () => {
+  const text = "// a\u0001b\u007fc\n";
+  assert.equal(toAsciiBundle({ text, file: "in.js" }), text);
+});
+
+test("toAsciiBundle fails on a String.raw template and reports file, line, column, and code point", () => {
+  const text = `const a = String.raw\`x ${DASH}\`;\n`;
+  assert.throws(() => toAsciiBundle({ text, file: "in.js" }), {
+    message: new RegExp(`^in\\.js:1:${text.indexOf(DASH) + 1} U\\+2014 `),
+  });
+});
+
+test("toAsciiBundle fails on a tagged template", () => {
+  const text = `const a = tag\`x ${DASH}\`;\n`;
+  assert.throws(() => toAsciiBundle({ text, file: "in.js" }), {
+    message: new RegExp(`^in\\.js:1:${text.indexOf(DASH) + 1} U\\+2014 `),
+  });
+});
+
+test("toAsciiBundle fails on a regex literal", () => {
+  const text = `const r = /${DASH}+/u;\n`;
+  assert.throws(() => toAsciiBundle({ text, file: "in.js" }), {
+    message: new RegExp(`^in\\.js:1:${text.indexOf(DASH) + 1} U\\+2014 `),
+  });
+});
+
+test("toAsciiBundle reports every offender with its own line", () => {
+  const text = `const a = 1;\nconst r = /${DASH}/;\nconst s = String.raw\`${DASH}\`;\n`;
+  assert.throws(() => toAsciiBundle({ text, file: "in.js" }), { message: TWO_OFFENDERS_ON_LINES_2_AND_3 });
+});
+
+test("toAsciiBundle ignores a comment while failing on code on the same line", () => {
+  const text = `/* ${DASH} */ const r = /${DASH}/;\n`;
+  assert.throws(
+    () => toAsciiBundle({ text, file: "in.js" }),
+    (error) => {
+      assert.equal(error.message.match(/U\+2014/g).length, 1);
+      return true;
+    },
+  );
+});
+
+test("toAsciiBundle fails with the file name on output it cannot parse", () => {
+  assert.throws(() => toAsciiBundle({ text: `const = ;\n// ${DASH}\n`, file: "in.js" }), {
+    message: CANNOT_PARSE_MESSAGE,
+  });
+});
+
+test("toAsciiBundle accepts a hashbang line", () => {
+  const text = `#!/usr/bin/env node\n// ${DASH}\n`;
+  assert.equal(toAsciiBundle({ text, file: "in.js" }), "#!/usr/bin/env node\n// \\u2014\n");
 });
 
 test("bundlePackage writes ASCII-only output for a comment, a string, and an identifier", async () => {
@@ -100,6 +155,24 @@ test("bundlePackage writes ASCII-only output for a comment, a string, and an ide
     const text = readFileSync(join(dir, "out", "bundle.js"), "utf8");
     assert.deepEqual(findNonAscii({ path: "bundle.js", text }), []);
     assert.ok(text.includes("\\u2014"));
+  } finally {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
+  }
+});
+
+test("bundlePackage rejects a String.raw source and writes no output file", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "ascii-bundle-raw-"));
+  try {
+    const entryPoint = join(dir, "in.js");
+    const outfile = join(dir, "out", "bundle.js");
+    writeFileSync(entryPoint, `export const raw = String.raw\`a ${DASH}\`;\n`);
+    await assert.rejects(bundlePackage({ entryPoint, outfile, shebang: false }), {
+      message: RAW_OUTPUT_MESSAGE,
+    });
+    assert.equal(existsSync(outfile), false);
+    writeFileSync(entryPoint, "export const raw = String.raw`a \\u2014`;\n");
+    await bundlePackage({ entryPoint, outfile, shebang: false });
+    assert.deepEqual(findNonAscii({ path: "bundle.js", text: readFileSync(outfile, "utf8") }), []);
   } finally {
     rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
   }

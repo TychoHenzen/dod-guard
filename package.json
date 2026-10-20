@@ -21,6 +21,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.3",
     "@stryker-mutator/core": "^9.6.0",
-    "@stryker-mutator/tap-runner": "^9.6.0"
+    "@stryker-mutator/tap-runner": "^9.6.0",
+    "acorn": "8.19.0"
   }
 }
