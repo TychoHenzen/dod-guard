@@ -12,6 +12,7 @@
     "findings": [
       {
         "severity": "MAJOR",
+        "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
         "file": "plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
         "line": 90,
         "problem": "The parse-error case asserts the whole result object, so any new output field fails it",
@@ -57,6 +58,7 @@
     "findings": [
       {
         "severity": "MINOR",
+        "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
         "file": "plugins\\dod-guard\\skills\\next-ticket\\scripts\\handoff-proof.test.mjs",
         "line": 90,
         "problem": "The test pins every field of the JSON the command prints",

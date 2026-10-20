@@ -81,15 +81,42 @@ function strayProblems(results) {
   );
 }
 
-// recommendationFor reads only finding severities, so a FINDING ruling with no
-// finding would post as APPROVE and hide the gap it flagged.
-function unbackedFindingProblems(name, result) {
-  if (result.findings.length > 0) {
-    return [];
+// A finding is the evidence behind one FINDING ruling, so both must name the
+// same slot. recommendationFor reads only finding severities: a FINDING ruling
+// with no finding would post as APPROVE, and a finding on a slot ruled VERIFIED
+// would contradict the ruling it sits under. An excluded slot whose exclusion
+// held is ruled VERIFIED, so the same rule covers it.
+function findingSlotProblem(slot, assigned, statusBySlot) {
+  if (typeof slot !== "string" || slot === "") {
+    return "names no slot";
   }
-  return result.rulings
-    .filter((ruling) => ruling?.status === "FINDING")
-    .map((ruling) => `${name}: FINDING ruling for slot ${ruling.slot} has no entry in findings`);
+  if (!assigned.has(slot)) {
+    return `names slot ${slot}, which is not assigned to this lens`;
+  }
+  if (statusBySlot.get(slot) !== "FINDING") {
+    return `names slot ${slot}, which was not ruled FINDING`;
+  }
+  return null;
+}
+
+function bindingProblems(name, result, assigned) {
+  const statusBySlot = new Map(
+    result.rulings
+      .filter((ruling) => RULING_STATUSES.includes(ruling?.status))
+      .map((ruling) => [ruling.slot, ruling.status]),
+  );
+  const cited = new Set(result.findings.map((finding) => finding?.slot));
+  const findingProblems = result.findings.flatMap((finding, index) => {
+    const problem = findingSlotProblem(finding?.slot, assigned, statusBySlot);
+    if (problem) {
+      return [`${name}: finding ${index + 1} ${problem}`];
+    }
+    return [];
+  });
+  const unbacked = [...statusBySlot]
+    .filter(([slot, status]) => status === "FINDING" && !cited.has(slot))
+    .map(([slot]) => `${name}: FINDING ruling for slot ${slot} has no finding naming that slot`);
+  return [...findingProblems, ...unbacked];
 }
 
 function resultProblems(name, results, assigned) {
@@ -101,10 +128,8 @@ function resultProblems(name, results, assigned) {
   if (!(Array.isArray(result.findings) && Array.isArray(result.rulings))) {
     return [`${name}: needs a findings array and a rulings array`];
   }
-  return [
-    ...rulingProblems(name, result.rulings, assigned.get(name) ?? new Set()),
-    ...unbackedFindingProblems(name, result),
-  ];
+  const slots = assigned.get(name) ?? new Set();
+  return [...rulingProblems(name, result.rulings, slots), ...bindingProblems(name, result, slots)];
 }
 
 // One review per PR is permanent, so a review missing an angle must fail here

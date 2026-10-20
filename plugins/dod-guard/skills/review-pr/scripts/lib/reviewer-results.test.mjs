@@ -131,7 +131,7 @@ test("a finding without a required field or an integer line fails", () => {
   const blank = [
     {
       reviewer: "review-pr-hygiene",
-      findings: [judgment(FILE, { correction: " " })],
+      findings: [judgment(FILE, { correction: " ", slot: "sub-issue:o/r#5" })],
     },
   ];
   assert.throws(
@@ -172,10 +172,7 @@ test("a FINDING ruling with no finding in its result is refused", () => {
       rulings: [{ slot: "file:src/review.js", status: "FINDING", evidence: "ok" }],
     },
   ];
-  assert.throws(
-    () => judgedFindings(complete(results, ASSIGNED), ASSIGNED),
-    /Incomplete reviewer results; do not post[\s\S]*review-pr-design: FINDING ruling for slot file:src\/review\.js has no entry in findings/,
-  );
+  assert.throws(() => judgedFindings(complete(results, ASSIGNED), ASSIGNED), INCOMPLETE_MESSAGE);
 });
 
 test("a FINDING ruling backed by a finding in its result is kept", () => {
@@ -191,6 +188,72 @@ test("a FINDING ruling backed by a finding in its result is kept", () => {
     findings.map((finding) => [finding.file, finding.severity]),
     [[FILE, "MAJOR"]],
   );
+});
+
+const fileRuling = (status) => [{ slot: "file:src/review.js", status, evidence: "ok" }];
+
+const NO_SLOT_MESSAGE = /review-pr-design: finding 1 names no slot/;
+const NOT_ASSIGNED_MESSAGE = /review-pr-design: finding 1 names slot criterion:1, which is not assigned to this lens/;
+const NOT_FINDING_MESSAGE = /review-pr-design: finding 1 names slot file:src\/review\.js, which was not ruled FINDING/;
+const EXCLUDED_NOT_FINDING_MESSAGE =
+  /review-pr-hygiene: finding 1 names slot sub-issue:o\/r#5, which was not ruled FINDING/;
+const UNBACKED_MESSAGE = /review-pr-feature: FINDING ruling for slot criterion:1 has no finding naming that slot/;
+const INCOMPLETE_MESSAGE = new RegExp(
+  "Incomplete reviewer results; do not post[\\s\\S]*" +
+    "review-pr-design: FINDING ruling for slot file:src/review\\.js has no finding naming that slot",
+);
+
+test("a finding with no slot is refused", () => {
+  const { slot: _slot, ...slotless } = judgment(FILE);
+  const results = [{ reviewer: "review-pr-design", rulings: fileRuling("FINDING"), findings: [slotless] }];
+  assert.throws(() => judgedFindings(complete(results, ASSIGNED), ASSIGNED), NO_SLOT_MESSAGE);
+});
+
+test("a finding on a slot not assigned to its lens is refused", () => {
+  const results = [{ reviewer: "review-pr-design", findings: [judgment(FILE, { slot: "criterion:1" })] }];
+  assert.throws(() => judgedFindings(complete(results, ASSIGNED), ASSIGNED), NOT_ASSIGNED_MESSAGE);
+});
+
+test("a finding on a slot ruled VERIFIED is refused", () => {
+  const results = [{ reviewer: "review-pr-design", rulings: fileRuling("VERIFIED"), findings: [judgment(FILE)] }];
+  assert.throws(() => judgedFindings(complete(results, ASSIGNED), ASSIGNED), NOT_FINDING_MESSAGE);
+});
+
+test("a finding on an excluded slot whose exclusion held is refused", () => {
+  const results = [
+    {
+      reviewer: "review-pr-hygiene",
+      rulings: [{ slot: "sub-issue:o/r#5", status: "VERIFIED", evidence: "exclusion holds" }],
+      findings: [judgment(FILE, { slot: "sub-issue:o/r#5" })],
+    },
+  ];
+  assert.throws(() => judgedFindings(complete(results, ASSIGNED), ASSIGNED), EXCLUDED_NOT_FINDING_MESSAGE);
+});
+
+test("a finding on an excluded slot whose reason fails is kept", () => {
+  const results = [
+    {
+      reviewer: "review-pr-hygiene",
+      rulings: [{ slot: "sub-issue:o/r#5", status: "FINDING", evidence: "the reason does not hold" }],
+      findings: [judgment(FILE, { slot: "sub-issue:o/r#5" })],
+    },
+  ];
+  const [finding] = judgedFindings(complete(results, ASSIGNED), ASSIGNED);
+  assert.equal(finding.slot, "sub-issue:o/r#5");
+});
+
+test("a FINDING ruling is refused when the only finding names another slot", () => {
+  const results = [
+    {
+      reviewer: "review-pr-feature",
+      rulings: [
+        { slot: "file:src/review.js", status: "FINDING", evidence: "ok" },
+        { slot: "criterion:1", status: "FINDING", evidence: "ok" },
+      ],
+      findings: [judgment(FILE)],
+    },
+  ];
+  assert.throws(() => judgedFindings(complete(results, ASSIGNED), ASSIGNED), UNBACKED_MESSAGE);
 });
 
 test("a result from a reviewer outside the four is refused", () => {

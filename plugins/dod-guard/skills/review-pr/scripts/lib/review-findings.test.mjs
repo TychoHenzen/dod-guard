@@ -78,10 +78,12 @@ test("a scanner severity outside high/medium/low fails the review build", () => 
 test("two findings in one file stay two unless a merge group joins them", () => {
   const results = [
     { reviewer: "review-pr-feature", findings: [judgment(FIX, { severity: "MINOR" })] },
-    { reviewer: "review-pr-design", findings: [judgment(UNICODE, { line: 1 })] },
+    { reviewer: "review-pr-design", findings: [judgment(UNICODE, { line: 1, slot: `file:${FIX}` })] },
     {
       reviewer: "review-pr-reliability",
-      findings: [judgment(FIX, { severity: "BLOCKER", rootCause: "Stale filter reads outdated" })],
+      findings: [
+        judgment(FIX, { severity: "BLOCKER", rootCause: "Stale filter reads outdated", slot: `file:${UNICODE}` }),
+      ],
     },
   ];
   assert.deepEqual(review(results).counts, { BLOCKER: 1, MAJOR: 1, MINOR: 1 });
@@ -97,7 +99,7 @@ test("two findings in one file stay two unless a merge group joins them", () => 
 });
 
 test("every finding stays an inline comment so it gets a GH id", () => {
-  const readme = judgment("README.md", { line: 92, rootCause: "stale readme" });
+  const readme = judgment("README.md", { line: 92, rootCause: "stale readme", slot: `file:${FIX}` });
   const findings = [judgment(FIX, { line: 5 }), readme];
   const results = [{ reviewer: "review-pr-design", findings }];
   const { payload } = review(results);
