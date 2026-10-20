@@ -17,8 +17,14 @@ import {
 const JSON_LINE_SEPARATOR = /\r?\n/u;
 const PROJECT_REPOSITORY_IDENTITY_KEYS = ["full_name", "fullName"];
 const API_REPOSITORY_PATH = /^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)$/i;
-const PROJECT_ITEM_IDENTITY_JQ =
-  ".[] | {id: .id, node_id: .node_id, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
+// The one definition of a pull request Project item; the closure snapshot imports it.
+export const PULL_REQUEST_CONTENT_TYPE = "PullRequest";
+const PROJECT_ITEM_IDENTITY_JQ = [
+  ".[] | {id: .id, node_id: .node_id, content_type: .content_type,",
+  "content: {number: .content.number,",
+  "repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName},",
+  "repository_url: .content.repository_url}}",
+].join(" ");
 
 // gh reports a REST 404 only in stderr, with the same exit code as every other
 // API failure, so a caller that reads a 404 as absence has to look there.
@@ -251,25 +257,36 @@ function projectItemId(item, endpoint) {
   return String(id);
 }
 
+// Every listed item, pull request items included, must carry unique REST and global IDs.
+function claimProjectItemIds(item, seen, endpoint) {
+  const id = projectItemId(item, endpoint);
+  const nodeId = item.node_id ?? item.nodeId;
+  if (nodeId === undefined || nodeId === null || String(nodeId).trim().length === 0) {
+    throw githubResponseError(endpoint, "items with global IDs");
+  }
+  if (seen.ids.has(id) || seen.nodeIds.has(String(nodeId))) {
+    throw githubResponseContractError(endpoint, "unique Project items");
+  }
+  seen.ids.add(id);
+  seen.nodeIds.add(String(nodeId));
+}
+
 function projectItemsForRead(endpoint, commandRunner) {
   const items = ghJsonLines(endpoint, PROJECT_ITEM_IDENTITY_JQ, commandRunner);
-  const seenIds = new Set();
-  const seenNodeIds = new Set();
+  const seen = { ids: new Set(), nodeIds: new Set() };
   const seenMembership = new Set();
+  const issueItems = [];
   for (const item of items) {
     if (!item || typeof item !== "object") {
       throw githubResponseContractError(endpoint, "object Project items");
     }
-    const id = projectItemId(item, endpoint);
-    const nodeId = item.node_id ?? item.nodeId;
-    if (nodeId === undefined || nodeId === null || String(nodeId).trim().length === 0) {
-      throw githubResponseError(endpoint, "items with global IDs");
+    claimProjectItemIds(item, seen, endpoint);
+    // ASSUMPTION: an item typed PullRequest is never the item of the issue being read. A number names an
+    // issue or a pull request, not both, and the live REST content of such an item has no repository key
+    // (Project 2 item 273009693). It is skipped, not placed. Any other content type is validated as before.
+    if (item.content_type === PULL_REQUEST_CONTENT_TYPE) {
+      continue;
     }
-    if (seenIds.has(id) || seenNodeIds.has(String(nodeId))) {
-      throw githubResponseContractError(endpoint, "unique Project items");
-    }
-    seenIds.add(id);
-    seenNodeIds.add(String(nodeId));
     const itemRepository = projectItemRepository(item, endpoint);
     const number = projectItemIssueNumber(item, endpoint);
     const membership = `${itemRepository}#${number}`;
@@ -280,8 +297,9 @@ function projectItemsForRead(endpoint, commandRunner) {
       );
     }
     seenMembership.add(membership);
+    issueItems.push(item);
   }
-  return items;
+  return issueItems;
 }
 
 function projectItemMatchesRepository(item, repository, issueNumber, endpoint) {
