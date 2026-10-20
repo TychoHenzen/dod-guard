@@ -1,20 +1,24 @@
-import { normalizeRequiredChecks } from "./check-normalization.mjs";
 import { CompletionError } from "./completion-error.mjs";
 import {
+  errorMessage,
   ghJson,
   ghJsonArrayPages,
-  ghJsonPagesData,
+  ghJsonPages,
   githubResponseContractError,
   githubResponseError,
+  isHttpNotFound,
   runGh,
 } from "./gh-runner.mjs";
+import { encodeBranch } from "./git-refs.mjs";
 import { readIssueProjectStatuses } from "./project-reads.mjs";
+import { readRequiredChecks } from "./required-checks.mjs";
+import { readUnresolvedReviewThreads } from "./review-threads.mjs";
 
-const HTTP_NOT_FOUND = /HTTP 404/;
-const HTTP_TRANSIENT_SERVER_ERROR = /HTTP 5\d{2}/;
 const CLOSING_REFERENCE =
   /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
+
 const PULL_REQUEST_REF_KINDS = new Set(["head", "merge"]);
+
 const READY_MUTATION = [
   "mutation($pullRequestId: ID!) {",
   "markPullRequestReadyForReview(input: { pullRequestId: $pullRequestId }) {",
@@ -22,159 +26,6 @@ const READY_MUTATION = [
   "}",
   "}",
 ].join(" ");
-const REVIEW_THREADS_QUERY = [
-  "query($owner: String!, $name: String!, $number: Int!, $cursor: String) {",
-  "repository(owner: $owner, name: $name) {",
-  "pullRequest(number: $number) {",
-  "reviewThreads(first: 100, after: $cursor) {",
-  "nodes { id isResolved isOutdated path comments(first: 1) { nodes { url author { login } } } }",
-  "pageInfo { hasNextPage endCursor }",
-  "}",
-  "}",
-  "}",
-  "}",
-].join(" ");
-
-function isPlainObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function unresolvedReviewThread(node) {
-  const firstComment = node.comments?.nodes?.[0];
-  if (typeof firstComment?.url !== "string" || firstComment.url.trim().length === 0) {
-    throw new Error(`review thread ${node.id} has no first comment URL`);
-  }
-  return {
-    author: firstComment.author?.login ?? null,
-    id: node.id,
-    // ASSUMPTION: a missing isOutdated is reported as false; the requirement names no fallback and
-    // the merge gate never reads this field.
-    outdated: node.isOutdated === true,
-    path: node.path,
-    url: firstComment.url,
-  };
-}
-
-function reviewThreadConnection(data) {
-  if (Array.isArray(data?.errors) && data.errors.length > 0) {
-    throw new Error(`GraphQL response carried errors: ${JSON.stringify(data.errors)}`);
-  }
-  const reviewThreads = data?.data?.repository?.pullRequest?.reviewThreads;
-  const hasConnection =
-    isPlainObject(reviewThreads) && Array.isArray(reviewThreads.nodes) && isPlainObject(reviewThreads.pageInfo);
-  if (!hasConnection) {
-    throw new Error("GraphQL response has no reviewThreads object with nodes and pageInfo");
-  }
-  return reviewThreads;
-}
-
-function unresolvedReviewThreads(nodes) {
-  const threads = [];
-  for (const node of nodes) {
-    if (!isPlainObject(node) || typeof node.isResolved !== "boolean") {
-      throw new Error("GraphQL response has a review thread without a boolean isResolved");
-    }
-    if (!node.isResolved) {
-      threads.push(unresolvedReviewThread(node));
-    }
-  }
-  return threads;
-}
-
-function readReviewThreadsPage(data) {
-  const { nodes, pageInfo } = reviewThreadConnection(data);
-  const { endCursor, hasNextPage } = pageInfo;
-  // ASSUMPTION: a non-boolean hasNextPage is malformed, because "read until hasNextPage is false" does not
-  // cover a missing value and reading it as the last page would fail open.
-  if (typeof hasNextPage !== "boolean") {
-    throw new Error("GraphQL response pageInfo.hasNextPage is not a boolean");
-  }
-  return { endCursor, hasNextPage, threads: unresolvedReviewThreads(nodes) };
-}
-
-function reviewThreadsArgs(repository, pullNumber, cursor) {
-  const [owner, name] = repository.split("/");
-  const args = [
-    "api",
-    "graphql",
-    "-f",
-    `query=${REVIEW_THREADS_QUERY}`,
-    "-f",
-    `owner=${owner}`,
-    "-f",
-    `name=${name}`,
-    "-F",
-    `number=${pullNumber}`,
-  ];
-  if (cursor !== null) {
-    args.push("-f", `cursor=${cursor}`);
-  }
-  return args;
-}
-
-function readUnresolvedReviewThreads(commandRunner, repository, pullNumber) {
-  const threads = [];
-  const usedCursors = new Set();
-  let cursor = null;
-  let hasNextPage = true;
-  while (hasNextPage) {
-    const { data } = ghJson(reviewThreadsArgs(repository, pullNumber, cursor), [0], commandRunner);
-    const { endCursor, hasNextPage: morePages, threads: pageThreads } = readReviewThreadsPage(data);
-    threads.push(...pageThreads);
-    hasNextPage = morePages;
-    if (hasNextPage) {
-      if (typeof endCursor !== "string" || endCursor.length === 0 || usedCursors.has(endCursor)) {
-        throw new Error("pagination is incomplete: hasNextPage is true without a new endCursor");
-      }
-      usedCursors.add(endCursor);
-      cursor = endCursor;
-    }
-  }
-  return threads;
-}
-
-function ghJsonPages(endpoint, field, commandRunner) {
-  const pages = ghJsonPagesData(endpoint, commandRunner);
-  if (pages.length === 0) {
-    throw githubResponseError(endpoint, field);
-  }
-  return pages.flatMap((page) => {
-    if (!page || typeof page !== "object" || !Array.isArray(page[field])) {
-      throw githubResponseError(endpoint, field);
-    }
-    return page[field];
-  });
-}
-
-// gh reports only the HTTP status of a failed read, so the endpoint is added here. A response-shape
-// error already names its endpoint and keeps its code.
-function readNamed(description, endpoint, read) {
-  try {
-    return read();
-  } catch (error) {
-    if (error instanceof CompletionError) {
-      throw error;
-    }
-    throw new Error(`Failed to read ${description} at ${endpoint}: ${errorMessage(error)}`, { cause: error });
-  }
-}
-
-function readExactHeadCheckRuns(endpoint, commandRunner) {
-  return readNamed("exact-head check runs", endpoint, () => {
-    try {
-      return ghJsonPages(endpoint, "check_runs", commandRunner);
-    } catch (error) {
-      if (!HTTP_TRANSIENT_SERVER_ERROR.test(errorMessage(error))) {
-        throw error;
-      }
-      return ghJsonPages(endpoint, "check_runs", commandRunner);
-    }
-  });
-}
-
-function errorMessage(error) {
-  return error instanceof Error ? error.message : String(error);
-}
 
 function readMergeAfterFailure(client, pullNumber, expectedHead, error) {
   let pullRequest;
@@ -198,13 +49,6 @@ function readMergeAfterFailure(client, pullNumber, expectedHead, error) {
     return { merged: true, sha: pullRequest.mergeCommitSha };
   }
   throw error;
-}
-
-function encodeBranch(branchName) {
-  return branchName
-    .split("/")
-    .map((segment) => encodeURIComponent(segment))
-    .join("/");
 }
 
 function closingIssueReferences(text, defaultRepository) {
@@ -275,39 +119,6 @@ export function normalizePullRequest(data, repository) {
   };
 }
 
-export function readRequiredChecks(repository, pullRequest, commandRunner) {
-  const branch = encodeBranch(pullRequest.baseBranch);
-  const protectionEndpoint = `repos/${repository}/branches/${branch}/protection/required_status_checks`;
-  const protectionResponse = readNamed("branch protection", protectionEndpoint, () =>
-    ghJson(["api", protectionEndpoint], [0, 1], commandRunner),
-  );
-  if (protectionResponse.result.status === 1 && HTTP_NOT_FOUND.test(protectionResponse.result.stderr)) {
-    return [];
-  }
-  if (protectionResponse.result.status !== 0) {
-    const { result } = protectionResponse;
-    const detail = result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`;
-    throw new Error(`Failed to read branch protection at ${protectionEndpoint}: ${detail}`);
-  }
-  const protection = protectionResponse.data ?? {};
-  const checkRuns = readExactHeadCheckRuns(
-    `repos/${repository}/commits/${pullRequest.headSha}/check-runs?per_page=100`,
-    commandRunner,
-  );
-  const statusEndpoint = `repos/${repository}/commits/${pullRequest.headSha}/status?per_page=100`;
-  const statusPages = readNamed("commit statuses", statusEndpoint, () =>
-    ghJsonPagesData(statusEndpoint, commandRunner),
-  );
-  const statusSha = statusPages.map((page) => page?.sha).find(Boolean) ?? null;
-  const statuses = statusPages.flatMap((page) =>
-    (Array.isArray(page?.statuses) ? page.statuses : []).map((status) => ({
-      ...status,
-      sha: status.sha ?? statusSha,
-    })),
-  );
-  return normalizeRequiredChecks(protection, checkRuns, statuses, pullRequest.headSha);
-}
-
 export class GitHubClient {
   #commandRunner;
 
@@ -338,7 +149,7 @@ export class GitHubClient {
       [0, 1],
       this.#commandRunner,
     );
-    if (result.status === 1 && HTTP_NOT_FOUND.test(result.stderr)) {
+    if (result.status === 1 && isHttpNotFound(result)) {
       return [];
     }
     if (result.status !== 0) {
@@ -368,18 +179,7 @@ export class GitHubClient {
   }
 
   getUnresolvedReviewThreads(pullNumber = this.pullNumber) {
-    try {
-      return readUnresolvedReviewThreads(this.#commandRunner, this.repository, pullNumber);
-    } catch (error) {
-      if (error instanceof CompletionError && error.code === "review-threads-unavailable") {
-        throw error;
-      }
-      throw new CompletionError(
-        "review-threads-unavailable",
-        `Review threads for pull request #${pullNumber} could not be read: ${errorMessage(error)}`,
-        { cause: error },
-      );
-    }
+    return readUnresolvedReviewThreads(this.repository, pullNumber, this.#commandRunner);
   }
 
   enableRepositoryAutoMerge() {
@@ -491,7 +291,7 @@ export class GitHubClient {
       [0, 1],
       this.#commandRunner,
     );
-    if (result.status === 1 && HTTP_NOT_FOUND.test(result.stderr)) {
+    if (result.status === 1 && isHttpNotFound(result)) {
       return null;
     }
     if (result.status !== 0) {

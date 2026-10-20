@@ -6,9 +6,14 @@
 // read from the explicit link by plugins/dod-guard/lib/linked-project.mjs.
 // Every read goes through an injected runner in gh-runner's convention.
 import { API_REPOSITORY_URL, isRepositoryName, urlRepository } from "../../../../lib/repository-identity.mjs";
-import { ghJson, ghJsonArrayPages, githubResponseContractError, githubResponseError } from "./gh-runner.mjs";
+import {
+  ghJson,
+  ghJsonArrayPages,
+  githubResponseContractError,
+  githubResponseError,
+  isHttpNotFoundText,
+} from "./gh-runner.mjs";
 
-const HTTP_NOT_FOUND = /HTTP 404/;
 const JSON_LINE_SEPARATOR = /\r?\n/u;
 const PROJECT_REPOSITORY_IDENTITY_KEYS = ["full_name", "fullName"];
 const API_REPOSITORY_PATH = /^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)$/i;
@@ -18,7 +23,7 @@ const PROJECT_ITEM_IDENTITY_JQ =
 // gh reports a REST 404 only in stderr, with the same exit code as every other
 // API failure, so a caller that reads a 404 as absence has to look there.
 export function isNotFoundResult(result) {
-  return HTTP_NOT_FOUND.test(String(result?.stderr ?? ""));
+  return isHttpNotFoundText(result?.stderr);
 }
 
 // A failed read that names the endpoint it came from. A caller with its own error convention restates

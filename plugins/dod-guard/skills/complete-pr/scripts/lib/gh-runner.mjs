@@ -56,3 +56,45 @@ export function ghJsonArrayPages(endpoint, commandRunner) {
   }
   return pages.flat();
 }
+
+export function ghJsonPages(endpoint, field, commandRunner) {
+  const pages = ghJsonPagesData(endpoint, commandRunner);
+  if (pages.length === 0) {
+    throw githubResponseError(endpoint, field);
+  }
+  return pages.flatMap((page) => {
+    if (!page || typeof page !== "object" || !Array.isArray(page[field])) {
+      throw githubResponseError(endpoint, field);
+    }
+    return page[field];
+  });
+}
+
+// gh reports only the HTTP status of a failed read, so the endpoint is added here. A response-shape
+// error already names its endpoint and keeps its code.
+export function readNamed(description, endpoint, read) {
+  try {
+    return read();
+  } catch (error) {
+    if (error instanceof CompletionError) {
+      throw error;
+    }
+    throw new Error(`Failed to read ${description} at ${endpoint}: ${errorMessage(error)}`, { cause: error });
+  }
+}
+
+export function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+const HTTP_NOT_FOUND = /HTTP 404/u;
+
+// gh reports a REST 404 only in stderr. Callers that already decided the exit code is acceptable match the text alone.
+export function isHttpNotFoundText(stderr) {
+  return HTTP_NOT_FOUND.test(String(stderr ?? ""));
+}
+
+// A gh read that exits 1 with an HTTP 404 means the resource is absent, which several readers treat as empty.
+export function isHttpNotFound(result) {
+  return result.status === 1 && isHttpNotFoundText(result.stderr);
+}
