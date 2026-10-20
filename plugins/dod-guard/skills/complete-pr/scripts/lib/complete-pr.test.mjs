@@ -15,6 +15,8 @@ const workflowRunsPattern = /workflow_runs/;
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
 const PROJECT_STATUS_FIELD_ID = 407;
 const codexMethodPattern = /codex/i;
+const closesRemedyPattern = /Add "Closes #<parent>"/;
+const splitRemedyPattern = /split the undelivered scope/;
 
 function linkedProjectItem(id, number = 24, repository = "owner/repo") {
   return {
@@ -2204,6 +2206,25 @@ for (const [label, pullRequest] of [
     assert.equal(failure.code, "unresolved-review-threads");
     assert.match(failure.message, discussionUrlPattern);
     assert.match(failure.message, sourcePathPattern);
+    assert.deepEqual(
+      client.calls.filter(([name]) => mutationCallNames.includes(name)),
+      [],
+    );
+  });
+}
+
+for (const [label, pullRequest] of [
+  ["draft", pull()],
+  ["ready", pull({ isDraft: false })],
+]) {
+  test(`stops a ${label} pull request with no closing issue reference before any mutation`, async () => {
+    const client = new FixtureClient({ pulls: [pullRequest], issues: [[]], workflowRuns: [[]] });
+
+    const failure = await completePullRequest(client, immediateOptions).catch((error) => error);
+
+    assert.equal(failure.code, "missing_linked_issue");
+    assert.match(failure.message, closesRemedyPattern);
+    assert.match(failure.message, splitRemedyPattern);
     assert.deepEqual(
       client.calls.filter(([name]) => mutationCallNames.includes(name)),
       [],
