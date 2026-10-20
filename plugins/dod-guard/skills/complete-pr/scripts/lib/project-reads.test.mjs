@@ -124,6 +124,46 @@ test("readIssueProjectStatuses stops on an item with no repository, because it c
   );
 });
 
+// Project 2 item 273009693 (PullRequest #946) as PROJECT_ITEM_IDENTITY_JQ projects it. The REST content has
+// no repository key, so every identity field is null.
+const PULL_REQUEST_ITEM = {
+  id: 273009693,
+  node_id: "PVTI_lAHOAFboXs4BiVn2zhBFzB0",
+  content_type: "PullRequest",
+  content: { number: 946, repository: { full_name: null, fullName: null }, repository_url: null },
+};
+
+function membershipRunner(rows) {
+  return tableRunner({
+    [LISTING]: okResponse(JSON.stringify([[{ number: 2, state: "open" }]])),
+    [membership(2)]: okResponse(rows.map((row) => JSON.stringify(row)).join("\n")),
+    [STATUS_FIELDS]: okResponse(JSON.stringify([[{ id: 7, name: "Status" }]])),
+    [ITEM_STATUS_READ]: okResponse(
+      JSON.stringify({ ...ISSUE_ITEM, fields: [{ id: 7, name: "Status", value: { name: { raw: "Done" } } }] }),
+    ),
+  }).runner;
+}
+
+test("readIssueProjectStatuses skips a PullRequest item that carries no repository identity", () => {
+  assert.deepEqual(readIssueProjectStatuses("owner/repo", 24, membershipRunner([PULL_REQUEST_ITEM, ISSUE_ITEM])), [
+    "Done",
+  ]);
+});
+
+test("readIssueProjectStatuses still stops on an Issue, DraftIssue, or untyped item with no repository", () => {
+  for (const contentType of ["Issue", "DraftIssue", undefined]) {
+    const runner = membershipRunner([{ ...PULL_REQUEST_ITEM, content_type: contentType }, ISSUE_ITEM]);
+    assert.throws(
+      () => readIssueProjectStatuses("owner/repo", 24, runner),
+      (error) => {
+        assert.ok(error instanceof CompletionError, String(error));
+        assert.equal(error.code, "github_response_shape");
+        return true;
+      },
+    );
+  }
+});
+
 test("readSlurpedPages flattens every page and names a page that is not an array", () => {
   const read = (pages) => tableRunner({ x: okResponse(pages) }).runner;
   assert.deepEqual(readSlurpedPages(read(JSON.stringify([[1], [2, 3]])), "x"), [1, 2, 3]);

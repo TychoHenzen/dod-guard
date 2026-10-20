@@ -12,8 +12,9 @@ const HTTP_NOT_FOUND = /HTTP 404/;
 const JSON_LINE_SEPARATOR = /\r?\n/u;
 const PROJECT_REPOSITORY_IDENTITY_KEYS = ["full_name", "fullName"];
 const API_REPOSITORY_PATH = /^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)$/i;
+const PULL_REQUEST_CONTENT_TYPE = "PullRequest";
 const PROJECT_ITEM_IDENTITY_JQ =
-  ".[] | {id: .id, node_id: .node_id, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
+  ".[] | {id: .id, node_id: .node_id, content_type: .content_type, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
 
 // gh reports a REST 404 only in stderr, with the same exit code as every other
 // API failure, so a caller that reads a 404 as absence has to look there.
@@ -251,6 +252,7 @@ function projectItemsForRead(endpoint, commandRunner) {
   const seenIds = new Set();
   const seenNodeIds = new Set();
   const seenMembership = new Set();
+  const issueItems = [];
   for (const item of items) {
     if (!item || typeof item !== "object") {
       throw githubResponseContractError(endpoint, "object Project items");
@@ -265,6 +267,12 @@ function projectItemsForRead(endpoint, commandRunner) {
     }
     seenIds.add(id);
     seenNodeIds.add(String(nodeId));
+    // ASSUMPTION: an item typed PullRequest is never the item of the issue being read. A number names an
+    // issue or a pull request, not both, and the live REST content of such an item has no repository key
+    // (Project 2 item 273009693). It is skipped, not placed. Any other content type is validated as before.
+    if (item.content_type === PULL_REQUEST_CONTENT_TYPE) {
+      continue;
+    }
     const itemRepository = projectItemRepository(item, endpoint);
     const number = projectItemIssueNumber(item, endpoint);
     const membership = `${itemRepository}#${number}`;
@@ -275,8 +283,9 @@ function projectItemsForRead(endpoint, commandRunner) {
       );
     }
     seenMembership.add(membership);
+    issueItems.push(item);
   }
-  return items;
+  return issueItems;
 }
 
 function projectItemMatchesRepository(item, repository, issueNumber, endpoint) {
