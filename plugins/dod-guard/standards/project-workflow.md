@@ -232,10 +232,11 @@ at that path. If snapshot exits non-zero, stop and report its error; never plan,
 apply, or annotate on an older file. The caller passes that file with
 `--snapshot` to `closure.mjs plan`, `apply`, or `annotate`.
 
-The closure snapshot is every non-archived item of the linked Project, read the
+The closure snapshot is every non-archived Issue item of the linked Project, read the
 way goal-sdlc's select-next snapshot is: `repository`, `defaultBranch`, `items`
-holding every non-archived item from every page of the linked Project, from
-every repository, each with a top-level `repository` and the Status (a plain
+holding every non-archived Issue item from every page of the linked Project, from
+every repository (a pull request item is left out: it has no issue record and no
+repository key in REST), each with a top-level `repository` and the Status (a plain
 string), Repository, Parent issue (`{repository, number}`), and Linked pull
 requests (`[{repository, number}]`) fields. `issues` and `pullRequests` hold
 only target-repository records, each with `repository`. On every issue it also
