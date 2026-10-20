@@ -19,7 +19,7 @@ test("structural rules cover the whole touched file and line rules only the chan
 
 test("a changed file Git quotes in the diff still gets its scanner findings", () => {
   const { payload } = review([], { scan });
-  assert.match(payload.body, /`docs\/ü\.md:1`\n\*\*MINOR\*\* quality-guard structural findings \(1\)/);
+  assert.match(payload.body, /`docs\/\u00fc\.md:1`\n\*\*MINOR\*\* quality-guard structural findings \(1\)/);
 });
 
 test("a scanner group whose findings are all low is MINOR", () => {
@@ -78,10 +78,12 @@ test("a scanner severity outside high/medium/low fails the review build", () => 
 test("two findings in one file stay two unless a merge group joins them", () => {
   const results = [
     { reviewer: "review-pr-feature", findings: [judgment(FIX, { severity: "MINOR" })] },
-    { reviewer: "review-pr-design", findings: [judgment(UNICODE, { line: 1 })] },
+    { reviewer: "review-pr-design", findings: [judgment(UNICODE, { line: 1, slot: `file:${FIX}` })] },
     {
       reviewer: "review-pr-reliability",
-      findings: [judgment(FIX, { severity: "BLOCKER", rootCause: "Stale filter reads outdated" })],
+      findings: [
+        judgment(FIX, { severity: "BLOCKER", rootCause: "Stale filter reads outdated", slot: `file:${UNICODE}` }),
+      ],
     },
   ];
   assert.deepEqual(review(results).counts, { BLOCKER: 1, MAJOR: 1, MINOR: 1 });
@@ -97,7 +99,7 @@ test("two findings in one file stay two unless a merge group joins them", () => 
 });
 
 test("every finding stays an inline comment so it gets a GH id", () => {
-  const readme = judgment("README.md", { line: 92, rootCause: "stale readme" });
+  const readme = judgment("README.md", { line: 92, rootCause: "stale readme", slot: `file:${FIX}` });
   const findings = [judgment(FIX, { line: 5 }), readme];
   const results = [{ reviewer: "review-pr-design", findings }];
   const { payload } = review(results);
@@ -114,6 +116,50 @@ test("every finding stays an inline comment so it gets a GH id", () => {
   );
   assert.match(payload.comments[1].body, /Cited location: `README\.md:92`/);
   assert.doesNotMatch(payload.body, /no added line/);
+});
+
+const REFUSED_BUILD = /Incomplete reviewer results; do not post/;
+
+test("the build refuses a finding on a slot its lens ruled VERIFIED", () => {
+  const results = [
+    {
+      reviewer: "review-pr-design",
+      rulings: [{ slot: `file:${FIX}`, status: "VERIFIED", evidence: "ok" }],
+      findings: [judgment(FIX)],
+    },
+  ];
+  assert.throws(
+    () => review(results),
+    (error) =>
+      REFUSED_BUILD.test(error.message) &&
+      error.message.includes(`review-pr-design: finding 1 names slot file:${FIX}, which was not ruled FINDING`),
+  );
+});
+
+test("the build refuses a FINDING ruling that no finding names", () => {
+  const results = [
+    {
+      reviewer: "review-pr-feature",
+      rulings: [
+        { slot: `file:${FIX}`, status: "FINDING", evidence: "ok" },
+        { slot: "criterion:1", status: "FINDING", evidence: "ok" },
+      ],
+      findings: [judgment(FIX)],
+    },
+  ];
+  assert.throws(
+    () => review(results),
+    (error) =>
+      REFUSED_BUILD.test(error.message) &&
+      error.message.includes("review-pr-feature: FINDING ruling for slot criterion:1 has no finding naming that slot"),
+  );
+});
+
+test("the same review builds once the finding names its FINDING-ruled slot", () => {
+  const results = [{ reviewer: "review-pr-design", findings: [judgment(FIX)] }];
+  const { payload, recommendation } = review(results);
+  assert.equal(payload.event, "COMMENT");
+  assert.equal(recommendation, "REQUEST_CHANGES");
 });
 
 test("a clean review approves and carries the marker", () => {

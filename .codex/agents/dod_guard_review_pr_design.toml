@@ -32,11 +32,13 @@ for every slot assigned to this lens and for no other slot. `status` is
 excluded slot is a `FINDING` when its reason does not hold. Settle each
 `unanswered` question from the files it names, or rule its slot `FINDING` and
 report the gap as a finding; never rule `VERIFIED` on an unanswered question.
-Every `FINDING` ruling needs at least one entry in `findings`. Return an empty
-`findings` array when no actionable defect exists. Finding severity is exactly
-`BLOCKER`, `MAJOR`, or `MINOR`. Each finding must contain `severity`, `file`,
-`line`, `problem`, `impact`, `requirement`, `correction`, `rootCause`, and
-`evidence`. Cite the file and a final-state line as an integer. Prefer a line
+Every `FINDING` ruling needs at least one finding naming its slot, and no
+finding may name a slot ruled `VERIFIED`. Return an empty `findings` array
+when no actionable defect exists. Finding severity is exactly `BLOCKER`,
+`MAJOR`, or `MINOR`. Each finding must contain `slot`, `severity`, `file`,
+`line`, `problem`, `impact`, `requirement`, `correction`, `rootCause`,
+and `evidence`. `slot` is the id of one slot assigned to this lens.
+Cite the file and a final-state line as an integer. Prefer a line
 this PR changed. When the defect sits on a line the PR did not change, cite
 that real line anyway; the review posts the finding on the nearest changed
 line and names your cited location. Do not report taste, praise, summaries, or

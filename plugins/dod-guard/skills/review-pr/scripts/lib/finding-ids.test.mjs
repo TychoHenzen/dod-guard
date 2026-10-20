@@ -75,7 +75,7 @@ const RESULTS = [
   { reviewer: "review-pr-hygiene", findings: [judgment(A, { problem: "hygiene" })] },
   {
     reviewer: "review-pr-feature",
-    findings: [backslashed, judgment(B, { problem: "feature 2" })],
+    findings: [backslashed, judgment(B, { problem: "feature 2", slot: `file:${A}` })],
   },
   { reviewer: "review-pr-reliability", findings: [judgment(A, { problem: "reliability" })] },
 ];

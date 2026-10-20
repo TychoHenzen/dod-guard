@@ -28,6 +28,7 @@ const REVIEWERS = LENSES.map((lens) => `review-pr-${lens}`);
 export function judgment(file, overrides = {}) {
   return {
     severity: "MAJOR",
+    slot: `file:${String(file).replaceAll("\\", "/")}`,
     file,
     line: 72,
     problem: "Outdated threads are skipped",
@@ -40,17 +41,26 @@ export function judgment(file, overrides = {}) {
   };
 }
 
-// Fills in the reviewers a test does not care about, each with a clean
-// envelope ruling on every slot that `assigned` (lens -> Set of slots, the
-// shape production builds) gives it.
+// Fills in the reviewers a test does not care about. Each lens gets a ruling on
+// every slot that `assigned` gives it: FINDING for a slot one of its findings
+// names, VERIFIED for the rest. A result that carries its own rulings keeps them.
 export function complete(results, assigned) {
-  const verified = (slot) => ({ slot, status: "VERIFIED", evidence: "ok" });
-  return REVIEWERS.map((reviewer) => ({
-    reviewer,
-    rulings: [...assigned.get(reviewer)].map(verified),
-    findings: [],
-    ...results.find((result) => result.reviewer === reviewer),
-  }));
+  const ruling = (slot, status) => ({ slot, status, evidence: "ok" });
+  return REVIEWERS.map((reviewer) => {
+    const given = results.find((result) => result.reviewer === reviewer);
+    const named = new Set((given?.findings ?? []).map((finding) => finding.slot));
+    return {
+      reviewer,
+      rulings: [...assigned.get(reviewer)].map((slot) => {
+        if (named.has(slot)) {
+          return ruling(slot, "FINDING");
+        }
+        return ruling(slot, "VERIFIED");
+      }),
+      findings: [],
+      ...given,
+    };
+  });
 }
 
 // The PBI issue JSON. The two checkbox decoys sit under Outcome and
