@@ -62,8 +62,10 @@ The executable proof at `skills/next-ticket/scripts/structured-workflow-proof.mj
 and its focused tests enforce the canonical lens IDs `implementation`,
 `wiring/usability`, `quality`, and `reliability`; prose may expand those IDs
 to the corresponding user-facing concern. Each lens entry records its owner,
-observable evidence, `headSha`, and the acceptance-matrix `acceptanceEvidence`
-and `verificationEvidence` that prove the lens before Project finalization.
+observable evidence, and the acceptance-matrix `acceptanceEvidence` and
+`verificationEvidence` that prove the lens before Project finalization. The
+proof binds each lens to the pushed head it is given; a stored head that
+differs from that head is reported as stale.
 
 Task-list records use `parentLevel: "convergence"` on a task that owns
 cross-cutting parent work without a linked child. The following is an
@@ -92,7 +94,11 @@ acceptance criterion and mandatory user-facing path. Each row records the
 contract or criterion, risk or path, proof action, expected and observed
 behavior, status, evidence location, and exact pushed head SHA. Missing,
 failed, unverified, blocked, or head-mismatched rows stop the handoff; an
-`inapplicable` row is valid only with an explicit reason.
+`inapplicable` row is valid only with an explicit reason. The matrix is one
+fenced `json` array of rows under that heading; it replaces any markdown
+table, and a second matrix heading is refused. Each row holds `id`, `contract`,
+`path`, `proof`, `expected`, `observed`, `status`, `evidence`, and `headSha`,
+plus `reason` on an `inapplicable` row.
 
 The same handoff also carries one `## Preflight checkpoint` record for the
 selected pull request once its branch exists. It records the exact branch and
@@ -124,9 +130,11 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
 - `lens-ownership`: an array containing exactly one `implementation`,
   `wiring/usability`, `quality`, and `reliability` (failure/recovery) entry.
   Each entry repeats its
-  review-lens id, owner, observable evidence, accepted head, and any acceptance
-  or verification evidence; the executable handoff proof compares this record
-  with the review-lens input instead of treating record presence as proof.
+  review-lens id, owner, observable evidence, and any acceptance or
+  verification evidence, and stores no head; the executable handoff proof
+  binds each lens to the pushed head it is given, reports a stored head that
+  differs as stale, and compares this record with the review-lens input instead
+  of treating record presence as proof.
   A lens's own rows must name each path it requires exactly, ignoring case:
   `interactive-control` and `browser/e2e` for wiring/usability, `data/error`
   and `recovery` for reliability. The matrix coverage check also accepts
@@ -158,6 +166,20 @@ parse error. Save both files as UTF-8; a UTF-8 byte-order mark is accepted,
 and UTF-16, which a Windows PowerShell 5.1 `>` redirect writes, exits 2.
 `refine-backlog-item` runs it before `Todo`, and `next-ticket` runs it before
 the branch exists.
+
+Post-push proof: after the implementation handoff is pushed, run the post-push
+variant against the saved issue body and the saved handoff comment, at the
+pushed head:
+
+```text
+node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]
+```
+
+The finalization variant takes the same options with the `finalization`
+subcommand; the complete-pr finalization gate runs it before it readies or
+merges. Both use the exit codes above. The proof binds every lens to
+`--head-sha`, so a push needs the rows re-observed at the new head and a rerun,
+never an edit of the issue body.
 
 Step plans are not one of the seven records and are not in the issue body. Each
 task has one `## Step plan: <task-id>` comment on the parent issue, written by

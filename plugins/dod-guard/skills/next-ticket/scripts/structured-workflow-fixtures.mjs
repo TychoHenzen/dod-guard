@@ -1,6 +1,6 @@
-import { ACCEPTANCE_MATRIX_PATHS } from "../../../lib/acceptance-matrix.mjs";
 import * as proof from "./structured-workflow-proof.mjs";
 
+export { acceptanceMatrix } from "./passing-matrix.mjs";
 // Builders shared by the structured-convergence tests.
 export { proof };
 
@@ -26,8 +26,6 @@ export function lensEvidence(id, index, prefix) {
   if (id === "quality") return `${prefix}-6`;
   return `${prefix}-${index + 1}`;
 }
-
-const REFINEMENT_HEAD = "65badd3b4db81c654c78759447c9d58c4d8a5ded";
 
 function plannedRow(id, contract, path, name, extra = {}) {
   return {
@@ -62,7 +60,6 @@ function shapeLens(id, owner, names) {
     evidence: [`ev-lens-${id === "wiring/usability" ? "wiring" : id}`],
     acceptanceEvidence: names.map((name) => `ev-${name}`),
     verificationEvidence: names.map((name) => `proof-${name}`),
-    headSha: REFINEMENT_HEAD,
   };
 }
 
@@ -111,13 +108,10 @@ export function issue855Shape({ corrected = false, wiringPathMissing = false } =
 }
 
 // The handoff a refinement input becomes once every planned row passes at one
-// pushed head, with the lens records rebound to that head.
+// pushed head. Lens records store no head; the proof binds them to headSha.
 export function observedFromPlanned({ plannedAcceptanceMatrix, ...input }, headSha) {
-  const reviewLenses = input.reviewLenses.map((lens) => ({ ...lens, headSha }));
   return {
     ...input,
-    records: { ...input.records, "lens-ownership": reviewLenses },
-    reviewLenses,
     acceptanceMatrix: plannedAcceptanceMatrix.map((row) => ({
       ...row,
       observed: row.status === "inapplicable" ? "inapplicable" : `observed ${row.id}`,
@@ -126,18 +120,4 @@ export function observedFromPlanned({ plannedAcceptanceMatrix, ...input }, headS
     })),
     headSha,
   };
-}
-
-export function acceptanceMatrix(headSha, contract = "AC-1") {
-  return [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((pathName, index) => ({
-    id: `${contract}-${index + 1}`,
-    contract,
-    path: pathName,
-    proof: `proof-${index + 1}`,
-    expected: `expected-${index + 1}`,
-    observed: `observed-${index + 1}`,
-    status: "pass",
-    evidence: `evidence-${index + 1}`,
-    headSha,
-  }));
 }

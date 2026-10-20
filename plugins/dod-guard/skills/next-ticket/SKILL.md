@@ -94,4 +94,10 @@ Include pending changes only if in scope and covered by the final diff. Inspect 
 
 After the push, create or update one parent-issue comment headed `## Implementation handoff`: an entry per ordered task and linked child (evidence, files, fresh result), then the single matrix, then the single checkpoint once the PR exists. Post the comment with `gh api --method POST repos/{owner}/{repo}/issues/{issue}/comments --input <file>` or `-F body=@<file>`, never with `-q` or `--jq`: a jq error after a request that succeeded looks like a failed post and invites a duplicate. Then read the issue's comments back and confirm exactly one carries the heading before any retry. With zero matches, repost once and read again. With two or more, keep the earliest, report the duplicates, and post nothing more. The matrix is the durable acceptance record for submit-draft-pr and complete-pr, so never copy it to a local ledger or second issue. State the remainder, and write `none` only when everything is evidenced at the same head.
 
+The matrix in that comment is the one fenced `json` block under `## Acceptance matrix`, not a markdown table. After the comment is read back, save the issue body as read back from GitHub and the handoff comment as UTF-8 files, then run post-push at the pushed head:
+
+`node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`
+
+Stop before PR handoff on exit 1 or 2. Fix the matrix rows and rerun; never fix the lens heads.
+
 Report repository, Project, issue, branch, commit, checks, each criterion mapped to evidence, and any check that could not run. Stop after the push: `dod-guard:review-pr` is the one independent review.

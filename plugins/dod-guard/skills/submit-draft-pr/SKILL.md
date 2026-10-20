@@ -42,6 +42,7 @@ For a structured PBI:
 - Give `implementation`, `wiring/usability`, `quality`, and `reliability` each an owning slice or task with observable evidence. They are ownership labels only, with no fixed child count or category set.
 - Require one durable parent `## Implementation handoff` comment from `next-ticket` holding the single `## Acceptance matrix`. Consume its mappings. Each row must pass at the current head or be inapplicable with a reason. Passing tests alone are not convergence.
 - Before consuming the handoff, read its branch's remote head. Remote SHA, checked-out HEAD, handoff commit, and branch names must match. Any mismatch makes it stale: stop, rerun the implementation handoff, and never copy stale evidence into Convergence.
+- At that matched head, run the post-push proof on the saved issue body and the saved `## Implementation handoff` comment: `node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`. Exit 1 is the stale case above: stop, rerun the implementation handoff, and never copy stale evidence into Convergence. Exit 2 means the body or handoff could not be read or parsed; stop and report it the same way.
 - If implementation is incomplete or contradicted, write the remainder to the issue and stop.
 
 ## Early preflight checkpoint

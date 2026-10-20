@@ -103,8 +103,7 @@
       "verificationEvidence": [
         "proof-ac1-ok-line",
         "proof-ac2-failed-line"
-      ],
-      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+      ]
     },
     {
       "id": "wiring/usability",
@@ -119,8 +118,7 @@
       "verificationEvidence": [
         "proof-path-interactive-control",
         "proof-path-browser-e2e"
-      ],
-      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+      ]
     },
     {
       "id": "quality",
@@ -133,8 +131,7 @@
       ],
       "verificationEvidence": [
         "proof-ac3-scripts-ci"
-      ],
-      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+      ]
     },
     {
       "id": "reliability",
@@ -149,8 +146,7 @@
       "verificationEvidence": [
         "proof-path-data-error",
         "proof-path-recovery"
-      ],
-      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+      ]
     }
   ],
   "acceptance": [

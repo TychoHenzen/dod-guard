@@ -102,14 +102,14 @@ None of these tasks needs a separately tracked child, and every task ships on th
 
 ### lens-ownership
 
-The record has exactly one entry per review lens. Each lens cites the evidence and proof of its own acceptance-matrix rows, and no two lenses claim the same row. Reliability owns the `data/error` and `recovery` rows. Wiring/usability owns `interactive-control` and the justified-inapplicable `browser/e2e` row, which is what the complete-pr finalization gate (`REQUIRED_LENS_PATHS`) requires. `headSha` is a placeholder set to the refinement base 119d2c30. next-ticket replaces it with the pushed head, both here and in the matrix.
+The record has exactly one entry per review lens. Each lens cites the evidence and proof of its own acceptance-matrix rows, and no two lenses claim the same row. Reliability owns the `data/error` and `recovery` rows. Wiring/usability owns `interactive-control` and the justified-inapplicable `browser/e2e` row, which is what the complete-pr finalization gate (`REQUIRED_LENS_PATHS`) requires.
 
 ```json
 [
-  {"id": "implementation", "owner": "T1", "evidence": ["ev-lens-implementation"], "acceptanceEvidence": ["ev-ac1-ok-line", "ev-ac2-failed-line"], "verificationEvidence": ["proof-ac1-ok-line", "proof-ac2-failed-line"], "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"},
-  {"id": "wiring/usability", "owner": "T4", "evidence": ["ev-lens-wiring"], "acceptanceEvidence": ["ev-path-interactive-control", "ev-path-browser-e2e"], "verificationEvidence": ["proof-path-interactive-control", "proof-path-browser-e2e"], "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"},
-  {"id": "quality", "owner": "T2", "evidence": ["ev-lens-quality"], "acceptanceEvidence": ["ev-ac3-scripts-ci"], "verificationEvidence": ["proof-ac3-scripts-ci"], "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"},
-  {"id": "reliability", "owner": "T3", "evidence": ["ev-lens-reliability"], "acceptanceEvidence": ["ev-path-data-error", "ev-path-recovery"], "verificationEvidence": ["proof-path-data-error", "proof-path-recovery"], "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"}
+  {"id": "implementation", "owner": "T1", "evidence": ["ev-lens-implementation"], "acceptanceEvidence": ["ev-ac1-ok-line", "ev-ac2-failed-line"], "verificationEvidence": ["proof-ac1-ok-line", "proof-ac2-failed-line"]},
+  {"id": "wiring/usability", "owner": "T4", "evidence": ["ev-lens-wiring"], "acceptanceEvidence": ["ev-path-interactive-control", "ev-path-browser-e2e"], "verificationEvidence": ["proof-path-interactive-control", "proof-path-browser-e2e"]},
+  {"id": "quality", "owner": "T2", "evidence": ["ev-lens-quality"], "acceptanceEvidence": ["ev-ac3-scripts-ci"], "verificationEvidence": ["proof-ac3-scripts-ci"]},
+  {"id": "reliability", "owner": "T3", "evidence": ["ev-lens-reliability"], "acceptanceEvidence": ["ev-path-data-error", "ev-path-recovery"], "verificationEvidence": ["proof-path-data-error", "proof-path-recovery"]}
 ]
 ```
 
