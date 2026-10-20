@@ -19,7 +19,7 @@ test("structural rules cover the whole touched file and line rules only the chan
 
 test("a changed file Git quotes in the diff still gets its scanner findings", () => {
   const { payload } = review([], { scan });
-  assert.match(payload.body, /`docs\/ü\.md:1`\n\*\*MINOR\*\* quality-guard structural findings \(1\)/);
+  assert.match(payload.body, /`docs\/\u00fc\.md:1`\n\*\*MINOR\*\* quality-guard structural findings \(1\)/);
 });
 
 test("a scanner group whose findings are all low is MINOR", () => {
