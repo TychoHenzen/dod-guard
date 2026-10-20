@@ -12,7 +12,7 @@ Review the files a PR changes, adding what the scanner cannot judge: correctness
 
 - Read `standards/working-defaults.md` and `standards/github-request-discipline.md`. Stricter rules here win. Resolve the repository per "Resolve the repository and Project" in the second one.
 - Pass every script flag as its own native argument, per the [command-composition contract](../../docs/command-composition.md).
-- Keep scratch files outside the repository. Delete them after posting.
+- Create one empty scratch directory outside the repository (under the session scratchpad, else the OS temp directory) and save every file this review writes in it: reviews, slots, scan, violations, plan, results, merge, payload, comments. Dispatched read-only agents create no file, so the main thread writes each of these from their returned text. After posting, delete only the files this review wrote in that directory and then the directory, and never delete a path outside it or a file the review did not write. Leave any other file in place and name it in the report.
 - `<skill-dir>` is `${CLAUDE_PLUGIN_ROOT}/skills/review-pr` in Claude Code and this file's directory in Codex.
 - "Stop" means: post nothing, name the cause, and report to the dispatcher, which does not rerun the review stage.
 
