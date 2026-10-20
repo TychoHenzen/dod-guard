@@ -35,6 +35,12 @@ function requireText(value, name) {
   return value;
 }
 
+function requireProjectNumber(projectNumber) {
+  if (projectNumber === undefined || projectNumber === null || String(projectNumber).length === 0) {
+    throw new Error("projectNumber must be a non-empty value.");
+  }
+}
+
 function parseJson(result, operation) {
   if (result?.status !== 0) {
     throw new Error(`${operation} did not complete successfully.`);
@@ -137,6 +143,22 @@ function resolveStatusOption(statusField, statusOptionId, expectedStatus) {
     throw new Error(`Status option ${statusOptionId} must map to ${expectedStatus}.`);
   }
   return option;
+}
+
+// Read-only: stages list the Status options here so none writes its own reader.
+function listStatusOptions({ owner, projectNumber, statusFieldId, commandRunner = runGh }) {
+  requireText(owner, "owner");
+  requireProjectNumber(projectNumber);
+  requireText(statusFieldId, "statusFieldId");
+  const fields = parseArrayResponse(commandRunner(buildProjectFieldsCommand(owner, projectNumber)), "Project fields");
+  const statusField = resolveStatusField(fields, statusFieldId);
+  return statusField.options.map((option) => {
+    const name = nameOrNull(option);
+    if (name === null) {
+      throw new Error(`Status option ${String(option?.id ?? "")} has no readable name.`);
+    }
+    return { id: String(option.id), name };
+  });
 }
 
 function findProjectItem(items, itemId) {
@@ -351,9 +373,7 @@ function writeProjectStatuses({
   sleep = blockingSleep,
 }) {
   requireText(owner, "owner");
-  if (projectNumber === undefined || projectNumber === null || String(projectNumber).length === 0) {
-    throw new Error("projectNumber must be a non-empty value.");
-  }
+  requireProjectNumber(projectNumber);
   requireText(statusFieldId, "statusFieldId");
   requireText(statusOptionId, "statusOptionId");
   requireText(expectedStatus, "expectedStatus");
@@ -454,7 +474,44 @@ function usage() {
     "Usage: node project-status.mjs <owner> <project-number> <status-field-node-id> <status-option-id> " +
       "<expected-status> <item-id>...",
     "  <item-id> is a Project item's numeric REST id or its PVTI_ global node id.",
+    "       node project-status.mjs --list-options <owner> <project-number> <status-field-id>",
+    "  --list-options prints each Status option as JSON {id, name} and writes nothing.",
   ].join("\n");
+}
+
+function printUsageFailure() {
+  process.stderr.write(`${usage()}\n`);
+  process.exitCode = 2;
+}
+
+function printResult(produce) {
+  try {
+    process.stdout.write(`${JSON.stringify(produce(), null, 2)}\n`);
+  } catch (error) {
+    process.stderr.write(`project-status failed: ${error.message}\n`);
+    process.exitCode = 1;
+  }
+}
+
+function runCli(args) {
+  if (args[0] === "--list-options") {
+    const [owner, projectNumber, statusFieldId] = args.slice(1);
+    if ([owner, projectNumber, statusFieldId].some((argument) => !argument)) {
+      printUsageFailure();
+      return;
+    }
+    printResult(() => listStatusOptions({ owner, projectNumber, statusFieldId }));
+    return;
+  }
+  const [owner, projectNumber, statusFieldId, statusOptionId, expectedStatus, ...itemIds] = args;
+  const requiredArguments = [owner, projectNumber, statusFieldId, statusOptionId, expectedStatus];
+  if (requiredArguments.some((argument) => !argument) || itemIds.length === 0) {
+    printUsageFailure();
+    return;
+  }
+  printResult(() =>
+    writeProjectStatuses({ owner, projectNumber, statusFieldId, statusOptionId, expectedStatus, itemIds }),
+  );
 }
 
 let entrypoint = "";
@@ -463,37 +520,13 @@ if (process.argv[1]) {
 }
 const modulePath = resolve(fileURLToPath(import.meta.url));
 if (entrypoint === modulePath) {
-  const [owner, projectNumber, statusFieldId, statusOptionId, expectedStatus, ...itemIds] = process.argv.slice(2);
-  const requiredArguments = [owner, projectNumber, statusFieldId, statusOptionId, expectedStatus];
-  if (requiredArguments.some((argument) => !argument) || itemIds.length === 0) {
-    process.stderr.write(`${usage()}\n`);
-    process.exitCode = 2;
-  } else {
-    try {
-      process.stdout.write(
-        `${JSON.stringify(
-          writeProjectStatuses({
-            owner,
-            projectNumber,
-            statusFieldId,
-            statusOptionId,
-            expectedStatus,
-            itemIds,
-          }),
-          null,
-          2,
-        )}\n`,
-      );
-    } catch (error) {
-      process.stderr.write(`project-status failed: ${error.message}\n`);
-      process.exitCode = 1;
-    }
-  }
+  runCli(process.argv.slice(2));
 }
 
 export {
   buildProjectItemEditCommand,
   buildProjectItemReadCommand,
+  listStatusOptions,
   PROJECT_ITEM_READ_ATTEMPTS,
   PROJECT_ITEM_RETRY_DELAY_MS,
   writeProjectStatuses,

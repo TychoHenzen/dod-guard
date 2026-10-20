@@ -12,6 +12,7 @@ import { runGh } from "./lib/gh-runner.mjs";
 import {
   buildProjectItemEditCommand,
   buildProjectItemReadCommand,
+  listStatusOptions,
   PROJECT_ITEM_READ_ATTEMPTS,
   PROJECT_ITEM_RETRY_DELAY_MS,
   writeProjectStatuses,
@@ -20,10 +21,13 @@ import {
 
 const PROJECT_ID = "PVT_projectnode";
 const STATUS_FIELD_NODE_ID = "PVTSSF_status-field";
-const STATUS_FIELD_ID = 407767889;
+const STATUS_FIELD_ID = 407_767_889;
 const STATUS_OPTION_ID = "98236657";
 const ITEM_IDS = ["PVTI_child-one", "PVTI_child-two", "PVTI_parent"];
-const ITEM_NUMERIC_IDS = new Map(ITEM_IDS.map((itemId, index) => [itemId, 256202820 + index]));
+const SINGLE_SELECT_PATTERN = /single-select/;
+const NO_READABLE_NAME_PATTERN = /no readable name/;
+const LIST_OPTIONS_FLAG_PATTERN = /--list-options/;
+const ITEM_NUMERIC_IDS = new Map(ITEM_IDS.map((itemId, index) => [itemId, 256_202_820 + index]));
 const NUMERIC_PROJECT_ID_ERROR = /global ProjectV2 node ID/;
 const STATUS_FIELD_ERROR = /exactly one REST field/;
 const READBACK_ERROR = /PVTI_child-two.*read back Todo/;
@@ -450,7 +454,7 @@ test("stops when a Project item readback changes the resolved REST item ID", () 
     const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
     if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items?") && itemReadCount++ > 0) {
       const [page] = JSON.parse(result.stdout);
-      page[0].id += 1_000;
+      page[0].id += 1000;
       return { ...result, stdout: JSON.stringify([page]) };
     }
     return result;
@@ -946,5 +950,70 @@ test("AC-07 CLI with no item IDs prints both ID forms and exits before any gh ca
   assert.equal(result.status, USAGE_EXIT_CODE);
   assert.match(result.stderr, CLI_NUMERIC_ID_USAGE);
   assert.match(result.stderr, CLI_NODE_ID_USAGE);
+  assert.doesNotMatch(result.stderr, CLI_FAILURE_PREFIX);
+});
+
+test("listStatusOptions names every Status option, including a {raw, html} name, and writes nothing", () => {
+  const fields = projectFields();
+  fields[0].options[1] = { id: "f75ad846", name: { raw: "Todo", html: "Todo" } };
+  const { calls, runner } = createRunner({ fields });
+
+  const options = listStatusOptions({
+    owner: "TychoHenzen",
+    projectNumber: 2,
+    statusFieldId: STATUS_FIELD_NODE_ID,
+    commandRunner: runner,
+  });
+
+  assert.deepEqual(options, [
+    { id: "30a230f4", name: "Backlog" },
+    { id: "f75ad846", name: "Todo" },
+    { id: "47fc9ee4", name: "In Progress" },
+    { id: STATUS_OPTION_ID, name: "Done" },
+  ]);
+  assert.equal(
+    calls.some((args) => args.includes("PATCH")),
+    false,
+  );
+  assert.equal(listReads(calls).length, 0);
+});
+
+test("listStatusOptions stops on a missing, non-single-select, or unnamed Status field", () => {
+  const options = { owner: "TychoHenzen", projectNumber: 2, statusFieldId: String(STATUS_FIELD_ID) };
+  const missing = createRunner({ fields: [] });
+  assert.throws(() => listStatusOptions({ ...options, commandRunner: missing.runner }), STATUS_FIELD_ERROR);
+
+  const text = projectFields();
+  text[0].data_type = "text";
+  assert.throws(
+    () => listStatusOptions({ ...options, commandRunner: createRunner({ fields: text }).runner }),
+    SINGLE_SELECT_PATTERN,
+  );
+
+  const unnamed = projectFields();
+  unnamed[0].options[0] = { id: "30a230f4", name: {} };
+  assert.throws(
+    () => listStatusOptions({ ...options, commandRunner: createRunner({ fields: unnamed }).runner }),
+    NO_READABLE_NAME_PATTERN,
+  );
+});
+
+test("--list-options with an argument missing exits 2 with usage and makes no gh call", () => {
+  // Built from scratch without PATH, so a gh call would fail with ENOENT and exit 1 instead of 2.
+  // biome-ignore lint/style/noProcessEnv: only SystemRoot is copied; the host environment is never spread.
+  const systemRoot = process.env.SystemRoot;
+  const env = {};
+  if (systemRoot !== undefined) {
+    env.SystemRoot = systemRoot;
+  }
+
+  const result = spawnSync(process.execPath, [SCRIPT_PATH, "--list-options", "TychoHenzen", "2"], {
+    encoding: "utf8",
+    env,
+    windowsHide: true,
+  });
+
+  assert.equal(result.status, USAGE_EXIT_CODE);
+  assert.match(result.stderr, LIST_OPTIONS_FLAG_PATTERN);
   assert.doesNotMatch(result.stderr, CLI_FAILURE_PREFIX);
 });

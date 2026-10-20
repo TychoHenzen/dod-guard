@@ -123,6 +123,9 @@ from an earlier run.
 - Pass each item's numeric REST item `id` (from the add response or the
   membership read), the Status-field id from that snapshot, and the scalar
   single-select option id for the requested value.
+- To read the Status option names and ids, run
+  `node <plugin-root>/skills/complete-pr/scripts/project-status.mjs --list-options <owner> <project-number> <status-field-id>`.
+  Write no ad hoc reader: the runner already flattens every REST name spelling.
 - `project-status.mjs` reads a numeric item id through the single-item endpoint
   `users/{owner}/projectsV2/{number}/items/{id}`, within its bounded attempts,
   because that endpoint sees a newly added item before the items list does. A
