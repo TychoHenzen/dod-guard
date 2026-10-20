@@ -1,25 +1,23 @@
 // Waits until the pull request API, the source branch, and the temporary pull refs name one head.
 import { CompletionError, stop } from "./completion-error.mjs";
-import { requireDefaultBase, validateInitialState } from "./merge-gates.mjs";
+import { requireOwnRepositoryHead, validateInitialState } from "./merge-gates.mjs";
+
+function requireSourceHeadUnmoved(branchName, trustedHead, observedSha) {
+  if (trustedHead && observedSha !== trustedHead) {
+    stop("head_branch_changed", `Source branch ${branchName} moved from ${trustedHead} to ${observedSha}.`);
+  }
+}
 
 function requireConvergencePullRequest(repository, expectedPullRequest, pullRequest, allowMerged) {
   if (pullRequest.headBranch !== expectedPullRequest.headBranch) {
+    const observedBranch = pullRequest.headBranch ?? "<missing>";
     stop(
       "head_branch_changed",
-      `Pull request head branch changed from ${expectedPullRequest.headBranch} to ${pullRequest.headBranch ?? "<missing>"}.`,
+      `Pull request head branch changed from ${expectedPullRequest.headBranch} to ${observedBranch}.`,
     );
   }
   if (allowMerged && pullRequest.state === "MERGED") {
-    if (pullRequest.isCrossRepository || pullRequest.headRepository !== repository.nameWithOwner) {
-      stop("cross_repository_head", "The pull request head must belong to the current repository.");
-    }
-    requireDefaultBase(pullRequest, repository.defaultBranch);
-    if (pullRequest.headBranch === repository.defaultBranch) {
-      stop("default_branch_head", "The pull request head cannot be the default branch.");
-    }
-    if (!repository.canPush) {
-      stop("missing_permission", "The active GitHub user lacks repository push permission.");
-    }
+    requireOwnRepositoryHead(repository, pullRequest);
     return;
   }
   validateInitialState(repository, pullRequest);
@@ -38,11 +36,13 @@ function refSha(refs, kind) {
 
 function convergenceProviderError(error, expectedHead, observed, operation) {
   const cause = error instanceof Error ? error.message : String(error);
+  const { branchSha, pullHeadSha, pullNumber, pullRequestSha } = observed;
   return new CompletionError(
     "head_convergence_provider_error",
-    `Failed to read ${operation} while converging pull request #${observed.pullNumber} on expected synchronized SHA ${expectedHead}: ${cause}. ` +
-      `Observed source branch ${observed.branchSha}, PR API head ${observed.pullRequestSha}, ` +
-      `and refs/pull/${observed.pullNumber}/head ${observed.pullHeadSha}.`,
+    `Failed to read ${operation} while converging pull request #${pullNumber} ` +
+      `on expected synchronized SHA ${expectedHead}: ${cause}. ` +
+      `Observed source branch ${branchSha}, PR API head ${pullRequestSha}, ` +
+      `and refs/pull/${pullNumber}/head ${pullHeadSha}.`,
     { cause: error },
   );
 }
@@ -69,49 +69,37 @@ function requireMergeRefParent(client, mergeRef, expectedHead, observed) {
   return true;
 }
 
-async function readHeadConvergenceAttempt(
-  client,
-  { repository, initialPullRequest, attempt, trustedHead, allowMerged, isFinalAttempt },
-) {
-  const branchRef = await sourceBranchRef(client, initialPullRequest.headBranch);
-  if (!branchRef && !allowMerged) {
+async function readSourceBranch(client, { allowMerged, initialPullRequest, trustedHead }) {
+  const { headBranch, number } = initialPullRequest;
+  const branchRef = await sourceBranchRef(client, headBranch);
+  if (!(branchRef || allowMerged)) {
     stop(
       "head_branch_not_found",
-      `Source branch ${initialPullRequest.headBranch} no longer exists while converging pull request #${initialPullRequest.number}.`,
+      `Source branch ${headBranch} no longer exists while converging pull request #${number}.`,
     );
   }
-  if (trustedHead && branchRef && branchRef.sha !== trustedHead) {
-    stop(
-      "head_branch_changed",
-      `Source branch ${initialPullRequest.headBranch} moved from ${trustedHead} to ${branchRef.sha}.`,
-    );
+  if (branchRef) {
+    requireSourceHeadUnmoved(headBranch, trustedHead, branchRef.sha);
   }
-  let pullRequest = initialPullRequest;
-  if (attempt !== 0) {
-    pullRequest = await client.getPullRequest(initialPullRequest.number);
+  return branchRef;
+}
+
+function readAttemptPullRequest(client, initialPullRequest, attempt) {
+  if (attempt === 0) {
+    return initialPullRequest;
   }
-  requireConvergencePullRequest(repository, initialPullRequest, pullRequest, allowMerged);
-  const sourceHead = branchRef?.sha ?? pullRequest.headSha;
-  if (trustedHead && sourceHead !== trustedHead) {
-    stop(
-      "head_branch_changed",
-      `Source branch ${initialPullRequest.headBranch} moved from ${trustedHead} to ${sourceHead}.`,
-    );
-  }
-  const expectedHead = trustedHead ?? sourceHead;
-  const observed = {
-    branchSha: branchRef?.sha ?? "<absent>",
-    pullNumber: initialPullRequest.number,
-    pullRequestSha: pullRequest.headSha ?? "<missing>",
-    pullHeadSha: "<unread>",
-  };
-  let refs;
+  return client.getPullRequest(initialPullRequest.number);
+}
+
+async function readTemporaryRefs(client, expectedHead, observed) {
   try {
-    refs = await client.getPullRequestRefs(initialPullRequest.number);
+    return await client.getPullRequestRefs(observed.pullNumber);
   } catch (error) {
     throw convergenceProviderError(error, expectedHead, observed, "temporary pull-request refs");
   }
-  observed.pullHeadSha = refSha(refs, "head");
+}
+
+function judgeConvergence(client, { expectedHead, isFinalAttempt, observed, pullRequest, refs }) {
   const mergeRef = refs.find((ref) => ref.kind === "merge");
   const identitiesConverged = pullRequest.headSha === expectedHead && observed.pullHeadSha === expectedHead;
   const mergeParentConverged = requireMergeRefParent(client, mergeRef, expectedHead, observed);
@@ -121,12 +109,37 @@ async function readHeadConvergenceAttempt(
       `refs/pull/${observed.pullNumber}/merge at ${mergeRef.sha} does not identify ${expectedHead} as a source parent.`,
     );
   }
-  return {
-    converged: identitiesConverged && mergeParentConverged,
-    observed,
-    pullRequest,
-    sourceHead,
+  return identitiesConverged && mergeParentConverged;
+}
+
+async function readHeadConvergenceAttempt(client, input) {
+  const { allowMerged, attempt, initialPullRequest, isFinalAttempt, repository, trustedHead } = input;
+  const branchRef = await readSourceBranch(client, { allowMerged, initialPullRequest, trustedHead });
+  const pullRequest = await readAttemptPullRequest(client, initialPullRequest, attempt);
+  requireConvergencePullRequest(repository, initialPullRequest, pullRequest, allowMerged);
+  const sourceHead = branchRef?.sha ?? pullRequest.headSha;
+  requireSourceHeadUnmoved(initialPullRequest.headBranch, trustedHead, sourceHead);
+  const expectedHead = trustedHead ?? sourceHead;
+  const observed = {
+    branchSha: branchRef?.sha ?? "<absent>",
+    pullNumber: initialPullRequest.number,
+    pullRequestSha: pullRequest.headSha ?? "<missing>",
+    pullHeadSha: "<unread>",
   };
+  const refs = await readTemporaryRefs(client, expectedHead, observed);
+  observed.pullHeadSha = refSha(refs, "head");
+  const converged = judgeConvergence(client, { expectedHead, isFinalAttempt, observed, pullRequest, refs });
+  return { converged, observed, pullRequest, sourceHead };
+}
+
+function stopOnConvergenceTimeout(initialPullRequest, trustedHead, lastObserved) {
+  const { branchSha = "<missing>", pullHeadSha = "<missing>", pullRequestSha = "<missing>" } = lastObserved ?? {};
+  stop(
+    "head_convergence_timeout",
+    `Pull request #${initialPullRequest.number} did not converge on ${trustedHead} after the bounded wait; ` +
+      `observed source branch ${branchSha}, PR API head ${pullRequestSha}, ` +
+      `and refs/pull/${initialPullRequest.number}/head ${pullHeadSha}.`,
+  );
 }
 
 async function waitForHeadConvergence(
@@ -148,12 +161,6 @@ async function waitForHeadConvergence(
     if (!trustedHead) {
       trustedHead = result.sourceHead;
     }
-    if (result.sourceHead !== trustedHead) {
-      stop(
-        "head_branch_changed",
-        `Source branch ${initialPullRequest.headBranch} moved from ${trustedHead} to ${result.sourceHead}.`,
-      );
-    }
     lastObserved = result.observed;
     if (result.converged) {
       return result.pullRequest;
@@ -163,12 +170,7 @@ async function waitForHeadConvergence(
     }
   }
 
-  stop(
-    "head_convergence_timeout",
-    `Pull request #${initialPullRequest.number} did not converge on ${trustedHead} after the bounded wait; ` +
-      `observed source branch ${lastObserved?.branchSha ?? "<missing>"}, PR API head ${lastObserved?.pullRequestSha ?? "<missing>"}, ` +
-      `and refs/pull/${initialPullRequest.number}/head ${lastObserved?.pullHeadSha ?? "<missing>"}.`,
-  );
+  stopOnConvergenceTimeout(initialPullRequest, trustedHead, lastObserved);
 }
 
 export { waitForHeadConvergence };

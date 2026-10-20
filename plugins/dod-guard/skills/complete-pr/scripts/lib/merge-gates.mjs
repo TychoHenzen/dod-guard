@@ -33,10 +33,14 @@ function inspectRequiredChecks(checks) {
   return checks.every((check) => PASSING_CHECK_BUCKETS.has(check.bucket));
 }
 
-function validateInitialState(repository, pullRequest) {
-  if (pullRequest.state !== "OPEN") {
-    stop("not_open_pull_request", "The selected pull request must be open.");
+function requireDefaultBase(pullRequest, defaultBranch) {
+  if (pullRequest.baseBranch !== defaultBranch) {
+    stop("wrong_base_branch", `The pull request must target ${defaultBranch}.`);
   }
+}
+
+// The gates that every entry point applies after its own state check, in one fixed order.
+function requireOwnRepositoryHead(repository, pullRequest) {
   if (pullRequest.isCrossRepository || pullRequest.headRepository !== repository.nameWithOwner) {
     stop("cross_repository_head", "The pull request head must belong to the current repository.");
   }
@@ -49,10 +53,18 @@ function validateInitialState(repository, pullRequest) {
   }
 }
 
-function requireDefaultBase(pullRequest, defaultBranch) {
-  if (pullRequest.baseBranch !== defaultBranch) {
-    stop("wrong_base_branch", `The pull request must target ${defaultBranch}.`);
+function validateInitialState(repository, pullRequest) {
+  if (pullRequest.state !== "OPEN") {
+    stop("not_open_pull_request", "The selected pull request must be open.");
   }
+  requireOwnRepositoryHead(repository, pullRequest);
+}
+
+async function readTrustedPullRequest(client, { defaultBranch, pullNumber, trustedHead }) {
+  const pullRequest = await client.getPullRequest(pullNumber);
+  requireTrustedHead(pullRequest, trustedHead);
+  requireDefaultBase(pullRequest, defaultBranch);
+  return pullRequest;
 }
 
 // Stop before mutating a pull request that branch protection will refuse to merge while review threads are open.
@@ -73,8 +85,9 @@ async function requireNoUnresolvedThreads(client, pullNumber) {
 
 export {
   inspectRequiredChecks,
+  readTrustedPullRequest,
   requireDefaultBase,
   requireNoUnresolvedThreads,
-  requireTrustedHead,
+  requireOwnRepositoryHead,
   validateInitialState,
 };

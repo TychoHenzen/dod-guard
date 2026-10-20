@@ -42,4 +42,20 @@ async function waitForGuardedUpdate(client, update) {
   stop("base_update_timeout", "GitHub accepted the base update but did not publish its new head in time.");
 }
 
-export { readBaseBranchTip, waitForGuardedUpdate };
+// Returns the head the merge loop must trust after the update.
+async function updateBehindBranch(client, update) {
+  const { defaultBranch, options, pullNumber, repository, trustedHead } = update;
+  const baseHead = await readBaseBranchTip(client, defaultBranch);
+  await client.updateBranch(pullNumber, trustedHead);
+  const updatedPullRequest = await waitForGuardedUpdate(client, {
+    baseHead,
+    defaultBranch,
+    options,
+    previousHead: trustedHead,
+    pullNumber,
+    repository,
+  });
+  return updatedPullRequest.headSha;
+}
+
+export { updateBehindBranch };
