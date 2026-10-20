@@ -75,6 +75,11 @@ test("escapeNonAscii leaves ASCII, tab, LF, and CRLF unchanged", () => {
   assert.equal(escapeNonAscii(text), text);
 });
 
+test("escapeNonAscii leaves ASCII control characters unchanged", () => {
+  const text = "a\u0001b\u001eb\u007fc";
+  assert.equal(escapeNonAscii(text), text);
+});
+
 test("bundlePackage writes ASCII-only output for a comment, a string, and an identifier", async () => {
   const dir = mkdtempSync(join(tmpdir(), "ascii-bundle-"));
   try {
@@ -103,4 +108,25 @@ test("bundlePackage writes ASCII-only output for a comment, a string, and an ide
 test("every tracked scripts/ci file is ASCII", () => {
   const rows = scanTracked(ROOT, "scripts/ci");
   assert.deepEqual(rows, [], `non-ASCII in scripts/ci:\n${rows.join("\n")}`);
+});
+
+test("a tracked package bundle with an em-dash is reported with its path, line, and code point", () => {
+  const repo = mkdtempSync(join(tmpdir(), "ascii-bundle-tracked-"));
+  try {
+    mkdirSync(join(repo, "packages", "demo", "dist"), { recursive: true });
+    writeFileSync(
+      join(repo, "packages", "demo", "dist", "bundle.js"),
+      `// ok\n// a ${String.fromCodePoint(EM_DASH)} b\n`,
+    );
+    execFileSync("git", ["init", "-q"], { cwd: repo, stdio: "pipe" });
+    execFileSync("git", ["add", "."], { cwd: repo, stdio: "pipe" });
+    assert.deepEqual(scanTracked(repo, "packages/*/dist/bundle.js"), ["packages/demo/dist/bundle.js:2 U+2014"]);
+  } finally {
+    rmSync(repo, { recursive: true, force: true, maxRetries: 3 });
+  }
+});
+
+test("every tracked package bundle is ASCII", () => {
+  const rows = scanTracked(ROOT, "packages/*/dist/bundle.js");
+  assert.deepEqual(rows, [], `non-ASCII in package bundles:\n${rows.join("\n")}`);
 });

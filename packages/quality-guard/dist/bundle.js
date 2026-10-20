@@ -16243,7 +16243,7 @@ var BaseMetadataSchema = object2({
   /** Intended for programmatic or logical use, but used as a display name in past specs or fallback */
   name: string2(),
   /**
-   * Intended for UI and end-user contexts — optimized to be human-readable and easily understood,
+   * Intended for UI and end-user contexts \u2014 optimized to be human-readable and easily understood,
    * even by those unfamiliar with domain-specific terminology.
    *
    * If not provided, the name should be used for display (except for Tool,

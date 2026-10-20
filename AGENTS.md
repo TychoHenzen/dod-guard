@@ -34,6 +34,7 @@ POSIX shell follow [`docs/command-composition.md`](docs/command-composition.md).
 
 Tracked bundles live at `packages/*/dist/bundle.js`. Regenerate and commit them
 on the feature branch. CI reproduces generated files and fails on drift.
+The bundle build escapes every non-ASCII character, and `scripts/ci/ascii-only.test.mjs` fails on a tracked bundle that holds one.
 
 Declared generated paths and their generators. Never hand-merge these files;
 regenerate them:
