@@ -1,21 +1,18 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import process from "node:process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { localDate } from "../../../lib/friction-log.mjs";
 import { renderCompletionRecord } from "../../complete-pr/scripts/lib/closure-records.mjs";
+import { withSnapshotFile } from "./snapshot-file.test-support.mjs";
 
 const REPOSITORY = "TychoHenzen/dod-guard";
 const FOREIGN_REPOSITORY = "other/repo";
+const PARENT_517 = { repository: REPOSITORY, number: 517 };
 const SCRIPT = fileURLToPath(new URL("./select-next.mjs", import.meta.url));
-const CALLBACK_FAILED = /callback failed/;
-const BOOM_STDERR = /boom/;
 
-function item(number, status, parentIssue = null, linked = []) {
+function item(number, status, { parentIssue = null, linked = [] } = {}) {
   return {
     id: String(number),
     content: { number, repository: REPOSITORY },
@@ -45,7 +42,7 @@ function snapshot() {
     repository: REPOSITORY,
     defaultBranch: "master",
     today: "2026-10-08",
-    items: [item(31, "Backlog"), item(517, "Todo"), item(518, "Todo", { repository: REPOSITORY, number: 517 })],
+    items: [item(31, "Backlog"), item(517, "Todo"), item(518, "Todo", { parentIssue: PARENT_517 })],
     issues: [
       issue(31),
       issue(517, { children: [{ repository: REPOSITORY, number: 518 }] }),
@@ -55,26 +52,10 @@ function snapshot() {
   };
 }
 
-// Writes the snapshot into a private directory, hands the file path to one command, and removes the
-// directory whether the command, its assertion, or the caller's code throws. The assertion message still
-// carries the command's stderr, so a failure keeps its diagnostic after the directory is gone.
-async function withSnapshotFile(prefix, input, run) {
-  const directory = await mkdtemp(join(tmpdir(), prefix));
-  try {
-    const file = join(directory, "snapshot.json");
-    await writeFile(file, JSON.stringify(input));
-    return await run(file, directory);
-  } finally {
-    await rm(directory, { recursive: true, force: true });
-  }
-}
-
 // Runs the command on one snapshot and returns its raw stdout, so a test can compare bytes.
 function stdoutOf(input) {
   return withSnapshotFile("select-next-", input, (file) => {
-    const run = spawnSync(process.execPath, [SCRIPT, `--snapshot=${file}`], {
-      encoding: "utf8",
-    });
+    const run = spawnSync(process.execPath, [SCRIPT, `--snapshot=${file}`], { encoding: "utf8" });
     assert.equal(run.status, 0, run.stderr);
     return run.stdout;
   });
@@ -145,7 +126,7 @@ test("holds today's friction log while it collects entries", async () => {
 test("excludes a merged delivery that carries its completion evidence", async () => {
   const input = snapshot();
   const pull = { number: 540, repository: REPOSITORY };
-  input.items.push(item(444, "Done", null, [pull]));
+  input.items.push(item(444, "Done", { linked: [pull] }));
   input.issues.push(issue(444, { state: "closed", activeCheckpoint: false }));
   input.pullRequests.push({
     ...pull,
@@ -166,43 +147,47 @@ test("excludes a merged delivery that carries its completion evidence", async ()
 const CLOSURE = fileURLToPath(new URL("../../complete-pr/scripts/closure.mjs", import.meta.url));
 const HEAD_831 = "e783f4269c5627f4ad10efdb97dfc12a9918da83";
 
+const MERGE_831 = "8f7b04b0c735453e1487ca1fd0b7a308ccb39fee";
+const PULL_836 = { number: 836, repository: REPOSITORY };
+
+function mergedPull836() {
+  return {
+    ...PULL_836,
+    state: "closed",
+    mergedAt: "2026-10-08T21:59:22Z",
+    head: { repository: REPOSITORY, ref: "codex/831-route-goal-sdlc-stages", sha: HEAD_831 },
+    base: { ref: "master", sha: "base-831" },
+    mergeCommit: { oid: MERGE_831 },
+    requiredChecks: [{ name: "build-test", bucket: "pass" }],
+  };
+}
+
 // #831 (PR #836) with child #832, as /complete-pr leaves it: both closed and
 // Done, each carrying the completion record, and the snapshot itself carrying
 // no activeCheckpoint or trustedHeadSha.
 function recordedDelivery(pendingRows = []) {
   const record = renderCompletionRecord({
     pullRequest: 836,
-    mergeCommit: "8f7b04b0c735453e1487ca1fd0b7a308ccb39fee",
+    mergeCommit: MERGE_831,
     trustedHeadSha: HEAD_831,
     requiredChecks: "pass",
     pendingRows,
   });
-  const pull = { number: 836, repository: REPOSITORY };
+  const parent = { repository: REPOSITORY, number: 831 };
   const input = snapshot();
-  input.items.push(item(831, "Done", null, [pull]), item(832, "Done", { repository: REPOSITORY, number: 831 }, [pull]));
+  input.items.push(
+    item(831, "Done", { linked: [PULL_836] }),
+    item(832, "Done", { parentIssue: parent, linked: [PULL_836] }),
+  );
   input.issues.push(
     issue(831, {
       state: "closed",
-      repository: REPOSITORY,
       children: [{ repository: REPOSITORY, number: 832 }],
       comments: [{ id: 1, body: record }],
     }),
-    issue(832, {
-      state: "closed",
-      repository: REPOSITORY,
-      parent: { repository: REPOSITORY, number: 831 },
-      comments: [{ id: 2, body: record }],
-    }),
+    issue(832, { state: "closed", parent, comments: [{ id: 2, body: record }] }),
   );
-  input.pullRequests.push({
-    ...pull,
-    state: "closed",
-    mergedAt: "2026-10-08T21:59:22Z",
-    head: { repository: REPOSITORY, ref: "codex/831-route-goal-sdlc-stages", sha: HEAD_831 },
-    base: { ref: "master", sha: "base-831" },
-    mergeCommit: { oid: "8f7b04b0c735453e1487ca1fd0b7a308ccb39fee" },
-    requiredChecks: [{ name: "build-test", bucket: "pass" }],
-  });
+  input.pullRequests.push(mergedPull836());
   return input;
 }
 
@@ -258,7 +243,7 @@ test("AC-05: foreign Done items are left out of the parent and child Done counts
     today: "2026-10-08",
     items: [
       item(517, "Todo"),
-      item(518, "Done", { repository: REPOSITORY, number: 517 }),
+      item(518, "Done", { parentIssue: PARENT_517 }),
       foreignItem(600, "Done"),
       foreignItem(601, "Done", { repository: FOREIGN_REPOSITORY, number: 600 }),
     ],
@@ -324,7 +309,7 @@ test("AC-09: an item whose issue is missing from issues selects nothing and is n
 test("AC-09: a linked pull request missing from pullRequests selects nothing and is named in missingEvidence", async () => {
   const input = snapshot();
   const pull = { number: 540, repository: REPOSITORY };
-  input.items.push(item(444, "Done", null, [pull]));
+  input.items.push(item(444, "Done", { linked: [pull] }));
   input.issues.push(issue(444, { state: "closed", activeCheckpoint: false }));
   const result = await selectNext(input);
   assert.equal(result.selected, null);
@@ -342,40 +327,4 @@ test("the command rejects a missing snapshot flag", () => {
   const usage = spawnSync(process.execPath, [SCRIPT], { encoding: "utf8" });
   assert.equal(usage.status, 2);
   assert.match(usage.stderr, /usage: select-next\.mjs --snapshot=<file\.json>/);
-});
-
-test("the snapshot directory is removed after the command succeeds", async () => {
-  let kept;
-  await withSnapshotFile("select-next-", snapshot(), (file, directory) => {
-    kept = directory;
-    assert.ok(existsSync(file));
-  });
-  assert.equal(existsSync(kept), false);
-});
-
-test("the snapshot directory is removed after the callback throws", async () => {
-  let failed;
-  await assert.rejects(
-    withSnapshotFile("select-next-", snapshot(), (_file, directory) => {
-      failed = directory;
-      throw new Error("callback failed");
-    }),
-    CALLBACK_FAILED,
-  );
-  assert.equal(existsSync(failed), false);
-});
-
-test("a command that exits non-zero reports its stderr and still removes the directory", async () => {
-  let failed;
-  await assert.rejects(
-    withSnapshotFile("select-next-", snapshot(), (_file, directory) => {
-      failed = directory;
-      const run = spawnSync(process.execPath, ["-e", "process.stderr.write('boom'); process.exit(3)"], {
-        encoding: "utf8",
-      });
-      assert.equal(run.status, 0, run.stderr);
-    }),
-    BOOM_STDERR,
-  );
-  assert.equal(existsSync(failed), false);
 });
