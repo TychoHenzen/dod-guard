@@ -23,6 +23,7 @@ function put(root, relativePath, text) {
 
 // tracked: packages/real/a.json and a tracked file under dist/. ignored:
 // packages/ghost/ with malformed JSON. untracked and not ignored: plugins/fresh/c.md.
+// cached but deleted from disk: packages/real/gone.json, which must be dropped.
 function repository() {
   const root = mkdtempSync(join(tmpdir(), "content-checks-"));
   temps.push(root);
@@ -30,15 +31,17 @@ function repository() {
   put(root, ".gitignore", "packages/ghost/\n");
   put(root, "packages/real/a.json", "{}\n");
   put(root, "packages/real/dist/d.json", "{}\n");
+  put(root, "packages/real/gone.json", "{}\n");
   put(root, "packages/ghost/b.json", "{not json");
   put(root, "packages/ghost/notes.md", "# ghost\n");
   execFileSync("git", ["add", ".gitignore", "packages/real"], { cwd: root });
+  rmSync(join(root, "packages/real/gone.json"));
   put(root, "plugins/fresh/c.md", "# fresh\n");
   return root;
 }
 
 describe("content-checks: the checked file set", () => {
-  it("omits ignored files and dist directories and keeps untracked unignored files", () => {
+  it("omits ignored, deleted, and dist files and keeps untracked unignored files", () => {
     const root = repository();
     const violations = [];
     const files = listCheckedFiles(root, (file, message) => violations.push({ file, message }));

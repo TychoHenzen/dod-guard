@@ -168,7 +168,10 @@ from an earlier run.
   numeric REST `id`, not its `node_id`, as "ProjectV2 status writes" explains.
 - Never put `-q` or `--jq` on a write. A jq error after a request that succeeded
   looks like a failed write and invites a duplicate. Send a body with
-  `--input <file>` or `-F body=@<file>`, then read the resource back.
+  `--input <file>` or `-F body=@<file>`, then read the resource back. After posting
+  a comment, read the comments back and confirm exactly one carries the posted
+  heading before any retry. With zero, repost once and read again. With two or
+  more, keep the earliest, report the duplicates, and post nothing more.
 - Re-read only the mutated resource for safety. Do not rebuild the whole
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.

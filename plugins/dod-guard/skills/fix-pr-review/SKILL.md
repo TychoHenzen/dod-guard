@@ -56,7 +56,7 @@ Record exact evidence for each non-actionable finding, make no edit for it, and 
 
 Apply the smallest coherent batch. Add a user-path or edge-case test when the finding exposed missing proof. Follow repo instructions for touched files. Never weaken or delete a test to pass.
 
-Given a written fix plan per finding (file, edit, test, command, expected result), you may dispatch edits to `dod-guard:stage-cheap`. Save the plan unchanged outside the repo and use the Stage brief in `standards/model-routing.md`. The brief's first line is exactly `Follow the fix plan in <scratch file>.`. Verify its output. You commit and push, with the attribution line your brief gives, verbatim.
+Given a written fix plan per finding (file, edit, test, command, expected result), you may dispatch edits to `dod-guard:stage-cheap`. Save the plan unchanged outside the repo and use the Stage brief in `standards/model-routing.md`. The brief's first line is exactly `Follow the fix plan in <scratch file>.`. Verify its output. You commit and push, with the attribution line your brief gives, verbatim, and never your own model's trailer.
 
 Run focused tests, then the repo's full pre-PR gates, and map each fixed finding to fresh evidence. Inspect the full diff, stage only reviewed files, commit concisely only after fixes and checks pass, and push to the existing upstream.
 
@@ -89,7 +89,7 @@ Choose the head SHA to name in the reply body:
 
 Reply through the same endpoint and shape as a fix reply. The body states the classification, exact evidence (path and line, or command and output) and the head SHA. A thread mixing fixed and declined items gets one reply listing the fixed items with commit and verification command, and a reason per declined item. Then run the readback and resolve steps above under the same budget and stops.
 
-On rerun, read the thread first and never post a duplicate. A resolved thread is a no-op. If an open thread already holds a decline reply from this skill on its root comment, post no second reply and go to readback and resolve. The head stop does not apply to that reply: accept the head SHA its body names if it is an ancestor of the current head. If not, re-verify the evidence against the current head; resolve without a new reply if it holds, else stop with expected and observed SHAs.
+On rerun, read the thread first and never post a duplicate. A resolved thread is a no-op. If an open thread already holds a decline reply from this skill on its root comment, post no second reply and go to readback and resolve. The head stop does not apply to that reply: accept the head SHA its body names if `git merge-base --is-ancestor <named-sha> <current-head>` exits 0. A non-zero exit or a failed lookup (unknown object) counts as not an ancestor. If not, re-verify the evidence against the current head; resolve without a new reply if it holds, else stop with expected and observed SHAs.
 
 ## Report
 

@@ -114,10 +114,12 @@ function parseArrayResponse(result, operation) {
   return pages.flat();
 }
 
+function hasNodeOrRestId(entry, id) {
+  return String(entry?.node_id ?? "") === id || String(entry?.id ?? "") === id;
+}
+
 function resolveStatusField(fields, statusFieldId) {
-  const matches = fields.filter(
-    (field) => String(field?.node_id ?? "") === statusFieldId || String(field?.id ?? "") === statusFieldId,
-  );
+  const matches = fields.filter((field) => hasNodeOrRestId(field, statusFieldId));
   if (matches.length !== 1) {
     throw new Error(`Status field ${statusFieldId} must resolve to exactly one REST field.`);
   }
@@ -162,7 +164,7 @@ function listStatusOptions({ owner, projectNumber, statusFieldId, commandRunner 
 }
 
 function findProjectItem(items, itemId) {
-  const matches = items.filter((item) => String(item?.node_id ?? "") === itemId || String(item?.id ?? "") === itemId);
+  const matches = items.filter((item) => hasNodeOrRestId(item, itemId));
   if (matches.length !== 1) {
     return null;
   }
@@ -362,16 +364,7 @@ function readBackItem({ listRead, readSingle }, itemId, identity) {
   return findReadbackProjectItem([item], itemId, identity);
 }
 
-function writeProjectStatuses({
-  owner,
-  projectNumber,
-  statusFieldId,
-  statusOptionId,
-  expectedStatus,
-  itemIds,
-  commandRunner = runGh,
-  sleep = blockingSleep,
-}) {
+function requireWriteRequest({ owner, projectNumber, statusFieldId, statusOptionId, expectedStatus, itemIds }) {
   requireText(owner, "owner");
   requireProjectNumber(projectNumber);
   requireText(statusFieldId, "statusFieldId");
@@ -387,7 +380,41 @@ function writeProjectStatuses({
   if (new Set(itemIds).size !== itemIds.length) {
     throw new Error("itemIds must contain unique item IDs.");
   }
+}
 
+// Sends one edit and always reads the item back, because a failed edit can still have landed.
+function applyStatusMutation({ commandRunner, reads, editCommand, itemId, identity, statusFieldId, expectedStatus }) {
+  let mutationError;
+  try {
+    runStatusMutation(commandRunner, editCommand);
+  } catch (error) {
+    mutationError = error;
+  }
+  const item = reads.readBack(itemId, identity);
+  const status = readProjectItemStatus(item, itemId, statusFieldId);
+  if (status === expectedStatus) {
+    return status;
+  }
+  if (mutationError) {
+    throw new Error(
+      `Project item ${itemId} status mutation failed (${mutationError.message}); read back ${status}, expected ${expectedStatus}.`,
+      { cause: mutationError },
+    );
+  }
+  throw new Error(`Project item ${itemId} read back ${status}, expected ${expectedStatus}.`);
+}
+
+function writeProjectStatuses({
+  owner,
+  projectNumber,
+  statusFieldId,
+  statusOptionId,
+  expectedStatus,
+  itemIds,
+  commandRunner = runGh,
+  sleep = blockingSleep,
+}) {
+  requireWriteRequest({ owner, projectNumber, statusFieldId, statusOptionId, expectedStatus, itemIds });
   const project = parseJson(commandRunner(buildProjectViewCommand(owner, projectNumber)), "Project view");
   const projectId = resolveProjectNodeId(project);
   const statusField = resolveStatusField(
@@ -416,32 +443,21 @@ function writeProjectStatuses({
       continue;
     }
 
-    let mutationError;
-    try {
-      runStatusMutation(
-        commandRunner,
-        buildProjectItemEditCommand({
-          owner,
-          projectNumber,
-          itemId: identity.id,
-          statusFieldId: restStatusFieldId,
-          statusOptionId,
-        }),
-      );
-    } catch (error) {
-      mutationError = error;
-    }
-    const item = reads.readBack(itemId, identity);
-    const status = readProjectItemStatus(item, itemId, restStatusFieldId);
-    if (status !== expectedStatus) {
-      if (mutationError) {
-        throw new Error(
-          `Project item ${itemId} status mutation failed (${mutationError.message}); read back ${status}, expected ${expectedStatus}.`,
-          { cause: mutationError },
-        );
-      }
-      throw new Error(`Project item ${itemId} read back ${status}, expected ${expectedStatus}.`);
-    }
+    const status = applyStatusMutation({
+      commandRunner,
+      reads,
+      editCommand: buildProjectItemEditCommand({
+        owner,
+        projectNumber,
+        itemId: identity.id,
+        statusFieldId: restStatusFieldId,
+        statusOptionId,
+      }),
+      itemId,
+      identity,
+      statusFieldId: restStatusFieldId,
+      expectedStatus,
+    });
     mutations.push({ itemId, status });
   }
 

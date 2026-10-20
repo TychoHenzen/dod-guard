@@ -256,3 +256,15 @@ test("functional convergence rejects an independent task that has no linked chil
   assert.ok(independent[0].includes("task-1"), independent[0]);
   assert.ok(independent[0].includes("no linked child issue"), independent[0]);
 });
+
+test("functional convergence reports one remainder for an independent task with no mapping at all", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [{ id: "task-1", independent: true, evidence: "mapped one" }],
+    children: [],
+  });
+
+  const forTask = result.remainder.filter((entry) => entry.startsWith("task-1 "));
+  assert.equal(forTask.length, 1, JSON.stringify(forTask));
+  assert.ok(forTask[0].includes("needs a functional slice or parent-level convergence marker"), forTask[0]);
+});

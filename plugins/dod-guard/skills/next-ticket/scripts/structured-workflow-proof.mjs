@@ -104,27 +104,34 @@ function validateLensOwnershipRecord(record, reviewLenses, section, addRemainder
   }
 }
 
-function validateTaskMapping({ task, taskId, childIds, addRemainder }) {
-  const slice = normalizedIdentifier(task.child);
+// One problem per task: the first failing check decides, so one cause never yields two remainders.
+function taskMappingProblem({ task, slice, childIds }) {
   if (task.child !== undefined && !slice) {
-    addRemainder("Functional decomposition", `${taskId ?? "task"} needs a functional slice id`);
-  } else if (task.parentLevel !== undefined && task.parentLevel !== "convergence") {
-    addRemainder("Functional decomposition", `${taskId ?? "task"} uses an unknown parent-level marker`);
-  } else if (slice && task.parentLevel === "convergence") {
-    addRemainder(
-      "Functional decomposition",
-      `${taskId ?? "task"} cannot combine a functional slice with the parent-level convergence marker`,
-    );
-  } else if (slice && !childIds.has(slice)) {
-    addRemainder("Functional decomposition", `${taskId ?? "task"} references missing functional slice ${slice}`);
-  } else if (!slice && task.parentLevel !== "convergence") {
-    addRemainder(
-      "Functional decomposition",
-      `${taskId ?? "task"} needs a functional slice or parent-level convergence marker`,
-    );
+    return "needs a functional slice id";
+  }
+  if (task.parentLevel !== undefined && task.parentLevel !== "convergence") {
+    return "uses an unknown parent-level marker";
+  }
+  if (slice && task.parentLevel === "convergence") {
+    return "cannot combine a functional slice with the parent-level convergence marker";
+  }
+  if (slice && !childIds.has(slice)) {
+    return `references missing functional slice ${slice}`;
+  }
+  if (!slice && task.parentLevel !== "convergence") {
+    return "needs a functional slice or parent-level convergence marker";
   }
   if (task.independent === true && !slice) {
-    addRemainder("Functional decomposition", `${taskId ?? "task"} is marked independent but has no linked child issue`);
+    return "is marked independent but has no linked child issue";
+  }
+  return null;
+}
+
+function validateTaskMapping({ task, taskId, childIds, addRemainder }) {
+  const slice = normalizedIdentifier(task.child);
+  const problem = taskMappingProblem({ task, slice, childIds });
+  if (problem) {
+    addRemainder("Functional decomposition", `${taskId ?? "task"} ${problem}`);
   }
 }
 
