@@ -53,7 +53,7 @@ node "<skill-dir>/scripts/review-findings.mjs" scan --client=<claude|codex> --re
 node "<skill-dir>/scripts/review-findings.mjs" violations --scan=<scan.json> --diff=<unified0.diff> --out=<violations.json>
 ```
 
-Save the client's plugin list and check its exit status. `scan` finds the installed quality-guard from it. Stop if quality-guard is missing or the scan fails. Never guess a cache path. The scan covers the whole repository, since a changed-files-only scan would call every export dead. It skips the checkout's gitignored paths, so build output such as `dist-test/` is never judged.
+Save the client's plugin list and check its exit status. `scan` finds the installed quality-guard from it. Stop if quality-guard is missing or the scan fails. When the Claude list shows it installed but disabled, the scan error names `claude plugin enable <id>`: report that command and stop; never enable the plugin yourself. Never guess a cache path. The scan covers the whole repository, since a changed-files-only scan would call every export dead. It skips the checkout's gitignored paths, so build output such as `dist-test/` is never judged.
 
 Structural rules cover each whole changed file, including pre-PR content. Line-level rules (`line-length`, comment rules) cover only added lines. `violations` numbers the in-scope ones S1..Sn.
 
