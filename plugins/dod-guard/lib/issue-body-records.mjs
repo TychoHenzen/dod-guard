@@ -118,4 +118,30 @@ function parseIssueBodyRecords(body) {
   };
 }
 
-export { jsonBlock, parseIssueBodyRecords, subsections };
+// Returns the evaluateConvergence input for the post-push proof: the parsed
+// records with the observed acceptance matrix and the pushed head. The planned
+// matrix is dropped, since observed mode reads only the observed rows. A lens
+// entry holds no head of its own; the pushed head the caller passes is the
+// head every such lens is bound to. A lens that does store a different head
+// stays stale, so structured-workflow-proof.mjs reports it.
+function bindLensHead(lens, headSha) {
+  if (!lens || typeof lens !== "object") {
+    return lens;
+  }
+  if (lens.headSha !== undefined || lens.head !== undefined) {
+    return lens;
+  }
+  return { ...lens, headSha };
+}
+
+function postPushInput({ input, rows, headSha }) {
+  return {
+    ...input,
+    plannedAcceptanceMatrix: null,
+    acceptanceMatrix: rows,
+    headSha,
+    reviewLenses: input.reviewLenses.map((lens) => bindLensHead(lens, headSha)),
+  };
+}
+
+export { jsonBlock, parseIssueBodyRecords, postPushInput, subsections };

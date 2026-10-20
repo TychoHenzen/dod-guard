@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { jsonBlock, parseIssueBodyRecords, subsections } from "./issue-body-records.mjs";
+import { jsonBlock, parseIssueBodyRecords, postPushInput, subsections } from "./issue-body-records.mjs";
 
 const body904 = await readFile(new URL("./fixtures/issue-904-body.md", import.meta.url), "utf8");
 // The same #904 records, taken from the live body when the fixture was made.
@@ -116,4 +116,16 @@ test("a heading inside a fenced example stays in the record around it", () => {
     /```md\n### task-list\n```\n\nThe plan continues after the example\./,
   );
   assert.deepEqual(subsections("### a\n```md\n### a\n```\nafter\n", "a"), ["```md\n### a\n```\nafter\n"]);
+});
+
+test("binds a lens that stores no head to the given head and keeps a stored head", () => {
+  const input = { ...parseIssueBodyRecords(body904).input, reviewLenses: [{ id: "a" }, { id: "b", headSha: "old" }] };
+  const result = postPushInput({ input, rows: [], headSha: "H" });
+
+  assert.deepEqual(result.reviewLenses, [
+    { id: "a", headSha: "H" },
+    { id: "b", headSha: "old" },
+  ]);
+  assert.equal(result.headSha, "H");
+  assert.equal(result.plannedAcceptanceMatrix, null);
 });

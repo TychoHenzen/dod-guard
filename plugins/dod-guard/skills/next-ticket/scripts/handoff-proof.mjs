@@ -2,24 +2,34 @@
 // Runs the structured-handoff convergence proof over an issue body.
 //
 // Usage: node handoff-proof.mjs refinement --body-file=<path> [--children=<path>]
+//        node handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path>
+//          --head-sha=<sha> [--children=<path>]
 //
 // refinement reads the records of a body saved to a local file, plus the
 // linked functional-slice children from an optional JSON array file, and runs
 // the pre-push proof, including the lens-row rules on the planned acceptance
-// matrix. It makes no network or GitHub call; fetching the issue belongs to
-// the caller. It prints one JSON object {outcome, remainder} and exits:
+// matrix. post-push reads the same body and the acceptance matrix of the
+// implementation handoff saved to a local file, and checks every row and every
+// review lens against the pushed head SHA, so a row or lens bound to another
+// head is reported. Neither subcommand makes a network or GitHub call; fetching
+// the issue and the handoff belongs to the caller. Each prints one JSON object
+// {outcome, remainder} and exits:
 //   0  verified
 //   1  actionable remainder
-//   2  usage or parse error
+//   2  usage or parse error (a handoff with no readable matrix is a parse error)
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
-import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
+import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
+import { parseIssueBodyRecords, postPushInput } from "../../../lib/issue-body-records.mjs";
 import { evaluateConvergence } from "./structured-workflow-proof.mjs";
 
 const EXIT_CODES = Object.freeze({ verified: 0, "actionable remainder": 1 });
-const OPTIONS = new Set(["body-file", "children"]);
+const SUBCOMMANDS = Object.freeze({
+  refinement: new Set(["body-file", "children"]),
+  "post-push": new Set(["body-file", "children", "handoff-file", "head-sha"]),
+});
 
 class UsageError extends Error {}
 
@@ -33,19 +43,56 @@ function refinementProof({ body, children = [] }) {
   return { outcome: remainder.length === 0 ? "verified" : "actionable remainder", remainder };
 }
 
+// The post-push proof: the observed rows and the pushed head replace the
+// planned matrix, then the same convergence rules run at that head.
+function postPushProof({ body, handoff, headSha, children = [] }) {
+  const parsed = parseIssueBodyRecords(body);
+  if (parsed.errors.length > 0) {
+    return { outcome: "parse error", remainder: parsed.errors };
+  }
+  const matrix = readHandoffMatrix(handoff);
+  if (matrix.error) {
+    return { outcome: "parse error", remainder: [matrix.error] };
+  }
+  const input = postPushInput({ input: parsed.input, rows: matrix.rows, headSha });
+  const convergence = evaluateConvergence({ ...input, children });
+  const remainder = [...parsed.remainder, ...convergence.remainder];
+  if (remainder.length === 0) {
+    return { outcome: "verified", remainder };
+  }
+  return { outcome: "actionable remainder", remainder };
+}
+
 function optionsFrom(argv) {
   const [subcommand, ...rest] = argv;
-  if (subcommand !== "refinement") throw new UsageError("the first argument must be the refinement subcommand");
+  const allowed = SUBCOMMANDS[subcommand];
+  if (allowed === undefined) {
+    throw new UsageError("the first argument must be the refinement or post-push subcommand");
+  }
   const options = parseArgs(rest);
   if (options === null) {
     throw new UsageError(`unexpected argument ${rest.find((item) => !item.startsWith("--"))}`);
   }
-  const unknown = Object.keys(options).find((name) => !OPTIONS.has(name));
-  if (unknown) throw new UsageError(`unknown option --${unknown}`);
+  const unknown = Object.keys(options).find((name) => !allowed.has(name));
+  if (unknown) {
+    const onlyPostPush = ["handoff-file", "head-sha"].includes(unknown) && subcommand === "refinement";
+    if (onlyPostPush) {
+      throw new UsageError(`--${unknown} only applies to post-push`);
+    }
+    throw new UsageError(`unknown option --${unknown}`);
+  }
   if (!options["body-file"] || options["body-file"] === "true") {
     throw new UsageError("--body-file=<path> is required");
   }
-  return options;
+  if (subcommand === "post-push") {
+    if (!options["handoff-file"] || options["handoff-file"] === "true") {
+      throw new UsageError("--handoff-file=<path> is required");
+    }
+    if (!options["head-sha"] || options["head-sha"] === "true") {
+      throw new UsageError("--head-sha=<sha> is required");
+    }
+  }
+  return { subcommand, options };
 }
 
 // Windows PowerShell 5.1 `>` writes UTF-16, which would read as text full of
@@ -86,9 +133,15 @@ function readChildren(file) {
 function main(argv) {
   let result;
   try {
-    const options = optionsFrom(argv);
+    const { subcommand, options } = optionsFrom(argv);
     const body = readText(options["body-file"], "body-file");
-    result = refinementProof({ body, children: readChildren(options.children) });
+    const children = readChildren(options.children);
+    if (subcommand === "post-push") {
+      const handoff = readText(options["handoff-file"], "handoff-file");
+      result = postPushProof({ body, handoff, headSha: options["head-sha"], children });
+    } else {
+      result = refinementProof({ body, children });
+    }
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     result = { outcome: "usage error", remainder: [error.message] };

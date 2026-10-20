@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -14,6 +15,12 @@ const fixture = (name) => path.join(here, "fixtures", name);
 const PRE_CORRECTION = fixture("issue-855-shape-body.md");
 const CORRECTED = fixture("issue-855-shape-corrected-body.md");
 const BODY_904 = path.join(here, "..", "..", "..", "lib", "fixtures", "issue-904-body.md");
+const HEAD_904 = "e7e22c4c54840c7983af67f8d631396cf5484999";
+const ROWS_904 = JSON.parse(readFileSync(fixture("issue-904-handoff.json"), "utf8")).acceptanceMatrix;
+const STALE_ROW_ID = /\bR1\b/;
+const STALE_LENS = /review lens is not bound to handoff head/;
+const buildHandoff = (rows) =>
+  `## Implementation handoff\n\n## Acceptance matrix\n\n\`\`\`json\n${JSON.stringify(rows)}\n\`\`\`\n`;
 
 function run(...args) {
   const result = spawnSync(process.execPath, [script, ...args], { encoding: "utf8" });
@@ -141,6 +148,7 @@ test("reads only local files: no network, process, or GitHub module is imported"
     "node:path",
     "node:url",
     "../../../lib/args.mjs",
+    "../../../lib/handoff-matrix.mjs",
     "../../../lib/issue-body-records.mjs",
     "./structured-workflow-proof.mjs",
   ]);
@@ -152,10 +160,10 @@ test("exits 2 on a usage error and names the argument", async () => {
   const missing = path.join(here, "fixtures", "no-such-body.md");
 
   assert.deepEqual(run("refinement"), usage(["--body-file=<path> is required"]));
-  assert.deepEqual(run(), usage(["the first argument must be the refinement subcommand"]));
+  assert.deepEqual(run(), usage(["the first argument must be the refinement or post-push subcommand"]));
   assert.deepEqual(
     run("finalization", `--body-file=${CORRECTED}`),
-    usage(["the first argument must be the refinement subcommand"]),
+    usage(["the first argument must be the refinement or post-push subcommand"]),
   );
   assert.deepEqual(run("refinement", CORRECTED), usage([`unexpected argument ${CORRECTED}`]));
   assert.deepEqual(run("refinement", `--body-file=${CORRECTED}`, "--head=abc"), usage(["unknown option --head"]));
@@ -164,6 +172,82 @@ test("exits 2 on a usage error and names the argument", async () => {
     assert.deepEqual(
       run("refinement", `--body-file=${CORRECTED}`, `--children=${children}`),
       usage(["--children file must hold a JSON array"]),
+    );
+  });
+});
+
+test("post-push verifies the 904 body with the handoff rows at their head", async () => {
+  await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
+    assert.deepEqual(
+      run("post-push", `--body-file=${BODY_904}`, `--handoff-file=${handoff}`, `--head-sha=${HEAD_904}`),
+      { status: 0, json: { outcome: "verified", remainder: [] } },
+    );
+  });
+});
+
+test("post-push names a stale row", async () => {
+  const rows = ROWS_904.map((row) => {
+    if (row.id === "R1") {
+      return { ...row, headSha: "deadbeef" };
+    }
+    return row;
+  });
+  await withTempFile("handoff.md", buildHandoff(rows), (handoff) => {
+    const { status, json } = run(
+      "post-push",
+      `--body-file=${BODY_904}`,
+      `--handoff-file=${handoff}`,
+      `--head-sha=${HEAD_904}`,
+    );
+
+    assert.equal(status, 1);
+    assert.equal(json.outcome, "actionable remainder");
+    assert.ok(
+      json.remainder.some((entry) => STALE_ROW_ID.test(entry)),
+      JSON.stringify(json.remainder),
+    );
+  });
+});
+
+test("post-push names a stale lens", async () => {
+  await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
+    const { status, json } = run(
+      "post-push",
+      `--body-file=${BODY_904}`,
+      `--handoff-file=${handoff}`,
+      "--head-sha=0123456789abcdef",
+    );
+
+    assert.equal(status, 1);
+    assert.ok(
+      json.remainder.some((entry) => STALE_LENS.test(entry)),
+      JSON.stringify(json.remainder),
+    );
+  });
+});
+
+test("post-push exits 2 on a missing option, a missing matrix block, or an unreadable handoff", async () => {
+  await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
+    assert.deepEqual(run("post-push", `--body-file=${BODY_904}`, `--head-sha=${HEAD_904}`), {
+      status: 2,
+      json: { outcome: "usage error", remainder: ["--handoff-file=<path> is required"] },
+    });
+    assert.deepEqual(run("post-push", `--body-file=${BODY_904}`, `--handoff-file=${handoff}`), {
+      status: 2,
+      json: { outcome: "usage error", remainder: ["--head-sha=<sha> is required"] },
+    });
+    assert.deepEqual(run("refinement", `--body-file=${BODY_904}`, `--head-sha=${HEAD_904}`), {
+      status: 2,
+      json: { outcome: "usage error", remainder: ["--head-sha only applies to post-push"] },
+    });
+  });
+  await withTempFile("handoff.md", "## Implementation handoff\n\nNo matrix block.\n", (handoff) => {
+    assert.deepEqual(
+      run("post-push", `--body-file=${BODY_904}`, `--handoff-file=${handoff}`, `--head-sha=${HEAD_904}`),
+      {
+        status: 2,
+        json: { outcome: "parse error", remainder: ["handoff has no ## Acceptance matrix section"] },
+      },
     );
   });
 });
