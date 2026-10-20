@@ -86,7 +86,11 @@ Save the plan with a status per question: `verified`, `repaired` (verified after
 
 Dispatch the four lens reviewers at once. Each gets the brief plus its lens's slots with questions, answers, statuses, or exclusions, and judges from that evidence. A slot belongs to a lens when it has a question or exclusion naming it.
 
-- Each returns `{ reviewer, rulings, findings }`: one ruling `{ slot, status, evidence }` per assigned slot, status `VERIFIED` or `FINDING`, and findings with severity `BLOCKER`, `MAJOR`, or `MINOR`.
+- Each returns `{ reviewer, rulings, findings }`: one ruling `{ slot, status, evidence }` per assigned
+  slot, status `VERIFIED` or `FINDING`, and findings with severity `BLOCKER`, `MAJOR`, or `MINOR`. Each
+  finding names its `slot`, one assigned to that lens and ruled `FINDING`. Every `FINDING` ruling has at
+  least one finding naming its slot. Build refuses a finding that names no slot, an unassigned slot, or a
+  slot ruled `VERIFIED`, and a `FINDING` ruling no finding names.
 - Settle each `unanswered` question from the files it names, or report the gap as a finding. Never count one as passing. Report an exclusion as a finding when its reason fails.
 - On malformed JSON, send one correction request in the exact format. On a second failure, stop and name the reviewer. Never escalate a format failure to another tier: the review posts once, so a missing angle cannot be added later.
 
