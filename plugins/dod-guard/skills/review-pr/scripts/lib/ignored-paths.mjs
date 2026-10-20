@@ -2,7 +2,9 @@
 import { spawnSync } from "node:child_process";
 
 // Windows allows about 32000 characters on one command line; stay well below.
-const ARGUMENT_BUDGET = 24000;
+const ARGUMENT_BUDGET = 24_000;
+const BYTES_PER_MEBIBYTE = 1024 * 1024;
+const MAX_OUTPUT_MEBIBYTES = 64;
 
 // `git ls-files -z` separates paths with NUL, so no path is quoted or split.
 function parseIgnoredPaths(output) {
@@ -15,7 +17,7 @@ function ignoredPaths(root) {
     cwd: root,
     encoding: "utf8",
     shell: false,
-    maxBuffer: 64 * 1024 * 1024,
+    maxBuffer: MAX_OUTPUT_MEBIBYTES * BYTES_PER_MEBIBYTE,
   });
   if (result.error || result.status !== 0) {
     throw new Error(`git ls-files failed (${result.status}): ${result.error?.message ?? result.stderr}`);

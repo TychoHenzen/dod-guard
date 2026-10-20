@@ -72,10 +72,8 @@ const INDENTED = /^[ \t]+\S/;
 function acceptanceCriteria(body) {
   const items = [];
   let open = null;
-  for (const line of markedLines(markdownSection(body, "Acceptance criteria"))) {
-    if (line.fenced) {
-      continue;
-    }
+  const unfenced = markedLines(markdownSection(body, "Acceptance criteria")).filter((line) => !line.fenced);
+  for (const line of unfenced) {
     const match = CHECKBOX_ITEM.exec(line.text);
     if (match !== null) {
       open = { first: match[2].trim(), rest: [], checked: match[1] !== " " };
