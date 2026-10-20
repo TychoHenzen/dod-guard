@@ -2,7 +2,8 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { runGh } from "./gh-runner.mjs";
+import { CompletionError } from "./completion-error.mjs";
+import { errorMessage, ghJsonPages, isHttpNotFound, isHttpNotFoundText, readNamed, runGh } from "./gh-runner.mjs";
 
 function spawnReturning(result) {
   const calls = [];
@@ -65,4 +66,63 @@ test("rethrows a spawn error, such as gh missing from PATH", () => {
     () => runGh(["api", "x"], [0], spawn),
     (error) => error === missing,
   );
+});
+
+test("ghJsonPages flattens the named array of every page", () => {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    return { status: 0, stderr: "", stdout: JSON.stringify([{ items: [1, 2] }, { items: [3] }]) };
+  };
+
+  assert.deepEqual(ghJsonPages("repos/o/r/x", "items", runner), [1, 2, 3]);
+  assert.deepEqual(calls[0], ["api", "--paginate", "--slurp", "repos/o/r/x"]);
+});
+
+test("ghJsonPages names the endpoint and field when a page lacks the array", () => {
+  const shape = {
+    code: "github_response_shape",
+    message: "GitHub response for repos/o/r/x must include an array items.",
+  };
+  const withoutArray = () => ({ status: 0, stderr: "", stdout: JSON.stringify([{ items: "no" }]) });
+  const empty = () => ({ status: 0, stderr: "", stdout: "" });
+
+  assert.throws(() => ghJsonPages("repos/o/r/x", "items", withoutArray), shape);
+  assert.throws(() => ghJsonPages("repos/o/r/x", "items", empty), shape);
+});
+
+test("readNamed adds the endpoint to a plain failure and passes a CompletionError through", () => {
+  assert.throws(
+    () =>
+      readNamed("branch protection", "repos/o/r/p", () => {
+        throw new Error("HTTP 500");
+      }),
+    { message: "Failed to read branch protection at repos/o/r/p: HTTP 500" },
+  );
+
+  const kept = new CompletionError("x_code", "kept");
+  assert.throws(
+    () =>
+      readNamed("branch protection", "repos/o/r/p", () => {
+        throw kept;
+      }),
+    (error) => error === kept,
+  );
+});
+
+test("errorMessage and isHttpNotFound", () => {
+  assert.equal(errorMessage(new Error("a")), "a");
+  assert.equal(errorMessage("b"), "b");
+
+  assert.equal(isHttpNotFound({ status: 1, stderr: "gh: Not Found (HTTP 404)" }), true);
+  assert.equal(isHttpNotFound({ status: 1, stderr: "HTTP 403: Forbidden" }), false);
+  assert.equal(isHttpNotFound({ status: 0, stderr: "HTTP 404" }), false);
+  assert.equal(isHttpNotFound({ status: 2, stderr: "HTTP 404" }), false);
+});
+
+test("the text-only 404 matcher ignores the exit status", () => {
+  assert.equal(isHttpNotFoundText("gh: Not Found (HTTP 404)"), true);
+  assert.equal(isHttpNotFoundText("HTTP 403: Forbidden"), false);
+  assert.equal(isHttpNotFoundText(undefined), false);
+  assert.equal(isHttpNotFoundText(null), false);
 });

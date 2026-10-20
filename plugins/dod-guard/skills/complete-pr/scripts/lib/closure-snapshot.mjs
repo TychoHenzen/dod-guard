@@ -18,7 +18,7 @@ import {
   urlReference,
   urlRepository,
 } from "../../../../lib/repository-identity.mjs";
-import { readRequiredChecks } from "./github-client.mjs";
+import { isHttpNotFoundText } from "./gh-runner.mjs";
 import {
   contentRepository,
   ProjectReadError,
@@ -27,9 +27,9 @@ import {
   sameRepository,
   statusValueName,
 } from "./project-reads.mjs";
+import { readRequiredChecks } from "./required-checks.mjs";
 
 const ENDPOINT = /^(?:repos|users|orgs)\//u;
-const HTTP_NOT_FOUND = /HTTP 404/u;
 // The Project fields each item keeps, in the order the snapshot lists them.
 const ITEM_FIELD_NAMES = ["Status", "Repository", "Parent issue", "Linked pull requests"];
 const JSON_INDENT = 2;
@@ -123,7 +123,7 @@ function guardedRunner(runner) {
     } catch (error) {
       throw readFailure(endpoint, messageOf(error), error);
     }
-    const notFound = HTTP_NOT_FOUND.test(String(result?.stderr ?? ""));
+    const notFound = isHttpNotFoundText(result?.stderr);
     const accepted = acceptedExitCodes.includes(result?.status);
     if (!accepted || (result.status !== 0 && !notFound)) {
       throw readFailure(endpoint, failureDetail(result));
@@ -190,9 +190,9 @@ function readPages(read, endpoint) {
   return projectRead(() => readSlurpedPages(read, endpoint));
 }
 
-// github-client's own shape checks name an endpoint only inside their text, so their failures are
+// The GitHub readers' own shape checks name an endpoint only inside their text, so their failures are
 // restated as read failures for the endpoint they came from. A read failure built here passes through
-// unchanged, also when github-client wrapped it to name its endpoint, so the message names the failed
+// unchanged, also when the reader wrapped it to name its endpoint, so the message names the failed
 // read once.
 function atEndpoint(endpoint, work) {
   try {

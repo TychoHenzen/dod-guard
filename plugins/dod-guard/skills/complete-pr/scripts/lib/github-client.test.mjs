@@ -2,340 +2,8 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { GitHubClient, readRequiredChecks } from "./github-client.mjs";
-
-function createRestChecksRunner({
-  checkRunResponses,
-  protection = { checks: [{ app_id: 15_368, context: "build-test" }] },
-  statusResponse = { statuses: [] },
-}) {
-  const calls = [];
-  const responses = [...checkRunResponses];
-  const runner = (args) => {
-    calls.push(args);
-    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
-    if (endpoint?.includes("required_status_checks")) {
-      return { stderr: "", status: 0, stdout: JSON.stringify(protection) };
-    }
-    if (endpoint?.includes("/check-runs?")) {
-      return responses.shift();
-    }
-    if (endpoint?.includes("/status?")) {
-      return { stderr: "", status: 0, stdout: JSON.stringify(statusResponse) };
-    }
-    throw new Error(`Unexpected command: ${args.join(" ")}`);
-  };
-  return { calls, runner };
-}
-
-function checkRunsResponse(runs) {
-  return { stderr: "", status: 0, stdout: JSON.stringify({ check_runs: runs }) };
-}
-
-function exactHeadPullRequest() {
-  return { baseBranch: "master", headSha: "head-1" };
-}
-
-function okResponse(stdout) {
-  return { stderr: "", status: 0, stdout };
-}
-
-function threadRunner(responses) {
-  const calls = [];
-  const queue = [...responses];
-  const runner = (args) => {
-    calls.push(args);
-    if (queue.length === 0) {
-      throw new Error(`Unexpected command: ${args.join(" ")}`);
-    }
-    const next = queue.shift();
-    if (next instanceof Error) {
-      throw next;
-    }
-    return next;
-  };
-  return { calls, runner };
-}
-
-function threadPageStdout(nodes, { endCursor = null, hasNextPage = false } = {}) {
-  const reviewThreads = { nodes, pageInfo: { endCursor, hasNextPage } };
-  return JSON.stringify({ data: { repository: { pullRequest: { reviewThreads } } } });
-}
-
-function rawThreadPage(reviewThreads) {
-  return okResponse(JSON.stringify({ data: { repository: { pullRequest: { reviewThreads } } } }));
-}
-
-function threadNode({ id, isResolved, isOutdated, path, url, login }) {
-  return {
-    id,
-    isResolved,
-    isOutdated,
-    path,
-    comments: { nodes: [{ url, author: { login } }] },
-  };
-}
-
-function discussionUrl(label) {
-  return `https://github.com/owner/repo/pull/24#discussion_${label}`;
-}
-
-// Answers the protection read with the given response and gives the check-run and status reads
-// empty success, so a read that wrongly carries on shows up as a returned list rather than a runner error.
-function protectionFailureRunner(protectionResponse) {
-  const calls = [];
-  const runner = (args) => {
-    calls.push(args);
-    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
-    if (endpoint?.includes("required_status_checks")) {
-      return protectionResponse;
-    }
-    if (endpoint?.includes("/check-runs?")) {
-      return checkRunsResponse([]);
-    }
-    if (endpoint?.includes("/status?")) {
-      return okResponse(JSON.stringify({ statuses: [] }));
-    }
-    throw new Error(`Unexpected command: ${args.join(" ")}`);
-  };
-  return { calls, runner };
-}
-
-test("retries one transient exact-head check-runs failure with the identical request", () => {
-  const { calls, runner } = createRestChecksRunner({
-    checkRunResponses: [
-      { stderr: "HTTP 503: transient provider failure", status: 1, stdout: "" },
-      checkRunsResponse([
-        { app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
-      ]),
-    ],
-  });
-
-  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
-
-  const checkRunsCalls = calls.filter((args) => args.some((value) => value.includes("/check-runs?")));
-  assert.deepEqual(checks, [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
-  assert.equal(checkRunsCalls.length, 2);
-  assert.deepEqual(checkRunsCalls[0], checkRunsCalls[1]);
-});
-
-test("stops after one transient exact-head check-runs retry", () => {
-  const { calls, runner } = createRestChecksRunner({
-    checkRunResponses: [
-      { stderr: "HTTP 500: transient provider failure", status: 1, stdout: "" },
-      { stderr: "HTTP 502: transient provider failure", status: 1, stdout: "" },
-    ],
-  });
-
-  assert.throws(
-    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
-    (error) =>
-      error.message.includes("repos/owner/repo/commits/head-1/check-runs?per_page=100") &&
-      error.message.includes("HTTP 502: transient provider failure"),
-  );
-
-  const checkRunsCalls = calls.filter((args) => args.some((value) => value.includes("/check-runs?")));
-  assert.equal(checkRunsCalls.length, 2);
-  assert.equal(
-    calls.some((args) => args.some((value) => value.includes("/status?"))),
-    false,
-  );
-});
-
-for (const [failureName, failureResponse] of [
-  ["authentication failure", { stderr: "HTTP 401: bad credentials", status: 1, stdout: "" }],
-  ["permission failure", { stderr: "HTTP 403: forbidden", status: 1, stdout: "" }],
-  ["rate-limit failure", { stderr: "HTTP 429: rate limited", status: 1, stdout: "" }],
-  ["malformed response", { stderr: "", status: 0, stdout: JSON.stringify({ wrong_field: [] }) }],
-]) {
-  test(`does not retry exact-head check-runs ${failureName}`, () => {
-    const { calls, runner } = createRestChecksRunner({ checkRunResponses: [failureResponse] });
-
-    assert.throws(() => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()));
-
-    assert.equal(calls.filter((args) => args.some((value) => value.includes("/check-runs?"))).length, 1);
-  });
-}
-
-test("does not retry or accept a wrong-provider exact-head check run", () => {
-  const { calls, runner } = createRestChecksRunner({
-    checkRunResponses: [
-      checkRunsResponse([
-        { app: { id: 57_789 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
-      ]),
-    ],
-  });
-
-  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
-
-  assert.deepEqual(checks, [{ bucket: "unknown", name: "build-test", state: "PROVIDER_MISMATCH" }]);
-  assert.equal(calls.filter((args) => args.some((value) => value.includes("/check-runs?"))).length, 1);
-});
-
-const protectionEndpoint = "repos/owner/repo/branches/master/protection/required_status_checks";
-const serverErrorProtection = {
-  stderr: "gh: Server Error (HTTP 502)",
-  status: 1,
-  stdout: JSON.stringify({ message: "Server Error" }),
-};
-
-const forbiddenProtection = {
-  stderr: "gh: Resource not accessible by personal access token (HTTP 403)",
-  status: 1,
-  stdout: JSON.stringify({ message: "Resource not accessible by personal access token" }),
-};
-// gh can exit with a status other than 0 or 1, which the protection read does not accept.
-const unexpectedExitProtection = { stderr: "gh: unexpected failure", status: 2, stdout: "" };
-const notFoundProtection = {
-  stderr: "gh: Not Found (HTTP 404)",
-  status: 1,
-  stdout: JSON.stringify({ message: "Branch not protected" }),
-};
-
-function readsCheckRunsOrStatuses(calls) {
-  return calls.some((args) => args.some((value) => value.includes("/check-runs?") || value.includes("/status?")));
-}
-
-// readRequiredChecks is the reader the closure snapshot calls; getRequiredChecks is complete-pr's way in.
-const requiredCheckReaders = [
-  ["readRequiredChecks", (runner) => readRequiredChecks("owner/repo", exactHeadPullRequest(), runner)],
-  [
-    "getRequiredChecks",
-    (runner) => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
-  ],
-];
-const protectionFailures = [
-  ["a non-404 (HTTP 502)", serverErrorProtection, "HTTP 502"],
-  ["an HTTP 403", forbiddenProtection, "HTTP 403"],
-  ["an unexpected gh exit status", unexpectedExitProtection, "gh: unexpected failure"],
-];
-
-for (const [reader, read] of requiredCheckReaders) {
-  for (const [failure, response, detail] of protectionFailures) {
-    test(`${reader} stops on ${failure} branch-protection read naming the endpoint, without reading checks`, () => {
-      const { calls, runner } = protectionFailureRunner(response);
-
-      assert.throws(
-        () => read(runner),
-        (error) => error.message.includes(protectionEndpoint) && error.message.includes(detail),
-      );
-      assert.equal(readsCheckRunsOrStatuses(calls), false);
-    });
-  }
-}
-
-test("getRequiredChecks reads an absent branch protection (HTTP 404) as no required checks", () => {
-  const { calls, runner } = protectionFailureRunner(notFoundProtection);
-
-  assert.deepEqual(new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()), []);
-  assert.equal(readsCheckRunsOrStatuses(calls), false);
-});
-
-test("getRequiredChecks names the commit-status endpoint when that read fails", () => {
-  const calls = [];
-  const runner = (args) => {
-    calls.push(args);
-    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
-    if (endpoint?.includes("required_status_checks")) {
-      return okResponse(JSON.stringify({ checks: [{ app_id: 15_368, context: "build-test" }] }));
-    }
-    if (endpoint?.includes("/check-runs?")) {
-      return checkRunsResponse([]);
-    }
-    if (endpoint?.includes("/status?")) {
-      return { stderr: "gh: Bad Gateway (HTTP 502)", status: 1, stdout: "" };
-    }
-    throw new Error(`Unexpected command: ${args.join(" ")}`);
-  };
-
-  assert.throws(
-    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
-    (error) =>
-      error.message.includes("repos/owner/repo/commits/head-1/status?per_page=100") &&
-      error.message.includes("HTTP 502"),
-  );
-});
-
-const exactHeadBuildTestRun = {
-  app: { id: 15_368 },
-  conclusion: "success",
-  head_sha: "head-1",
-  name: "build-test",
-  status: "completed",
-};
-
-test("getRequiredChecks reads only REST endpoints and settles two passing runs from two check suites", () => {
-  const { calls, runner } = createRestChecksRunner({
-    checkRunResponses: [
-      checkRunsResponse([
-        { id: 101, ...exactHeadBuildTestRun },
-        { id: 102, ...exactHeadBuildTestRun },
-      ]),
-    ],
-  });
-
-  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
-
-  assert.deepEqual(checks, [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
-  assert.deepEqual(
-    calls.map((args) => args[0]),
-    ["api", "api", "api"],
-  );
-});
-
-test("reads temporary pull-request refs with a delimited pull-number prefix", () => {
-  const calls = [];
-  const client = new GitHubClient("owner/repo", 24, (args) => {
-    calls.push(args);
-    return {
-      status: 0,
-      stderr: "",
-      stdout: JSON.stringify([
-        { ref: "refs/pull/24/head", object: { sha: "head-1" } },
-        { ref: "refs/pull/24/merge", object: { sha: "merge-1" } },
-      ]),
-    };
-  });
-
-  assert.deepEqual(client.getPullRequestRefs(), [
-    { kind: "head", ref: "refs/pull/24/head", sha: "head-1" },
-    { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-1" },
-  ]);
-  assert.deepEqual(calls, [["api", "repos/owner/repo/git/matching-refs/pull/24/"]]);
-  assert.equal(
-    calls.some((args) => args.includes("--method") || args.includes("PUT") || args.includes("POST")),
-    false,
-  );
-});
-
-test("treats an absent temporary pull-request ref set as empty", () => {
-  const client = new GitHubClient("owner/repo", 24, () => ({
-    status: 1,
-    stderr: "HTTP 404: Not Found",
-    stdout: "",
-  }));
-
-  assert.deepEqual(client.getPullRequestRefs(), []);
-});
-
-test("rejects malformed and duplicate temporary pull-request refs", () => {
-  for (const response of [
-    [{ ref: "refs/pull/24/head", object: {} }],
-    [{ ref: "refs/pull/24/other", object: { sha: "head-1" } }],
-    [
-      { ref: "refs/pull/24/head", object: { sha: "head-1" } },
-      { ref: "refs/pull/24/head", object: { sha: "head-1" } },
-    ],
-  ]) {
-    const client = new GitHubClient("owner/repo", 24, () => ({
-      status: 0,
-      stderr: "",
-      stdout: JSON.stringify(response),
-    }));
-
-    assert.throws(() => client.getPullRequestRefs(), { code: "github_response_shape" });
-  }
-});
+import { GitHubClient } from "./github-client.mjs";
+import { okResponse } from "./github-client.test-support.mjs";
 
 test("rejects a malformed source branch ref", () => {
   const client = new GitHubClient("owner/repo", 24, () => ({
@@ -362,223 +30,94 @@ test("reads the live base branch tip from its branch ref and returns null when t
   assert.equal(absent.getBaseBranchRef("master"), null);
 });
 
-test("returns every unresolved review thread regardless of author or outdated state", () => {
-  const { calls, runner } = threadRunner([
-    okResponse(
-      threadPageStdout([
-        threadNode({
-          id: "t1",
-          isResolved: false,
-          isOutdated: false,
-          path: "src/a.mjs",
-          url: discussionUrl("bot-open"),
-          login: "chatgpt-codex-connector[bot]",
-        }),
-        threadNode({
-          id: "t2",
-          isResolved: true,
-          isOutdated: false,
-          path: "src/b.mjs",
-          url: discussionUrl("bot-resolved"),
-          login: "chatgpt-codex-connector[bot]",
-        }),
-        threadNode({
-          id: "t3",
-          isResolved: false,
-          isOutdated: true,
-          path: "src/c.mjs",
-          url: discussionUrl("human-open"),
-          login: "human-reviewer",
-        }),
-        threadNode({
-          id: "t4",
-          isResolved: true,
-          isOutdated: true,
-          path: "src/d.mjs",
-          url: discussionUrl("human-resolved"),
-          login: "human-reviewer",
-        }),
-        threadNode({
-          id: "t5",
-          isResolved: false,
-          isOutdated: false,
-          path: "src/e.mjs",
-          url: discussionUrl("author-open"),
-          login: "pr-author",
-        }),
-        threadNode({
-          id: "t6",
-          isResolved: true,
-          isOutdated: false,
-          path: "src/f.mjs",
-          url: discussionUrl("author-resolved"),
-          login: "pr-author",
-        }),
-      ]),
-    ),
-  ]);
-
-  const threads = new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24);
-
-  assert.deepEqual(threads, [
-    {
-      author: "chatgpt-codex-connector[bot]",
-      id: "t1",
-      outdated: false,
-      path: "src/a.mjs",
-      url: discussionUrl("bot-open"),
-    },
-    { author: "human-reviewer", id: "t3", outdated: true, path: "src/c.mjs", url: discussionUrl("human-open") },
-    { author: "pr-author", id: "t5", outdated: false, path: "src/e.mjs", url: discussionUrl("author-open") },
-  ]);
-  assert.equal(calls.length, 1);
-  assert.ok(calls[0].includes("graphql"));
-  const numberIndex = calls[0].indexOf("number=24");
-  assert.ok(numberIndex > 0 && calls[0][numberIndex - 1] === "-F");
-  assert.equal(
-    calls[0].some((value) => value.startsWith("cursor=")),
-    false,
-  );
-});
-
-test("reads a two-page thread list in full", () => {
-  const { calls, runner } = threadRunner([
-    okResponse(
-      threadPageStdout(
-        [
-          threadNode({
-            id: "t1",
-            isResolved: false,
-            isOutdated: false,
-            path: "src/a.mjs",
-            url: discussionUrl("page-one"),
-            login: "reviewer",
-          }),
-        ],
-        { endCursor: "c1", hasNextPage: true },
-      ),
-    ),
-    okResponse(
-      threadPageStdout(
-        [
-          threadNode({
-            id: "t2",
-            isResolved: false,
-            isOutdated: false,
-            path: "src/b.mjs",
-            url: discussionUrl("page-two"),
-            login: "reviewer",
-          }),
-        ],
-        { endCursor: "c2", hasNextPage: false },
-      ),
-    ),
-  ]);
-
-  const threads = new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24);
-
-  assert.deepEqual(
-    threads.map((thread) => thread.id),
-    ["t1", "t2"],
-  );
-  assert.equal(calls.length, 2);
-  assert.equal(
-    calls[0].some((value) => value.startsWith("cursor=")),
-    false,
-  );
-  const cursorIndex = calls[1].indexOf("cursor=c1");
-  assert.ok(cursorIndex > 0 && calls[1][cursorIndex - 1] === "-f");
-});
-
-const noReviewThreadsObject = /no reviewThreads object/;
-const pageInfoNotBoolean = /hasNextPage is not a boolean/;
-const nodeWithoutBooleanIsResolved = /without a boolean isResolved/;
-
-test("fails closed with review-threads-unavailable on every unreadable thread page", () => {
-  const cases = [
-    ["a non-zero gh exit", [{ stderr: "HTTP 502: Bad Gateway", status: 1, stdout: "" }]],
-    ["a thrown runner error", [new Error("spawn gh ENOENT")]],
-    ["invalid JSON", [okResponse("not json")]],
-    ["a top-level errors array", [okResponse(JSON.stringify({ errors: [{ message: "Something failed" }] }))]],
-    ["a null pull request", [okResponse(JSON.stringify({ data: { repository: { pullRequest: null } } }))]],
-    ["hasNextPage without an endCursor", [okResponse(threadPageStdout([], { endCursor: null, hasNextPage: true }))]],
+test("GitHubClient forwards every method to its resource with the injected runner", () => {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    throw new Error("stop after the first request");
+  };
+  const client = new GitHubClient("owner/repo", 24, runner);
+  const rows = [
+    ["getRepository", () => client.getRepository(), "repos/owner/repo"],
+    ["getPullRequest", () => client.getPullRequest(), "repos/owner/repo/pulls/24"],
+    ["getPullRequestRefs", () => client.getPullRequestRefs(), "repos/owner/repo/git/matching-refs/pull/24/"],
+    ["markReady", () => client.markReady(24), "repos/owner/repo/pulls/24"],
+    ["getUnresolvedReviewThreads", () => client.getUnresolvedReviewThreads(24), "graphql"],
+    ["enableRepositoryAutoMerge", () => client.enableRepositoryAutoMerge(), "allow_auto_merge=true"],
+    ["mergePullRequest", () => client.mergePullRequest(24, "head-1"), "repos/owner/repo/pulls/24/merge"],
     [
-      "a stuck endCursor",
-      [
-        okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
-        okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
-      ],
+      "getRequiredChecks",
+      () => client.getRequiredChecks({ baseBranch: "master", headSha: "head-1" }),
+      "repos/owner/repo/branches/master/protection/required_status_checks",
     ],
     [
-      "a pull request without reviewThreads",
-      [okResponse(JSON.stringify({ data: { repository: { pullRequest: {} } } }))],
-      noReviewThreadsObject,
-    ],
-    ["reviewThreads without pageInfo", [rawThreadPage({ nodes: [] })], noReviewThreadsObject],
-    [
-      "nodes that are not an array",
-      [rawThreadPage({ nodes: null, pageInfo: { endCursor: null, hasNextPage: false } })],
-      noReviewThreadsObject,
-    ],
-    ["a missing hasNextPage", [rawThreadPage({ nodes: [], pageInfo: { endCursor: null } })], pageInfoNotBoolean],
-    [
-      "a string hasNextPage",
-      [rawThreadPage({ nodes: [], pageInfo: { endCursor: null, hasNextPage: "false" } })],
-      pageInfoNotBoolean,
+      "getCiWorkflowRuns",
+      () => client.getCiWorkflowRuns("head-1"),
+      "repos/owner/repo/actions/workflows/ci.yml/runs?head_sha=head-1&per_page=100",
     ],
     [
-      "a non-object node",
-      [rawThreadPage({ nodes: [null], pageInfo: { endCursor: null, hasNextPage: false } })],
-      nodeWithoutBooleanIsResolved,
+      "dispatchCiWorkflow",
+      () => client.dispatchCiWorkflow("codex/24-x"),
+      "repos/owner/repo/actions/workflows/ci.yml/dispatches",
     ],
-    [
-      "a node without isResolved",
-      [
-        rawThreadPage({
-          nodes: [{ id: "t1", path: "src/a.mjs", comments: { nodes: [{ url: discussionUrl("no-state") }] } }],
-          pageInfo: { endCursor: null, hasNextPage: false },
-        }),
-      ],
-      nodeWithoutBooleanIsResolved,
-    ],
+    ["updateBranch", () => client.updateBranch(24, "head-1"), "repos/owner/repo/pulls/24/update-branch"],
+    ["getCommit", () => client.getCommit("c1"), "repos/owner/repo/commits/c1"],
+    ["getLinkedIssues", () => client.getLinkedIssues(24), "repos/owner/repo/pulls/24"],
+    ["getIssueProjectStatuses", () => client.getIssueProjectStatuses(24), "users/owner/projectsV2?per_page=100"],
+    ["getBranchRef", () => client.getBranchRef("codex/24-x"), "repos/owner/repo/git/ref/heads/codex/24-x"],
+    ["deleteBranchRef", () => client.deleteBranchRef("codex/24-x"), "repos/owner/repo/git/refs/heads/codex/24-x"],
   ];
-  for (const [name, responses, messagePattern] of cases) {
-    const { runner } = threadRunner(responses);
-    let thrown = null;
-    assert.throws(
-      () => new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24),
-      (error) => {
-        thrown = error;
-        return error.code === "review-threads-unavailable";
-      },
-      name,
+
+  for (const [name, call, marker] of rows) {
+    calls.length = 0;
+    // The marker is matched against the joined argument string, because a substring such as
+    // "repos/owner/repo/pulls/24" is not an exact element of the args array.
+    assert.throws(call, /stop after the first request/);
+    assert.ok(
+      calls[0].join(" ").includes(marker),
+      `${name}: first request ${JSON.stringify(calls[0])} lacks ${marker}`,
     );
-    if (messagePattern) {
-      assert.match(thrown.message, messagePattern, name);
-    }
   }
+
+  assert.deepEqual(rows.map(([name]) => name).sort(), [
+    "deleteBranchRef",
+    "dispatchCiWorkflow",
+    "enableRepositoryAutoMerge",
+    "getBranchRef",
+    "getCiWorkflowRuns",
+    "getCommit",
+    "getIssueProjectStatuses",
+    "getLinkedIssues",
+    "getPullRequest",
+    "getPullRequestRefs",
+    "getRepository",
+    "getRequiredChecks",
+    "getUnresolvedReviewThreads",
+    "markReady",
+    "mergePullRequest",
+    "updateBranch",
+  ]);
 });
 
-test("keeps the thrown read failure as the cause of review-threads-unavailable", () => {
-  const runnerError = new Error("spawn gh ENOENT");
-  const { runner } = threadRunner([runnerError]);
-
-  assert.throws(
-    () => new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24),
-    (error) => error.code === "review-threads-unavailable" && error.cause === runnerError,
-  );
-});
-
-test("fails closed when a thread cursor repeats on a later page", () => {
-  const responses = [
-    okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
-    okResponse(threadPageStdout([], { endCursor: "c2", hasNextPage: true })),
-    okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
-  ];
-  const { calls, runner } = threadRunner(responses);
-
-  assert.throws(() => new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24), {
-    code: "review-threads-unavailable",
+test("GitHubClient keeps the source and base aliases on the branch ref reader and wait resolves", async () => {
+  const requests = [];
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    requests.push(args);
+    return okResponse(JSON.stringify({ object: { sha: "s1" } }));
   });
-  assert.equal(calls.length, responses.length);
+
+  const branch = client.getBranchRef("b");
+  const branchCalls = requests.splice(0);
+  const source = client.getSourceBranchRef("b");
+  const sourceCalls = requests.splice(0);
+  const base = client.getBaseBranchRef("b");
+  const baseCalls = requests.splice(0);
+
+  assert.equal(branchCalls.length, 1);
+  assert.deepEqual(sourceCalls, branchCalls);
+  assert.deepEqual(baseCalls, branchCalls);
+  assert.deepEqual(branch, { sha: "s1" });
+  assert.deepEqual(source, { sha: "s1" });
+  assert.deepEqual(base, { sha: "s1" });
+  assert.equal(await client.wait(0), undefined);
 });
