@@ -25,7 +25,11 @@ Read the `## Preflight checkpoint` from the implementation handoff (format in `s
 
 To recover a draft-skipped workflow, verify draft readiness at the same ref and head, dispatch once through the existing guarded workflow owner, and read back run, workflow, ref, and head before waiting.
 
-A base advance invalidates the handoff and acceptance matrix. Bounded branch synchronization is the only recovery, and it needs fresh acceptance and required-check proof at the final head. On an unresolvable conflict, unexpected branch movement, failed readback, or a second dispatch, stop before any merge, cleanup, force-push, or generated-ref mutation.
+A base advance invalidates the handoff and acceptance matrix. Bounded branch synchronization (the next section) is the only recovery, and it needs fresh acceptance and required-check proof at the final head. On an unresolvable conflict, unexpected branch movement, failed readback, or a second dispatch, stop before any merge, cleanup, force-push, or generated-ref mutation.
+
+## Bounded branch synchronization
+
+When the pull request is BEHIND its base, the helper runs this once and nothing else may update the branch. It reads the base branch tip, calls update-branch pinned to the trusted head, then waits for the pull request head to become a merge commit whose two parents are exactly the previous head and that base tip. Any other new head stops with `untrusted_base_update`, and a head that does not move in time stops with `base_update_timeout`. The new head invalidates earlier acceptance: rerun the required checks, the review-thread read, and the acceptance proof at it before any merge. A conflict goes to "Triage a merge conflict". Never rebase, force-push, or update the branch by hand.
 
 ## Review threads
 

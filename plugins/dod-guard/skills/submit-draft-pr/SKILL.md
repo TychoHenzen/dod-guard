@@ -51,7 +51,7 @@ After the draft exists, before `dod-guard:review-pr` or guarded `complete-pr`, c
 1. Run head convergence at one exact pushed SHA.
 2. Record base ref, base SHA, mergeability, and one row per required context: name, provider, workflow, run ID, branch ref, exact head SHA, and state (`present`, `pending`, `failed`, `skipped`, `unavailable`). Missing, malformed, stale, duplicate, forked, or provider-mismatched evidence stops.
 3. If a draft-skipped required workflow is dispatchable, read back readiness, then route exactly one dispatch (same repository, branch ref, workflow, exact head) through the existing guarded owner. Read back and record the run. A second dispatch, unavailable provider, or failed readback stops with no review, merge, cleanup, or generated-ref change.
-4. Compare the recorded base and head with the current PR. Base advancement invalidates earlier acceptance: route one bounded sync through `complete-pr`, then rerun checks and acceptance proof at the final head.
+4. Compare the recorded base and head with the current PR. Base advancement invalidates earlier acceptance: route one bounded branch synchronization through `complete-pr`, then rerun checks and acceptance proof at the final head.
 5. Send a merge conflict to `standards/conflict-triage.md`, then converge on the new head. If triage cannot resolve it, or the branch moves unexpectedly, stop and report expected and observed refs and SHAs.
 
 ## Create or update the draft
