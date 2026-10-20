@@ -8,9 +8,7 @@
  * charset leaves preserved comments raw, so the driver escapes the output itself.
  */
 
-// biome-ignore lint/correctness/noNodejsModules: the build driver writes the escaped bundle to disk.
 import { mkdir, writeFile } from "node:fs/promises";
-// biome-ignore lint/correctness/noNodejsModules: the build driver resolves each output directory.
 import { dirname } from "node:path";
 import { build } from "esbuild";
 import { escapeNonAscii } from "./ascii-output.mjs";
