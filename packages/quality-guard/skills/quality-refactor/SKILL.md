@@ -109,7 +109,7 @@ for the next decision.
 
 ## Recovery and stops
 
-The PostToolUse hook gives file-local, fail-open feedback while you edit.
+No hook runs while you edit; run the scanner or read the pull-request gate report for feedback.
 Findings and report-provider errors are diagnostic evidence. They make
 no
   commit or merge acceptance decision.
