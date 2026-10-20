@@ -232,10 +232,10 @@ at that path. If snapshot exits non-zero, stop and report its error; never plan,
 apply, or annotate on an older file. The caller passes that file with
 `--snapshot` to `closure.mjs plan`, `apply`, or `annotate`.
 
-The closure snapshot is every non-archived item of the linked Project, read the
+The closure snapshot is every non-archived Issue item of the linked Project, read the
 way goal-sdlc's select-next snapshot is: `repository`, `defaultBranch`, `items`
-holding every non-archived item from every page of the linked Project, from
-every repository, each with a top-level `repository` and the Status (a plain
+holding every non-archived Issue item from every page of the linked Project, from
+every repository (a pull request item is left out), each with a top-level `repository` and the Status (a plain
 string), Repository, Parent issue (`{repository, number}`), and Linked pull
 requests (`[{repository, number}]`) fields. `issues` and `pullRequests` hold
 only target-repository records, each with `repository`. On every issue it also
@@ -251,10 +251,10 @@ the newest run.
 The snapshot also carries a `project` object with `owner`, `number`,
 `statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
 Status field node ID and Done option ID from the Project fields read, the same
-values `dod-guard:complete-pr` passes to `project-status.mjs`. Every non-archived item is
-read because a `supersedes` record lives only on its root, and a parent closes
+values `dod-guard:complete-pr` passes to `project-status.mjs`. Every non-archived Issue
+item is read because a `supersedes` record lives only on its root, and a parent closes
 only after every sub-issue is checked, so reading fewer than the non-archived
-items misses roots and siblings. An issue whose `children` list is missing is
+Issue items misses roots and siblings. An issue whose `children` list is missing is
 held with "sub-issue list missing", never treated as childless. Any caller's run
 may therefore also close other verified originals and parents, and report older
 `unverified-closed` issues, because the helper is the single closing authority.

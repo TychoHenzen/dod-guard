@@ -47,6 +47,7 @@ function projectItemIdentity(item) {
   return {
     id: item.id,
     node_id: item.node_id,
+    content_type: item.content_type,
     content: {
       number: item.content?.number,
       repository: {
@@ -692,6 +693,7 @@ test("reads linked Project statuses through REST without GraphQL", () => {
   for (const field of [
     ".id",
     ".node_id",
+    ".content_type",
     ".content.number",
     ".content.repository.full_name",
     ".content.repository.fullName",

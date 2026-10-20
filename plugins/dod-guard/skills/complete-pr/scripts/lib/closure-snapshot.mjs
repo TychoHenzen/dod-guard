@@ -22,6 +22,7 @@ import { readRequiredChecks } from "./github-client.mjs";
 import {
   contentRepository,
   ProjectReadError,
+  PULL_REQUEST_CONTENT_TYPE,
   readSlurpedPages,
   sameRepository,
   statusValueName,
@@ -389,6 +390,13 @@ function isArchivedItem(raw) {
   return isObject(raw) && raw.archived_at !== null && raw.archived_at !== undefined;
 }
 
+// A pull request Project item sits outside the issue hierarchy. Its REST content has no repository key,
+// it has no issue record, and select-next would hold on it forever. The pull request records the snapshot
+// lists come from the Linked pull requests value of Issue items, never from a PullRequest item.
+function isPullRequestItem(raw) {
+  return isObject(raw) && raw.content_type === PULL_REQUEST_CONTENT_TYPE;
+}
+
 function isItemEntry(raw) {
   return isObject(raw) && nonBlank(raw.node_id) && positiveInteger(raw.id);
 }
@@ -609,6 +617,7 @@ export function buildClosureSnapshot({ repository, runner }) {
   const itemsEndpoint = `${basePath}/projectsV2/${project.number}/items?per_page=100&fields=${fields.fieldIds.join(",")}`;
   const shaped = readPages(read, itemsEndpoint)
     .filter((raw) => !isArchivedItem(raw))
+    .filter((raw) => !isPullRequestItem(raw))
     .map((raw) => shapeItem(raw, fields.fieldIds, itemsEndpoint));
   const targets = shaped.filter(({ item }) => sameRepository(item.repository, repo.fullName));
   const issues = targets
