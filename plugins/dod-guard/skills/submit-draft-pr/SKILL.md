@@ -60,6 +60,8 @@ If no open PR uses the head branch, create one draft PR against the default bran
 
 Keep the body short: what changed and why, material verification results, the parent acceptance checklist checked only where evidence exists, `Closes #<issue-number>`, and this block, with the handoff linked and not restated.
 
+The PR body always names the parent with `Closes #<issue-number>`. Never write "Part of" in its place. If the branch delivers less than the parent's scope, that is an incomplete implementation: write the remainder to the issue and stop, or split the undelivered scope into a new Backlog issue and narrow the parent before the draft is created.
+
 ```text
 ## Convergence
 - Handoff: <link to the ## Implementation handoff comment> (head <sha>)

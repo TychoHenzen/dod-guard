@@ -48,6 +48,7 @@ node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number
 Pass the exact pushed head SHA already verified. The helper never adopts a mutable provider head as its first acceptance signal. It readies the draft, dispatches CI if needed, waits for every required check, merges through REST with the expected head SHA, confirms the linked issue, and deletes the remote branch. Local cleanup touches only the current checkout, and only when it is clean and fast-forwardable; report any preserved checkout state or local ref, and never touch another checkout. A successful workflow run alone is not acceptance.
 
 - `merge_conflict`: see "Triage a merge conflict".
+- `missing_linked_issue`: the PR closes no issue. The helper stops before any ready, auto-merge, CI, or merge step. Add `Closes #<parent>` to the PR body, or split the undelivered scope into its own issue and narrow the parent so this PR delivers all of it, then rerun. There is no partial-delivery mode: a PR closes its parent.
 - Every other stop, including `missing_required_checks` and `base_branch_missing`: report it and end the run.
 
 Never use `--admin`, force-push, weaken repository protections, or delete a ref whose SHA differs from the merged PR head.
