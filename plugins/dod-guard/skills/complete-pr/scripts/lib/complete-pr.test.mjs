@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { completePullRequest, recoverMergedPullRequest, waitForHeadConvergence } from "./complete-pr.mjs";
+import { completePullRequest } from "./complete-pr.mjs";
 import {
   createFixtureLocalGit,
   FixtureClient,
@@ -23,6 +23,8 @@ import {
 import { CompletionError } from "./completion-error.mjs";
 import { GitHubClient } from "./github-client.mjs";
 import { workflowRun } from "./github-client.test-support.mjs";
+import { waitForHeadConvergence } from "./head-convergence.mjs";
+import { recoverMergedPullRequest } from "./merged-recovery.mjs";
 import { normalizePullRequest } from "./pull-requests.mjs";
 
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
