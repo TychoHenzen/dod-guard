@@ -106,7 +106,7 @@ confirm it stopped before resuming.
 
 Code plugins live under `packages/` and contain `package.json`, plugin metadata,
 and a tracked bundle. Code-free plugins live under `plugins/` and ship content
-directly. The root `.claude-plugin/marketplace.json` lists every plugin.
+directly. The root `.claude-plugin/marketplace.json` lists every plugin. Codex resolves this repository's marketplace from that same file, as the first of its candidate paths that exists here (`.agents/plugins/marketplace.json` and `.agents/plugins/api_marketplace.json` come first and do not exist). Add no other marketplace file.
 
 `scripts/ci/validate-plugins.mjs` checks manifest agreement, frontmatter,
 tracked files, JSON syntax, descriptions, and credential leaks.
