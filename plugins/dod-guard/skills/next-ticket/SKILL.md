@@ -51,7 +51,7 @@ The issue must currently be `Todo`. Resolve the project item id, numeric project
 
 1. Create the local branch from the fetched remote default, keeping the classified in-scope pending changes. If Git cannot do that without losing them, stop. Do not stash, discard, or commit elsewhere.
 2. Push with upstream tracking to the same-named branch on `origin`.
-3. Assign the issue through the GitHub MCP assignee operation. Fall back to `gh issue edit` with `--add-assignee @me`.
+3. Assign the issue through the GitHub MCP assignee operation. Fall back to `gh issue edit {issue-number} --repo {owner}/{repo} --add-assignee '@me'`. Always quote `@me`: PowerShell consumes an unquoted `@me`, and `gh` then fails with `flag needs an argument: --add-assignee`.
 4. Run `node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <in-progress-option-id> "In Progress" <item-id>`. It reads the item back before you continue. Pass the numeric item id: a `PVTI_` id is found only through the items list, which can lag.
 
 After a failed, timed-out, or ambiguous action, read back the local and remote branch, assignee, and Project status, then resume only the missing action. Never create a second branch or repeat a mutation before its readback. Report which actions completed and keep the branch and remote state. Do not roll back.

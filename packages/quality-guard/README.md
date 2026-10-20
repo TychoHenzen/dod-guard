@@ -115,18 +115,19 @@ heuristics, not clinical accessibility validation.
 The command returns `pass`, `fail`, `skipped`, or `unavailable` JSON. A
 failed check exits 2. Missing, timed-out, unsupported, or malformed
 `textstat` execution returns `unavailable` and exits 0, so the check fails
-open without claiming a passing score. The PostToolUse hook only receives
-supported file-write payloads and cannot expose complete assistant chat prose.
+open without claiming a passing score. A file-write payload cannot expose
+complete assistant chat prose.
 Runtimes that can provide the final response should pipe it through this
 command.
 
-## Hook and MCP server
+## Feedback script and MCP server
 
-The shipped PostToolUse hook is optional file-local feedback for compatible
-agent runtimes. It is fail-open: internal failures and unavailable optional
-providers do not block a write. It reports only high-severity findings for
-the written file; medium and low findings stay in `quality_scan` and
-`quality_report` output. A repository may wire its own correctness checks
+No plugin manifest registers a hook. `scripts/quality-guard.mjs` is optional
+file-local feedback for a runtime that wires it as a PostToolUse hook itself.
+It is fail-open: internal failures and unavailable optional providers do not
+block a write. It reports only high-severity findings for the written file;
+medium and low findings stay in `quality_scan` and `quality_report` output.
+A repository may wire its own correctness checks
 separately; build, test, workflow, lockfile, generated-file,
 bundle/package-integrity, and Biome-error checks remain authoritative.
 

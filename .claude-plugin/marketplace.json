@@ -15,7 +15,7 @@
     },
     {
       "name": "quality-guard",
-      "description": "Advisory structural diagnostics with an optional plaintext readability boundary. File-local PostToolUse feedback is fail-open, while current-state reports and test-quality evidence remain read-only. Ships 1 skill: /quality-refactor (responsibility-first refactoring with a zero-dependency scanner).",
+      "description": "Advisory structural diagnostics with an optional plaintext readability boundary. Current-state reports and test-quality evidence remain read-only, and the plugin registers no hook. Ships 1 skill: /quality-refactor (responsibility-first refactoring with a zero-dependency scanner).",
       "source": "./packages/quality-guard",
       "category": "productivity"
     },
