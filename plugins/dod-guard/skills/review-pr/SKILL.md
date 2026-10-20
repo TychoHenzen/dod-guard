@@ -29,7 +29,7 @@ gh api --paginate --slurp "repos/{owner}/{repo}/pulls/{n}/reviews?per_page=100"
 node "<skill-dir>/scripts/review-findings.mjs" existing --reviews=<reviews.json>
 ```
 
-Save the reviews first. If the result is `found: true`, report that review's recommendation, head, and URL, then stop. Later commits, including fix-pr-review remediation, never start another review unless the user asks.
+Save the reviews first. If the result is `found: true`, report that review's recommendation, head, and URL, then stop. The one exception is the readback that step 6 requires after a failed or ambiguous post. Later commits, including fix-pr-review remediation, never start another review unless the user asks.
 
 ## 3. Diff and slots
 
@@ -117,7 +117,13 @@ gh api --method POST "repos/{owner}/{repo}/pulls/{n}/reviews" --input <payload.j
 
 BLOCKER and MAJOR findings are inline comments, each with a `GH-<id>`. MINOR findings go in "Minor notes" in the body. A file's scanner findings are MAJOR when any is `high`, else MINOR. Any BLOCKER gives `BLOCK`, else any MAJOR gives `REQUEST_CHANGES`, else `APPROVE`. The body carries the marker `<!-- dod-guard:review-pr head=<sha> recommendation=<REC> -->` that step 2 detects.
 
-Reread the PR head and stop if it moved. Post the payload as one review with event `COMMENT`. If the post fails or is unclear, rerun step 2 before any retry. Never post a second review.
+Reread the PR head and stop if it moved. Post the payload as one review with event `COMMENT`. A post is ambiguous when it returns a 5xx status, times out, or returns a body you cannot read, because the review may exist even though the call failed. After any failed or ambiguous post, rerun step 2 before any retry and act on its result:
+
+- `found: false`: post the same payload once more.
+- `found: true` with `headSha` equal to the reviewed head: that review is the one you posted. Do not post. Continue at step 7 with its `reviewId`.
+- `found: true` with any other `headSha`: stop, as step 2 says.
+
+Never post a second review.
 
 ## 7. Report
 
