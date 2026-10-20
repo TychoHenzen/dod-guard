@@ -1,14 +1,9 @@
+import { markdownSection } from "../../../../lib/acceptance-criteria.mjs";
+
 const AUTHORIZATION_SECRET = /\b(Authorization\s*:\s*(?:Bearer|Basic)\s+)[^\s"']+/gi;
 const GITHUB_SECRET = /\b(gh[pousr]_)[A-Za-z0-9_]{8,}\b/g;
 const QUERY_SECRET = /([?&](?:access_token|api[_-]?key|pat|sig|token)=)[^&#\s]+/gi;
 const ENVIRONMENT_SECRET = /\b((?:GITHUB_TOKEN|GH_TOKEN)\s*=\s*)[^\s"']+/gi;
-const REGEX_META = /[.*+?^${}()|[\]\\]/g;
-
-function section(body, heading) {
-  const escaped = heading.replace(REGEX_META, "\\$&");
-  return body.match(new RegExp(`^##\\s+${escaped}\\s*$([\\s\\S]*?)(?=^##\\s+|(?![\\s\\S]))`, "im"))?.[1].trim() ?? "";
-}
-
 function workItem(child) {
   return {
     body: child.body ?? "",
@@ -26,7 +21,7 @@ function subIssues(issue) {
 function normalizeGitHubHierarchy(issue) {
   const body = issue.body ?? "";
   return {
-    acceptanceCriteria: section(body, "Acceptance criteria"),
+    acceptanceCriteria: markdownSection(body, "Acceptance criteria").trim(),
     body,
     number: issue.number,
     state: issue.state,

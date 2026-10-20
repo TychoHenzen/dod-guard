@@ -1,9 +1,6 @@
-import * as proof from "./structured-workflow-proof.mjs";
+import { recordsWithRequiredKeys } from "./convergence-builders.mjs";
 
-export { acceptanceMatrix } from "./passing-matrix.mjs";
 // Builders shared by the structured-convergence tests.
-export { proof };
-
 const SECTIONS = [
   "Requirements and clarifications",
   "Plan and tasks",
@@ -13,19 +10,6 @@ const SECTIONS = [
 
 // A rendered convergence line reporting one section as passing.
 export const PASSING_SECTION_LINE = new RegExp(`^- (?:${SECTIONS.join("|")}): verified$`, "m");
-
-export const recordsWithRequiredKeys = (lensOwnership) =>
-  proof.REQUIRED_RECORDS.reduce(
-    (records, name) => ({ ...records, [name]: name === "lens-ownership" ? lensOwnership : true }),
-    {},
-  );
-
-export function lensEvidence(id, index, prefix) {
-  if (id === "wiring/usability") return [`${prefix}-2`, `${prefix}-3`];
-  if (id === "reliability") return [`${prefix}-4`, `${prefix}-5`];
-  if (id === "quality") return `${prefix}-6`;
-  return `${prefix}-${index + 1}`;
-}
 
 function plannedRow(id, contract, path, name, extra = {}) {
   return {

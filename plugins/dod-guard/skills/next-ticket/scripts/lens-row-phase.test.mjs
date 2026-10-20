@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import * as gate from "../../complete-pr/scripts/finalization-gate.mjs";
-import { issue855Shape, observedFromPlanned, proof, recordsWithRequiredKeys } from "./structured-workflow-fixtures.mjs";
+import { recordsWithRequiredKeys } from "./convergence-builders.mjs";
+import { issue855Shape, observedFromPlanned } from "./structured-workflow-fixtures.mjs";
+import { evaluateConvergence } from "./structured-workflow-proof.mjs";
 
 const { evaluateStructuredFinalization } = gate;
 // The live #904 lens records, tasks, and criteria with the matrix of its one
@@ -15,7 +17,7 @@ const OWNER_REMAINDER = "reliability owner task needs mapped acceptance evidence
 const lensRemainder = (result) => result.remainder.filter((entry) => entry.includes("review lens"));
 
 test("planned-mode convergence rejects the #855 pre-correction shape on the recovery path", () => {
-  const result = proof.evaluateConvergence(issue855Shape());
+  const result = evaluateConvergence(issue855Shape());
 
   assert.equal(result.outcome, "actionable remainder");
   assert.deepEqual(result.remainder, [RECOVERY_REMAINDER]);
@@ -23,7 +25,7 @@ test("planned-mode convergence rejects the #855 pre-correction shape on the reco
 });
 
 test("planned-mode convergence verifies the #855 shape after the record correction", () => {
-  const result = proof.evaluateConvergence(issue855Shape({ corrected: true }));
+  const result = evaluateConvergence(issue855Shape({ corrected: true }));
 
   assert.equal(result.outcome, "verified");
   assert.deepEqual(result.remainder, []);
@@ -41,7 +43,7 @@ test("planned-mode lens remainders equal finalization's on the derived all-pass 
     "wiring path missing": ["wiring/usability review lens must cover required path(s): browser/e2e"],
   };
   for (const [name, planned] of Object.entries(shapes)) {
-    const refinement = proof.evaluateConvergence(planned);
+    const refinement = evaluateConvergence(planned);
     const finalization = evaluateStructuredFinalization(observedFromPlanned(planned, PUSHED_HEAD));
 
     assert.deepEqual(lensRemainder(refinement), expected[name], name);
@@ -51,7 +53,7 @@ test("planned-mode lens remainders equal finalization's on the derived all-pass 
 });
 
 test("post-push convergence applies the same lens-path rule as finalization", () => {
-  const result = proof.evaluateConvergence(observedFromPlanned(issue855Shape(), PUSHED_HEAD));
+  const result = evaluateConvergence(observedFromPlanned(issue855Shape(), PUSHED_HEAD));
 
   assert.deepEqual(result.remainder, [RECOVERY_REMAINDER]);
 });
@@ -61,7 +63,7 @@ test("a lens owner task that omits mapped acceptance evidence fails in planned m
   input.tasks[0].acceptanceEvidence = input.tasks[0].acceptanceEvidence.filter((id) => id !== "ev-path-data-error");
   input.records["task-list"] = input.tasks;
 
-  const refinement = proof.evaluateConvergence(input);
+  const refinement = evaluateConvergence(input);
   const finalization = evaluateStructuredFinalization(observedFromPlanned(input, PUSHED_HEAD));
 
   assert.equal(refinement.outcome, "actionable remainder");
@@ -76,8 +78,8 @@ test("a lens row must name its path exactly while matrix coverage accepts an ali
   );
   const observed = observedFromPlanned(input, PUSHED_HEAD);
 
-  assert.deepEqual(proof.evaluateConvergence(input).remainder, [RECOVERY_REMAINDER]);
-  assert.deepEqual(proof.evaluateConvergence(observed).remainder, [RECOVERY_REMAINDER]);
+  assert.deepEqual(evaluateConvergence(input).remainder, [RECOVERY_REMAINDER]);
+  assert.deepEqual(evaluateConvergence(observed).remainder, [RECOVERY_REMAINDER]);
   assert.deepEqual(evaluateStructuredFinalization(observed).remainder, [RECOVERY_REMAINDER]);
 });
 
@@ -88,7 +90,7 @@ test("planned mode reports the planned-matrix errors and the lens-row checks", (
     .map((row) => (row.id === "R1" ? { ...row, status: "pass" } : row));
   input.reviewLenses[3].verificationEvidence = ["proof-ac1-archived", "proof-ac1-archived"];
   input.records["lens-ownership"] = input.reviewLenses;
-  const result = proof.evaluateConvergence(input);
+  const result = evaluateConvergence(input);
 
   assert.ok(result.remainder.includes("acceptance matrix: R1 has status pass, which is not a planned status"));
   assert.ok(result.remainder.includes("acceptance matrix: missing pending acceptance row for AC-2"));
@@ -105,7 +107,7 @@ test("planned mode reports the planned-matrix errors and the lens-row checks", (
 test("a refinement call without a planned matrix keeps the master verdict", () => {
   const { plannedAcceptanceMatrix, ...sevenKeys } = issue855Shape();
 
-  assert.equal(proof.evaluateConvergence(sevenKeys).outcome, "verified");
+  assert.equal(evaluateConvergence(sevenKeys).outcome, "verified");
 });
 
 test("a seven-key scratch-helper call keeps the export names, input keys, and result fields", () => {
@@ -118,11 +120,11 @@ test("a seven-key scratch-helper call keeps the export names, input keys, and re
     acceptanceMatrix: issue904.acceptanceMatrix,
     headSha: issue904.headSha,
   };
-  const convergence = proof.evaluateConvergence(sevenKeys);
+  const convergence = evaluateConvergence(sevenKeys);
   const finalization = evaluateStructuredFinalization(sevenKeys);
 
   assert.deepEqual(Object.keys(gate), ["evaluateStructuredFinalization"]);
-  assert.equal(typeof proof.evaluateConvergence, "function");
+  assert.equal(typeof evaluateConvergence, "function");
   assert.deepEqual(Object.keys(convergence), ["outcome", "remainder", "sections", "nextAction"]);
   assert.deepEqual(convergence.remainder, []);
   assert.deepEqual(Object.keys(finalization), ["outcome", "remainder", "sections", "nextAction", "nextStep"]);
@@ -134,7 +136,7 @@ test("a headless lens binds to the head its caller supplies in post-push and fin
   const observed = observedFromPlanned(issue855Shape({ corrected: true }), PUSHED_HEAD);
 
   assert.ok(observed.reviewLenses.every((lens) => lens.headSha === undefined && lens.head === undefined));
-  assert.deepEqual(lensRemainder(proof.evaluateConvergence(observed)), []);
+  assert.deepEqual(lensRemainder(evaluateConvergence(observed)), []);
   const finalization = evaluateStructuredFinalization(observed);
   assert.equal(finalization.outcome, "verified");
   assert.deepEqual(lensRemainder(finalization), []);
@@ -163,7 +165,7 @@ test("refinement supplies no head, so a headless lens passes", () => {
 
   assert.ok(input.reviewLenses.every((lens) => lens.headSha === undefined));
   assert.equal(input.headSha, undefined);
-  assert.equal(proof.evaluateConvergence(input).outcome, "verified");
+  assert.equal(evaluateConvergence(input).outcome, "verified");
 });
 
 test("finalization refuses a handoff with no pushed head or observed matrix", () => {

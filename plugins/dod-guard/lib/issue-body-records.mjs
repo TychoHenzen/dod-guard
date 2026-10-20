@@ -121,7 +121,7 @@ function parseIssueBodyRecords(body) {
 // A lens entry stores no head, so the proof binds one to the head the caller
 // supplies. Two places own that rule and must agree: this function gives a
 // headless lens the supplied head, and lensRowRemainder in
-// structured-workflow-proof.mjs reports a lens whose stored head differs, which
+// convergence-lens-rows.mjs reports a lens whose stored head differs, which
 // is how a legacy body that still stores one goes stale.
 function bindLensHead(lens, headSha) {
   if (!lens || typeof lens !== "object") {
