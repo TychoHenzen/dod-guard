@@ -27,6 +27,15 @@ test("reports a missing section", () => {
   assert.equal(result.error, "handoff has no ## Acceptance matrix section");
 });
 
+test("refuses two matrix headings and ignores one inside a fenced example", () => {
+  const block = ["## Acceptance matrix", "", "```json", JSON.stringify([row]), "```", ""].join("\n");
+  const twice = readHandoffMatrix(`${block}\n## Notes\n\n${block}`);
+  const example = readHandoffMatrix(`## Notes\n\n\`\`\`md\n## Acceptance matrix\n\`\`\`\n\n${block}`);
+
+  assert.equal(twice.error, "handoff has more than one ## Acceptance matrix section");
+  assert.deepEqual(example, { rows: [row] });
+});
+
 test("reports a table-only matrix", () => {
   const text = ["## Acceptance matrix", "", "| id | status |", "| --- | --- |", "| R1 | pass |", ""].join("\n");
   const result = readHandoffMatrix(text);

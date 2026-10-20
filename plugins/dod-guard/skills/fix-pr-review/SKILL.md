@@ -66,7 +66,7 @@ Reply to or resolve a fixed finding only after its fix commit is pushed. Record 
 
 Stop with expected and observed SHAs on branch drift, fork ownership, a missing or malformed ref, a provider read failure, a merge-parent mismatch, or timeout. Until convergence resolves, make no push, no `refs/pull` write, no update-branch, no resolution and no other provider mutation.
 
-For a structured parent, rerun post-push at the converged pushed head (`node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`). Rows touched by the fix need re-observation at the new head and an update of the handoff matrix block. Report an exit-1 remainder with the stale row ids, and do not resolve fixed threads until it is clear. Make no edit of the parent issue body.
+For a structured parent, rerun post-push at the converged pushed head (`node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`). Rows touched by the fix need re-observation at the new head and an update of the handoff matrix block. Report an exit-1 remainder with the stale row ids, and do not resolve fixed threads until it is clear. On exit 2 (a body or handoff that cannot be read or parsed), stop the same way and report the printed error. Make no edit of the parent issue body.
 
 Skip a thread that also holds a declined item. The decline path owns its single reply and resolve.
 

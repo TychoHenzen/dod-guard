@@ -95,8 +95,10 @@ contract or criterion, risk or path, proof action, expected and observed
 behavior, status, evidence location, and exact pushed head SHA. Missing,
 failed, unverified, blocked, or head-mismatched rows stop the handoff; an
 `inapplicable` row is valid only with an explicit reason. The matrix is one
-fenced `json` array of rows under that heading, each row holding every matrix
-field plus `observed`, `status`, and `headSha`; it replaces any markdown table.
+fenced `json` array of rows under that heading; it replaces any markdown
+table, and a second matrix heading is refused. Each row holds `id`, `contract`,
+`path`, `proof`, `expected`, `observed`, `status`, `evidence`, and `headSha`,
+plus `reason` on an `inapplicable` row.
 
 The same handoff also carries one `## Preflight checkpoint` record for the
 selected pull request once its branch exists. It records the exact branch and

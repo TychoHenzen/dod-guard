@@ -2,6 +2,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { ACCEPTANCE_MATRIX_PATHS, validateAcceptanceMatrix } from "../../../lib/acceptance-matrix.mjs";
+import { acceptanceMatrix } from "./passing-matrix.mjs";
 
 export const REQUIRED_RECORDS = [
   "requirements",
@@ -335,10 +336,8 @@ function lensRowRemainder({ ownedLenses, rows, observed, expectedHeadSha }) {
   const remainder = [];
   const claimedRows = new Map();
   for (const { id, lens, ownerTask } of ownedLenses) {
-    // A headless lens binds to the head its caller supplies; only a stored head
-    // that differs (a legacy body) is stale. Refinement supplies no head.
-    const storedHead = lens.headSha ?? lens.head;
-    if (expectedHeadSha && storedHead && normalizedIdentifier(storedHead) !== expectedHeadSha) {
+    const storedHead = normalizedIdentifier(lens.headSha ?? lens.head);
+    if (expectedHeadSha && storedHead && storedHead !== expectedHeadSha) {
       remainder.push(`${id} review lens is not bound to handoff head ${expectedHeadSha}`);
     }
     const [acceptance, verification] = LENS_ROW_KINDS.map((kind) => {
@@ -407,17 +406,7 @@ const PROOF_HANDOFF = {
   headSha: "abc1234",
 };
 
-const PROOF_ACCEPTANCE_MATRIX = [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((pathName, index) => ({
-  id: `AC-1-${index + 1}`,
-  contract: "AC-1",
-  path: pathName,
-  proof: `proof-${index + 1}`,
-  expected: `expected-${index + 1}`,
-  observed: `observed-${index + 1}`,
-  status: "pass",
-  evidence: `evidence-${index + 1}`,
-  headSha: PROOF_HANDOFF.headSha,
-}));
+const PROOF_ACCEPTANCE_MATRIX = acceptanceMatrix(PROOF_HANDOFF.headSha);
 
 export function evaluateConvergence({
   path: deliveryPath = "structured",

@@ -9,6 +9,8 @@ Invoking this skill is the final acceptance gate for the current PR, not a separ
 
 Apply `standards/working-defaults.md` and `standards/github-request-discipline.md` from the plugin root; stricter rules here win. Follow the [command-composition contract](../../docs/command-composition.md).
 
+`<skill-dir>` is `${CLAUDE_PLUGIN_ROOT}/skills/complete-pr` in Claude Code, and the directory holding this SKILL.md in Codex. `<plugin-root>` is the plugin root two directories above it. Resolve both once, before the first command below, and confirm the script exists there.
+
 ## Resolve the pull request
 
 1. Confirm the cwd is inside a Git checkout. Run `git status --short`.
@@ -57,7 +59,7 @@ Exit 0 with `verified` continues. Exit 1 or 2 stops with the printed remainder b
 
 ## Run the helper
 
-Resolve the skill directory from the loaded SKILL.md. Pass repository and PR number as separate native arguments. Keep a non-zero preflight result.
+Pass repository and PR number as separate native arguments. Keep a non-zero preflight result.
 
 ```text
 node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha>

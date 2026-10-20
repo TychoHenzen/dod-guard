@@ -118,14 +118,11 @@ function parseIssueBodyRecords(body) {
   };
 }
 
-// Returns the evaluateConvergence input for the post-push proof: the parsed
-// records with the observed acceptance matrix and the pushed head. The planned
-// matrix is dropped, since observed mode reads only the observed rows. A lens
-// entry holds no head of its own; the pushed head the caller passes is the
-// head every such lens is bound to. A lens that does store a different head
-// stays stale, so structured-workflow-proof.mjs reports it. The binding applies
-// to both sides of the lens comparison: the lens-ownership record and the
-// review lenses, so validateLensOwnershipRecord compares like with like.
+// A lens entry stores no head, so the proof binds one to the head the caller
+// supplies. Two places own that rule and must agree: this function gives a
+// headless lens the supplied head, and lensRowRemainder in
+// structured-workflow-proof.mjs reports a lens whose stored head differs, which
+// is how a legacy body that still stores one goes stale.
 function bindLensHead(lens, headSha) {
   if (!lens || typeof lens !== "object") {
     return lens;
@@ -136,6 +133,11 @@ function bindLensHead(lens, headSha) {
   return { ...lens, headSha };
 }
 
+// Returns the evaluateConvergence input for the post-push proof: the parsed
+// records with the observed acceptance matrix and the pushed head. The planned
+// matrix is dropped, since observed mode reads only the observed rows. Both the
+// lens-ownership record and the review lenses are bound, so
+// validateLensOwnershipRecord compares like with like.
 function postPushInput({ input, rows, headSha }) {
   const bindAll = (lenses) => lenses.map((lens) => bindLensHead(lens, headSha));
   const lensRecord = input.records["lens-ownership"];
