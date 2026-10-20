@@ -118,6 +118,50 @@ test("every finding stays an inline comment so it gets a GH id", () => {
   assert.doesNotMatch(payload.body, /no added line/);
 });
 
+const REFUSED_BUILD = /Incomplete reviewer results; do not post/;
+
+test("the build refuses a finding on a slot its lens ruled VERIFIED", () => {
+  const results = [
+    {
+      reviewer: "review-pr-design",
+      rulings: [{ slot: `file:${FIX}`, status: "VERIFIED", evidence: "ok" }],
+      findings: [judgment(FIX)],
+    },
+  ];
+  assert.throws(
+    () => review(results),
+    (error) =>
+      REFUSED_BUILD.test(error.message) &&
+      error.message.includes(`review-pr-design: finding 1 names slot file:${FIX}, which was not ruled FINDING`),
+  );
+});
+
+test("the build refuses a FINDING ruling that no finding names", () => {
+  const results = [
+    {
+      reviewer: "review-pr-feature",
+      rulings: [
+        { slot: `file:${FIX}`, status: "FINDING", evidence: "ok" },
+        { slot: "criterion:1", status: "FINDING", evidence: "ok" },
+      ],
+      findings: [judgment(FIX)],
+    },
+  ];
+  assert.throws(
+    () => review(results),
+    (error) =>
+      REFUSED_BUILD.test(error.message) &&
+      error.message.includes("review-pr-feature: FINDING ruling for slot criterion:1 has no finding naming that slot"),
+  );
+});
+
+test("the same review builds once the finding names its FINDING-ruled slot", () => {
+  const results = [{ reviewer: "review-pr-design", findings: [judgment(FIX)] }];
+  const { payload, recommendation } = review(results);
+  assert.equal(payload.event, "COMMENT");
+  assert.equal(recommendation, "REQUEST_CHANGES");
+});
+
 test("a clean review approves and carries the marker", () => {
   const { payload, recommendation } = review([]);
   assert.equal(recommendation, "APPROVE");
