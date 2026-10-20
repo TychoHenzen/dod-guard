@@ -4,14 +4,15 @@
  * Workspace packages differ only in which native modules stay external and
  * whether the output needs a shebang or a CommonJS `require` shim. Keeping
  * one driver here means a change to the bundle contract lands once. It also
- * keeps the per-package config below the duplicate-block bar. esbuild's default
- * charset leaves preserved comments raw, so the driver escapes the output itself.
+ * keeps the per-package config below the duplicate-block bar. esbuild's charset
+ * option leaves non-ASCII in comments raw, so the driver escapes comments itself
+ * and fails the build on a raw character anywhere else.
  */
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { build } from "esbuild";
-import { escapeNonAscii } from "./ascii-output.mjs";
+import { toAsciiBundle } from "./ascii-output.mjs";
 
 const REQUIRE_SHIM =
   'import { createRequire as __createRequire } from "module"; const require = __createRequire(import.meta.url);';
@@ -50,8 +51,9 @@ export async function bundlePackage({
   });
   await Promise.all(
     result.outputFiles.map(async (file) => {
+      const text = toAsciiBundle({ text: file.text, file: file.path });
       await mkdir(dirname(file.path), { recursive: true });
-      await writeFile(file.path, escapeNonAscii(file.text));
+      await writeFile(file.path, text);
     }),
   );
 }
