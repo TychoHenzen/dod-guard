@@ -29,7 +29,7 @@ gh api --paginate --slurp "repos/{owner}/{repo}/pulls/{n}/reviews?per_page=100"
 node "<skill-dir>/scripts/review-findings.mjs" existing --reviews=<reviews.json>
 ```
 
-Save the reviews first. If the result is `found: true`, report that review's recommendation, `headSha`, and `url`, then stop. The one exception is the readback that step 6 requires after a failed or ambiguous post. Later commits, including fix-pr-review remediation, never start another review unless the user asks.
+Save the reviews first. If the result is `found: true`, report that review's recommendation, `headSha`, and `url`, then stop. The one exception is the readback that step 6 requires after a failed or ambiguous post: a found review whose `headSha` equals the reviewed head is the posted review, so continue at step 7 with its `reviewId` and make no second POST. A found review at any other head still stops the run. Later commits, including fix-pr-review remediation, never start another review unless the user asks.
 
 ## 3. Diff and slots
 

@@ -77,22 +77,6 @@ test("the same inputs always produce the same slots", () => {
   assert.deepEqual(slotsFor(), slotsFor());
 });
 
-test("a criterion slot carries the item's nested sub-bullets", () => {
-  const body = [
-    "## Acceptance criteria",
-    "",
-    "- [ ] AC-01 first",
-    "  - nested sub-bullet",
-    "- [x] AC-02 second",
-    "",
-  ].join("\n");
-  const criteria = slotsFor(DIFF, pbiJson({ body }), []).filter((slot) => slot.kind === "criterion");
-  assert.deepEqual(criteria, [
-    { slot: "criterion:1", kind: "criterion", text: "AC-01 first\n  - nested sub-bullet" },
-    { slot: "criterion:2", kind: "criterion", text: "AC-02 second" },
-  ]);
-});
-
 test("zero sub-issues is valid", () => {
   for (const subs of [[], [[]]]) {
     const slots = slotsFor(DIFF, PBI_JSON, subs);

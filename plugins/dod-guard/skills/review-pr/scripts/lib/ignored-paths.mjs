@@ -41,8 +41,10 @@ function scanArguments(root, ignored) {
   const directories = excludeArguments(ignored.filter((path) => path.endsWith("/")));
   const excludes = [everything, directories].find(withinBudget);
   if (excludes === undefined) {
+    const directorySize = directories.join(" ").length;
     throw new Error(
-      `${ignored.length} gitignored paths do not fit on one scan command line (${directories.join(" ").length} characters of directories)`,
+      `${ignored.length} gitignored paths do not fit on one scan command line ` +
+        `(${directorySize} characters of directories)`,
     );
   }
   return [".", `--root=${root}`, "--format=json", ...excludes];
