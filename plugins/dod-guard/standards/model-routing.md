@@ -208,7 +208,9 @@ A judgement step that needs a large read volume runs in three parts:
    findings or decisions.
 
 Read-only agents return their output as text. The main thread writes any
-handoff file, such as a questions or decisions file, from that text.
+handoff file, such as a questions or decisions file, from that text. Read-only
+agents create and delete no file; the dispatching main thread owns every
+scratch file and removes only the files it wrote.
 
 ## Verify cheap-tier output
 
