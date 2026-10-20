@@ -118,7 +118,9 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
   `unresolved-decision` entries when a decision is not safe to invent.
 - `implementation-plan`: affected owners, approach, and verification approach.
 - `task-list`: ordered tasks with a clear dependency and an `independent`
-  marker only when a task can be committed and closed separately.
+  marker only when a task can be committed and closed separately. A task with
+  no linked sub-issue never can be, so the proof reports `independent: true`
+  on it.
 - `lens-ownership`: an array containing exactly one `implementation`,
   `wiring/usability`, `quality`, and `reliability` (failure/recovery) entry.
   Each entry repeats its

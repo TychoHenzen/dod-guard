@@ -238,3 +238,21 @@ test("functional convergence keeps provider child ids separate from slice ids", 
   assert.ok(!result.remainder.some((entry) => entry.includes("functional slice identifiers disagree")));
   assert.ok(!result.remainder.some((entry) => entry.includes("missing functional slice search-flow")));
 });
+
+test("functional convergence rejects an independent task that has no linked child", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [
+      { id: "task-1", parentLevel: "convergence", independent: true, evidence: "mapped one" },
+      { id: "task-2", parentLevel: "convergence", independent: false, evidence: "mapped two" },
+      { id: "task-3", parentLevel: "convergence", evidence: "mapped three" },
+      { id: "task-4", child: "search-flow", independent: true, evidence: "mapped four" },
+    ],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+  });
+
+  const independent = result.remainder.filter((entry) => entry.includes("marked independent"));
+  assert.equal(independent.length, 1, JSON.stringify(independent));
+  assert.ok(independent[0].includes("task-1"), independent[0]);
+  assert.ok(independent[0].includes("no linked child issue"), independent[0]);
+});

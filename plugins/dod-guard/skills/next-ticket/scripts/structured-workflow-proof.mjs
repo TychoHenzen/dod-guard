@@ -1,4 +1,5 @@
 import path from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { ACCEPTANCE_MATRIX_PATHS, validateAcceptanceMatrix } from "../../../lib/acceptance-matrix.mjs";
 
@@ -122,6 +123,9 @@ function validateTaskMapping({ task, taskId, childIds, addRemainder }) {
       `${taskId ?? "task"} needs a functional slice or parent-level convergence marker`,
     );
   }
+  if (task.independent === true && !slice) {
+    addRemainder("Functional decomposition", `${taskId ?? "task"} is marked independent but has no linked child issue`);
+  }
 }
 
 function declareEvidence({ owner, value, section, evidenceOwners, addRemainder }) {
@@ -178,7 +182,7 @@ function lensOwnerTask({ id, lens, taskList, normalizedTaskIds, addRemainder }) 
 // naming the problem.
 function firstLensId(lens, seenLenses, addRemainder) {
   const id = normalizedIdentifier(lens.id ?? lens.name);
-  if (!id || !REQUIRED_REVIEW_LENSES.includes(id)) {
+  if (!(id && REQUIRED_REVIEW_LENSES.includes(id))) {
     addRemainder("Functional decomposition", "review-lens ownership uses an unknown lens");
     return null;
   }
@@ -602,7 +606,7 @@ export function evaluateConvergence({
 
 // The handoff comment already maps every task and criterion; the PR only points at it.
 function renderVerifiedConvergence({ url, headSha } = {}) {
-  if (!url || !headSha) throw new Error("A verified convergence needs the handoff URL and head SHA.");
+  if (!(url && headSha)) throw new Error("A verified convergence needs the handoff URL and head SHA.");
   return ["## Convergence", `- Handoff: ${url} (head ${headSha})`, "- Remainder: none"].join("\n");
 }
 
