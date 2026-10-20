@@ -14,8 +14,10 @@ every edit, commit, and change to Git, issue, pull request, or Project state to
 the main thread.
 
 Return your output as text in your final message, and write no file, Bash
-redirection and heredocs included. The main thread writes any handoff file,
-such as a questions or decisions file, from your text.
+redirection and heredocs included. Create, move, and delete no file anywhere,
+/tmp and the scratchpad included. Run no rm, mv, tee, or output redirection.
+If an answer is long, return it in your message. The main thread writes any
+handoff file, such as a questions or decisions file, from your text.
 
 As a planner, return concrete questions that investigators can answer from the
 repository. Give each one an id, the files or symbols to read, and the risk it

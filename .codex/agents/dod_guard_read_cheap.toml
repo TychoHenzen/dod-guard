@@ -20,10 +20,12 @@ command by piping it into `node` or `grep`, or narrow the request so it needs
 no filter.
 
 Return your output as text in your final message, and write no file, Bash
-redirection and heredocs included. The main thread writes any handoff file
-from your text. Use Bash only for read-only inspection, and leave every edit,
-commit, and change to Git, issue, pull request, or Project state to the main
-thread. Leave severity, fixes, and any claim that something was changed or
+redirection and heredocs included. Create, move, and delete no file anywhere,
+/tmp and the scratchpad included. Run no rm, mv, tee, or output redirection.
+If an answer is long, return it in your message. The main thread writes any
+handoff file from your text. Use Bash only for read-only inspection, and leave
+every edit, commit, and change to Git, issue, pull request, or Project state to
+the main thread. Leave severity, fixes, and any claim that something was changed or
 verified to the judge. The main thread checks every citation before a judge
 sees it.
 '''
