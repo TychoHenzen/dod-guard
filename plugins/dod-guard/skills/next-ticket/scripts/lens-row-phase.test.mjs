@@ -128,14 +128,42 @@ test("a seven-key scratch-helper call keeps the export names, input keys, and re
   assert.deepEqual(Object.keys(finalization), ["outcome", "remainder", "sections", "nextAction", "nextStep"]);
   assert.equal(finalization.outcome, "verified");
   assert.equal(finalization.nextStep, "project-status.mjs");
+});
 
-  const stale = evaluateStructuredFinalization({ ...sevenKeys, headSha: "119d2c3049d92993b948e8d91126848cb753351f" });
+test("a headless lens binds to the head its caller supplies in post-push and finalization", () => {
+  const observed = observedFromPlanned(issue855Shape({ corrected: true }), PUSHED_HEAD);
+
+  assert.ok(observed.reviewLenses.every((lens) => lens.headSha === undefined && lens.head === undefined));
+  assert.deepEqual(lensRemainder(proof.evaluateConvergence(observed)), []);
+  const finalization = evaluateStructuredFinalization(observed);
+  assert.equal(finalization.outcome, "verified");
+  assert.deepEqual(lensRemainder(finalization), []);
+});
+
+test("a lens that stores a head differing from the supplied head is stale", () => {
+  const staleHead = "119d2c3049d92993b948e8d91126848cb753351f";
+  const lenses = issue904.reviewLenses.map((lens) => ({ ...lens, headSha: staleHead }));
+  const handoff = {
+    records: recordsWithRequiredKeys(lenses),
+    tasks: issue904.tasks,
+    children: [],
+    reviewLenses: lenses,
+    acceptance: issue904.acceptance,
+    acceptanceMatrix: issue904.acceptanceMatrix,
+    headSha: issue904.headSha,
+  };
+  const stale = evaluateStructuredFinalization(handoff);
+
   assert.equal(stale.nextStep, "stop");
-  assert.ok(
-    stale.remainder.includes(
-      "implementation review lens is not bound to handoff head 119d2c3049d92993b948e8d91126848cb753351f",
-    ),
-  );
+  assert.ok(stale.remainder.includes(`implementation review lens is not bound to handoff head ${issue904.headSha}`));
+});
+
+test("refinement supplies no head, so a headless lens passes", () => {
+  const input = issue855Shape({ corrected: true });
+
+  assert.ok(input.reviewLenses.every((lens) => lens.headSha === undefined));
+  assert.equal(input.headSha, undefined);
+  assert.equal(proof.evaluateConvergence(input).outcome, "verified");
 });
 
 test("finalization refuses a handoff with no pushed head or observed matrix", () => {

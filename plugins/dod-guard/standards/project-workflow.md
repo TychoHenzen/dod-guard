@@ -62,8 +62,10 @@ The executable proof at `skills/next-ticket/scripts/structured-workflow-proof.mj
 and its focused tests enforce the canonical lens IDs `implementation`,
 `wiring/usability`, `quality`, and `reliability`; prose may expand those IDs
 to the corresponding user-facing concern. Each lens entry records its owner,
-observable evidence, `headSha`, and the acceptance-matrix `acceptanceEvidence`
-and `verificationEvidence` that prove the lens before Project finalization.
+observable evidence, and the acceptance-matrix `acceptanceEvidence` and
+`verificationEvidence` that prove the lens before Project finalization. The
+proof binds each lens to the pushed head it is given; a stored head that
+differs from that head is reported as stale.
 
 Task-list records use `parentLevel: "convergence"` on a task that owns
 cross-cutting parent work without a linked child. The following is an
@@ -126,9 +128,11 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
 - `lens-ownership`: an array containing exactly one `implementation`,
   `wiring/usability`, `quality`, and `reliability` (failure/recovery) entry.
   Each entry repeats its
-  review-lens id, owner, observable evidence, accepted head, and any acceptance
-  or verification evidence; the executable handoff proof compares this record
-  with the review-lens input instead of treating record presence as proof.
+  review-lens id, owner, observable evidence, and any acceptance or
+  verification evidence, and stores no head; the executable handoff proof
+  binds each lens to the pushed head it is given, reports a stored head that
+  differs as stale, and compares this record with the review-lens input instead
+  of treating record presence as proof.
   A lens's own rows must name each path it requires exactly, ignoring case:
   `interactive-control` and `browser/e2e` for wiring/usability, `data/error`
   and `recovery` for reliability. The matrix coverage check also accepts

@@ -210,19 +210,25 @@ test("post-push names a stale row", async () => {
 });
 
 test("post-push names a stale lens", async () => {
-  await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
-    const { status, json } = run(
-      "post-push",
-      `--body-file=${BODY_904}`,
-      `--handoff-file=${handoff}`,
-      `--head-sha=${UNPUSHED_HEAD}`,
-    );
+  // The #904 body stores no lens head, so a stale lens needs a body that stores one.
+  const oneStale = bodyWithLensRecords(({ headSha, ...lens }, index) =>
+    index === 0 ? { ...lens, headSha: HEAD_904 } : lens,
+  );
+  await withTempFile("body.md", oneStale, async (bodyFile) => {
+    await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
+      const { status, json } = run(
+        "post-push",
+        `--body-file=${bodyFile}`,
+        `--handoff-file=${handoff}`,
+        `--head-sha=${UNPUSHED_HEAD}`,
+      );
 
-    assert.equal(status, 1);
-    assert.ok(
-      json.remainder.some((entry) => STALE_LENS.test(entry)),
-      JSON.stringify(json.remainder),
-    );
+      assert.equal(status, 1);
+      assert.ok(
+        json.remainder.some((entry) => STALE_LENS.test(entry)),
+        JSON.stringify(json.remainder),
+      );
+    });
   });
 });
 
@@ -350,10 +356,22 @@ test("a lens that stores no head passes, one that stores an older head fails", a
   });
 });
 
+test("post-push verifies a body whose lenses store no head", async () => {
+  await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
+    const { status } = run(
+      "post-push",
+      `--body-file=${BODY_904}`,
+      `--handoff-file=${handoff}`,
+      `--head-sha=${HEAD_904}`,
+    );
+    assert.equal(status, 0);
+  });
+});
+
 // The CardCleaner 282 replay: the #904 body was checked at head A, and a merge
-// of head B must stop. Legacy bodies such as the #904 fixture store a headSha in
-// every lens-ownership record as well as in each handoff row, so the recovery
-// rewrites both the row headSha values and the lens headSha values to B.
+// of head B must stop. The #904 body stores no lens head, so re-observing it at B
+// only moves the handoff rows. The lens heads rebound below model a body that
+// still stores one, which the proof must accept once it matches head B.
 test("recovers the CardCleaner 282 case: rows and lenses re-observed at the new head pass", async () => {
   await withTempFile("handoff.md", buildHandoff(ROWS_904), (handoff) => {
     const { status, json } = run(

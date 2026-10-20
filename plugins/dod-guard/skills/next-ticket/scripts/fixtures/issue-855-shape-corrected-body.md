@@ -33,10 +33,10 @@ This is the corrected form: T1 declares the recovery row R9, and the reliability
 
 ```json
 [
-  {"id":"implementation","owner":"T2","evidence":["ev-lens-implementation"],"acceptanceEvidence":["ev-ac2-unclaimed"],"verificationEvidence":["proof-ac2-unclaimed"],"headSha":"65badd3b4db81c654c78759447c9d58c4d8a5ded"},
-  {"id":"wiring/usability","owner":"T3","evidence":["ev-lens-wiring"],"acceptanceEvidence":["ev-path-interactive-control","ev-path-browser-e2e"],"verificationEvidence":["proof-path-interactive-control","proof-path-browser-e2e"],"headSha":"65badd3b4db81c654c78759447c9d58c4d8a5ded"},
-  {"id":"quality","owner":"T3","evidence":["ev-lens-quality"],"acceptanceEvidence":["ev-ac3-quality"],"verificationEvidence":["proof-ac3-quality"],"headSha":"65badd3b4db81c654c78759447c9d58c4d8a5ded"},
-  {"id":"reliability","owner":"T1","evidence":["ev-lens-reliability"],"acceptanceEvidence":["ev-ac1-archived","ev-path-data-error","ev-ac1-recovery"],"verificationEvidence":["proof-ac1-archived","proof-path-data-error","proof-ac1-recovery"],"headSha":"65badd3b4db81c654c78759447c9d58c4d8a5ded"}
+  {"id":"implementation","owner":"T2","evidence":["ev-lens-implementation"],"acceptanceEvidence":["ev-ac2-unclaimed"],"verificationEvidence":["proof-ac2-unclaimed"]},
+  {"id":"wiring/usability","owner":"T3","evidence":["ev-lens-wiring"],"acceptanceEvidence":["ev-path-interactive-control","ev-path-browser-e2e"],"verificationEvidence":["proof-path-interactive-control","proof-path-browser-e2e"]},
+  {"id":"quality","owner":"T3","evidence":["ev-lens-quality"],"acceptanceEvidence":["ev-ac3-quality"],"verificationEvidence":["proof-ac3-quality"]},
+  {"id":"reliability","owner":"T1","evidence":["ev-lens-reliability"],"acceptanceEvidence":["ev-ac1-archived","ev-path-data-error","ev-ac1-recovery"],"verificationEvidence":["proof-ac1-archived","proof-path-data-error","proof-ac1-recovery"]}
 ]
 ```
 

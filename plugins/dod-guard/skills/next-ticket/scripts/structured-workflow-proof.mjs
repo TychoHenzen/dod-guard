@@ -335,7 +335,10 @@ function lensRowRemainder({ ownedLenses, rows, observed, expectedHeadSha }) {
   const remainder = [];
   const claimedRows = new Map();
   for (const { id, lens, ownerTask } of ownedLenses) {
-    if (observed && expectedHeadSha && normalizedIdentifier(lens.headSha ?? lens.head) !== expectedHeadSha) {
+    // A headless lens binds to the head its caller supplies; only a stored head
+    // that differs (a legacy body) is stale. Refinement supplies no head.
+    const storedHead = lens.headSha ?? lens.head;
+    if (expectedHeadSha && storedHead && normalizedIdentifier(storedHead) !== expectedHeadSha) {
       remainder.push(`${id} review lens is not bound to handoff head ${expectedHeadSha}`);
     }
     const [acceptance, verification] = LENS_ROW_KINDS.map((kind) => {
