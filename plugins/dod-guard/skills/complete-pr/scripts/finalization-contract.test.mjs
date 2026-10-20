@@ -1,57 +1,27 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ACCEPTANCE_MATRIX_PATHS } from "../../../lib/acceptance-matrix.mjs";
+import {
+  reviewLenses as buildReviewLenses,
+  recordsWithRequiredKeys,
+} from "../../next-ticket/scripts/convergence-builders.mjs";
+import { acceptanceMatrix as buildAcceptanceMatrix } from "../../next-ticket/scripts/passing-matrix.mjs";
+import {
+  evaluateConvergence,
+  REQUIRED_REVIEW_LENSES,
+  scenarioResult,
+} from "../../next-ticket/scripts/structured-workflow-proof.mjs";
 import { evaluateStructuredFinalization } from "./finalization-gate.mjs";
 
-const proof = await import("../../next-ticket/scripts/structured-workflow-proof.mjs");
-const completeRecords = (lensOwnership) =>
-  proof.REQUIRED_RECORDS.reduce(
-    (records, name) => ({ ...records, [name]: name === "lens-ownership" ? lensOwnership : true }),
-    {},
-  );
-const createReviewLenses = () =>
-  proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
-    id,
-    owner: "task-1",
-    evidence: `lens-${id}`,
-    headSha: "proof-head",
-    acceptanceEvidence:
-      id === "wiring/usability"
-        ? ["matrix-evidence-2", "matrix-evidence-3"]
-        : id === "reliability"
-          ? ["matrix-evidence-4", "matrix-evidence-5"]
-          : id === "quality"
-            ? "matrix-evidence-6"
-            : `matrix-evidence-${index + 1}`,
-    verificationEvidence:
-      id === "wiring/usability"
-        ? ["matrix-proof-2", "matrix-proof-3"]
-        : id === "reliability"
-          ? ["matrix-proof-4", "matrix-proof-5"]
-          : id === "quality"
-            ? "matrix-proof-6"
-            : `matrix-proof-${index + 1}`,
-  }));
 const validConvergenceInput = () => {
-  const reviewLenses = createReviewLenses();
-  const acceptanceMatrix = [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((path, index) => ({
-    id: `AC-1-${index + 1}`,
-    contract: "AC-1",
-    path,
-    proof: `matrix-proof-${index + 1}`,
-    expected: "pass",
-    observed: "pass",
-    status: "pass",
-    evidence: `matrix-evidence-${index + 1}`,
-    headSha: "proof-head",
-  }));
+  const reviewLenses = buildReviewLenses({ headSha: "proof-head", prefix: "matrix-" });
+  const acceptanceMatrix = buildAcceptanceMatrix("proof-head", "AC-1", "matrix-");
   return {
-    records: completeRecords(reviewLenses),
+    records: recordsWithRequiredKeys(reviewLenses),
     tasks: [
       {
         id: "task-1",
         child: "search-flow",
-        evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+        evidence: ["commit-proof", ...REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
         acceptanceEvidence: acceptanceMatrix.map((row) => row.evidence),
         verificationEvidence: acceptanceMatrix.map((row) => row.proof),
       },
@@ -73,13 +43,13 @@ const validConvergenceInput = () => {
 };
 
 test("finalization relies on executable functional convergence proof", () => {
-  assert.equal(proof.scenarioResult("passing").outcome, "verified");
-  const passing = proof.evaluateConvergence(validConvergenceInput());
+  assert.equal(scenarioResult("passing").outcome, "verified");
+  const passing = evaluateConvergence(validConvergenceInput());
   assert.equal(passing.outcome, "verified");
   const resultInput = validConvergenceInput();
   resultInput.tasks[0].child = "missing-flow";
   resultInput.children[0].id = "implemented-flow";
-  const result = proof.evaluateConvergence(resultInput);
+  const result = evaluateConvergence(resultInput);
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
@@ -88,14 +58,14 @@ test("finalization relies on executable functional convergence proof", () => {
 
   const missingLensInput = validConvergenceInput();
   missingLensInput.reviewLenses = missingLensInput.reviewLenses.slice(0, 1);
-  const missingLens = proof.evaluateConvergence(missingLensInput);
+  const missingLens = evaluateConvergence(missingLensInput);
   assert.equal(missingLens.outcome, "actionable remainder");
   assert.ok(missingLens.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")));
 
   const duplicateSliceInput = validConvergenceInput();
   duplicateSliceInput.tasks[1].child = "search-flow";
   duplicateSliceInput.tasks[1].evidence = "other-proof";
-  const duplicateSlice = proof.evaluateConvergence(duplicateSliceInput);
+  const duplicateSlice = evaluateConvergence(duplicateSliceInput);
 
   assert.ok(
     duplicateSlice.remainder.some((entry) => entry.includes("search-flow slice has more than one owning task")),
@@ -104,7 +74,7 @@ test("finalization relies on executable functional convergence proof", () => {
 
   const duplicateEvidenceInput = validConvergenceInput();
   duplicateEvidenceInput.tasks[1].evidence = duplicateEvidenceInput.tasks[0].evidence;
-  const duplicateEvidence = proof.evaluateConvergence(duplicateEvidenceInput);
+  const duplicateEvidence = evaluateConvergence(duplicateEvidenceInput);
 
   assert.ok(
     duplicateEvidence.remainder.some((entry) => entry.includes("evidence commit-proof is mapped more than once")),
@@ -314,7 +284,7 @@ test("convergence rejects orphaned acceptance-matrix evidence", () => {
     evidence: "matrix-evidence-orphan",
     headSha: "proof-head",
   });
-  const result = proof.evaluateConvergence(orphaned);
+  const result = evaluateConvergence(orphaned);
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("matrix-evidence-orphan is not owned")));

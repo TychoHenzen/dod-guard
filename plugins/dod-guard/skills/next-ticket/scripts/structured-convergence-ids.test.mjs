@@ -1,15 +1,13 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
+import process from "node:process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import {
-  acceptanceMatrix,
-  lensEvidence,
-  PASSING_SECTION_LINE,
-  proof,
-  recordsWithRequiredKeys,
-} from "./structured-workflow-fixtures.mjs";
+import { reviewLenses as buildReviewLenses, recordsWithRequiredKeys } from "./convergence-builders.mjs";
+import { acceptanceMatrix } from "./passing-matrix.mjs";
+import { PASSING_SECTION_LINE } from "./structured-workflow-fixtures.mjs";
+import { evaluateConvergence, REQUIRED_RECORDS, REQUIRED_REVIEW_LENSES } from "./structured-workflow-proof.mjs";
 
 const proofScript = path.join(path.dirname(fileURLToPath(import.meta.url)), "structured-workflow-proof.mjs");
 
@@ -24,7 +22,7 @@ test("normalizes task identifiers before matching owners", () => {
       verificationEvidence: "proof-1",
     },
   ];
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     headSha: "normalization-head",
     records: recordsWithRequiredKeys(reviewLenses),
     tasks: [
@@ -47,7 +45,7 @@ test("normalizes task identifiers before matching owners", () => {
 });
 
 test("review-lens owner IDs cannot collide with slice IDs", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [
       { id: "task-1", child: "slice-a", evidence: "task-proof" },
@@ -64,28 +62,28 @@ test("review-lens owner IDs cannot collide with slice IDs", () => {
 });
 
 test("structured convergence rejects a placeholder lens-ownership record", () => {
-  const result = proof.evaluateConvergence({
-    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+  const result = evaluateConvergence({
+    records: Object.fromEntries(REQUIRED_RECORDS.map((name) => [name, true])),
     tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
     children: [{ id: "search-flow", evidence: "slice-proof" }],
-    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
+    reviewLenses: REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
   });
 
   assert.ok(result.remainder.some((entry) => entry.includes("lens-ownership record must be an array")));
 });
 
 test("structured convergence rejects lens-ownership records that drift from review lenses", () => {
-  const lensOwnership = proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+  const lensOwnership = REQUIRED_REVIEW_LENSES.map((id) => ({
     id,
     owner: "task-1",
     evidence: `record-${id}`,
   }));
-  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+  const reviewLenses = REQUIRED_REVIEW_LENSES.map((id) => ({
     id,
     owner: "task-1",
     evidence: `review-${id}`,
   }));
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys(lensOwnership),
     tasks: [
       {
@@ -104,7 +102,7 @@ test("structured convergence rejects lens-ownership records that drift from revi
 });
 
 test("structured convergence reports malformed lens-ownership entries", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([null]),
     tasks: [],
     children: [],
@@ -115,22 +113,15 @@ test("structured convergence reports malformed lens-ownership entries", () => {
 });
 
 test("ordinary fixes bypass structured records", () => {
-  assert.deepEqual(proof.evaluateConvergence({ path: "ordinary" }), {
+  assert.deepEqual(evaluateConvergence({ path: "ordinary" }), {
     outcome: "ordinary",
     remainder: [],
   });
 });
 
 test("structured convergence verifies a parent-level task without children", () => {
-  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
-    id,
-    owner: "task-1",
-    evidence: `lens-${id}`,
-    headSha: "parent-head",
-    acceptanceEvidence: lensEvidence(id, index, "evidence"),
-    verificationEvidence: lensEvidence(id, index, "proof"),
-  }));
-  const result = proof.evaluateConvergence({
+  const reviewLenses = buildReviewLenses({ headSha: "parent-head" });
+  const result = evaluateConvergence({
     headSha: "parent-head",
     records: recordsWithRequiredKeys(reviewLenses),
     tasks: [
@@ -152,7 +143,7 @@ test("structured convergence verifies a parent-level task without children", () 
 });
 
 test("structured convergence rejects a matrix tied to a different head", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     headSha: "new-head",
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", child: "implementation", evidence: "commit new-head" }],
@@ -166,7 +157,7 @@ test("structured convergence rejects a matrix tied to a different head", () => {
 });
 
 test("structured convergence requires an exact pushed head", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", parentLevel: "convergence", evidence: "commit" }],
     acceptance: [{ id: "AC-1", evidence: "proof" }],
@@ -177,7 +168,7 @@ test("structured convergence requires an exact pushed head", () => {
 });
 
 test("structured convergence requires an acceptance matrix after the head is known", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     headSha: "new-head",
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", parentLevel: "convergence", evidence: "commit" }],

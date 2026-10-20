@@ -1,24 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ACCEPTANCE_MATRIX_PATHS } from "../../../lib/acceptance-matrix.mjs";
-import {
-  acceptanceMatrix,
-  lensEvidence,
-  PASSING_SECTION_LINE,
-  proof,
-  recordsWithRequiredKeys,
-} from "./structured-workflow-fixtures.mjs";
+import { reviewLenses as buildReviewLenses, recordsWithRequiredKeys } from "./convergence-builders.mjs";
+import { acceptanceMatrix } from "./passing-matrix.mjs";
+import { PASSING_SECTION_LINE } from "./structured-workflow-fixtures.mjs";
+import { evaluateConvergence, REQUIRED_REVIEW_LENSES, renderConvergence } from "./structured-workflow-proof.mjs";
 
 test("structured proof produces passing and actionable outcomes", () => {
-  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
-    id,
-    owner: index === 0 ? "search-flow" : "task-1",
-    evidence: `lens-${id}`,
+  const reviewLenses = buildReviewLenses({
+    owner: (_, index) => ["search-flow"][index] ?? "task-1",
     headSha: "abc1234",
-    acceptanceEvidence: lensEvidence(id, index, "evidence"),
-    verificationEvidence: lensEvidence(id, index, "proof"),
-  }));
-  const complete = proof.evaluateConvergence({
+  });
+  const complete = evaluateConvergence({
     headSha: "abc1234",
     records: recordsWithRequiredKeys(reviewLenses),
     tasks: [
@@ -27,7 +20,7 @@ test("structured proof produces passing and actionable outcomes", () => {
         child: "search-flow",
         evidence: [
           "commit abc123; test passed",
-          ...proof.REQUIRED_REVIEW_LENSES.filter((id) => id !== "implementation").map((id) => `lens-${id}`),
+          ...REQUIRED_REVIEW_LENSES.filter((id) => id !== "implementation").map((id) => `lens-${id}`),
         ],
         acceptanceEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `evidence-${index + 1}`),
         verificationEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `proof-${index + 1}`),
@@ -42,7 +35,7 @@ test("structured proof produces passing and actionable outcomes", () => {
   assert.equal(complete.outcome, "verified");
   assert.deepEqual(complete.remainder, []);
   const oneCleanSection = { outcome: "actionable remainder", remainder: ["x"], sections: { "Plan and tasks": [] } };
-  assert.match(proof.renderConvergence(oneCleanSection), PASSING_SECTION_LINE);
+  assert.match(renderConvergence(oneCleanSection), PASSING_SECTION_LINE);
   assert.deepEqual(complete.sections, {
     "Requirements and clarifications": [],
     "Plan and tasks": [],
@@ -50,7 +43,7 @@ test("structured proof produces passing and actionable outcomes", () => {
     "Acceptance and verification": [],
   });
 
-  const incomplete = proof.evaluateConvergence({
+  const incomplete = evaluateConvergence({
     records: { requirements: true, clarifications: true, "implementation-plan": true },
     tasks: [{ id: "task-2", child: "wiring", evidence: "" }],
     children: [{ id: "implementation", evidence: "mapped" }],
@@ -61,7 +54,7 @@ test("structured proof produces passing and actionable outcomes", () => {
   assert.equal(incomplete.outcome, "actionable remainder");
   assert.ok(incomplete.remainder.length > 0);
   assert.ok(incomplete.remainder.some((entry) => entry.includes("implementation slice needs an owning task")));
-  const rendered = proof.renderConvergence(incomplete);
+  const rendered = renderConvergence(incomplete);
   assert.match(rendered, /Plan and tasks: actionable/);
   assert.match(rendered, /Functional decomposition: actionable/);
   assert.match(rendered, /Acceptance and verification: actionable/);
@@ -72,7 +65,7 @@ test("structured proof produces passing and actionable outcomes", () => {
 });
 
 test("functional convergence rejects duplicate slices, owners, and missing mappings", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [
       { id: "task-1", child: "search-flow", evidence: "commit one" },
@@ -94,7 +87,7 @@ test("functional convergence rejects duplicate slices, owners, and missing mappi
 });
 
 test("functional convergence validates review-lens identifiers and ownership", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", child: "search-flow", evidence: "mapped" }],
     children: [{ id: "search-flow", evidence: "slice-proof" }],
@@ -111,7 +104,7 @@ test("functional convergence validates review-lens identifiers and ownership", (
 });
 
 test("functional convergence rejects evidence reused across owners", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", child: "search-flow", evidence: "same-proof" }],
     children: [{ id: "search-flow", evidence: "same-proof" }],
@@ -126,7 +119,7 @@ test("functional convergence rejects evidence reused across owners", () => {
 });
 
 test("functional convergence rejects repeated evidence references", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", child: "search-flow", evidence: ["commit", "lens-implementation"] }],
     children: [{ id: "search-flow", evidence: "slice-proof" }],
@@ -145,14 +138,14 @@ test("functional convergence rejects repeated evidence references", () => {
 });
 
 test("functional convergence rejects evidence reused across review lenses", () => {
-  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+  const reviewLenses = REQUIRED_REVIEW_LENSES.map((id, index) => ({
     id,
     owner: "task-1",
     evidence: index === 1 ? "lens-implementation" : `lens-${id}`,
     acceptanceEvidence: index === 1 ? "matrix-evidence-1" : `matrix-evidence-${index + 1}`,
     verificationEvidence: index === 1 ? "matrix-proof-1" : `matrix-proof-${index + 1}`,
   }));
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys(reviewLenses),
     tasks: [
       {
@@ -172,12 +165,12 @@ test("functional convergence rejects evidence reused across review lenses", () =
 });
 
 test("functional convergence requires lens acceptance and verification evidence before push", () => {
-  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+  const reviewLenses = REQUIRED_REVIEW_LENSES.map((id) => ({
     id,
     owner: "task-1",
     evidence: `lens-${id}`,
   }));
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys(reviewLenses),
     tasks: [{ id: "task-1", child: "search-flow", evidence: ["commit", ...reviewLenses.map((lens) => lens.evidence)] }],
     children: [{ id: "search-flow", evidence: "slice-proof" }],
@@ -191,7 +184,7 @@ test("functional convergence requires lens acceptance and verification evidence 
 });
 
 test("functional convergence reports malformed collection entries", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [null, { evidence: "orphan" }],
     children: ["not a child", { id: 42, evidence: "numeric" }],
@@ -208,7 +201,7 @@ test("functional convergence reports malformed collection entries", () => {
 });
 
 test("functional convergence rejects missing acceptance identifiers", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", parentLevel: "convergence", evidence: "commit" }],
     acceptance: [{ evidence: "proof" }],
@@ -219,7 +212,7 @@ test("functional convergence rejects missing acceptance identifiers", () => {
 });
 
 test("functional convergence rejects a task without an identifier", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [{}],
     acceptance: [{ id: "AC-1", evidence: "proof" }],
@@ -229,7 +222,7 @@ test("functional convergence rejects a task without an identifier", () => {
 });
 
 test("functional convergence keeps provider child ids separate from slice ids", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
     children: [{ id: "issue-42", slice: "search-flow", evidence: "proof" }],
@@ -240,7 +233,7 @@ test("functional convergence keeps provider child ids separate from slice ids", 
 });
 
 test("functional convergence rejects an independent task that has no linked child", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [
       { id: "task-1", parentLevel: "convergence", independent: true, evidence: "mapped one" },
@@ -258,7 +251,7 @@ test("functional convergence rejects an independent task that has no linked chil
 });
 
 test("functional convergence reports one remainder for an independent task with no mapping at all", () => {
-  const result = proof.evaluateConvergence({
+  const result = evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", independent: true, evidence: "mapped one" }],
     children: [],

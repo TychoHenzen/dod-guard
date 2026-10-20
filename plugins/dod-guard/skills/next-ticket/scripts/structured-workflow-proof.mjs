@@ -2,27 +2,11 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { acceptancePhase } from "./convergence-acceptance-phase.mjs";
-import {
-  createLedger,
-  evidenceValues,
-  normalizedIdentifier,
-  normalizeEntries,
-  REQUIRED_RECORDS,
-  REQUIRED_REVIEW_LENSES,
-} from "./convergence-core.mjs";
+import { createLedger, evidenceValues, normalizedIdentifier, normalizeEntries } from "./convergence-core.mjs";
 import { lensPhase } from "./convergence-lens-phase.mjs";
 import { planPhase } from "./convergence-plan-phase.mjs";
 import { renderConvergence } from "./convergence-render.mjs";
-import { acceptanceMatrix } from "./passing-matrix.mjs";
-
-export const PROOF_SCENARIOS = ["passing", "incomplete", "ordinary"];
-
-const PROOF_HANDOFF = {
-  url: "https://github.com/owner/repo/issues/1#issuecomment-1",
-  headSha: "abc1234",
-};
-
-const PROOF_ACCEPTANCE_MATRIX = acceptanceMatrix(PROOF_HANDOFF.headSha);
+import { PROOF_HANDOFF, scenarioInput } from "./convergence-scenarios.mjs";
 
 // After push the matrix must be bound to an exact head; the two checks run
 // before any list is normalized, so their remainder position is pinned.
@@ -149,92 +133,8 @@ export function evaluateConvergence({
   return convergenceResult(ledger, convergenceNextAction({ taskList, normalizedTaskIds, remainder }));
 }
 
-// Lens evidence the passing proof pins by lens id. Any lens not listed here uses
-// the index-numbered fallback in passingLensEvidence.
-const PASSING_LENS_EVIDENCE = {
-  "wiring/usability": {
-    acceptance: ["evidence-2", "evidence-3"],
-    verification: ["proof-2", "proof-3"],
-  },
-  reliability: {
-    acceptance: ["evidence-4", "evidence-5"],
-    verification: ["proof-4", "proof-5"],
-  },
-  quality: { acceptance: "evidence-6", verification: "proof-6" },
-};
-
-function passingLensEvidence(id, index) {
-  const fixed = PASSING_LENS_EVIDENCE[id];
-  if (fixed) {
-    return fixed;
-  }
-  return { acceptance: `evidence-${index + 1}`, verification: `proof-${index + 1}` };
-}
-
-function passingReviewLenses() {
-  return REQUIRED_REVIEW_LENSES.map((id, index) => {
-    const evidence = passingLensEvidence(id, index);
-    return {
-      id,
-      owner: "task-1",
-      evidence: `lens-${id}`,
-      headSha: PROOF_HANDOFF.headSha,
-      acceptanceEvidence: evidence.acceptance,
-      verificationEvidence: evidence.verification,
-    };
-  });
-}
-
-function recordValue(record, reviewLenses) {
-  if (record === "lens-ownership") {
-    return reviewLenses;
-  }
-  return true;
-}
-
-function incompleteScenario() {
-  return evaluateConvergence({
-    records: { requirements: true, clarifications: true, "implementation-plan": true },
-    tasks: [{ id: "task-2", child: "wiring", evidence: "" }],
-    children: [{ id: "implementation", evidence: "mapped" }],
-    reviewLenses: [{ id: "implementation", owner: "task-2", evidence: "lens-implementation" }],
-    acceptance: [{ id: "AC-2", evidence: "" }],
-    contradictions: ["user path not exercised"],
-  });
-}
-
-function passingScenario() {
-  const reviewLenses = passingReviewLenses();
-  return evaluateConvergence({
-    records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [record, recordValue(record, reviewLenses)])),
-    tasks: [
-      {
-        id: "task-1",
-        child: "search-flow",
-        evidence: ["commit abc123", ...REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
-        acceptanceEvidence: PROOF_ACCEPTANCE_MATRIX.map((row) => row.evidence),
-        verificationEvidence: PROOF_ACCEPTANCE_MATRIX.map((row) => row.proof),
-      },
-    ],
-    children: [{ id: "search-flow", evidence: "mapped" }],
-    reviewLenses,
-    acceptance: [{ id: "AC-1", evidence: "proof" }],
-    acceptanceMatrix: PROOF_ACCEPTANCE_MATRIX,
-    headSha: PROOF_HANDOFF.headSha,
-  });
-}
-
 export function scenarioResult(scenario = "passing") {
-  if (scenario === "ordinary") {
-    return evaluateConvergence({ path: "ordinary" });
-  }
-  if (scenario === "incomplete") {
-    return incompleteScenario();
-  }
-  if (scenario === "passing") {
-    return passingScenario();
-  }
-  throw new Error(`Unknown proof scenario "${scenario}". Expected: ${PROOF_SCENARIOS.join(", ")}`);
+  return evaluateConvergence(scenarioInput(scenario));
 }
 
 export function runProof(scenario = "passing") {
@@ -242,12 +142,6 @@ export function runProof(scenario = "passing") {
   process.stdout.write(`${renderConvergence(result, PROOF_HANDOFF)}\n`);
   return result;
 }
-
-// The documented entry keeps exposing the constants and the renderer that moved
-// into the convergence modules, so its callers and tests import one path.
-// biome-ignore lint/performance/noBarrelFile: documented public entry of the proof
-export { REQUIRED_RECORDS, REQUIRED_REVIEW_LENSES } from "./convergence-core.mjs";
-export { renderConvergence } from "./convergence-render.mjs";
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
@@ -257,3 +151,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exitCode = 2;
   }
 }
+
+// The documented entry keeps exposing the constants and the renderer that moved
+// into the convergence modules, so its callers and tests import one path.
+// biome-ignore lint/performance/noBarrelFile: documented public entry of the proof
+export { REQUIRED_RECORDS, REQUIRED_REVIEW_LENSES } from "./convergence-core.mjs";
+export { renderConvergence } from "./convergence-render.mjs";
+export { PROOF_SCENARIOS } from "./convergence-scenarios.mjs";
