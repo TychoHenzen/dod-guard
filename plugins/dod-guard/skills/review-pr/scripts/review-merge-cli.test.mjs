@@ -20,6 +20,8 @@ const FLAG_START = / (?=--)/;
 const REFUSED = /The merge pass output is refused; do not post: .*missing J id J2/;
 const MERGED_PROBLEM = /^\*\*MAJOR\*\* The parse-error case asserts the whole result/;
 const BOTH_LENSES = /Requirement: AC-1 \(review-pr-feature, review-pr-hygiene\)$/;
+const DROPPED_BLOCK = /Dropped scanner findings \(1\)/;
+const DROPPED_LINE = /S1 line \d+ \(rule-misfire, D1/;
 
 const dirs = [];
 after(() => {
@@ -86,6 +88,18 @@ test("R9: the documented violations, candidates, and build lines post one #909 f
   assert.deepEqual(anchors, [`${FILE}:90`]);
   assert.match(comments[0].body, MERGED_PROBLEM);
   assert.match(comments[0].body, BOTH_LENSES);
+});
+
+test("R10: the documented build line posts a review whose block lists a dropped scanner finding", () => {
+  const { values } = scratch();
+  const dropFile = path.join(FIXTURE, "merge-drop.json");
+  succeeds(documented("candidates", values));
+  const built = succeeds(documented("build", new Map([...values, ["<merge.json>", dropFile]])));
+  assert.equal(built.recommendation, "REQUEST_CHANGES");
+  assert.deepEqual(built.counts, { BLOCKER: 0, MAJOR: 1, MINOR: 0 });
+  const { body } = readJson(values.get("<payload.json>"));
+  assert.match(body, DROPPED_BLOCK);
+  assert.match(body, DROPPED_LINE);
 });
 
 // The candidates file is the merge pass's input only; the build regenerates

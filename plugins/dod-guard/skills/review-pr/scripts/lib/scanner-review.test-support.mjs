@@ -4,8 +4,7 @@ import { complete, findingsFixture } from "./review-pr.test-support.mjs";
 import { slotsByLens } from "./review-slots.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
-const { HEAD, PBI, question, hunk } = findingsFixture;
-const LENSES = ["feature", "design", "reliability", "hygiene"].map((lens) => `review-pr-${lens}`);
+const { REVIEWERS, HEAD, PBI, question, hunk } = findingsFixture;
 
 // A diff that only deletes two lines, so the file gets no added line.
 const removalHunk = (file) => [
@@ -36,7 +35,7 @@ function scannerReview({ files, line, violations, rule, removed = [] }) {
     const asked = { ...question(`Q${index + 1}`, "review-pr-hygiene"), files: [file] };
     return { slot: `file:${file}`, questions: [{ ...asked, scanner: idsOf(file) }] };
   };
-  const criterion = LENSES.map((lens, index) => question(`C${index + 1}`, lens));
+  const criterion = REVIEWERS.map((lens, index) => question(`C${index + 1}`, lens));
   const withLines = files.filter((file) => !removed.includes(file));
   const plan = [...withLines.map(slot), { slot: "criterion:1", questions: criterion }];
   const results = complete([], slotsByLens(plan));

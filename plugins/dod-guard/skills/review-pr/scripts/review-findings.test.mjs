@@ -13,7 +13,7 @@ import process from "node:process";
 import test from "node:test";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { fileURLToPath } from "node:url";
-import { pbiJson } from "./lib/review-pr.test-support.mjs";
+import { findingsFixture, pbiJson } from "./lib/review-pr.test-support.mjs";
 
 const SCRIPT = fileURLToPath(new URL("review-findings.mjs", import.meta.url));
 const run = (args) =>
@@ -136,14 +136,13 @@ test("slots without a required flag prints usage", () => {
 });
 
 const HEAD = "f".repeat(40);
-const LENSES = ["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"];
 const ASSIGNED = {
   "review-pr-feature": ["file:src/a.mjs"],
   "review-pr-design": ["file:src/a.mjs"],
   "review-pr-reliability": ["criterion:1"],
   "review-pr-hygiene": ["criterion:2"],
 };
-const RESULTS = LENSES.map((reviewer) => ({
+const RESULTS = findingsFixture.REVIEWERS.map((reviewer) => ({
   reviewer,
   rulings: ASSIGNED[reviewer].map((slot) => ({
     slot,
