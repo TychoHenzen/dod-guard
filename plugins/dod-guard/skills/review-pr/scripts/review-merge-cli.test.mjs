@@ -143,3 +143,17 @@ test("R7: a refused merge output writes nothing, and the corrected one builds", 
   assert.equal(second.inline, 1);
   assert.equal(readJson(payload).comments.length, 1);
 });
+
+test("R11: a merge output refused for both arrays is corrected and then builds", () => {
+  const { dir, values } = scratch();
+  const payload = values.get("<payload.json>");
+  const refused = path.join(dir, "both-arrays-merge.json");
+  writeFileSync(refused, JSON.stringify({ groups: "x", scanner: "y" }));
+  const first = documented("build", new Map([...values, ["<merge.json>", refused]]));
+  assert.notEqual(first.status, 0);
+  assert.match(first.stderr, /groups is not an array; scanner is not an array/);
+  assert.throws(() => readFileSync(payload), { code: "ENOENT" });
+  const second = succeeds(documented("build", values));
+  assert.equal(second.inline, 1);
+  assert.equal(readJson(payload).comments.length, 1);
+});

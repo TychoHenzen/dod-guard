@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { judgedCandidates, scannerCandidates } from "./finding-ids.mjs";
 import { pbiIssue, requirePlan, reviewSlots, slotsByLens, subIssueList } from "./review-slots.mjs";
+import { requireScannerQuestions } from "./scanner-plan.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
 function json(path) {
@@ -44,6 +45,7 @@ function violations(args) {
 function candidates(args) {
   const { changedLines, scanner } = scannerList(args);
   const plan = json(args.plan);
+  requireScannerQuestions(plan, scanner);
   requirePlan(plan, reviewSlots({ changedLines, ...pbiInputs(args) }));
   const judged = judgedCandidates(json(args.results), slotsByLens(plan));
   writeJson(args.out, { judged, scanner });

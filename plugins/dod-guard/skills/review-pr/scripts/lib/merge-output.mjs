@@ -20,18 +20,16 @@ function severityPaths(value, path) {
   });
 }
 
+// Each check returns its own problem list, so one refusal names them all.
 function mergeProblems(output, candidates) {
   if (!isObject(output)) {
     return ["the output is not a JSON object"];
   }
+  const notArray = (key) => (Array.isArray(output[key]) ? [] : [`${key} is not an array`]);
   const severity = severityPaths(output, "output").map((path) => `${path} sets a severity`);
-  const arrays = ["groups", "scanner"].filter((key) => !Array.isArray(output[key]));
-  if (arrays.length > 0) {
-    return [...arrays.map((key) => `${key} is not an array`), ...severity];
-  }
-  // Each check returns its own problem list, so one refusal names them all.
-  const groups = groupProblems(output.groups, candidates.judged);
-  return [...severity, ...groups, ...rulingProblems(output.scanner, candidates)];
+  const groups = Array.isArray(output.groups) ? groupProblems(output.groups, candidates.judged) : [];
+  const rulings = Array.isArray(output.scanner) ? rulingProblems(output.scanner, candidates) : [];
+  return [...notArray("groups"), ...notArray("scanner"), ...severity, ...groups, ...rulings];
 }
 
 // The whole output is checked before anything is built, so a malformed pass

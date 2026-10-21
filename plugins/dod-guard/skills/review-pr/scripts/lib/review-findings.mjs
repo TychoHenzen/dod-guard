@@ -3,6 +3,7 @@ import { judgedCandidates, scannerCandidates } from "./finding-ids.mjs";
 import { mergedFindings } from "./merge-groups.mjs";
 import { requireMergeOutput } from "./merge-output.mjs";
 import { requirePlan, reviewSlots, slotsBlock, slotsByLens } from "./review-slots.mjs";
+import { requireScannerQuestions } from "./scanner-plan.mjs";
 import { splitRulings } from "./scanner-rulings.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
@@ -141,6 +142,7 @@ function checkedInputs({ scan, diff, results, plan, pbi, subIssues, merge }) {
   requirePlan(plan, slots);
   const judged = judgedCandidates(results, slotsByLens(plan));
   const scanner = scannerCandidates(scan, changedLines);
+  requireScannerQuestions(plan, scanner);
   requireMergeOutput(merge, { judged, scanner, plan });
   return { changedLines, slots, judged, ...splitRulings(merge.scanner, scanner) };
 }
