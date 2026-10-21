@@ -54,14 +54,45 @@ test("dropped violations are listed by file and rule inside a details block", ()
     "",
     `**${UNICODE}**`,
     "",
-    "- `file-length`: S1 line 1 (rule-misfire, R1)",
+    "- `file-length`: S1 line 1 (rule-misfire, R1): file is 600 lines",
     "",
     `**${FIX}**`,
     "",
-    "- `line-length`: S3 line 72 (rule-misfire, D1)",
+    "- `line-length`: S3 line 72 (rule-misfire, D1): line is 132 chars",
+    "",
+    "**Cited questions**",
+    "",
+    "- R1: Does review-pr-reliability hold at the reviewed head?",
+    "- D1: Does review-pr-design hold at the reviewed head?",
     "</details>",
   ].join("\n");
   assert.ok(body.includes(`</details>\n\n${block}`), body);
+});
+
+// Builds with a scan and plan of the caller's own, and the given rulings.
+const buildWith = (scanOverride, plan, rulings) =>
+  review([], { scan: scanOverride, plan, merge: { groups: [], scanner: rulings } }).payload.body;
+
+test("a dropped message is escaped so it cannot close the details block", () => {
+  const violations = scan.violations.map((violation) =>
+    violation.line === 72 ? { ...violation, message: "<b>x</b> 132 chars" } : violation,
+  );
+  const body = buildWith({ violations }, SCANNER_PLAN, [KEEP, ...DROPS]);
+  assert.ok(body.includes("(rule-misfire, D1): &lt;b&gt;x&lt;/b&gt; 132 chars"), body);
+  assert.ok(!body.includes("<b>x</b>"), body);
+});
+
+test("two findings citing one question list that question once", () => {
+  const plan = changeQuestions(SCANNER_PLAN, (question) =>
+    question.id === "D1" ? { ...question, scanner: ["S2", "S3"] } : question,
+  );
+  const rulings = [
+    { ids: ["S1"], status: "KEEP" },
+    { ids: ["S2", "S3"], status: "DROP", reason: "rule-misfire", answer: "D1" },
+  ];
+  const body = buildWith(scan, plan, rulings);
+  assert.ok(body.includes("<summary>Dropped scanner findings (2)</summary>"), body);
+  assert.equal(body.split("- D1: ").length - 1, 1, body);
 });
 
 test("nothing dropped means no dropped block", () => {

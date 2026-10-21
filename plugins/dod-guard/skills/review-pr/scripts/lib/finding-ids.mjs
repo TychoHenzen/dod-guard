@@ -1,9 +1,6 @@
 import { judgedFindings } from "./reviewer-results.mjs";
 import { ruleScope } from "./rule-scope.mjs";
-
-function slashPath(path) {
-  return String(path).replaceAll("\\", "/");
-}
+import { slashPath } from "./slash-path.mjs";
 
 function inScope(violation, changedLines) {
   const lines = changedLines.get(slashPath(violation.file));

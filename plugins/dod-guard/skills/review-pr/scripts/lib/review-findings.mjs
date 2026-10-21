@@ -1,11 +1,10 @@
 import { droppedBlock } from "./dropped-block.mjs";
-import { judgedCandidates, scannerCandidates } from "./finding-ids.mjs";
+import { groupBy } from "./group-by.mjs";
 import { mergedFindings } from "./merge-groups.mjs";
 import { requireMergeOutput } from "./merge-output.mjs";
-import { requirePlan, reviewSlots, slotsBlock, slotsByLens } from "./review-slots.mjs";
-import { requireScannerQuestions } from "./scanner-plan.mjs";
+import { regenerate } from "./regenerated-inputs.mjs";
+import { slotsBlock } from "./review-slots.mjs";
 import { splitRulings } from "./scanner-rulings.mjs";
-import { parseChangedLines } from "./unified-diff.mjs";
 
 const MARKER = /<!-- dod-guard:review-pr head=([0-9a-f]{7,40}) recommendation=(APPROVE|REQUEST_CHANGES|BLOCK) -->/;
 const SEVERITY_PREFIX = /^\*\*(BLOCKER|MAJOR|MINOR)\*\*/;
@@ -24,14 +23,6 @@ function recommendationFor(severities) {
     return "REQUEST_CHANGES";
   }
   return "APPROVE";
-}
-
-function scannerGroups(scanner) {
-  const groups = new Map();
-  for (const violation of scanner) {
-    groups.set(violation.file, [...(groups.get(violation.file) ?? []), violation]);
-  }
-  return groups;
 }
 
 function scannerFinding(file, violations) {
@@ -136,15 +127,10 @@ function requirePostableBody(body, slotCount) {
 // The build regenerates the slots and both id sets instead of trusting lists
 // the planner or the merge pass returns, then checks the pass output against
 // them before anything is built.
-function checkedInputs({ scan, diff, results, plan, pbi, subIssues, merge }) {
-  const changedLines = parseChangedLines(diff);
-  const slots = reviewSlots({ changedLines, pbi, subIssues });
-  requirePlan(plan, slots);
-  const judged = judgedCandidates(results, slotsByLens(plan));
-  const scanner = scannerCandidates(scan, changedLines);
-  requireScannerQuestions(plan, scanner);
-  requireMergeOutput(merge, { judged, scanner, plan });
-  return { changedLines, slots, judged, ...splitRulings(merge.scanner, scanner) };
+function checkedInputs(input) {
+  const { judged, scanner, ...regenerated } = regenerate(input);
+  requireMergeOutput(input.merge, { judged, scanner, plan: input.plan });
+  return { ...regenerated, judged, ...splitRulings(input.merge.scanner, scanner, input.plan) };
 }
 
 // Only kept violations reach the unchanged scannerFinding, so a dropped one
@@ -155,7 +141,7 @@ function checkedInputs({ scan, diff, results, plan, pbi, subIssues, merge }) {
 // cite a file outside the diff by design.
 function anchoredFindings({ changedLines, judged, kept }, merge) {
   const fallback = firstAnchor(changedLines);
-  const groups = [...scannerGroups(kept)].map(([file, group]) => scannerFinding(file, group));
+  const groups = [...groupBy(kept, "file")].map(([file, group]) => scannerFinding(file, group));
   const moved = mergedFindings(merge.groups, judged).map((finding) => anchor(finding, changedLines, fallback));
   return [...moved, ...groups.map((group) => anchor(group, changedLines, null))];
 }

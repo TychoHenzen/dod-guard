@@ -1,8 +1,8 @@
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import { readFileSync, writeFileSync } from "node:fs";
-import { judgedCandidates, scannerCandidates } from "./finding-ids.mjs";
-import { pbiIssue, requirePlan, reviewSlots, slotsByLens, subIssueList } from "./review-slots.mjs";
-import { requireScannerQuestions } from "./scanner-plan.mjs";
+import { scannerCandidates } from "./finding-ids.mjs";
+import { regenerate } from "./regenerated-inputs.mjs";
+import { pbiIssue, subIssueList } from "./review-slots.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
 function json(path) {
@@ -43,11 +43,13 @@ function violations(args) {
 // The merge pass reads this file, but the build never does: it regenerates
 // both id sets from the same inputs, so an edited file cannot move an id.
 function candidates(args) {
-  const { changedLines, scanner } = scannerList(args);
-  const plan = json(args.plan);
-  requireScannerQuestions(plan, scanner);
-  requirePlan(plan, reviewSlots({ changedLines, ...pbiInputs(args) }));
-  const judged = judgedCandidates(json(args.results), slotsByLens(plan));
+  const { judged, scanner } = regenerate({
+    scan: json(args.scan),
+    diff: readFileSync(args.diff, "utf8"),
+    ...pbiInputs(args),
+    plan: json(args.plan),
+    results: json(args.results),
+  });
   writeJson(args.out, { judged, scanner });
   return { out: args.out, judged: judged.length, scanner: scanner.length };
 }

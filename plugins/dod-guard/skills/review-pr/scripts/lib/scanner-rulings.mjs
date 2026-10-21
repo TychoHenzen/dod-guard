@@ -83,15 +83,20 @@ function rulingProblems(rulings, { scanner, plan }) {
 }
 
 // Splits the violations, in S order, by their ruling. Call only after the
-// rulings pass rulingProblems.
-function splitRulings(rulings, scanner) {
+// rulings pass rulingProblems. A dropped violation carries the text of the
+// question it cites, so the review shows what was checked, not only its id.
+function splitRulings(rulings, scanner, plan) {
+  const questions = planQuestions(plan);
   const ruled = new Map(rulings.flatMap((ruling) => ruling.ids.map((id) => [id, ruling])));
   const kept = scanner.filter(({ id }) => ruled.get(id).status === "KEEP");
   const dropped = scanner
     .filter(({ id }) => ruled.get(id).status === "DROP")
     .map((violation) => {
       const { reason, answer } = ruled.get(violation.id);
-      return { ...violation, reason, answer };
+      // ASSUMPTION: rulingProblems already refused any answer that is not a plan
+      // question listing this id, so questions.get(answer) cannot miss here.
+      const answerText = String(questions.get(answer).question).replace(/\s+/g, " ").trim();
+      return { ...violation, reason, answer, answerText };
     });
   return { kept, dropped };
 }
