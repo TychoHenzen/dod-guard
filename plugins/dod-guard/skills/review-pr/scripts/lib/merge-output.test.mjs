@@ -59,8 +59,7 @@ const MERGED = {
   scanner: [],
 };
 
-function build(merge) {
-  const scan = { violations: [] };
+function build(merge, scan = { violations: [] }) {
   const inputs = { headSha: HEAD, scan, diff: DIFF, plan: PLAN, pbi: PBI, subIssues: [] };
   return buildReview({ ...inputs, results: RESULTS, merge });
 }
@@ -87,6 +86,16 @@ test("a merge output that is not an object, or lacks either array, is refused", 
   assert.throws(() => build([]), refuses("the output is not a JSON object"));
   assert.throws(() => build({ groups: {}, scanner: [] }), refuses("groups is not an array"));
   assert.throws(() => build({ groups: MERGED.groups }), refuses("scanner is not an array"));
+});
+
+test("a non-array groups and a non-array scanner are both named, with the other array's problems", () => {
+  const scan = { violations: [{ file: PROOF, line: 90, rule: "line-length", severity: "medium", message: "long" }] };
+  assert.throws(() => build({ groups: "x", scanner: [] }, scan), refuses("groups is not an array"));
+  assert.throws(() => build({ groups: "x", scanner: [] }, scan), refuses("missing S id S1"));
+  assert.throws(() => build({ groups: [], scanner: "y" }), refuses("scanner is not an array"));
+  assert.throws(() => build({ groups: [], scanner: "y" }), refuses("missing J id J1"));
+  const both = { groups: "x", scanner: "y" };
+  assert.throws(() => build(both), refuses("groups is not an array; scanner is not an array"));
 });
 
 test("a severity key anywhere in the merge output is refused by its path", () => {

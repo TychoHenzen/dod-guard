@@ -87,6 +87,7 @@ test("two findings in one file stay two unless a merge group joins them", () => 
     },
   ];
   assert.deepEqual(review(results).counts, { BLOCKER: 1, MAJOR: 1, MINOR: 1 });
+  assert.equal(review(results).recommendation, "BLOCK");
   const groups = [
     { members: ["J1", "J3"], representative: "J1" },
     { members: ["J2"], representative: "J2" },

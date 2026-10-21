@@ -234,6 +234,7 @@ const refuses =
 // The review-findings test files share one diff, plan, and PBI. One object
 // keeps the shared surface to a single test-only export.
 export const findingsFixture = {
+  REVIEWERS,
   hunk,
   refuses,
   HEAD,

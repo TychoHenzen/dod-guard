@@ -111,9 +111,10 @@ test("an id written into a finding or a scan entry never replaces the build's id
   assert.equal(scannerCandidates({ violations: [entry] }, CHANGED)[0].id, "S1");
 });
 
-test("the same inputs give the same ids, whatever order the scan lists them in", () => {
-  const results = complete(RESULTS, ASSIGNED);
-  assert.deepEqual(judgedCandidates(results, ASSIGNED), judgedCandidates(results, ASSIGNED));
+test("the same inputs give the same ids, whatever order the results and the scan list them in", () => {
+  const forward = judgedCandidates(complete(RESULTS, ASSIGNED), ASSIGNED);
+  const backward = judgedCandidates(complete(RESULTS, ASSIGNED).reverse(), ASSIGNED);
+  assert.deepEqual(backward, forward);
   const reversed = { violations: [...SCAN.violations].reverse() };
   assert.deepEqual(scannerCandidates(reversed, CHANGED), scannerCandidates(SCAN, CHANGED));
 });

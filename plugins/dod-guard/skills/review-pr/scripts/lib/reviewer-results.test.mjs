@@ -2,8 +2,8 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { complete, judgment } from "./review-pr.test-support.mjs";
-import { judgedFindings } from "./reviewer-results.mjs";
+import { complete, findingsFixture, judgment } from "./review-pr.test-support.mjs";
+import { judgedFindings, REVIEWERS as REVIEWERS_FROM_PRODUCTION } from "./reviewer-results.mjs";
 
 const FILE = "src/review.js";
 const ASSIGNED = new Map([
@@ -21,6 +21,10 @@ const rulings = (reviewer) =>
 
 test("four clean reviewers produce no findings", () => {
   assert.deepEqual(judgedFindings(complete([], ASSIGNED), ASSIGNED), []);
+});
+
+test("the test reviewer list equals the production list", () => {
+  assert.deepEqual([...REVIEWERS_FROM_PRODUCTION], findingsFixture.REVIEWERS);
 });
 
 test("a missing reviewer or envelope fails instead of reading as clean", () => {

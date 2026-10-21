@@ -1,0 +1,4 @@
+{
+  "groups": [{ "members": ["J1", "J2"], "representative": "J1" }],
+  "scanner": [{ "ids": ["S1"], "status": "DROP", "reason": "rule-misfire", "answer": "D1" }]
+}

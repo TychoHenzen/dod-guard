@@ -1,6 +1,4 @@
-function slashPath(path) {
-  return String(path).replaceAll("\\", "/");
-}
+import { slashPath } from "./slash-path.mjs";
 
 const SEVERITY_RANK = Object.freeze({ BLOCKER: 3, MAJOR: 2, MINOR: 1 });
 const REVIEWERS = Object.freeze([
