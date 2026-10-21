@@ -581,6 +581,17 @@ test("AC-05: a branch with no protection reads as no required checks, not as a f
   );
 });
 
+test("AC-05: a merged pull request is not judged on a required check that never ran on its head", () => {
+  const routes = fixtureRoutes();
+  routes[ENDPOINT.protection] = ok({ contexts: ["build-test", "lint", "quality-guard"] });
+  const snapshot = build(routes);
+  const merged = snapshot.pullRequests.filter(({ mergedAt }) => mergedAt !== null);
+  assert.deepEqual(
+    merged.map(({ requiredChecks }) => requiredChecks),
+    [CHECKS, CHECKS],
+  );
+});
+
 test("AC-06: statusValueName reads one name from each REST spelling and rejects the rest", () => {
   assert.equal(statusValueName("Done"), "Done");
   assert.equal(statusValueName({ name: "Done" }), "Done");

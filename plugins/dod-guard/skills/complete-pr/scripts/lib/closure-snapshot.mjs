@@ -27,7 +27,7 @@ import {
   sameRepository,
   statusValueName,
 } from "./project-reads.mjs";
-import { readRequiredChecks } from "./required-checks.mjs";
+import { readMergedRequiredChecks } from "./required-checks.mjs";
 
 const ENDPOINT = /^(?:repos|users|orgs)\//u;
 // The Project fields each item keeps, in the order the snapshot lists them.
@@ -548,13 +548,13 @@ function mergedAtOf(pull) {
   return null;
 }
 
-// Only a merged pull request has required checks to read; an open one has none to satisfy yet.
+// Only a merged pull request has required checks to read; an open one has none to satisfy yet. The merged reader drops a currently required check that never ran on the head, so a check added to branch protection later does not fail an older delivery.
 function requiredChecksOf(pull, { repository, head, base, read }) {
   if (!isMerged(pull)) {
     return null;
   }
   return atEndpoint(`repos/${repository}/commits/${head.sha}`, () =>
-    readRequiredChecks(repository, { baseBranch: base.ref, headSha: head.sha }, read),
+    readMergedRequiredChecks(repository, { baseBranch: base.ref, headSha: head.sha }, read),
   );
 }
 
