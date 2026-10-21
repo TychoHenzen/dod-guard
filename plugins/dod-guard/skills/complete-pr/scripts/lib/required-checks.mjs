@@ -65,8 +65,9 @@ export function readRequiredChecks(repository, pullRequest, commandRunner) {
 // today's. GitHub refuses a merge until every check required at that moment has passed, so a currently
 // required check with no run and no status on the merged head was not required for that merge. Only that
 // MISSING state is dropped: failed, pending, stale-head, wrong-provider, and duplicate entries still
-// count, and a head with no required check left reads as an empty list. The live merge gate must keep
-// calling readRequiredChecks.
+// count, and a head with no required check left reads as an empty list. The queue classifier reports an
+// empty list as "required checks missing or empty" on purpose (PBI #948 AC-3): no check ran on the head,
+// so there is no evidence to pass on. The live merge gate must keep calling readRequiredChecks.
 export function readMergedRequiredChecks(repository, pullRequest, commandRunner) {
   return readRequiredChecks(repository, pullRequest, commandRunner).filter((check) => check.state !== "MISSING");
 }

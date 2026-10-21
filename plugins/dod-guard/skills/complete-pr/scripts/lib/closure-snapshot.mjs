@@ -548,7 +548,9 @@ function mergedAtOf(pull) {
   return null;
 }
 
-// Only a merged pull request has required checks to read; an open one has none to satisfy yet. The merged reader drops a currently required check that never ran on the head, so a check added to branch protection later does not fail an older delivery.
+// Only a merged pull request has required checks to read; an open one has none to satisfy yet.
+// The merged reader drops a currently required check that never ran on the head, so a check
+// added to branch protection later does not fail an older delivery.
 function requiredChecksOf(pull, { repository, head, base, read }) {
   if (!isMerged(pull)) {
     return null;

@@ -157,7 +157,8 @@ function readsCheckRunsOrStatuses(calls) {
   return calls.some((args) => args.some((value) => value.includes("/check-runs?") || value.includes("/status?")));
 }
 
-// readRequiredChecks is the live reader, readMergedRequiredChecks is the one the closure snapshot calls for a merged pull request, and getRequiredChecks is complete-pr's way in.
+// readRequiredChecks is the live reader. readMergedRequiredChecks is the one the closure snapshot
+// calls for a merged pull request. getRequiredChecks is complete-pr's way in.
 const requiredCheckReaders = [
   ["readRequiredChecks", (runner) => readRequiredChecks("owner/repo", exactHeadPullRequest(), runner)],
   ["readMergedRequiredChecks", (runner) => readMergedRequiredChecks("owner/repo", exactHeadPullRequest(), runner)],
@@ -265,7 +266,7 @@ function runnerWithRuns(runs) {
 const mergedReader = (runner) => readMergedRequiredChecks("owner/repo", exactHeadPullRequest(), runner);
 const liveReader = (runner) => readRequiredChecks("owner/repo", exactHeadPullRequest(), runner);
 
-test("readMergedRequiredChecks drops a required check that never ran on the head, and readRequiredChecks still reports it MISSING", () => {
+test("the merged reader drops a never-run required check, the live reader still reports it MISSING", () => {
   const runs = [headRun("build-test")];
   assert.deepEqual(mergedReader(runnerWithRuns(runs)), [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
   assert.deepEqual(liveReader(runnerWithRuns(runs)), [
