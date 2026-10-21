@@ -140,17 +140,10 @@ under `projectFindings` and counted in `summaries.overall` and
 `summaries.project`. Use `quality_test_quality` when an MCP client has a
 test-evidence manifest.
 
-The shipped `.mcp.json` points at the host-managed loopback endpoint
-`http://127.0.0.1:21720/servers/quality-guard/mcp`. Start the matching PM2
-app with `tools/mcp-host/ecosystem.config.cjs`;
-`MCP_HOST_QUALITY_GUARD_PORT`, `MCP_HOST_QUALITY_GUARD_PATH`, and
-`MCP_HOST_BIND_HOST` are configurable, but the bind host must remain
-loopback. The health endpoint is the corresponding `/health` path.
-The tracked registration contains the defaults; when a port or path override
-is used, run `node tools/mcp-host/launcher.mjs --print-config` and use its
-`mcpServers` object for the client registration.
+The shipped `.mcp.json` and Codex manifest start `dist/bundle.js` over stdio,
+so Claude Code and Codex launch the server themselves with the plugin.
 
 Every project-sensitive MCP tool requires an explicit `root` argument. The
 server validates that root before scanning or reading repository state; it
-never substitutes the HTTP process working directory. CLI commands retain
+never substitutes the server process working directory. CLI commands retain
 their existing command-line defaults.

@@ -11,8 +11,9 @@
   "keywords": ["knowledge-base", "markdown", "mcp", "retrieval"],
   "mcpServers": {
     "knowledge-base": {
-      "type": "http",
-      "url": "http://127.0.0.1:21721/servers/knowledge-base/mcp"
+      "command": "node",
+      "args": ["dist/bundle.js"],
+      "cwd": "."
     }
   },
   "interface": {

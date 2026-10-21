@@ -19,7 +19,7 @@ Read `standards/working-defaults.md` and `standards/github-request-discipline.md
 
 ## Tool availability
 
-The pooled HTTP MCP servers (code-explorer, quality-guard, knowledge-base, serena, code-review-graph) refuse connections with ECONNREFUSED when no Codex session started the port-21720 pool. Do not wait for them or retry them. Use `gh`, Grep, Read, and the plugin-scoped knowledge-base server instead, and name that fallback in the first progress message of the run.
+The code-navigation and knowledge MCP servers (code-explorer, quality-guard, knowledge-base, serena, code-review-graph) start over stdio with the client. If one is missing from the tool list or fails to connect, do not wait for it or retry it. Use `gh`, Grep, and Read instead, and name that fallback in the first progress message of the run.
 
 Before the first Loop step, read the client's plugin list once (`claude plugin list --json` in Claude Code, `codex plugin list --json` in Codex) and require one enabled `quality-guard@` entry, because `review-pr` cannot scan without it. If Claude lists one installed but disabled, report `claude plugin enable <id>` as the one fix and stop before claiming a parent; never enable it yourself.
 
