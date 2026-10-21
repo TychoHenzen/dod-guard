@@ -71,7 +71,7 @@ function makeFixtureRoot(tools) {
       {
         name: "quality-guard",
         mcpServers: {
-          "quality-guard": { type: "http", url: "http://127.0.0.1:21720/servers/quality-guard/mcp" },
+          "quality-guard": { command: "node", args: ["dist/bundle.js"], cwd: "." },
         },
       },
       null,
