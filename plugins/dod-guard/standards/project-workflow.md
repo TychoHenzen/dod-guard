@@ -244,9 +244,14 @@ none), `parent` as `{repository, number}` or null, `body`, `state_reason`, and
 `comments` as `[{id, body}]`. On every pull request it carries its state, merge
 time, head, base, merge commit, and REST-read `requiredChecks`; the merge commit
 and `requiredChecks` are null until the pull request merges. `requiredChecks`
-comes from the same REST reader `dod-guard:complete-pr` uses, so both reach one verdict
-for one head, and several exact-head runs of one required check are settled by
-the newest run.
+comes from the REST reader `dod-guard:complete-pr` uses,
+applied to the merged head. Because branch protection keeps no history, the
+snapshot drops a currently required check that has no run and no status on
+that head: GitHub refuses a merge until every check required at that moment has
+passed, so such a check was not required for that merge. The complete-pr live
+gate keeps every currently required check. Failed, pending, stale-head,
+wrong-provider, and duplicate entries stay in the snapshot, and several
+exact-head runs of one required check are settled by the newest run.
 
 The snapshot also carries a `project` object with `owner`, `number`,
 `statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
