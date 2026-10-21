@@ -70,7 +70,7 @@ One `dod-guard:read-standard` planner returns a JSON array with one entry per sl
 - A question has `id` (unique across lenses), `lens`, `question`, `files`, and the targeted risk.
 - An exclusion has `lens` and `reason`.
 - The lenses are `dod-guard:review-pr-feature` (F), `dod-guard:review-pr-design` (D), `dod-guard:review-pr-reliability` (R), and `dod-guard:review-pr-hygiene` (H). Each gets at least one question or exclusion.
-- For a file slot with in-scope violations, add scanner check questions with a `scanner` array of the S ids covered. They ask whether the violation shows at the reviewed head, whether the path is generated or excluded, and whether the rule's own condition holds.
+- For a file slot with in-scope violations, add scanner check questions with a `scanner` array of the S ids covered. They ask whether the violation shows at the reviewed head, whether the path is generated or excluded, and whether the rule's own condition holds. List only S ids from that slot's file. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file.
 
 ### Investigate
 
@@ -104,8 +104,8 @@ node "<skill-dir>/scripts/review-findings.mjs" candidates --scan=<scan.json> --d
 
 `candidates` numbers judged findings J1..Jn. One `dod-guard:read-standard` pass (`dod_guard_read_standard` in Codex) reads that file and the plan and returns the merge JSON: `{ "groups": [{ "members": ["J1"], "representative": "J1" }], "scanner": [{ "ids": ["S1"], "status": "KEEP" }] }`.
 
-- Put every J id in exactly one group. Group only findings citing the same defect in the same file. The representative is a member.
-- Put every S id in exactly one scanner ruling. Use KEEP unless `not-at-head`, `excluded-path`, or `rule-misfire` holds and a verified or repaired scanner question listing that S id shows it. A DROP adds `"reason"` and `"answer": "<question id>"`.
+- Put every J id in exactly one group. A group needs at least one member. Group only findings citing the same defect in the same file. The representative is a member.
+- Put every S id in exactly one scanner ruling. Use KEEP unless `not-at-head`, `excluded-path`, or `rule-misfire` holds and a verified or repaired scanner question listing that S id shows it. A DROP adds `"reason"` and `"answer": "<question id>"`. A ruling needs at least one id. A KEEP carries no `reason` or `answer`; the build refuses one that does.
 - Set no severity. "Pre-existing" or "unchanged at base" is never a reason to drop.
 
 With no finding and no violation, write `{ "groups": [], "scanner": [] }` and skip the pass. If the build refuses the output, send one correction request with its exact error. On a second refusal, stop and name the merge pass. Never escalate the tier.
