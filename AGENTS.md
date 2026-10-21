@@ -87,6 +87,7 @@ branch rules:
 - `plugin-config`
 - `static-analysis`
 - `package-integrity`
+- `quality-guard`
 
 CI has read-only repository permission. It does not commit formatting, bundles,
 or diagnostic reports.
