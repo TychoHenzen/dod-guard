@@ -6,7 +6,7 @@ import { childNumbers, issueFor, itemFor, itemStatus, statusUnreadable } from ".
 import { createContext } from "./closure-context.mjs";
 import { isOpen } from "./closure-delivery.mjs";
 import { closureEvidence, hierarchyReasons } from "./closure-evidence.mjs";
-import { addHold, admitClose, admitWrite, planned } from "./closure-holds.mjs";
+import { addHold, admitClose, admitWrite, holdSummary, planned } from "./closure-holds.mjs";
 import { recordComments, renderClosureEvidence } from "./closure-records.mjs";
 import { walkParents } from "./closure-walk.mjs";
 
@@ -123,7 +123,7 @@ function statusRepairs(context) {
   const repairs = [];
   for (const number of context.index.order) {
     const target = repairTarget(context, number);
-    if (!target || !helperMadeVerifiedClose(context, number, target.issue)) continue;
+    if (!(target && helperMadeVerifiedClose(context, number, target.issue))) continue;
     if (admitWrite(context, number, "Project Done repair refused: issue is held")) {
       repairs.push({ issue: number, itemId: target.item.id, status: target.status });
     }
@@ -155,6 +155,7 @@ function planClosures(snapshot, { hierarchy = null } = {}) {
   walkParents(context);
   return {
     repository: context.index.repository,
+    holdSummary: holdSummary(context.holds),
     closes: context.closes,
     statusRepairs: statusRepairs(context),
     holds: context.holds,

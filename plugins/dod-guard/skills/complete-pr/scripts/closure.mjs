@@ -22,7 +22,7 @@ const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issu
        closure.mjs apply --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs record --repository=<owner/name> --result=<complete-pr.json>
                           --handoff-file=<handoff-comment.md> [--children=<n,...>]
-       closure.mjs annotate --snapshot=<file.json>
+       closure.mjs annotate --snapshot=<file.json> [--output=<file.json>]
        closure.mjs snapshot --repository=<owner/name> --output=<file.json>
 
 The snapshot is the closure snapshot that standards/project-workflow.md defines,
@@ -35,7 +35,7 @@ repairs, holds, unverified-closed reports, and deliveries; apply performs each
 close as read, comment, close, readback, Project Done, and it also sets Done on
 each status repair. --hierarchy asks to close that issue as a pure hierarchy
 record (not_planned). annotate prints the snapshot with activeCheckpoint and
-trustedHeadSha taken from the completion records, ready for select-next.mjs.
+trustedHeadSha taken from the completion records, ready for select-next.mjs. With --output the annotated snapshot goes to that file and stdout holds a one-object summary; without it the snapshot prints to stdout.
 record reads the acceptance matrix from the json block under ## Acceptance matrix in the handoff comment file; --children= with no value means no extra children.
 snapshot builds that closure snapshot for one repository from GitHub REST GET requests and the one
 read-only GraphQL read that resolves the explicitly linked Project, as linked-project.mjs does. The
@@ -89,7 +89,15 @@ const COMMANDS = {
     const options = snapshotOptions(args);
     return options && applyClosures(readJson(args.snapshot), { runner, ...options });
   },
-  annotate: (args) => given(args.snapshot) && annotateSnapshot(readJson(args.snapshot)),
+  annotate: (args) => {
+    if (!given(args.snapshot)) return false;
+    const annotated = annotateSnapshot(readJson(args.snapshot));
+    if (args.output === undefined) return annotated;
+    if (!given(args.output)) return false;
+    rmSync(args.output, { force: true });
+    writeClosureSnapshot(args.output, annotated);
+    return { output: args.output, repository: annotated.repository, items: annotated.items.length };
+  },
   // The snapshot reads pass the exit codes they can read, such as the 1 of an HTTP 404; apply and
   // record pass none, so any non-zero exit throws.
   snapshot: (args, runner = runGh) => {

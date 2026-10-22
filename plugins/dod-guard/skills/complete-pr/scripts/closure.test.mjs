@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import test from "node:test";
 import { runCli } from "./closure.mjs";
 import { capture, saved, savedText, shippedPlan } from "./fixtures/closure-cli.mjs";
@@ -174,4 +176,24 @@ test("record accepts an empty --children list", async () => {
     without.text.err,
   );
   assert.deepEqual(JSON.parse(withEmpty.text.out).records, JSON.parse(without.text.out).records);
+});
+
+test("annotate --output writes the same snapshot it prints without --output", async () => {
+  const file = await saved("snapshot.json", recordedSnapshot({ roots: [840] }));
+  const printedIo = capture();
+  assert.equal(runCli(["annotate", `--snapshot=${file}`], printedIo), 0, printedIo.text.err);
+  const printed = JSON.parse(printedIo.text.out);
+
+  const target = join(dirname(file), "annotated.json");
+  const io = capture();
+  assert.equal(runCli(["annotate", `--snapshot=${file}`, `--output=${target}`], io), 0, io.text.err);
+  assert.deepEqual(JSON.parse(readFileSync(target, "utf8")), printed);
+  assert.deepEqual(Object.keys(JSON.parse(io.text.out)), ["output", "repository", "items"]);
+});
+
+test("annotate rejects an empty --output", async () => {
+  const file = await saved("snapshot.json", recordedSnapshot({ roots: [840] }));
+  const io = capture();
+  assert.equal(runCli(["annotate", `--snapshot=${file}`, "--output="], io), 2);
+  assert.equal(io.text.out, "");
 });

@@ -152,7 +152,7 @@ function applyClosures(snapshot, { runner, ...options }) {
   const applied = [];
   const repaired = [];
   if (plan.closes.length === 0 && plan.statusRepairs.length === 0) {
-    return { plan, applied, repaired, steps };
+    return { applied, repaired, steps, plan };
   }
   const project = requireProject(snapshot.project);
   const progress = { applied, repaired, steps };
@@ -180,7 +180,7 @@ function applyClosures(snapshot, { runner, ...options }) {
     }
     repaired.push(repair.issue);
   }
-  return { plan, applied, repaired, steps };
+  return { applied, repaired, steps, plan };
 }
 
 function requireMergeResult(result) {

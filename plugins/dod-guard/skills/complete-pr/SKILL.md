@@ -127,6 +127,8 @@ node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 
 If snapshot exits non-zero, stop and report its error. Never plan or apply on an older file. The snapshot, holds such as `child #N readback missing` and `issue #P readback missing`, and `unverified-closed` scope are defined in `standards/project-workflow.md`. `plan` is read-only. `apply` closes each planned issue with its `state_reason` (`completed` or `not_planned`). It stops with the observed partial state on a readback disagreement, and a rerun finishes the rest. Report each hold with its reason.
 
+When the merged PR closes a child of an open epic, the helper closes only the child. The epic stays open and `plan` and `apply` list it under `holds` with the sub-issues that are still open; that hold is expected, so report it and do not close the epic by hand. Read `holdSummary` first, then the full `holds` list only for an issue you act on. `apply` prints `applied` and `repaired` before the plan.
+
 ## Close delivered issues for goal-sdlc
 
 When `dod-guard:goal-sdlc` delegates its start-of-run cleanup, run only this section. Resolve no PR and merge nothing. Use goal-sdlc's snapshot or run `closure.mjs snapshot`; if snapshot exits non-zero, stop and report its error, and never plan or apply on an older file. Then plan and apply; apply also sets Project `Done`, including on an issue already closed whose status write stopped. Report closes, status repairs, holds, `unverified-closed` reports, and any stop. Make no other issue or Project write.

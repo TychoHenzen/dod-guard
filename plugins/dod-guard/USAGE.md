@@ -74,7 +74,7 @@ annotated closure snapshot by `owner/name#number` through the classifier it
 shares with the closure helper), runs the `quick-pbi` stages from the one that
 parent has reached, and continues until no eligible work remains.
 `closure.mjs annotate` only overlays `activeCheckpoint` and `trustedHeadSha`
-from the completion records and leaves every relation as read. Each pass starts
+from the completion records and leaves every relation as read. With `--output=<annotated-file>` it writes the annotated snapshot to that file. Each pass starts
 with a cleanup report from `closure.mjs plan`: the delivered and superseded
 issues it closes through `apply`, every hold, and every closed or Done record
 without verified evidence, which it reports and never reopens. The snapshot
