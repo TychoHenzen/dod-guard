@@ -28,7 +28,7 @@ export const REGISTRY_CASES = [
   { name: "success pinned", pins: (fixture) => ["--version", "5.4.56", "--skill-path", fixture.skillFile] },
   { name: "malformed stdin", rawInput: "{" },
   { name: "empty stdin", rawInput: "" },
-  { name: "BOM then malformed", rawInput: "﻿{" },
+  { name: "BOM then malformed", rawInput: "\uFEFF{" },
   { name: "registry of the wrong shape", rawInput: "{}" },
   ...registrationGoldens(),
   {

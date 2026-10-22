@@ -13,7 +13,7 @@ async function readStdinJson() {
     const chunks = [];
     for await (const chunk of process.stdin) chunks.push(chunk);
     const input = Buffer.concat(chunks).toString("utf8");
-    return { value: JSON.parse(input.startsWith("﻿") ? input.slice(1) : input) };
+    return { value: JSON.parse(input.startsWith("\uFEFF") ? input.slice(1) : input) };
   } catch (error) {
     return { error: error.message };
   }
