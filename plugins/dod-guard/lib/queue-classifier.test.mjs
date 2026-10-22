@@ -258,7 +258,7 @@ test("AC-09: an item whose issue is absent selects nothing and is named in missi
   assert.equal(classify(healthy()).selected.rootIssueNumber, 517);
 });
 
-test("AC-09: a target linked pull request absent from pullRequests selects nothing and is named in missingEvidence", () => {
+test("AC-09: a target linked pull request absent from pullRequests selects nothing, named in missingEvidence", () => {
   const input = healthy();
   input.items[0] = item(31, "Backlog", { linked: [ref(540)] });
   const result = classify(input);

@@ -30,7 +30,7 @@ test("a Todo group blocked by an open issue is held with the blocker named and t
   });
 });
 
-test("a Todo root with a parked record is held with the record in its reason and the next one is selected", async () => {
+test("a Todo root with a parked record is held with the record in its reason and the next is selected", async () => {
   const result = await selectNext(twoRoots(issue(40, { comments: [PARKED_COMMENT] })));
   assert.equal(result.selected.rootIssueNumber, 41);
   assert.deepEqual(groupOf(result, 40), {
