@@ -5,9 +5,9 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { buildConfig } from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
-import { createWidthResolver } from "../../../../../skills/quality-refactor/scripts/lib/formatter-width.mjs";
-import { scan } from "../../../../../skills/quality-refactor/scripts/quality-scan-run.mjs";
+import { buildConfig } from "#quality-guard-config";
+import { createWidthResolver } from "#quality-guard-formatter-width";
+import { scan } from "#quality-guard-scan-run";
 
 export const FALLBACK = { width: null, source: "default" };
 export const at = (width, source = "biome.json") => ({ width, source });
