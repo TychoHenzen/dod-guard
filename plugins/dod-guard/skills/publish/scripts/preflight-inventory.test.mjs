@@ -1,13 +1,18 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { assertRejected, CLIENTS, createInstall, runPreflight } from "./harness/preflight-fixture.mjs";
 import { registrationCases } from "./harness/preflight-registrations.mjs";
 import { registryFor } from "./harness/preflight-registry.mjs";
-import { CLIENTS, assertRejected, createInstall, runPreflight } from "./harness/preflight-fixture.mjs";
+
+function validRun(fixture, status) {
+  const registry = registryFor(fixture.client, fixture.pluginRoot);
+  return runPreflight(fixture, registry, { pins: ["--inventory-status", status] });
+}
 
 test("tolerates a non-zero inventory status for one valid registration", async (t) => {
   for (const client of CLIENTS) {
     const fixture = await createInstall(t, client);
-    const result = runPreflight(fixture, registryFor(client, fixture.pluginRoot), { pins: ["--inventory-status", "1"] });
+    const result = validRun(fixture, "1");
 
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.response.ok, true);
@@ -18,7 +23,7 @@ test("tolerates a non-zero inventory status for one valid registration", async (
 test("inventory status 0 behaves as before", async (t) => {
   for (const client of CLIENTS) {
     const fixture = await createInstall(t, client);
-    const result = runPreflight(fixture, registryFor(client, fixture.pluginRoot), { pins: ["--inventory-status", "0"] });
+    const result = validRun(fixture, "0");
 
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.response.ok, true);

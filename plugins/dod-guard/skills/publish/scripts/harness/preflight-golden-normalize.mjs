@@ -1,5 +1,6 @@
 import { realpath } from "node:fs/promises";
 import { dirname } from "node:path";
+import process from "node:process";
 
 const ROOT_TOKEN = "<ROOT>";
 const ROOT_FLAGS = process.platform === "win32" ? "gi" : "g";
@@ -36,15 +37,18 @@ function normalizeValue(value, patterns, key) {
   return value;
 }
 
+function streamsOf(result) {
+  if (result.status === 0) return { stream: "stdout", raw: result.stdout, other: result.stderr };
+  return { stream: "stderr", raw: result.stderr, other: result.stdout };
+}
+
 export async function normalizeRun(result, fixture) {
-  const succeeded = result.status === 0;
-  const raw = succeeded ? result.stdout : result.stderr;
-  const otherStream = succeeded ? result.stderr : result.stdout;
+  const { stream, raw, other } = streamsOf(result);
   const parsed = JSON.parse(raw);
   return {
     status: result.status,
-    stream: succeeded ? "stdout" : "stderr",
-    otherStreamEmpty: otherStream === "",
+    stream,
+    otherStreamEmpty: other === "",
     formatted: raw === `${JSON.stringify(parsed, null, 2)}\n`,
     topKeys: Object.keys(parsed),
     observedKeys: Object.keys(parsed.observed ?? {}),
