@@ -3,7 +3,13 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { buildClosureSnapshot } from "./closure-snapshot.mjs";
-import { ENDPOINT, fakeRest, linkedProjectNode, linkedProjectsReply } from "./closure-snapshot.test-support.mjs";
+import {
+  ENDPOINT,
+  emptyBranchRoutes,
+  fakeRest,
+  linkedProjectNode,
+  linkedProjectsReply,
+} from "./closure-snapshot.test-support.mjs";
 import { fieldPages, issueContent, ok, projectItem, pull, REPO, REPO_URL } from "./fixtures/rest-shapes.mjs";
 
 const HEAD_SHA = "a1".repeat(20);
@@ -41,6 +47,7 @@ function routesAfter(change) {
     [ENDPOINT.linkedProjects]: linkedProjectsReply([linkedProjectNode(2)]),
     [ENDPOINT.fields(2)]: ok(fieldPages()),
     [VALUES]: ok(pages),
+    ...emptyBranchRoutes(),
     ...extra,
   };
 }

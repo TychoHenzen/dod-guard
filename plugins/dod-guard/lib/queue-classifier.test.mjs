@@ -63,8 +63,10 @@ function pull(number, { state = "closed", mergedAt = "2026-10-01T00:00:00Z", tru
   return record;
 }
 
-function snapshot({ items = [], issues = [], pullRequests = [] } = {}) {
-  return { repository: REPOSITORY, defaultBranch: "master", items, issues, pullRequests };
+function snapshot({ items = [], issues = [], pullRequests = [], branches } = {}) {
+  const record = { repository: REPOSITORY, defaultBranch: "master", items, issues, pullRequests };
+  if (branches !== undefined) record.branches = branches;
+  return record;
 }
 
 // Target root 31 (Backlog) and root 517 (Todo) with child 518. Each group is healthy on its own.
@@ -749,4 +751,92 @@ test("a completed delivery is judged by its merged evidence even when a parked r
   const parked = completedGroup([540], [540]);
   parked.issues[0].comments = PARKED;
   assert.deepEqual(groupOf(classify(parked), 444).decision, groupOf(classify(plain), 444).decision);
+});
+
+function stalled(number) {
+  return { name: `codex/${number}-example`, openPullRequest: false };
+}
+
+test("a Todo root with a pushed codex branch and no open pull request is held, names the branch, and withholds Todo selection", () => {
+  const input = snapshot({
+    items: [item(100, "Todo"), item(101, "Todo")],
+    issues: [issue(100), issue(101)],
+    branches: [stalled(100)],
+  });
+  const result = classify(input);
+  const { decision } = groupOf(result, 100);
+  assert.equal(decision.kind, "hold");
+  assert.deepEqual(decision.reasons, [
+    "issue #100 has unfinished delivery branch codex/100-example without an open pull request",
+  ]);
+  assert.equal(groupOf(result, 101).decision.kind, "eligible");
+  assert.equal(result.selected, null);
+});
+
+test("an unfinished branch on a Backlog root withholds Backlog selection too", () => {
+  const input = snapshot({
+    items: [item(100, "Backlog"), item(101, "Backlog")],
+    issues: [issue(100), issue(101)],
+    branches: [stalled(100)],
+  });
+  assert.equal(groupOf(classify(input), 100).decision.kind, "hold");
+  assert.equal(classify(input).selected, null);
+});
+
+test("a branch whose pull request is open does not hold its root", () => {
+  const input = snapshot({
+    items: [item(100, "Todo")],
+    issues: [issue(100)],
+    branches: [{ name: "codex/100-example", openPullRequest: true }],
+  });
+  assert.equal(classify(input).selected.rootIssueNumber, 100);
+});
+
+test("a branch for another issue number that shares a digit prefix does not hold", () => {
+  const input = snapshot({ items: [item(9, "Todo")], issues: [issue(9)], branches: [stalled(90)] });
+  assert.equal(classify(input).selected.rootIssueNumber, 9);
+});
+
+test("a branch entry that does not say its pull request is open still holds the root", () => {
+  const input = snapshot({
+    items: [item(100, "Todo")],
+    issues: [issue(100)],
+    branches: [{ name: "codex/100-example" }, { openPullRequest: false }],
+  });
+  assert.equal(groupOf(classify(input), 100).decision.kind, "hold");
+});
+
+test("a snapshot with no branches list holds nothing", () => {
+  const input = snapshot({ items: [item(100, "Todo")], issues: [issue(100)] });
+  assert.equal("branches" in input, false);
+  assert.equal(classify(input).selected.rootIssueNumber, 100);
+});
+
+test("an In Progress group still resumes while an unfinished branch holds a Todo root", () => {
+  const input = snapshot({
+    items: [item(100, "Todo"), item(102, "In Progress", { linked: [ref(540)] })],
+    issues: [issue(100), issue(102)],
+    pullRequests: [pull(540, { state: "open", mergedAt: null })],
+    branches: [stalled(100)],
+  });
+  assert.equal(classify(input).selected.rootIssueNumber, 102);
+});
+
+test("an In Progress root with its own branch and no pull request is resumed, not held", () => {
+  const input = snapshot({ items: [item(100, "In Progress")], issues: [issue(100)], branches: [stalled(100)] });
+  assert.equal(groupOf(classify(input), 100).decision.kind, "in-progress");
+  assert.equal(classify(input).selected.rootIssueNumber, 100);
+});
+
+test("a parked root with an unfinished branch is held as parked and withholds nothing", () => {
+  const input = snapshot({
+    items: [item(100, "Todo"), item(101, "Todo")],
+    issues: [issue(100, { comments: PARKED }), issue(101)],
+    branches: [stalled(100)],
+  });
+  const result = classify(input);
+  assert.deepEqual(groupOf(result, 100).decision.reasons, [
+    "issue #100 is parked: owner has not answered; unblocks when: owner answers",
+  ]);
+  assert.equal(result.selected.rootIssueNumber, 101);
 });

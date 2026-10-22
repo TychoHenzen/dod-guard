@@ -123,6 +123,16 @@ function parkedReasons({ issueNumber, issue }) {
   );
 }
 
+// A pushed codex/<issue>-* branch with no open pull request is a delivery that stopped partway. The
+// trailing hyphen keeps issue 9 from matching codex/90-x. Only an entry that says openPullRequest is true
+// counts as having one, so an unreadable entry never clears the hold.
+function branchReasons({ issueNumber }, context) {
+  const prefix = `codex/${issueNumber}-`;
+  return context.branches
+    .filter(({ name, openPullRequest }) => name.startsWith(prefix) && openPullRequest !== true)
+    .map(({ name }) => `issue #${issueNumber} has unfinished delivery branch ${name} without an open pull request`);
+}
+
 function mergedEvidenceReasons(records, context, mergedPullRequests) {
   const reasons = [];
   const { repository, defaultBranch } = context;
@@ -263,8 +273,8 @@ function decideGroup(records, context) {
     return hold([...reasons, ...closedIssueReasons]);
   }
 
-  const parkedRoot = records.find((record) => record.parentIssueNumber === null);
-  const parked = parkedRoot ? parkedReasons(parkedRoot) : [];
+  const root = records.find((record) => record.parentIssueNumber === null);
+  const parked = root ? parkedReasons(root) : [];
   if (parked.length > 0) return hold(parked);
 
   const resumable = resumableDecision(reasons, records);
@@ -277,9 +287,11 @@ function decideGroup(records, context) {
     return hold(["Project status is not a queue status"]);
   }
   if (records.some((record) => record.issue === null)) return hold(["issue readback missing"]);
+  // The marker lets selectGroup withhold new work for as long as any root has an unfinished branch.
+  const unfinished = root ? branchReasons(root, context) : [];
+  if (unfinished.length > 0) return { ...hold(unfinished), unfinishedBranch: true };
   const blocked = blockerReasons(records, context);
   if (blocked.length > 0) return hold(blocked);
-  const root = records.find((record) => record.parentIssueNumber === null);
   const unrefined = uniqueStatuses[0] === "Todo" && root ? refinementReasons(root) : [];
   if (unrefined.length > 0) return { kind: "needs-refinement", eligible: false, reasons: unrefined };
   return { kind: "eligible", eligible: true, status: uniqueStatuses[0], reasons: [] };
@@ -469,12 +481,15 @@ function classifyDelivery(records, rootNumber, context) {
 }
 
 // Resume In Progress work first, the furthest along (an open pull request) ahead of the rest, then
-// start Todo before Backlog.
+// start Todo before Backlog. While any root has an unfinished delivery branch, no Todo or Backlog group
+// is started, so new work never buries it; In Progress groups still resume.
 function selectGroup(groups) {
   const rank = ({ status, openPullRequest }) =>
     ({ "In Progress": openPullRequest ? 0 : 1, Todo: 2, Backlog: 3 })[status] ?? 4;
+  const startsNewWork = ({ status }) => status === "Todo" || status === "Backlog";
+  const withheld = groups.some(({ decision }) => decision?.unfinishedBranch === true);
   const candidates = groups
-    .filter(({ decision }) => decision?.eligible)
+    .filter(({ decision }) => decision?.eligible && !(withheld && startsNewWork(decision)))
     .sort((left, right) => rank(left.decision) - rank(right.decision) || left.order - right.order);
   return candidates[0] ?? null;
 }
@@ -532,12 +547,25 @@ function snapshotCauses(index) {
   return [...new Set(causes)];
 }
 
+// ASSUMPTION (Medium risk): a snapshot without a branches list holds nothing, so a hand-built snapshot or one
+// made before the key existed still selects. closure.mjs snapshot always writes the key, so a live run
+// always carries the list. An entry without a string name is dropped, never read as a branch.
+function branchesOf(snapshot) {
+  if (!Array.isArray(snapshot?.branches)) return [];
+  return snapshot.branches.filter((branch) => typeof branch?.name === "string");
+}
+
 function classifyQueue(snapshot, { today }) {
   const index = indexSnapshot(snapshot);
   const records = buildQueueRecords(index);
   const counts = countRecords(records);
   const causes = snapshotCauses(index);
-  const context = { repository: index.repository, defaultBranch: index.defaultBranch, today };
+  const context = {
+    repository: index.repository,
+    defaultBranch: index.defaultBranch,
+    today,
+    branches: branchesOf(snapshot),
+  };
   const groups = causes.length > 0 ? [] : classifyGroups(records, context);
   const selected = selectGroup(groups);
   const missingEvidence = [

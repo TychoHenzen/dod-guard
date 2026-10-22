@@ -8,6 +8,7 @@ import {
   supersedesBody,
 } from "../lib/closure.test-support.mjs";
 import {
+  emptyBranchRoutes,
   ENDPOINT,
   linkedProjectNode,
   linkedProjectsReply,
@@ -39,6 +40,7 @@ function projectRoutes(pages) {
     [ENDPOINT.linkedProjects]: linkedProjectsReply([linkedProjectNode(2)]),
     [ENDPOINT.fields(2)]: ok(fieldPages()),
     [ENDPOINT.values(2)]: ok(pages),
+    ...emptyBranchRoutes(),
   };
 }
 

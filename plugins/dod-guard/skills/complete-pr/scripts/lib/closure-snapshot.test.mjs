@@ -16,6 +16,7 @@ test("AC-05: the snapshot has the documented top-level keys and the project obje
     "items",
     "issues",
     "pullRequests",
+    "branches",
   ]);
   assert.equal(snapshot.repository, REPO);
   assert.equal(snapshot.defaultBranch, "master");

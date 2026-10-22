@@ -15,6 +15,8 @@ const ENDPOINT = {
   subIssues: (number) => `repos/${REPO}/issues/${number}/sub_issues?per_page=100`,
   comments: (number) => `repos/${REPO}/issues/${number}/comments?per_page=100`,
   blockedBy: (number) => `repos/${REPO}/issues/${number}/dependencies/blocked_by?per_page=100`,
+  branches: `repos/${REPO}/git/matching-refs/heads/codex/?per_page=100`,
+  openPulls: `repos/${REPO}/pulls?state=open&per_page=100`,
   protection: `repos/${REPO}/branches/master/protection/required_status_checks`,
   checkRuns: (sha) => `repos/${REPO}/commits/${sha}/check-runs?per_page=100`,
   statuses: (sha) => `repos/${REPO}/commits/${sha}/status?per_page=100`,
@@ -77,4 +79,10 @@ function fakeRest(routes) {
   return { runner, calls };
 }
 
-export { ENDPOINT, fakeRest, linkedProjectNode, linkedProjectsReply, NOT_FOUND, SERVER_ERROR };
+// The branch and open pull request reads of a repository with no codex branch, for route tables that do
+// not exercise the branch list.
+function emptyBranchRoutes() {
+  return { [ENDPOINT.branches]: ok([[]]), [ENDPOINT.openPulls]: ok([[]]) };
+}
+
+export { ENDPOINT, emptyBranchRoutes, fakeRest, linkedProjectNode, linkedProjectsReply, NOT_FOUND, SERVER_ERROR };

@@ -254,6 +254,15 @@ gate keeps every currently required check. Failed, pending, stale-head,
 wrong-provider, and duplicate entries stay in the snapshot, and several
 exact-head runs of one required check are settled by the newest run.
 
+The snapshot carries `branches` as `[{name, openPullRequest}]`: every pushed branch
+whose name starts with `codex/`, read from `git/matching-refs/heads/codex/`, with
+`openPullRequest` true when an open pull request of the target repository (read from
+`pulls?state=open`; a fork's pull request does not count) has that branch as its head.
+The selector holds an open Todo or Backlog root that has a branch named
+`codex/<issue>-...` with `openPullRequest` not true, naming the branch, and starts no
+Todo or Backlog group while one exists. An In Progress group still resumes. A snapshot
+without the `branches` key holds nothing.
+
 The snapshot also carries a `project` object with `owner`, `number`,
 `statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
 Status field node ID and Done option ID from the Project fields read, the same

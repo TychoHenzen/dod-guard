@@ -109,3 +109,19 @@ test("a Todo root with a parked record is held with the record in its reason and
     reasons: ["issue #40 is parked: waiting on the owner; unblocks when: the owner answers"],
   });
 });
+
+test("a Todo root with an unfinished delivery branch holds the queue and names the branch", async () => {
+  const input = snapshot();
+  input.items = [item(40, "Todo"), item(41, "Todo")];
+  input.issues = [issue(40), issue(41)];
+  input.branches = [{ name: "codex/40-example", openPullRequest: false }];
+  const result = await selectNext(input);
+  assert.equal(result.selected, null);
+  assert.equal(result.queueState, "held");
+  const held = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 40);
+  assert.deepEqual(held, {
+    rootIssueNumber: 40,
+    kind: "hold",
+    reasons: ["issue #40 has unfinished delivery branch codex/40-example without an open pull request"],
+  });
+});

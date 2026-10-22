@@ -14,6 +14,7 @@ import {
   checkRunsReply,
   commitStatusReply,
   fieldPages,
+  FOREIGN,
   ok,
   REPO,
   REPO_URL,
@@ -39,6 +40,8 @@ function healthyRoutes(pages) {
       ],
     ]),
     [ENDPOINT.comments(10)]: ok([[{ id: 9001, body: COMMENT_BODY }]]),
+    [ENDPOINT.branches]: ok([[{ ref: "refs/heads/codex/10-example" }, { ref: "refs/heads/codex/11-stalled" }]]),
+    [ENDPOINT.openPulls]: ok([[{ number: 31, head: { ref: "codex/10-example", repo: { full_name: REPO } } }]]),
     [ENDPOINT.protection]: ok({ contexts: ["build-test", "lint"] }),
     [ENDPOINT.checkRuns(HEAD[21])]: checkRunsReply(HEAD[21]),
     [ENDPOINT.statuses(HEAD[21])]: commitStatusReply(HEAD[21]),
@@ -94,6 +97,25 @@ const ROUTE_VARIANTS = {
   },
   "blocked-failure": (routes) => {
     routes[ENDPOINT.blockedBy(12)] = SERVER_ERROR;
+  },
+  "branches-failure": (routes) => {
+    routes[ENDPOINT.branches] = SERVER_ERROR;
+  },
+  "open-pulls-failure": (routes) => {
+    routes[ENDPOINT.openPulls] = SERVER_ERROR;
+  },
+  "bad-branch-ref": (routes) => {
+    routes[ENDPOINT.branches] = ok([[{ ref: "codex/10-example" }]]);
+  },
+  "bad-open-pull": (routes) => {
+    routes[ENDPOINT.openPulls] = ok([[{ number: 31, head: {} }]]);
+  },
+  "no-branches": (routes) => {
+    routes[ENDPOINT.branches] = ok([[]]);
+  },
+  // An open pull request from a fork that reuses the branch name is not the branch's pull request.
+  "fork-pull": (routes) => {
+    routes[ENDPOINT.openPulls] = ok([[{ number: 31, head: { ref: "codex/10-example", repo: { full_name: FOREIGN } } }]]);
   },
 };
 

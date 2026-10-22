@@ -27,7 +27,7 @@ Before the first Loop step, read the client's plugin list once (`claude plugin l
 
 Repeat until a stop condition holds. Take one parent at a time, in the current checkout, on one branch and one PR. Never create or use a Git worktree.
 
-1. Resume first. A dirty tree or in-progress branch usually means a delivery is underway: match its paths, branch, issue, children, and PR, then resume at the latest checkpoint. If nothing matches, capture it with `dod-guard:add-backlog-idea`, refine it, then resume it. Never discard, stash, or fold dirty work into an unrelated PBI.
+1. Resume first. A dirty tree or in-progress branch usually means a delivery is underway: match its paths, branch, issue, children, and PR, then resume at the latest checkpoint. If nothing matches, capture it with `dod-guard:add-backlog-idea`, refine it, then resume it. Never discard, stash, or fold dirty work into an unrelated PBI. A queue group the selector reports as `unfinished delivery branch` (a pushed `codex/<issue>-*` branch with no open pull request) is such a delivery: the selector starts no Todo or Backlog parent while one exists. Report it to the user and wait. Never resume it automatically and never delete the branch to clear the hold.
 2. Clean the queue, then select.
    - In `../complete-pr/scripts`, run `node closure.mjs snapshot --repository=<owner/name> --output=<file>`. On a non-zero exit, stop and report the error. Never plan from an older snapshot.
    - Run `node closure.mjs plan --snapshot=<file>`. Report every close, hold, and `unverified-closed` entry with its reason.
@@ -84,6 +84,7 @@ The selector reads two records, so write the one that matches the cause:
 - A prerequisite issue must finish first: the parent is blocked by it through GitHub's `blocked_by` relationship, which the selector already reads. Add no parked record.
 - No issue can finish first (an unanswered owner decision, an external service, a failed attempt that needs a human): park the root with `node scripts/park.mjs --action=park --repository=<owner/name> --issue=<root> --blocked=<one line> --unblocks-when=<one line>`. The selector then holds that root, with both lines in its reason, until the comment is deleted. A parked In Progress root is held ahead of resume, so park only after recording the branch and checkpoint on the issue.
 - Only the user releases a park, by deleting the comment or by asking for `node scripts/park.mjs --action=unpark --repository=<owner/name> --issue=<root>`. A run never unparks on its own reading that the cause is gone.
+- An `unfinished delivery branch` hold needs no `blocked_by` link and no parked record, and a run never works around it: only the user finishes the branch into a pull request or deletes it.
 - Order that has no code dependency lives only in Project order, which is the selector's default ranking within a status. Only the user reorders a chain of Project items; a run never does so to schedule work.
 
 ## Friction log
