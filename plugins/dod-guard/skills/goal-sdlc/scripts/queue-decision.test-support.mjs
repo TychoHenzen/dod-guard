@@ -34,6 +34,7 @@ export function issue(
     children = [],
     blockedBy = [],
     body = REFINED_BODY,
+    comments = [],
     activeCheckpoint = false,
   } = {},
 ) {
@@ -46,6 +47,7 @@ export function issue(
     children: children.map((child) => ref(child)),
     blockedBy,
     body,
+    comments,
     activeCheckpoint,
   };
 }

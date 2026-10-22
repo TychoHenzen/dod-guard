@@ -20,6 +20,7 @@ import {
 } from "./closure-index.mjs";
 import { collectingFrictionLog } from "./friction-log.mjs";
 import { parseIssueBodyRecords } from "./issue-body-records.mjs";
+import { parkedRecords } from "./parked-record.mjs";
 
 const OPEN_PULL_REQUEST = "open implementation pull request remains active";
 const ACTIVE_CHECKPOINT = "active implementation checkpoint remains";
@@ -112,6 +113,14 @@ function refinementReasons({ issueNumber, issue }) {
   if (typeof issue.body !== "string" || issue.body.trim() === "") return [`issue #${issueNumber} has no refined body`];
   const { errors, remainder } = parseIssueBodyRecords(issue.body);
   return [...errors, ...remainder].map((reason) => `issue #${issueNumber} ${reason}`);
+}
+
+// A parked root is held by the owner's decision, so the reason carries the record's own words. Only the
+// root is read: a parked sub-issue never parks the delivery it belongs to.
+function parkedReasons({ issueNumber, issue }) {
+  return parkedRecords(issue?.comments).map(
+    ({ blocked, unblocksWhen }) => `issue #${issueNumber} is parked: ${blocked}; unblocks when: ${unblocksWhen}`,
+  );
 }
 
 function mergedEvidenceReasons(records, context, mergedPullRequests) {
@@ -254,6 +263,10 @@ function decideGroup(records, context) {
     return hold([...reasons, ...closedIssueReasons]);
   }
 
+  const parkedRoot = records.find((record) => record.parentIssueNumber === null);
+  const parked = parkedRoot ? parkedReasons(parkedRoot) : [];
+  if (parked.length > 0) return hold(parked);
+
   const resumable = resumableDecision(reasons, records);
   if (resumable) return resumable;
   if (reasons.length > 0) return hold(reasons);
@@ -291,6 +304,7 @@ function issueRecord(number, issue, overlay) {
     activeCheckpoint: typeof checkpoint === "boolean" ? checkpoint : null,
     blockedBy: Array.isArray(issue.blockedBy) ? issue.blockedBy : null,
     body: typeof issue.body === "string" ? issue.body : null,
+    comments: Array.isArray(issue.comments) ? issue.comments : null,
   };
 }
 

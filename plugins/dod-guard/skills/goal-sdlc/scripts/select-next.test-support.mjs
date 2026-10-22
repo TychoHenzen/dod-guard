@@ -33,6 +33,7 @@ export function issue(number, overrides = {}) {
     children: [],
     blockedBy: [],
     body: REFINED_BODY,
+    comments: [],
     ...overrides,
   };
 }

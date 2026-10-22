@@ -20,9 +20,9 @@ The snapshot is one JSON object:
   issues          every listed issue, with number, state, title, parent,
                   children (an empty array when it has none), blockedBy
                   ([{repository, number, state}], empty when nothing blocks
-                  it), body (the issue body text), and activeCheckpoint
-                  (true while its delivery checkpoint is open, false once it
-                  is finished)
+                  it), body (the issue body text), comments ([{id, body}],
+                  empty when it has none), and activeCheckpoint (true while
+                  its delivery checkpoint is open, false once it is finished)
   pullRequests    every linked pull request, with number, state, mergedAt,
                   head {repository, ref, sha}, base {ref, sha}, mergeCommit,
                   requiredChecks, and trustedHeadSha (the head SHA its
@@ -48,6 +48,9 @@ siblings do not block unfinished roots, and unsafe ancestor relations hold
 the descendant roots. A Todo or Backlog group whose issue has an open
 blocker outside the group is held and names the blocker; Project order is
 only the selector's default ranking.
+A root with a parked record (an issue comment headed ## Parked, written by
+park.mjs) is held in every status, with the record's lines in its reason,
+until the comment is deleted.
 A Todo root whose body has a missing or unreadable refinement record, or
 acceptance ids that disagree with its checkboxes, is reported with kind
 needs-refinement and its reasons. It is never selected; run

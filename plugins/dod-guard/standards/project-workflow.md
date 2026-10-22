@@ -308,6 +308,28 @@ criteria checkboxes, are its reasons. Only the Todo root's own body is read. A
 Backlog root and a child body are not, and a blocker hold is reported first.
 `refine-backlog-item` clears it in place and leaves the Status at Todo.
 
+A parked record holds one queue root out of selection for a cause no issue can
+finish. It is an issue comment on the root, and `lib/parked-record.mjs` is the one
+definition that both writes and reads it. Its body is the heading `## Parked`, a
+blank line, the marker line `<!-- dod-guard-parked -->`, a blank line, a line
+`Blocked: <what blocks the root>`, and a line `Unblocks when: <what releases it>`.
+
+A comment counts only when its body begins with the heading, a blank line, and the
+marker line. A comment that quotes the marker elsewhere does not park the root. A
+record missing a field line still parks, and the field reads "not stated". Only the
+root's comments are read, in every queue status, and the check runs after the
+closed-issue and merged-delivery checks and before the resume check, so a parked
+In Progress root is held. A merged delivery is judged by its completion evidence
+and ignores the record. The hold reason reads
+`issue #N is parked: <Blocked>; unblocks when: <Unblocks when>`. The group is
+reported as `hold`. `goal-sdlc/scripts/park.mjs` writes and deletes the record;
+deleting the comment releases the root.
+
+Order comes from two places and a run must pick the right one. Work that needs
+another issue finished first carries that issue as a `blocked_by` relationship,
+which the selector reads. Work with no code dependency is ordered only by Project
+order, the selector's default ranking within a status. Neither is a parked record.
+
 A delivery is verified only when its completion record matches the live pull
 request readback (merge commit, trusted head, default base, passing checks) and
 the goal-sdlc queue decision classifies its group as `complete` with

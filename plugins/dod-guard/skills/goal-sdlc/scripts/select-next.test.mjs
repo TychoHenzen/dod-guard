@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { renderParkedRecord } from "../../../lib/parked-record.mjs";
 import { issue, item, REPOSITORY, selectNext, snapshot } from "./select-next.test-support.mjs";
 
 test("selects the Todo parent and its child ahead of Backlog", async () => {
@@ -86,4 +87,25 @@ test("a Todo group blocked by an open issue is held with the blocker named and t
   assert.equal(result.selected.rootIssueNumber, 41);
   const held = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 40);
   assert.deepEqual(held, { rootIssueNumber: 40, kind: "hold", reasons: [`issue #40 is blocked by ${REPOSITORY}#250`] });
+});
+
+test("a Todo root with a parked record is held with the record in its reason and the next Todo group is selected", async () => {
+  const input = snapshot();
+  input.items = [item(40, "Todo"), item(41, "Todo")];
+  input.issues = [
+    issue(40, {
+      comments: [
+        { id: 7, body: renderParkedRecord({ blocked: "waiting on the owner", unblocksWhen: "the owner answers" }) },
+      ],
+    }),
+    issue(41),
+  ];
+  const result = await selectNext(input);
+  assert.equal(result.selected.rootIssueNumber, 41);
+  const held = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 40);
+  assert.deepEqual(held, {
+    rootIssueNumber: 40,
+    kind: "hold",
+    reasons: ["issue #40 is parked: waiting on the owner; unblocks when: the owner answers"],
+  });
 });

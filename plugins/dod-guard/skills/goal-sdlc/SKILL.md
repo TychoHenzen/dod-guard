@@ -5,7 +5,7 @@ description: Work through the linked GitHub Project queue continuously, one pare
 
 # Goal SDLC
 
-Read `standards/working-defaults.md` and `standards/github-request-discipline.md` first. Under /goal, also read `standards/goal-stop.md`. This skill owns queue selection, sequencing, delegation, the friction log, and the stop decision. The owning skill wins on any difference. This skill never writes issue, Project, branch, or PR state itself. Closures run through the closure helper's apply, via the complete-pr section named below.
+Read `standards/working-defaults.md` and `standards/github-request-discipline.md` first. Under /goal, also read `standards/goal-stop.md`. This skill owns queue selection, sequencing, delegation, the friction log, and the stop decision. The owning skill wins on any difference. This skill never writes issue, Project, branch, or PR state itself, with one exception: `scripts/park.mjs` writes or deletes a parked record under "Blockers". Closures run through the closure helper's apply, via the complete-pr section named below.
 
 ## Owners
 
@@ -73,10 +73,18 @@ Agent names take the `dod-guard:` prefix.
 | Merge conflict triage owner/plan/judge | standard | stage-standard, read-standard | `standards/conflict-triage.md` |
 | Merge conflict triage investigate/apply | cheap | read-cheap, stage-cheap | `standards/conflict-triage.md` |
 | add-backlog-idea incl. friction log | cheap | stage-cheap-skill | Skill `dod-guard:add-backlog-idea <request>` |
+| Park or unpark a root (Blockers) | cheap | stage-cheap | In this skill's directory, run only the `node scripts/park.mjs` command the main thread gives, and return its JSON and exit code |
 
 ## Blockers
 
 Follow the failure-recovery rule in `standards/working-defaults.md`, including `dod-guard:codex-advisor` for a blocker that survives local triage. A blocked parent is not a reason to stop. Record on its issue what blocks it, what was tried, and what would unblock it. Keep its branch and checkpoint and select the next eligible parent. On a provider rate limit, record the reset time, work other parents, and retry once after it.
+
+The selector reads two records, so write the one that matches the cause:
+
+- A prerequisite issue must finish first: the parent is blocked by it through GitHub's `blocked_by` relationship, which the selector already reads. Add no parked record.
+- No issue can finish first (an unanswered owner decision, an external service, a failed attempt that needs a human): park the root with `node scripts/park.mjs --action=park --repository=<owner/name> --issue=<root> --blocked=<one line> --unblocks-when=<one line>`. The selector then holds that root, with both lines in its reason, until the comment is deleted. A parked In Progress root is held ahead of resume, so park only after recording the branch and checkpoint on the issue.
+- Only the user releases a park, by deleting the comment or by asking for `node scripts/park.mjs --action=unpark --repository=<owner/name> --issue=<root>`. A run never unparks on its own reading that the cause is gone.
+- Order that has no code dependency lives only in Project order, which is the selector's default ranking within a status. Only the user reorders a chain of Project items; a run never does so to schedule work.
 
 ## Friction log
 
