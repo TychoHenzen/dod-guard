@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import { BAD_SKILL, doc, GOOD_SKILL, run, runJson, useFixtures } from "./migration-check-harness.mjs";
+import { BAD_SKILL, doc, GOOD_SKILL, run, runJson, useFixtures } from "./harness/migration-check-harness.mjs";
 
 describe("migration-check: cli", () => {
   const fx = useFixtures();

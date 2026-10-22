@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { run, useFixtures } from "./migration-check-harness.mjs";
+import { run, useFixtures } from "./harness/migration-check-harness.mjs";
 
 describe("migration-check: line count", () => {
   const fx = useFixtures();

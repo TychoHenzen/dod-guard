@@ -8,7 +8,7 @@ import {
   run,
   useFixtures,
   writeInstinct,
-} from "./migration-check-harness.mjs";
+} from "./harness/migration-check-harness.mjs";
 
 describe("migration-check: kind weights", () => {
   const fx = useFixtures();

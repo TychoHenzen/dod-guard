@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { doc, run, useFixtures } from "./migration-check-harness.mjs";
+import { doc, run, useFixtures } from "./harness/migration-check-harness.mjs";
 
 describe("migration-check: agent tools", () => {
   const fx = useFixtures();

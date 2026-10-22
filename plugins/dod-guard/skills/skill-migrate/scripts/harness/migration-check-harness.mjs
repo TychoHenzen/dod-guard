@@ -5,14 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before } from "node:test";
 
-const SCRIPT = new URL("./migration-check.mjs", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const SCRIPT = new URL("../migration-check.mjs", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
 
-export function run(args, opts) {
+export function run(args) {
   try {
-    const stdout = execFileSync("node", [SCRIPT, ...args], { encoding: "utf8", timeout: 10_000, ...opts });
+    const stdout = execFileSync("node", [SCRIPT, ...args], { encoding: "utf8", timeout: 10_000 });
     return { code: 0, stdout, stderr: "" };
-  } catch (err) {
-    return { code: err.status, stdout: err.stdout || "", stderr: err.stderr || "" };
+  } catch ({ status: code, stdout = "", stderr = "" }) {
+    return { code, stdout, stderr };
   }
 }
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { doc, runJson, useFixtures } from "./migration-check-harness.mjs";
+import { doc, runJson, useFixtures } from "./harness/migration-check-harness.mjs";
 
 describe("migration-check: contradictions", () => {
   const fx = useFixtures();

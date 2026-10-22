@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { runJson, useFixtures } from "./migration-check-harness.mjs";
+import { runJson, useFixtures } from "./harness/migration-check-harness.mjs";
 
 describe("migration-check: metadata", () => {
   const fx = useFixtures();

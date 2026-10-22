@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { assertExcluded, assertWeightsSum, doc, run, useFixtures, writeInstinct } from "./migration-check-harness.mjs";
+import {
+  assertExcluded,
+  assertWeightsSum,
+  doc,
+  run,
+  useFixtures,
+  writeInstinct,
+} from "./harness/migration-check-harness.mjs";
 
 describe("migration-check: kind exclusions", () => {
   const fx = useFixtures();
