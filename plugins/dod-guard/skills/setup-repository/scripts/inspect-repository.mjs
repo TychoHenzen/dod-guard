@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-import { readFile, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { readJsonFile } from "../../../lib/read-text.mjs";
 import { credentialFindings } from "./credential-scan.mjs";
 import { inspectGit } from "./git-inspection.mjs";
 import { assessGitHubSnapshot } from "./github-snapshot.mjs";
@@ -65,11 +66,11 @@ function writeJson(value) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-async function runGithubSnapshot(args) {
+function runGithubSnapshot(args) {
   if (args.length !== 2 || args.indexOf("--github-snapshot") !== 0) {
     throw new Error("Usage: inspect-repository.mjs --github-snapshot <snapshot.json>");
   }
-  writeJson(assessGitHubSnapshot(JSON.parse(await readFile(path.resolve(args[1]), "utf8"))));
+  writeJson(assessGitHubSnapshot(readJsonFile(path.resolve(args[1]))));
 }
 
 async function runSummary(args) {

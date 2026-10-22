@@ -83,11 +83,7 @@ const BOM = Buffer.from([0xef, 0xbb, 0xbf]);
 
 test("exits 2 on a file that is not UTF-8", async () => {
   const body = await readFile(CORRECTED, "utf8");
-  const notUtf8 = [
-    Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(body, "utf16le")]),
-    Buffer.from(body, "utf16le"),
-    Buffer.from([0x41, 0xe9, 0x0a]),
-  ];
+  const notUtf8 = [Buffer.from(body, "utf16le"), Buffer.from([0x41, 0xe9, 0x0a])];
   const runOnBody = (bytes) =>
     withTempFile("body.md", bytes, (file) => ({ file, result: run("refinement", `--body-file=${file}`) }));
   for (const bytes of notUtf8) {
@@ -117,6 +113,23 @@ test("reads UTF-8 with a byte-order mark", async () => {
   });
 });
 
+test("reads UTF-16 with a byte-order mark, as Windows PowerShell 5.1 writes", async () => {
+  const body = await readFile(CORRECTED, "utf8");
+  const utf16 = (text) => Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(text, "utf16le")]);
+  await withTempFile("body.md", utf16(body), (file) => {
+    assert.deepEqual(run("refinement", `--body-file=${file}`), {
+      status: 0,
+      json: { outcome: "verified", remainder: [] },
+    });
+  });
+  await withTempFile("children.json", utf16('[{"id": "orphan-slice", "evidence": "slice-proof"}]'), (file) => {
+    assert.deepEqual(run("refinement", `--body-file=${CORRECTED}`, `--children=${file}`), {
+      status: 1,
+      json: { outcome: "actionable remainder", remainder: ["orphan-slice slice needs an owning task"] },
+    });
+  });
+});
+
 test("reads only local files: no network, process, or GitHub module is imported", async () => {
   const importsOf = async (name) => {
     const source = await readFile(path.join(here, name), "utf8");
@@ -131,7 +144,11 @@ test("reads only local files: no network, process, or GitHub module is imported"
     "./handoff-proof-cli.mjs",
     "./handoff-proof-runs.mjs",
   ]);
-  assert.deepEqual(await importsOf("handoff-proof-cli.mjs"), ["node:fs", "../../../lib/args.mjs"]);
+  assert.deepEqual(await importsOf("handoff-proof-cli.mjs"), [
+    "node:fs",
+    "../../../lib/args.mjs",
+    "../../../lib/read-text.mjs",
+  ]);
   assert.deepEqual(await importsOf("handoff-proof-runs.mjs"), [
     "../../../lib/handoff-matrix.mjs",
     "../../../lib/issue-body-records.mjs",

@@ -104,3 +104,13 @@ test("finalization exits 2 and names a body or handoff that is unreadable or not
     assert.deepEqual(finalization(body, handoffLatin1), notUtf8("handoff-file", handoffLatin1));
   });
 });
+
+test("finalization reads a handoff saved as UTF-16 with a byte-order mark like the plain one", async () => {
+  const marked = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(HANDOFF_TEXT, "utf16le")]);
+  await withFiles([...SAVED, ["handoff-utf16-bom.md", marked]], ([body, handoff, handoffMarked]) => {
+    const finalization = (handoffFile) =>
+      run("finalization", `--body-file=${body}`, `--handoff-file=${handoffFile}`, `--head-sha=${HEAD_904}`);
+
+    assert.deepEqual(finalization(handoffMarked), finalization(handoff));
+  });
+});

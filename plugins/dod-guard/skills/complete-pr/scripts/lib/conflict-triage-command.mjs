@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: The command resolves the state path.
 import { isAbsolute, relative, resolve, sep } from "node:path";
+import { readJsonFile } from "../../../../lib/read-text.mjs";
 import {
   abortOwnMerge,
   checkRegeneration,
@@ -72,8 +73,8 @@ function outsideRepository(git, path) {
   return path;
 }
 
-function readJson(path) {
-  return path ? JSON.parse(readFileSync(path, "utf8")) : undefined;
+function readOptionalJson(path) {
+  return path ? readJsonFile(path) : undefined;
 }
 
 function saveState(path, state) {
@@ -105,7 +106,7 @@ function start(git, flags, { createClient, statePath }) {
   const trustedHead = required(flags, "trusted-head");
   // The generator list is required so that "none declared" is an explicit []:
   // a missing list would let a generated path be classified as source.
-  const generators = readJson(outsideRepository(git, required(flags, "generators")));
+  const generators = readOptionalJson(outsideRepository(git, required(flags, "generators")));
   if (!Array.isArray(generators)) {
     throw new UsageError("--generators must name a JSON list; pass [] when the repository declares none.");
   }
@@ -162,16 +163,19 @@ const COMMANDS = {
   record: (_git, flags, { state }) =>
     renderTriageRecord({
       ...state,
-      answers: readJson(flags.answers) ?? [],
-      decisions: readJson(flags.decisions) ?? [],
+      answers: readOptionalJson(flags.answers) ?? [],
+      decisions: readOptionalJson(flags.decisions) ?? [],
       mergeSha: flags.merge ?? state.mergeSha ?? null,
-      stop: readJson(flags.stop) ?? state.stop ?? null,
-      verification: readJson(flags.verification) ?? [],
+      stop: readOptionalJson(flags.stop) ?? state.stop ?? null,
+      verification: readOptionalJson(flags.verification) ?? [],
     }),
   "regen-check": (git, flags, { state }) =>
     checkRegeneration(git, { expectClean: flags["expect-clean"] === true, generators: state.generators ?? [] }),
   verify: (git, flags, { state }) =>
-    verifyResolution(git, { ...state, decisions: readJson(outsideRepository(git, required(flags, "decisions"))) }),
+    verifyResolution(git, {
+      ...state,
+      decisions: readOptionalJson(outsideRepository(git, required(flags, "decisions"))),
+    }),
 };
 
 function defaultClient(repository, pullNumber) {
@@ -188,5 +192,5 @@ export async function runCommand(command, git, flags, { createClient = defaultCl
   if (!Object.hasOwn(COMMANDS, command)) {
     throw new UsageError(`Unknown command: ${command}`);
   }
-  return await COMMANDS[command](git, flags, { createClient, state: readJson(statePath), statePath });
+  return await COMMANDS[command](git, flags, { createClient, state: readOptionalJson(statePath), statePath });
 }
