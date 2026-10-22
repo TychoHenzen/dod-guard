@@ -1,86 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  reviewLenses as buildReviewLenses,
-  recordsWithRequiredKeys,
-} from "../../next-ticket/scripts/convergence-builders.mjs";
-import { acceptanceMatrix as buildAcceptanceMatrix } from "../../next-ticket/scripts/passing-matrix.mjs";
-import {
-  evaluateConvergence,
-  REQUIRED_REVIEW_LENSES,
-  scenarioResult,
-} from "../../next-ticket/scripts/structured-workflow-proof.mjs";
 import { evaluateStructuredFinalization } from "./finalization-gate.mjs";
-
-const validConvergenceInput = () => {
-  const reviewLenses = buildReviewLenses({ headSha: "proof-head", prefix: "matrix-" });
-  const acceptanceMatrix = buildAcceptanceMatrix("proof-head", "AC-1", "matrix-");
-  return {
-    records: recordsWithRequiredKeys(reviewLenses),
-    tasks: [
-      {
-        id: "task-1",
-        child: "search-flow",
-        evidence: ["commit-proof", ...REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
-        acceptanceEvidence: acceptanceMatrix.map((row) => row.evidence),
-        verificationEvidence: acceptanceMatrix.map((row) => row.proof),
-      },
-      {
-        id: "task-2",
-        child: "settings-flow",
-        evidence: "settings-proof",
-      },
-    ],
-    children: [
-      { id: "search-flow", evidence: "slice-proof" },
-      { id: "settings-flow", evidence: "settings-slice-proof" },
-    ],
-    reviewLenses,
-    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
-    acceptanceMatrix,
-    headSha: "proof-head",
-  };
-};
-
-test("finalization relies on executable functional convergence proof", () => {
-  assert.equal(scenarioResult("passing").outcome, "verified");
-  const passing = evaluateConvergence(validConvergenceInput());
-  assert.equal(passing.outcome, "verified");
-  const resultInput = validConvergenceInput();
-  resultInput.tasks[0].child = "missing-flow";
-  resultInput.children[0].id = "implemented-flow";
-  const result = evaluateConvergence(resultInput);
-
-  assert.equal(result.outcome, "actionable remainder");
-  assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
-  assert.ok(result.remainder.some((entry) => entry.includes("implemented-flow slice needs an owning task")));
-  assert.ok(!result.remainder.some((entry) => entry.includes("review lens")));
-
-  const missingLensInput = validConvergenceInput();
-  missingLensInput.reviewLenses = missingLensInput.reviewLenses.slice(0, 1);
-  const missingLens = evaluateConvergence(missingLensInput);
-  assert.equal(missingLens.outcome, "actionable remainder");
-  assert.ok(missingLens.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")));
-
-  const duplicateSliceInput = validConvergenceInput();
-  duplicateSliceInput.tasks[1].child = "search-flow";
-  duplicateSliceInput.tasks[1].evidence = "other-proof";
-  const duplicateSlice = evaluateConvergence(duplicateSliceInput);
-
-  assert.ok(
-    duplicateSlice.remainder.some((entry) => entry.includes("search-flow slice has more than one owning task")),
-  );
-  assert.equal(duplicateSlice.outcome, "actionable remainder");
-
-  const duplicateEvidenceInput = validConvergenceInput();
-  duplicateEvidenceInput.tasks[1].evidence = duplicateEvidenceInput.tasks[0].evidence;
-  const duplicateEvidence = evaluateConvergence(duplicateEvidenceInput);
-
-  assert.ok(
-    duplicateEvidence.remainder.some((entry) => entry.includes("evidence commit-proof is mapped more than once")),
-  );
-  assert.equal(duplicateEvidence.outcome, "actionable remainder");
-});
+import { validConvergenceInput } from "./fixtures/convergence-input.mjs";
 
 test("finalization gate blocks stale or unmapped user-path evidence", () => {
   const valid = evaluateStructuredFinalization(validConvergenceInput());
@@ -198,63 +119,6 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   );
 });
 
-test("finalization gate binds cross-cutting lenses to their user paths", () => {
-  const wrongWiringPath = validConvergenceInput();
-  wrongWiringPath.reviewLenses = wrongWiringPath.reviewLenses.map((lens) =>
-    lens.id === "wiring/usability"
-      ? { ...lens, acceptanceEvidence: "matrix-evidence-1", verificationEvidence: "matrix-proof-1" }
-      : lens,
-  );
-  const wrongWiringResult = evaluateStructuredFinalization(wrongWiringPath);
-  assert.ok(
-    wrongWiringResult.remainder.some((entry) =>
-      entry.includes("wiring/usability review lens must cover required path(s)"),
-    ),
-  );
-
-  const nearMatchPath = validConvergenceInput();
-  nearMatchPath.acceptanceMatrix[2] = { ...nearMatchPath.acceptanceMatrix[2], path: "browser/e2e-fake" };
-  const nearMatchResult = evaluateStructuredFinalization(nearMatchPath);
-  assert.ok(
-    nearMatchResult.remainder.some((entry) =>
-      entry.includes("wiring/usability review lens must cover required path(s)"),
-    ),
-  );
-
-  const inapplicableBrowser = validConvergenceInput();
-  inapplicableBrowser.acceptanceMatrix[2] = {
-    ...inapplicableBrowser.acceptanceMatrix[2],
-    status: "inapplicable",
-    reason: "The supported surface is a native command palette, not a browser UI.",
-  };
-  const inapplicableBrowserResult = evaluateStructuredFinalization(inapplicableBrowser);
-  assert.equal(inapplicableBrowserResult.nextStep, "project-status.mjs");
-
-  const reorderedEvidence = validConvergenceInput();
-  reorderedEvidence.reviewLenses = reorderedEvidence.reviewLenses.map((lens) =>
-    lens.id === "wiring/usability"
-      ? {
-          ...lens,
-          acceptanceEvidence: ["matrix-evidence-3", "matrix-evidence-2"],
-          verificationEvidence: ["matrix-proof-3", "matrix-proof-2"],
-        }
-      : lens,
-  );
-  const reorderedEvidenceResult = evaluateStructuredFinalization(reorderedEvidence);
-  assert.equal(reorderedEvidenceResult.nextStep, "project-status.mjs");
-
-  const reusedRow = validConvergenceInput();
-  reusedRow.reviewLenses = reusedRow.reviewLenses.map((lens) =>
-    lens.id === "reliability"
-      ? { ...lens, acceptanceEvidence: "matrix-evidence-6", verificationEvidence: "matrix-proof-6" }
-      : lens,
-  );
-  const reusedRowResult = evaluateStructuredFinalization(reusedRow);
-  assert.ok(
-    reusedRowResult.remainder.some((entry) => entry.includes("reliability review lens reuses acceptance-matrix row")),
-  );
-});
-
 test("finalization gate returns an actionable remainder for malformed handoff input", () => {
   const result = evaluateStructuredFinalization(null);
 
@@ -269,24 +133,4 @@ test("finalization gate rejects the ordinary delivery bypass", () => {
   assert.equal(result.outcome, "actionable remainder");
   assert.equal(result.nextStep, "stop");
   assert.ok(result.remainder.some((entry) => entry.includes("ordinary delivery path")));
-});
-
-test("convergence rejects orphaned acceptance-matrix evidence", () => {
-  const orphaned = validConvergenceInput();
-  orphaned.acceptanceMatrix.push({
-    id: "AC-1-orphan",
-    contract: "AC-1",
-    path: "quality-extra",
-    proof: "matrix-proof-orphan",
-    expected: "pass",
-    observed: "pass",
-    status: "pass",
-    evidence: "matrix-evidence-orphan",
-    headSha: "proof-head",
-  });
-  const result = evaluateConvergence(orphaned);
-
-  assert.equal(result.outcome, "actionable remainder");
-  assert.ok(result.remainder.some((entry) => entry.includes("matrix-evidence-orphan is not owned")));
-  assert.ok(result.remainder.some((entry) => entry.includes("matrix-proof-orphan is not owned")));
 });

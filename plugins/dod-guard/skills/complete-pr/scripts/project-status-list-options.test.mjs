@@ -8,15 +8,15 @@ import process from "node:process";
 import test from "node:test";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { fileURLToPath } from "node:url";
-import { listStatusOptions } from "./project-status.mjs";
+import { listReads } from "./fixtures/project-status-calls.mjs";
 import {
-  createRunner,
-  listReads,
   projectFields,
   STATUS_FIELD_ID,
   STATUS_FIELD_NODE_ID,
   STATUS_OPTION_ID,
-} from "./project-status-fixtures.mjs";
+} from "./fixtures/project-status-data.mjs";
+import { listStatusOptions } from "./project-status.mjs";
+import { createRunner } from "./project-status-fixtures.mjs";
 
 const STATUS_FIELD_ERROR = /exactly one REST field/;
 const CLI_FAILURE_PREFIX = /project-status failed/;

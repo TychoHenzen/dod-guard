@@ -1,345 +1,249 @@
 import { isLinkedProjectRead } from "../../../lib/linked-project-read.mjs";
+import { ISSUE_NUMBERS, REPOSITORY, STATUS_OPTIONS } from "./fixtures/lifecycle-constants.mjs";
+import { issueRoute, subIssuesRoute } from "./fixtures/lifecycle-issue-routes.mjs";
+import {
+  commandResult,
+  createIssue,
+  createProjectItem,
+  formValues,
+  isLiveAddItemShape,
+  issueRecord,
+  linkedProjectReply,
+  PROJECT_ENDPOINT,
+  PULL_ENDPOINT,
+  projectItem,
+  staticReply,
+  unprocessable,
+} from "./fixtures/lifecycle-replies.mjs";
 
-export const REPOSITORY = "owner/repo";
-export const OWNER = "owner";
-export const PROJECT_NUMBER = 2;
-export const PROJECT_NODE_ID = "PVT_disposable";
-export const STATUS_FIELD_NODE_ID = "PVTSSF_status";
-export const STATUS_FIELD_ID = 407_767_889;
-export const PULL_NUMBER = 670;
-export const HEAD_SHA = "head-1";
-export const PARENT_NUMBER = 660;
-export const CHILD_NUMBERS = [665, 666, 667, 668];
-export const ISSUE_NUMBERS = [PARENT_NUMBER, ...CHILD_NUMBERS];
-export const ITEM_NODE_IDS = ["PVTI_child-665", "PVTI_child-666", "PVTI_child-667", "PVTI_child-668", "PVTI_parent"];
-export const ITEM_NUMERIC_IDS = new Map(ITEM_NODE_IDS.map((itemId, index) => [itemId, 256_202_820 + index]));
-const ITEM_NODE_BY_ISSUE = new Map([
-  [665, ITEM_NODE_IDS[0]],
-  [666, ITEM_NODE_IDS[1]],
-  [667, ITEM_NODE_IDS[2]],
-  [668, ITEM_NODE_IDS[3]],
-  [660, ITEM_NODE_IDS[4]],
-]);
-export const STATUS_OPTIONS = [
-  { id: "30a230f4", name: "Backlog" },
-  { id: "f75ad846", name: "Todo" },
-  { id: "47fc9ee4", name: "In Progress" },
-  { id: "98236657", name: "Done" },
-];
-export const ISSUE_LABELS = new Map([
-  [660, ["bug", "Prio 1 - Emergency", "Effort 8 - Huge"]],
-  [665, ["bug", "Prio 1 - Emergency", "Effort 5 - Large"]],
-  [666, ["enhancement", "Prio 1 - Emergency", "Effort 5 - Large"]],
-  [667, ["enhancement", "Prio 1 - Emergency", "Effort 5 - Large"]],
-  [668, ["bug", "Prio 1 - Emergency", "Effort 3 - Medium"]],
-]);
+const ISSUES_ENDPOINT = `repos/${REPOSITORY}/issues`;
+const PROJECT_ITEMS_ENDPOINT = `${PROJECT_ENDPOINT}/items`;
 
-export function issueMarker(number) {
-  return `<!-- dod-guard:lifecycle-fixture:${number} -->`;
+function startsWithPrefix(endpoint, prefix) {
+  return endpoint?.startsWith(prefix) === true;
 }
 
-function commandResult(data, status = 0, stderr = "") {
-  return { status, stderr, stdout: data === undefined ? "" : JSON.stringify(data) };
+function visibleProjectItems(state, options) {
+  return [...state.projectItems.values()].filter((item) => item.issueNumber !== options.missingProjectItem);
 }
 
-function exactHeadCheckRun(id, name) {
-  return { id, app: { id: 15_368 }, conclusion: "success", head_sha: HEAD_SHA, name, status: "completed" };
+function listIssues(state, { options }) {
+  const visibleIssues = [...state.issues.values()].filter((issue) => issue.number !== options.unresolvedIssueCreate);
+  return commandResult(visibleIssues.map((issue) => issueRecord(issue)));
 }
 
-function formValues(args, prefix) {
-  return args
-    .filter((value) => typeof value === "string" && value.startsWith(prefix))
-    .map((value) => value.slice(prefix.length));
+const LIFECYCLE_MARKER = /<!-- dod-guard:lifecycle-fixture:(\d+) -->/;
+
+function markedIssueNumber(state, body) {
+  const markerMatch = body.match(LIFECYCLE_MARKER);
+  if (!markerMatch) {
+    throw new Error("Issue create requires the exact lifecycle marker.");
+  }
+  const number = Number(markerMatch[1]);
+  if (!ISSUE_NUMBERS.includes(number)) {
+    throw new Error(`Unknown lifecycle issue marker ${number}.`);
+  }
+  if (state.issues.has(number)) {
+    throw new Error(`Lifecycle issue ${number} already exists.`);
+  }
+  return number;
 }
 
-// The answer gh gives for a REST 422: the body on stdout and exit 1.
-function unprocessable(message) {
-  const stderr = `gh: ${message} (HTTP 422)`;
-  return commandResult({ message, status: "422" }, 1, stderr);
+function isAmbiguousCreate(options, number) {
+  return options.ambiguousIssueCreate === number || options.unresolvedIssueCreate === number;
 }
 
-// The live API rejected the content_id/content_type shape with a 422, so the
-// fixture accepts only type with an id.
-function isLiveAddItemShape(args) {
-  const [type] = formValues(args, "type=");
-  const legacy = formValues(args, "content_").length > 0;
-  return !legacy && ["Issue", "PullRequest"].includes(type);
+function recordIssue(state, options, issue) {
+  state.issues.set(issue.number, issue);
+  if (options.autoAddProjectItems) {
+    state.projectItems.set(issue.number, createProjectItem(issue));
+  }
 }
 
-// The repository's one open explicit link, as the linked-Project read returns
-// it.
-function linkedProjectReply() {
-  const project = {
-    id: PROJECT_NODE_ID,
-    number: PROJECT_NUMBER,
-    title: "Disposable lifecycle Project",
-    closed: false,
-    owner: { __typename: "User", login: OWNER },
+function requestedTitle(args, number) {
+  return formValues(args, "title=")[0] ?? `Disposable fixture ${number}`;
+}
+
+function createIssueRoute(state, { args, options }) {
+  const number = markedIssueNumber(state, formValues(args, "body=")[0] ?? "");
+  const issue = createIssue(number, requestedTitle(args, number));
+  recordIssue(state, options, issue);
+  if (isAmbiguousCreate(options, number)) {
+    throw new Error(`Ambiguous issue create for ${number}.`);
+  }
+  return commandResult(issueRecord(issue));
+}
+
+function issuesPrefixRoute(state, request) {
+  const suffix = request.endpoint.slice(`${ISSUES_ENDPOINT}/`.length);
+  if (suffix.endsWith("/sub_issues")) {
+    return subIssuesRoute(state, request, suffix);
+  }
+  return issueRoute(state, request, suffix);
+}
+
+function mergeRoute(state) {
+  state.pull.merged = true;
+  return commandResult({ merged: true, sha: "merge-1" });
+}
+
+function addProjectItemRoute(state, { args }) {
+  if (!isLiveAddItemShape(args)) {
+    return unprocessable("Validation Failed");
+  }
+  const issueId = Number(formValues(args, "id=")[0]);
+  const issue = [...state.issues.values()].find((candidate) => candidate.id === issueId);
+  if (!issue) throw new Error(`Unknown project item issue ${issueId}.`);
+  if (state.projectItems.has(issue.number)) {
+    return unprocessable("Content already exists in this project");
+  }
+  const item = createProjectItem(issue);
+  state.projectItems.set(issue.number, item);
+  return commandResult(projectItem(item));
+}
+
+function listProjectItemsPage(state, { options }) {
+  const items = visibleProjectItems(state, options);
+  return commandResult([items.map((item) => projectItem(item))]);
+}
+
+function listProjectItemsExact(state, { args, options }) {
+  const items = visibleProjectItems(state, options);
+  if (args.includes("--slurp")) {
+    const slurped = items.map((item) => projectItem(item, options.contradictoryStatus));
+    return commandResult([slurped]);
+  }
+  return {
+    status: 0,
+    stderr: "",
+    stdout: items.map((item) => JSON.stringify(projectItem(item, options.contradictoryStatus))).join("\n"),
   };
-  const projectsV2 = { nodes: [project], pageInfo: { hasNextPage: false } };
-  return { data: { repository: { projectsV2 } } };
 }
 
-export function createRecordingTransport({
-  missingProjectItem,
-  contradictoryStatus = false,
-  autoAddProjectItems = false,
-  ambiguousStatusWrite,
-  existingIssueNumbers = [],
-  ambiguousIssueCreate,
-  unresolvedIssueCreate,
-} = {}) {
-  const calls = [];
-  const issues = new Map();
-  const projectItems = new Map();
-  const transitions = [];
-  const pull = { merged: false };
+function getProjectItem(state, { endpoint, options }) {
+  const prefix = `${PROJECT_ITEMS_ENDPOINT}/`;
+  const restItemId = endpoint.slice(prefix.length).split("?", 1)[0];
+  const item = [...state.projectItems.values()].find((candidate) => String(candidate.id) === restItemId);
+  if (!item) throw new Error(`Unknown project item readback ${restItemId}.`);
+  return commandResult(projectItem(item, options.contradictoryStatus));
+}
 
-  function createIssue(number, title = `Disposable fixture ${number}`) {
-    return {
-      id: 900_000 + number,
-      number,
-      title,
-      body: `Captured for REST lifecycle proof.\n\n${issueMarker(number)}`,
-      state: "open",
-      labels: [],
-      parent: null,
-      children: [],
-    };
+function patchProjectItem(state, { args, endpoint, options }) {
+  const restItemId = endpoint.slice(`${PROJECT_ITEMS_ENDPOINT}/`.length);
+  const item = [...state.projectItems.values()].find((candidate) => String(candidate.id) === restItemId);
+  const optionId = formValues(args, "fields[][value]=")[0];
+  const option = STATUS_OPTIONS.find((candidate) => candidate.id === optionId);
+  if (!(item && option)) {
+    throw new Error(`Unknown project status mutation ${restItemId}.`);
   }
+  item.status = option.name;
+  state.transitions.push({ itemId: item.nodeId, status: item.status });
+  if (options.ambiguousStatusWrite === option.name) {
+    throw new Error(`Ambiguous status write for ${item.nodeId}.`);
+  }
+  return commandResult(projectItem(item));
+}
 
+// First match wins. The order is load-bearing: the page or fields prefix must
+// answer before the exact items list, and the GET and PATCH item routes share
+// one prefix and split only on method.
+const ROUTES = [
+  {
+    matches: ({ endpoint, method }) => endpoint === `${ISSUES_ENDPOINT}?state=all&per_page=100` && method === "GET",
+    handle: listIssues,
+  },
+  {
+    matches: ({ endpoint, method }) => endpoint === ISSUES_ENDPOINT && method === "POST",
+    handle: createIssueRoute,
+  },
+  {
+    matches: ({ endpoint }) => startsWithPrefix(endpoint, `${ISSUES_ENDPOINT}/`),
+    handle: issuesPrefixRoute,
+  },
+  {
+    matches: ({ endpoint, method }) => endpoint === `${PULL_ENDPOINT}/merge` && method === "PUT",
+    handle: mergeRoute,
+  },
+  {
+    matches: ({ endpoint, method }) => endpoint === PROJECT_ITEMS_ENDPOINT && method === "POST",
+    handle: addProjectItemRoute,
+  },
+  {
+    matches: ({ endpoint }) =>
+      startsWithPrefix(endpoint, `${PROJECT_ITEMS_ENDPOINT}?per_page=100&page=`) ||
+      startsWithPrefix(endpoint, `${PROJECT_ITEMS_ENDPOINT}?per_page=100&fields=`),
+    handle: listProjectItemsPage,
+  },
+  {
+    matches: ({ endpoint }) => endpoint === `${PROJECT_ITEMS_ENDPOINT}?per_page=100`,
+    handle: listProjectItemsExact,
+  },
+  {
+    matches: ({ endpoint, method }) => startsWithPrefix(endpoint, `${PROJECT_ITEMS_ENDPOINT}/`) && method === "GET",
+    handle: getProjectItem,
+  },
+  {
+    matches: ({ endpoint, method }) => startsWithPrefix(endpoint, `${PROJECT_ITEMS_ENDPOINT}/`) && method === "PATCH",
+    handle: patchProjectItem,
+  },
+];
+
+function createState(existingIssueNumbers) {
+  const state = {
+    issues: new Map(),
+    projectItems: new Map(),
+    transitions: [],
+    pull: { merged: false },
+  };
   for (const number of existingIssueNumbers) {
-    issues.set(number, createIssue(number));
+    state.issues.set(number, createIssue(number));
   }
+  return state;
+}
 
-  function issueRecord(number) {
-    const issue = issues.get(number);
-    return {
-      id: issue.id,
-      number,
-      title: issue.title,
-      body: issue.body,
-      state: issue.state,
-      labels: issue.labels.map((name) => ({ name })),
-      repository: { full_name: REPOSITORY },
-      parent_issue: issue.parent === null ? null : { number: issue.parent },
-      html_url: `https://github.com/${REPOSITORY}/issues/${number}`,
-    };
-  }
+function parseRequest(args, options) {
+  const endpoint = args.find(
+    (value) => typeof value === "string" && (value.startsWith("repos/") || value.startsWith("users/")),
+  );
+  const methodIndex = args.indexOf("--method");
+  const method = methodIndex === -1 ? "GET" : args[methodIndex + 1];
+  return { args, endpoint, method, options };
+}
 
-  function itemStatus(item, includeContradiction) {
-    const option = STATUS_OPTIONS.find((candidate) => candidate.name === item.status);
-    const name =
-      includeContradiction && item.issueNumber === PARENT_NUMBER
-        ? { raw: item.status, html: item.status === "Done" ? "Todo" : "Done" }
-        : { raw: item.status };
-    return { id: STATUS_FIELD_ID, name: "Status", data_type: "single_select", value: { id: option.id, name } };
+function dispatch(state, args, options) {
+  // The documented linked-Project read is the one GraphQL a lifecycle makes.
+  if (isLinkedProjectRead(args)) {
+    return commandResult(linkedProjectReply());
   }
+  if (args.some((value) => /graphql/i.test(String(value)))) {
+    throw new Error("Forbidden routine GraphQL request.");
+  }
+  const request = parseRequest(args, options);
+  const reply = staticReply(request.endpoint, state);
+  if (reply !== undefined) return reply;
+  const route = ROUTES.find((candidate) => candidate.matches(request));
+  if (route) return route.handle(state, request);
+  throw new Error(`Unexpected command: ${args.join(" ")}`);
+}
 
-  function projectItem(item, includeContradiction = false) {
-    return {
-      id: item.id,
-      node_id: item.nodeId,
-      content: {
-        number: item.issueNumber,
-        repository: { full_name: REPOSITORY },
-        repository_url: `https://api.github.com/repos/${REPOSITORY}`,
-      },
-      fields: [itemStatus(item, includeContradiction)],
-    };
-  }
-
-  function createProjectItem(issue) {
-    const nodeId = ITEM_NODE_BY_ISSUE.get(issue.number);
-    return { id: ITEM_NUMERIC_IDS.get(nodeId), nodeId, issueNumber: issue.number, status: "Backlog" };
-  }
-
-  function visibleProjectItems() {
-    return [...projectItems.values()].filter((item) => item.issueNumber !== missingProjectItem);
-  }
+export function createRecordingTransport({ existingIssueNumbers = [], ...rest } = {}) {
+  const calls = [];
+  const state = createState(existingIssueNumbers);
+  const options = {
+    contradictoryStatus: false,
+    autoAddProjectItems: false,
+    ...rest,
+  };
 
   function run(args) {
     calls.push([...args]);
-    // The documented linked-Project read is the one GraphQL a lifecycle makes.
-    if (isLinkedProjectRead(args)) {
-      return commandResult(linkedProjectReply());
-    }
-    if (args.some((value) => /graphql/i.test(String(value)))) {
-      throw new Error("Forbidden routine GraphQL request.");
-    }
-    const endpoint = args.find(
-      (value) => typeof value === "string" && (value.startsWith("repos/") || value.startsWith("users/")),
-    );
-    const methodIndex = args.indexOf("--method");
-    const method = methodIndex === -1 ? "GET" : args[methodIndex + 1];
-    const issuesEndpoint = `repos/${REPOSITORY}/issues`;
-    const pullEndpoint = `repos/${REPOSITORY}/pulls/${PULL_NUMBER}`;
-    const projectEndpoint = `users/${OWNER}/projectsV2/${PROJECT_NUMBER}`;
-    const projectItemsEndpoint = `${projectEndpoint}/items`;
-
-    if (endpoint === `repos/${REPOSITORY}`) {
-      return commandResult({
-        full_name: REPOSITORY,
-        default_branch: "master",
-        allow_auto_merge: true,
-        permissions: { push: true },
-      });
-    }
-    if (endpoint === `repos/${REPOSITORY}/branches/master/protection/required_status_checks`) {
-      return commandResult({
-        checks: [
-          { app_id: 15_368, context: "build-test" },
-          { app_id: 15_368, context: "static-analysis" },
-        ],
-      });
-    }
-    // build-test ran twice on the head, as a pull_request run and a later workflow_dispatch run.
-    if (endpoint === `repos/${REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100`) {
-      return commandResult({
-        check_runs: [
-          exactHeadCheckRun(101, "build-test"),
-          exactHeadCheckRun(102, "static-analysis"),
-          exactHeadCheckRun(103, "build-test"),
-        ],
-      });
-    }
-    if (endpoint === `repos/${REPOSITORY}/commits/${HEAD_SHA}/status?per_page=100`) {
-      return commandResult({ sha: HEAD_SHA, statuses: [] });
-    }
-    if (endpoint === `${issuesEndpoint}?state=all&per_page=100` && method === "GET") {
-      const visibleIssues = [...issues.values()].filter((issue) => issue.number !== unresolvedIssueCreate);
-      return commandResult(visibleIssues.map(({ number }) => issueRecord(number)));
-    }
-    if (endpoint === issuesEndpoint && method === "POST") {
-      const body = formValues(args, "body=")[0] ?? "";
-      const markerMatch = body.match(/<!-- dod-guard:lifecycle-fixture:(\d+) -->/);
-      if (!markerMatch) throw new Error("Issue create requires the exact lifecycle marker.");
-      const number = Number(markerMatch[1]);
-      if (!ISSUE_NUMBERS.includes(number)) throw new Error(`Unknown lifecycle issue marker ${number}.`);
-      if (issues.has(number)) throw new Error(`Lifecycle issue ${number} already exists.`);
-      const title = formValues(args, "title=")[0] ?? `Disposable fixture ${number}`;
-      const issue = createIssue(number, title);
-      issues.set(number, issue);
-      if (autoAddProjectItems) projectItems.set(number, createProjectItem(issue));
-      if (ambiguousIssueCreate === number || unresolvedIssueCreate === number) {
-        throw new Error(`Ambiguous issue create for ${number}.`);
-      }
-      return commandResult(issueRecord(number));
-    }
-    if (endpoint?.startsWith(`${issuesEndpoint}/`) === true) {
-      const suffix = endpoint.slice(`${issuesEndpoint}/`.length);
-      if (suffix.endsWith("/sub_issues")) {
-        const parentNumber = Number(suffix.slice(0, -"/sub_issues".length));
-        if (method === "POST") {
-          const childId = Number(formValues(args, "sub_issue_id=")[0]);
-          const child = [...issues.values()].find((issue) => issue.id === childId);
-          if (!child) throw new Error(`Unknown child issue ${childId}.`);
-          child.parent = parentNumber;
-          issues.get(parentNumber).children.push(child.number);
-        }
-        return commandResult(issues.get(parentNumber).children.map((number) => issueRecord(number)));
-      }
-      const issueNumber = Number(suffix);
-      const issue = issues.get(issueNumber);
-      if (!issue) throw new Error(`Unknown issue ${issueNumber}.`);
-      if (method === "PATCH") {
-        const labels = formValues(args, "labels[]=");
-        if (labels.length > 0) issue.labels = labels;
-        const state = formValues(args, "state=")[0];
-        if (state) issue.state = state;
-      }
-      return commandResult(issueRecord(issueNumber));
-    }
-    if (endpoint === pullEndpoint) {
-      return commandResult({
-        number: PULL_NUMBER,
-        state: pull.merged ? "closed" : "open",
-        draft: false,
-        merged_at: pull.merged ? "2026-09-28T00:00:00Z" : null,
-        merge_commit_sha: pull.merged ? "merge-1" : null,
-        body: ISSUE_NUMBERS.map((number) => `Closes #${number}`).join("\n"),
-        base: { ref: "master", sha: "base-1" },
-        head: { ref: "codex/disposable", sha: HEAD_SHA, repo: { full_name: REPOSITORY } },
-        mergeable_state: "clean",
-        mergeable: true,
-        html_url: `https://github.com/${REPOSITORY}/pull/${PULL_NUMBER}`,
-      });
-    }
-    if (endpoint === `${pullEndpoint}/merge` && method === "PUT") {
-      pull.merged = true;
-      return commandResult({ merged: true, sha: "merge-1" });
-    }
-    if (endpoint === `${pullEndpoint}/commits?per_page=100`) return commandResult([[]]);
-    if (endpoint === `${pullEndpoint}/reviews`) return commandResult([{ state: "APPROVED", commit_id: HEAD_SHA }]);
-    if (endpoint === `users/${OWNER}/projectsV2?per_page=100`) {
-      return commandResult([[{ number: PROJECT_NUMBER, state: "open" }]]);
-    }
-    if (endpoint === projectEndpoint) {
-      return commandResult({ id: String(PROJECT_NUMBER), number: PROJECT_NUMBER, node_id: PROJECT_NODE_ID });
-    }
-    if (endpoint === `${projectEndpoint}/fields?per_page=100`) {
-      return commandResult([
-        [
-          {
-            id: STATUS_FIELD_ID,
-            node_id: STATUS_FIELD_NODE_ID,
-            name: "Status",
-            data_type: "single_select",
-            options: STATUS_OPTIONS.map(({ id, name }) => ({ id, name: { raw: name } })),
-          },
-        ],
-      ]);
-    }
-    if (endpoint === projectItemsEndpoint && method === "POST") {
-      if (!isLiveAddItemShape(args)) {
-        return unprocessable("Validation Failed");
-      }
-      const issueId = Number(formValues(args, "id=")[0]);
-      const issue = [...issues.values()].find((candidate) => candidate.id === issueId);
-      if (!issue) throw new Error(`Unknown project item issue ${issueId}.`);
-      if (projectItems.has(issue.number)) {
-        return unprocessable("Content already exists in this project");
-      }
-      const item = createProjectItem(issue);
-      projectItems.set(issue.number, item);
-      return commandResult(projectItem(item));
-    }
-    if (endpoint?.startsWith(`${projectItemsEndpoint}?per_page=100&page=`) === true) {
-      return commandResult([visibleProjectItems().map((item) => projectItem(item))]);
-    }
-    if (endpoint?.startsWith(`${projectItemsEndpoint}?per_page=100&fields=`) === true) {
-      return commandResult([visibleProjectItems().map((item) => projectItem(item))]);
-    }
-    if (endpoint === `${projectItemsEndpoint}?per_page=100`) {
-      if (args.includes("--slurp")) {
-        return commandResult([visibleProjectItems().map((item) => projectItem(item, contradictoryStatus))]);
-      }
-      return {
-        status: 0,
-        stderr: "",
-        stdout: visibleProjectItems()
-          .map((item) => JSON.stringify(projectItem(item, contradictoryStatus)))
-          .join("\n"),
-      };
-    }
-    if (endpoint?.startsWith(`${projectItemsEndpoint}/`) === true && method === "GET") {
-      const restItemId = endpoint.slice(`${projectItemsEndpoint}/`.length).split("?", 1)[0];
-      const item = [...projectItems.values()].find((candidate) => String(candidate.id) === restItemId);
-      if (!item) throw new Error(`Unknown project item readback ${restItemId}.`);
-      return commandResult(projectItem(item, contradictoryStatus));
-    }
-    if (endpoint?.startsWith(`${projectItemsEndpoint}/`) === true && method === "PATCH") {
-      const restItemId = endpoint.slice(`${projectItemsEndpoint}/`.length);
-      const item = [...projectItems.values()].find((candidate) => String(candidate.id) === restItemId);
-      const option = STATUS_OPTIONS.find((candidate) => candidate.id === formValues(args, "fields[][value]=")[0]);
-      if (!(item && option)) throw new Error(`Unknown project status mutation ${restItemId}.`);
-      item.status = option.name;
-      transitions.push({ itemId: item.nodeId, status: item.status });
-      if (ambiguousStatusWrite === option.name) throw new Error(`Ambiguous status write for ${item.nodeId}.`);
-      return commandResult(projectItem(item));
-    }
-    throw new Error(`Unexpected command: ${args.join(" ")}`);
+    return dispatch(state, args, options);
   }
 
-  return { calls, commandRunner: run, projectItems, transitions };
+  return {
+    calls,
+    commandRunner: run,
+    projectItems: state.projectItems,
+    transitions: state.transitions,
+  };
 }

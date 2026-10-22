@@ -1,312 +1,38 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { open, readdir, readFile, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { promisify } from "node:util";
-import { classifyOpenProjects } from "../../../lib/linked-project-response.mjs";
+import { credentialFindings } from "./credential-scan.mjs";
+import { inspectGit } from "./git-inspection.mjs";
+import { assessGitHubSnapshot } from "./github-snapshot.mjs";
+import { collectFiles, relative } from "./repository-files.mjs";
+import { isConfiguration, isInstruction, isManifest } from "./repository-markers.mjs";
+import { classifySources } from "./source-classification.mjs";
 
-const execFileAsync = promisify(execFile);
-
-const SKIP_DIRECTORIES = new Set([
-  ".git",
-  ".gradle",
-  ".idea",
-  ".next",
-  ".nyc_output",
-  ".pytest_cache",
-  ".ruff_cache",
-  ".tox",
-  ".venv",
-  ".vs",
-  ".vscode",
-  "__pycache__",
-  "bin",
-  "build",
-  "coverage",
-  "dist",
-  "node_modules",
-  "obj",
-  "target",
-  "vendor",
-]);
-
-const NON_MAINTAINED_DIRECTORY_NAMES = new Set([
-  "archive",
-  "archives",
-  "dependencies",
-  "dependency",
-  "deps",
-  "fixture",
-  "fixtures",
-  "generated",
-  "snapshot",
-  "snapshots",
-  "test-fixtures",
-  "test_fixtures",
-]);
-
-const MANIFEST_NAMES = new Set([
-  "CMakeLists.txt",
-  "Cargo.toml",
-  "Gemfile",
-  "Package.swift",
-  "build.gradle",
-  "build.gradle.kts",
-  "composer.json",
-  "go.mod",
-  "package.json",
-  "pom.xml",
-  "pyproject.toml",
-  "requirements.txt",
-  "setup.py",
-]);
-
-const MANIFEST_EXTENSIONS = new Set([".csproj", ".fsproj", ".sln", ".vbproj"]);
-
-const LANGUAGE_BY_EXTENSION = new Map([
-  [".c", "C/C++"],
-  [".cc", "C/C++"],
-  [".cpp", "C/C++"],
-  [".cs", ".NET"],
-  [".fs", ".NET"],
-  [".go", "Go"],
-  [".h", "C/C++"],
-  [".hpp", "C/C++"],
-  [".java", "Java/Kotlin"],
-  [".js", "JavaScript/TypeScript"],
-  [".jsx", "JavaScript/TypeScript"],
-  [".kt", "Java/Kotlin"],
-  [".kts", "Java/Kotlin"],
-  [".php", "PHP"],
-  [".py", "Python"],
-  [".rb", "Ruby"],
-  [".rs", "Rust"],
-  [".sh", "Shell"],
-  [".swift", "Swift"],
-  [".ts", "JavaScript/TypeScript"],
-  [".tsx", "JavaScript/TypeScript"],
-  [".vb", ".NET"],
-]);
-
-const NON_SOURCE_EXTENSIONS = new Set([
-  ".css",
-  ".csv",
-  ".html",
-  ".json",
-  ".jsonc",
-  ".lock",
-  ".md",
-  ".svg",
-  ".toml",
-  ".txt",
-  ".xml",
-  ".yaml",
-  ".yml",
-]);
-
-const CONFIG_NAMES = new Set([
-  ".actionlint.yaml",
-  ".actionlint.yml",
-  ".editorconfig",
-  ".gitignore",
-  ".markdownlint.json",
-  ".markdownlint.yaml",
-  ".markdownlint.yml",
-  "biome.json",
-  "biome.jsonc",
-  "eslint.config.js",
-  "eslint.config.mjs",
-  "eslint.config.ts",
-  "jest.config.js",
-  "jest.config.mjs",
-  "package-lock.json",
-  "pnpm-lock.yaml",
-  "poetry.lock",
-  "ruff.toml",
-  "tsconfig.json",
-  "uv.lock",
-  "yarn.lock",
-]);
-
-const INSTRUCTION_NAMES = new Set(["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md"]);
-const SAFE_SECRET_EXAMPLES = /(?:^|[._-])(?:example|sample|template)(?:[._-]|$)/i;
-const SUSPICIOUS_SECRET_FILE =
-  /(?:^|\/)(?:\.env(?:\..+)?|id_(?:rsa|dsa|ecdsa|ed25519)|credentials(?:\..+)?|secrets?(?:\..+)?|.+\.(?:key|pem|p12|pfx))$/i;
-const TEXT_LIMIT_BYTES = 1024 * 1024;
-
-const SECRET_PATTERNS = [
-  ["private-key", /-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----/],
-  ["github-token", /\b(?:gh[opsu]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/],
-  ["aws-access-key", /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/],
-  ["slack-token", /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/],
-];
-
-function relative(root, file) {
-  const value = path.relative(root, file);
-  return value.length === 0 ? "." : value.split(path.sep).join("/");
-}
-
-async function collectFiles(root, current = root) {
-  const entries = await readdir(current, { withFileTypes: true });
-  const groups = await Promise.all(
-    entries
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(async (entry) => {
-        const fullPath = path.join(current, entry.name);
-        if (entry.isSymbolicLink()) return [];
-        if (entry.isDirectory()) {
-          if (SKIP_DIRECTORIES.has(entry.name.toLowerCase())) return [];
-          return collectFiles(root, fullPath);
-        }
-        return entry.isFile() ? [fullPath] : [];
-      }),
-  );
-  return groups.flat();
-}
-
-async function runGit(root, args) {
-  try {
-    const { stdout } = await execFileAsync("git", ["-C", root, ...args], {
-      encoding: "utf8",
-      windowsHide: true,
-    });
-    return { ok: true, stdout: stdout.trim() };
-  } catch (error) {
-    return {
-      ok: false,
-      stdout: typeof error.stdout === "string" ? error.stdout.trim() : "",
-    };
-  }
-}
-
-async function inspectGit(root) {
-  const inside = await runGit(root, ["rev-parse", "--is-inside-work-tree"]);
-  if (!inside.ok || inside.stdout !== "true") {
-    return { repository: false, hasCommits: false, branch: null, remotes: [] };
-  }
-
-  const [head, branch, remotes] = await Promise.all([
-    runGit(root, ["rev-parse", "--verify", "HEAD"]),
-    runGit(root, ["branch", "--show-current"]),
-    runGit(root, ["remote", "-v"]),
-  ]);
-
-  return {
-    repository: true,
-    hasCommits: head.ok,
-    branch: branch.stdout || null,
-    remotes: remotes.stdout
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((line) => {
-        const match = line.match(/^(\S+)\s+(\S+)\s+\((fetch|push)\)$/);
-        return match ? { name: match[1], url: match[2], direction: match[3] } : { raw: line };
-      }),
-  };
-}
-
-function sourceExtension(file) {
-  const extension = path.extname(file).toLowerCase();
-  if (extension) return extension;
-  return null;
-}
-
-async function credentialFindingsForFile(root, file) {
-  const findings = [];
-  const fileRelative = relative(root, file);
-  const fileHandle = await open(file, "r");
-  try {
-    const fileStats = await fileHandle.stat();
-    if (SUSPICIOUS_SECRET_FILE.test(fileRelative) && !SAFE_SECRET_EXAMPLES.test(path.basename(file))) {
-      findings.push({ file: fileRelative, line: null, signal: "secret-like-filename" });
-    }
-    if (fileStats.size > TEXT_LIMIT_BYTES) return findings;
-
-    let content;
-    try {
-      content = await fileHandle.readFile("utf8");
-    } catch {
-      return findings;
-    }
-    if (content.includes("\0")) return findings;
-
-    const lines = content.split(/\r?\n/);
-    for (let index = 0; index < lines.length; index += 1) {
-      for (const [signal, pattern] of SECRET_PATTERNS) {
-        if (pattern.test(lines[index])) {
-          findings.push({ file: fileRelative, line: index + 1, signal });
-        }
-      }
-    }
-  } finally {
-    await fileHandle.close();
-  }
-
-  return findings;
-}
-
-async function credentialFindings(root, files) {
-  const findings = (await Promise.all(files.map((file) => credentialFindingsForFile(root, file)))).flat();
-  return findings.sort((a, b) => a.file.localeCompare(b.file) || (a.line ?? 0) - (b.line ?? 0));
-}
-
-function isManifest(file) {
-  return MANIFEST_NAMES.has(path.basename(file)) || MANIFEST_EXTENSIONS.has(path.extname(file).toLowerCase());
-}
-
-function isMaintainedSource(file) {
-  return file.split("/").every((segment) => !NON_MAINTAINED_DIRECTORY_NAMES.has(segment.toLowerCase()));
-}
-
-export async function inspectRepository(rootPath) {
+async function resolveProjectRoot(rootPath) {
   if (typeof rootPath !== "string" || rootPath.length === 0) {
     throw new Error("Project root must be a non-empty path");
   }
-
   const root = path.resolve(rootPath);
-  let rootStats;
-  try {
-    rootStats = await stat(root);
-  } catch {
-    throw new Error("Project root is not a directory");
-  }
-  if (!rootStats.isDirectory()) throw new Error("Project root is not a directory");
+  const rootStats = await stat(root).catch(() => null);
+  if (!rootStats?.isDirectory()) throw new Error("Project root is not a directory");
+  return root;
+}
 
+export async function inspectRepository(rootPath) {
+  const root = await resolveProjectRoot(rootPath);
   const files = await collectFiles(root);
   const relativeFiles = files.map((file) => relative(root, file));
-  const sourceExtensions = new Map();
-  const languageSignals = new Map();
-  const unclassifiedSourceExtensions = new Set();
-
-  for (const file of relativeFiles.filter(isMaintainedSource)) {
-    const extension = sourceExtension(file);
-    if (!extension) continue;
-    sourceExtensions.set(extension, (sourceExtensions.get(extension) ?? 0) + 1);
-    const language = LANGUAGE_BY_EXTENSION.get(extension);
-    if (language) {
-      const evidence = languageSignals.get(language) ?? [];
-      evidence.push(file);
-      languageSignals.set(language, evidence);
-    } else if (!NON_SOURCE_EXTENSIONS.has(extension)) {
-      unclassifiedSourceExtensions.add(extension);
-    }
-  }
-
   return {
     root,
     git: await inspectGit(root),
     files: relativeFiles,
     manifests: relativeFiles.filter(isManifest),
-    configurations: relativeFiles.filter(
-      (file) => CONFIG_NAMES.has(path.basename(file)) || file.startsWith(".github/workflows/"),
-    ),
-    instructions: relativeFiles.filter((file) => INSTRUCTION_NAMES.has(path.basename(file))),
-    sourceExtensions: Object.fromEntries([...sourceExtensions].sort(([a], [b]) => a.localeCompare(b))),
-    languageSignals: Object.fromEntries([...languageSignals].sort(([a], [b]) => a.localeCompare(b))),
-    unclassifiedSourceExtensions: [...unclassifiedSourceExtensions].sort(),
+    configurations: relativeFiles.filter(isConfiguration),
+    instructions: relativeFiles.filter(isInstruction),
+    ...classifySources(relativeFiles),
     credentialFindings: await credentialFindings(root, files),
   };
 }
@@ -333,99 +59,34 @@ export function summarizeRepository(report) {
   };
 }
 
-export function assessGitHubSnapshot(snapshot) {
-  const blockers = [];
-  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
-    return {
-      readyForProtection: false,
-      blockers: ["GitHub snapshot must be an object"],
-      requiredChecks: [],
-      protectionPayload: null,
-    };
+export { assessGitHubSnapshot };
+
+function writeJson(value) {
+  process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
+}
+
+async function runGithubSnapshot(args) {
+  if (args.length !== 2 || args.indexOf("--github-snapshot") !== 0) {
+    throw new Error("Usage: inspect-repository.mjs --github-snapshot <snapshot.json>");
   }
+  writeJson(assessGitHubSnapshot(JSON.parse(await readFile(path.resolve(args[1]), "utf8"))));
+}
 
-  const projects = Array.isArray(snapshot.projects) ? snapshot.projects : [];
-  if (!Array.isArray(snapshot.projects)) blockers.push("linked Project snapshot is missing or malformed");
-  const { outcome, open: openProjects } = classifyOpenProjects(projects);
-  if (outcome !== "resolved") {
-    blockers.push(`expected exactly one open linked Project, found ${openProjects.length}`);
-  }
+async function runSummary(args) {
+  if (args.length !== 2) throw new Error("Usage: inspect-repository.mjs --summary <project-root>");
+  writeJson(summarizeRepository(await inspectRepository(args[1])));
+}
 
-  if (outcome === "resolved") {
-    const options = Array.isArray(openProjects[0].statusOptions) ? openProjects[0].statusOptions : [];
-    if (!Array.isArray(openProjects[0].statusOptions)) {
-      blockers.push("linked Project status options are missing or malformed");
-    }
-    for (const required of ["Backlog", "Todo", "In Progress", "Done"]) {
-      const count = options.filter(
-        (option) => typeof option === "string" && option.toLowerCase() === required.toLowerCase(),
-      ).length;
-      if (count !== 1) blockers.push(`expected one ${required} status, found ${count}`);
-    }
-  }
-
-  const checks = Array.isArray(snapshot.checks) ? snapshot.checks : [];
-  if (!Array.isArray(snapshot.checks)) blockers.push("check snapshot is missing or malformed");
-  if (checks.length === 0) blockers.push("no required check results were supplied");
-  for (const check of checks) {
-    if (!check || typeof check !== "object") {
-      blockers.push("check result is missing or malformed");
-      continue;
-    }
-    if (check.conclusion !== "SUCCESS") {
-      const name = typeof check.name === "string" ? check.name : "<unnamed>";
-      blockers.push(`check ${name} concluded ${check.conclusion ?? "unknown"}`);
-    }
-  }
-
-  const uniqueCheckNames = [
-    ...new Set(checks.map((check) => check?.name).filter((name) => typeof name === "string" && name.length > 0)),
-  ].sort();
-  if (uniqueCheckNames.length !== checks.length) blockers.push("required check names are missing or duplicated");
-
-  return {
-    readyForProtection: blockers.length === 0,
-    blockers,
-    requiredChecks: uniqueCheckNames,
-    protectionPayload:
-      blockers.length === 0
-        ? {
-            required_status_checks: { strict: true, contexts: uniqueCheckNames },
-            enforce_admins: true,
-            required_pull_request_reviews: { required_approving_review_count: 0 },
-            restrictions: null,
-            required_linear_history: false,
-            allow_force_pushes: false,
-            allow_deletions: false,
-            block_creations: false,
-            required_conversation_resolution: true,
-            lock_branch: false,
-            allow_fork_syncing: false,
-          }
-        : null,
-  };
+async function runFullReport(args) {
+  if (args.length > 1) throw new Error("Usage: inspect-repository.mjs [project-root]");
+  writeJson(await inspectRepository(args[0] ?? process.cwd()));
 }
 
 async function main() {
   const args = process.argv.slice(2);
-  const snapshotIndex = args.indexOf("--github-snapshot");
-  if (snapshotIndex !== -1) {
-    if (args.length !== 2 || snapshotIndex !== 0) {
-      throw new Error("Usage: inspect-repository.mjs --github-snapshot <snapshot.json>");
-    }
-    const snapshot = JSON.parse(await readFile(path.resolve(args[1]), "utf8"));
-    process.stdout.write(`${JSON.stringify(assessGitHubSnapshot(snapshot), null, 2)}\n`);
-    return;
-  }
-
-  if (args[0] === "--summary") {
-    if (args.length !== 2) throw new Error("Usage: inspect-repository.mjs --summary <project-root>");
-    process.stdout.write(`${JSON.stringify(summarizeRepository(await inspectRepository(args[1])), null, 2)}\n`);
-    return;
-  }
-
-  if (args.length > 1) throw new Error("Usage: inspect-repository.mjs [project-root]");
-  process.stdout.write(`${JSON.stringify(await inspectRepository(args[0] ?? process.cwd()), null, 2)}\n`);
+  if (args.includes("--github-snapshot")) return runGithubSnapshot(args);
+  if (args[0] === "--summary") return runSummary(args);
+  return runFullReport(args);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
