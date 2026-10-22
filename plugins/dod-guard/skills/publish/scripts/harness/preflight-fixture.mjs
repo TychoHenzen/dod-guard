@@ -15,6 +15,7 @@ const COPIED_ENTRIES = [
   // from where it sits, so a fixture must hold a full copy of each one.
   "preflight-installation.mjs",
   "preflight-arguments.mjs",
+  "preflight",
 ];
 
 const sourceDirectory = fileURLToPath(new URL("../", import.meta.url));
