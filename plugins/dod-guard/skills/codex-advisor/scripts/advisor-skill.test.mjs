@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const skillDirectory = fileURLToPath(new URL("../", import.meta.url));
-const runner = await readFile(new URL("./run-advisor.mjs", import.meta.url), "utf8");
+const scriptsDirectory = new URL("./", import.meta.url);
+const isRunnerModule = (name) =>
+  name.endsWith(".mjs") && !name.endsWith(".test.mjs") && (name === "run-advisor.mjs" || name.startsWith("advisor-"));
+const runnerFiles = (await readdir(scriptsDirectory)).filter(isRunnerModule);
+const runner = (await Promise.all(runnerFiles.map((name) => readFile(new URL(name, scriptsDirectory), "utf8")))).join(
+  "\n",
+);
 const schema = JSON.parse(await readFile(`${skillDirectory}response-schema.json`, "utf8"));
 
 test("advisor runner does not impose a wall-clock kill", () => {

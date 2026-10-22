@@ -4,104 +4,10 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { childEnv, MAX_OUTPUT_BYTES, runProcess } from "./advisor-process.mjs";
 import { buildCodexExecArgs, buildCodexPreflightArgs, resolveCodexExecutable } from "./codex-launch-contract.mjs";
 
 const defaultSchemaPath = fileURLToPath(new URL("../response-schema.json", import.meta.url));
-const MAX_OUTPUT_BYTES = 8 * 1024 * 1024;
-
-function cancelProcessTree(child) {
-  if (!child.pid) return;
-  if (process.platform === "win32") {
-    spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
-      stdio: "ignore",
-      windowsHide: true,
-    });
-    return;
-  }
-  try {
-    process.kill(-child.pid, "SIGTERM");
-  } catch {
-    child.kill("SIGTERM");
-  }
-}
-
-function runProcess(executable, args, options, prompt, abortSignal, spawnImpl = spawn) {
-  return new Promise((resolveResult) => {
-    let startError;
-    let stdout = "";
-    let stderr = "";
-    let outputLimitExceeded = false;
-    let cancelled = false;
-    let stdinError;
-    let child;
-    try {
-      child = spawnImpl(executable, args, {
-        cwd: options.cwd,
-        env: options.env,
-        shell: false,
-        stdio: ["pipe", "pipe", "pipe"],
-        windowsHide: true,
-        detached: process.platform !== "win32",
-      });
-    } catch (error) {
-      resolveResult({
-        code: null,
-        signal: null,
-        startError: error,
-        stdinError: null,
-        stderr: "",
-        stdout: "",
-        outputLimitExceeded: false,
-        cancelled: false,
-      });
-      return;
-    }
-    const cancel = () => {
-      cancelled = true;
-      cancelProcessTree(child);
-    };
-    const appendOutput = (current, chunk) => {
-      const next = current + chunk;
-      if (Buffer.byteLength(next, "utf8") > MAX_OUTPUT_BYTES) {
-        outputLimitExceeded = true;
-        cancelProcessTree(child);
-        return current;
-      }
-      return next;
-    };
-    if (abortSignal?.aborted) cancel();
-    else abortSignal?.addEventListener("abort", cancel, { once: true });
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout = appendOutput(stdout, chunk);
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr = appendOutput(stderr, chunk);
-    });
-    child.once("error", (error) => {
-      startError = error;
-    });
-    child.stdin.once("error", (error) => {
-      if (cancelled && (error.code === "EPIPE" || error.code === "ERR_STREAM_DESTROYED")) return;
-      stdinError = error;
-    });
-    child.once("close", (code, exitSignal) => {
-      abortSignal?.removeEventListener("abort", cancel);
-      resolveResult({
-        code,
-        signal: exitSignal,
-        startError,
-        stdinError,
-        stderr,
-        stdout,
-        outputLimitExceeded,
-        cancelled,
-      });
-    });
-    child.stdin.end(prompt);
-  });
-}
 
 function errorMessage(error) {
   return error?.message ?? null;
@@ -249,10 +155,6 @@ function stageFailure(step, stage, message) {
   return failure(message, step.result, step.launcher.executable, step.args, stage, step.launcher.prefixArgs);
 }
 
-function processOptions({ workdir, env }) {
-  return { cwd: workdir, env: { ...process.env, ...env } };
-}
-
 function invalidOptionMessage({ prefixArgs, model, reasoningEffort }) {
   const options = [
     ["model", model],
@@ -297,7 +199,8 @@ async function runPreflight({ executable, prefixArgs, workdir, env, signal, spaw
   const launcher = { executable, prefixArgs };
   const probes = {};
   for (const [stage, args] of Object.entries(preflightArgs)) {
-    const result = await runProcess(executable, args, processOptions({ workdir, env }), "", signal, spawnImpl);
+    const spec = { executable, args, cwd: workdir, env: childEnv(env), prompt: "", signal, spawnImpl };
+    const result = await runProcess(spec);
     const message = preflightMessage(stage, result);
     if (message) return { failure: stageFailure({ launcher, args, result }, stage, message) };
     probes[stage] = processEvidence(executable, args, result);
@@ -376,7 +279,7 @@ async function launchReviewer(run) {
     outputPath,
     workdir,
   });
-  const result = await runProcess(executable, args, processOptions({ workdir, env }), prompt, signal, spawnImpl);
+  const result = await runProcess({ executable, args, cwd: workdir, env: childEnv(env), prompt, signal, spawnImpl });
   return { launcher: { executable, prefixArgs }, args, result, outputPath };
 }
 
