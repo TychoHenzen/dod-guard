@@ -13,44 +13,8 @@ import {
   TriageStop,
   verifyResolution,
 } from "./conflict-triage.mjs";
+import { UsageError } from "./conflict-triage-flags.mjs";
 import { GitHubClient } from "./github-client.mjs";
-
-export const USAGE = `Usage: node conflict-triage.mjs <command> --state <file> [options]
-  start   --state <file> --repository <owner/repository> --pull <number> --trusted-head <sha>
-          --generators <file>
-  verify  --state <file> --decisions <file>
-  regen-check --state <file> [--expect-clean]
-  commit  --state <file> (--message <text> | --amend)
-  push    --state <file>
-  abort   --state <file>
-  record  --state <file> [--decisions <file>] [--answers <file>] [--verification <file>] [--merge <sha>]
-          [--stop <file>]
-The state file and every input file live outside the repository.
-`;
-
-export class UsageError extends Error {}
-
-const BOOLEAN_FLAGS = new Set(["--amend", "--expect-clean"]);
-
-export function parseFlags(argv) {
-  const flags = {};
-  for (let index = 0; index < argv.length; index += 1) {
-    const name = argv[index];
-    if (!name.startsWith("--")) {
-      throw new UsageError(`Unexpected argument: ${name}`);
-    }
-    if (BOOLEAN_FLAGS.has(name)) {
-      flags[name.slice(2)] = true;
-      continue;
-    }
-    if (index + 1 >= argv.length) {
-      throw new UsageError(`Missing value for ${name}`);
-    }
-    flags[name.slice(2)] = argv[index + 1];
-    index += 1;
-  }
-  return flags;
-}
 
 function required(flags, name) {
   if (!flags[name]) {
@@ -73,7 +37,7 @@ function outsideRepository(git, path) {
   return path;
 }
 
-function readOptionalJson(path) {
+function readJsonIfSet(path) {
   return path ? readJsonFile(path) : undefined;
 }
 
@@ -106,7 +70,7 @@ function start(git, flags, { createClient, statePath }) {
   const trustedHead = required(flags, "trusted-head");
   // The generator list is required so that "none declared" is an explicit []:
   // a missing list would let a generated path be classified as source.
-  const generators = readOptionalJson(outsideRepository(git, required(flags, "generators")));
+  const generators = readJsonIfSet(outsideRepository(git, required(flags, "generators")));
   if (!Array.isArray(generators)) {
     throw new UsageError("--generators must name a JSON list; pass [] when the repository declares none.");
   }
@@ -163,18 +127,18 @@ const COMMANDS = {
   record: (_git, flags, { state }) =>
     renderTriageRecord({
       ...state,
-      answers: readOptionalJson(flags.answers) ?? [],
-      decisions: readOptionalJson(flags.decisions) ?? [],
+      answers: readJsonIfSet(flags.answers) ?? [],
+      decisions: readJsonIfSet(flags.decisions) ?? [],
       mergeSha: flags.merge ?? state.mergeSha ?? null,
-      stop: readOptionalJson(flags.stop) ?? state.stop ?? null,
-      verification: readOptionalJson(flags.verification) ?? [],
+      stop: readJsonIfSet(flags.stop) ?? state.stop ?? null,
+      verification: readJsonIfSet(flags.verification) ?? [],
     }),
   "regen-check": (git, flags, { state }) =>
     checkRegeneration(git, { expectClean: flags["expect-clean"] === true, generators: state.generators ?? [] }),
   verify: (git, flags, { state }) =>
     verifyResolution(git, {
       ...state,
-      decisions: readOptionalJson(outsideRepository(git, required(flags, "decisions"))),
+      decisions: readJsonIfSet(outsideRepository(git, required(flags, "decisions"))),
     }),
 };
 
@@ -192,5 +156,5 @@ export async function runCommand(command, git, flags, { createClient = defaultCl
   if (!Object.hasOwn(COMMANDS, command)) {
     throw new UsageError(`Unknown command: ${command}`);
   }
-  return await COMMANDS[command](git, flags, { createClient, state: readOptionalJson(statePath), statePath });
+  return await COMMANDS[command](git, flags, { createClient, state: readJsonIfSet(statePath), statePath });
 }

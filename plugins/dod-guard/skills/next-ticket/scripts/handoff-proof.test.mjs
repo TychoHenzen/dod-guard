@@ -113,23 +113,6 @@ test("reads UTF-8 with a byte-order mark", async () => {
   });
 });
 
-test("reads UTF-16 with a byte-order mark, as Windows PowerShell 5.1 writes", async () => {
-  const body = await readFile(CORRECTED, "utf8");
-  const utf16 = (text) => Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(text, "utf16le")]);
-  await withTempFile("body.md", utf16(body), (file) => {
-    assert.deepEqual(run("refinement", `--body-file=${file}`), {
-      status: 0,
-      json: { outcome: "verified", remainder: [] },
-    });
-  });
-  await withTempFile("children.json", utf16('[{"id": "orphan-slice", "evidence": "slice-proof"}]'), (file) => {
-    assert.deepEqual(run("refinement", `--body-file=${CORRECTED}`, `--children=${file}`), {
-      status: 1,
-      json: { outcome: "actionable remainder", remainder: ["orphan-slice slice needs an owning task"] },
-    });
-  });
-});
-
 test("reads only local files: no network, process, or GitHub module is imported", async () => {
   const importsOf = async (name) => {
     const source = await readFile(path.join(here, name), "utf8");

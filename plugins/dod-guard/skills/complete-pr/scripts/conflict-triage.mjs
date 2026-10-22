@@ -2,7 +2,8 @@
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
 import process from "node:process";
 import { createGitRunner, TriageStop } from "./lib/conflict-triage.mjs";
-import { parseFlags, runCommand, USAGE, UsageError } from "./lib/conflict-triage-command.mjs";
+import { runCommand } from "./lib/conflict-triage-command.mjs";
+import { parseFlags, USAGE, UsageError } from "./lib/conflict-triage-flags.mjs";
 
 const [command, ...rest] = process.argv.slice(2);
 try {

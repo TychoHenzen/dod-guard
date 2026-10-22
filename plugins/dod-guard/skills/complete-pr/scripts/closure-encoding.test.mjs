@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
-import test from "node:test";
+import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./closure.mjs";
 import { capture } from "./fixtures/closure-cli.mjs";
@@ -15,8 +15,16 @@ const HANDOFF = '## Implementation handoff\n\n## Acceptance matrix\n\n```json\n[
 const utf8Bom = (text) => Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(text, "utf8")]);
 const utf16Bom = (text) => Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(text, "utf16le")]);
 
+const scratchDirectories = [];
+
+after(async () => {
+  await Promise.all(scratchDirectories.map((directory) => rm(directory, { recursive: true, force: true })));
+});
+
 async function savedBytes(name, bytes) {
-  const file = join(await mkdtemp(join(tmpdir(), "closure-encoding-")), name);
+  const directory = await mkdtemp(join(tmpdir(), "closure-encoding-"));
+  scratchDirectories.push(directory);
+  const file = join(directory, name);
   await writeFile(file, bytes);
   return file;
 }

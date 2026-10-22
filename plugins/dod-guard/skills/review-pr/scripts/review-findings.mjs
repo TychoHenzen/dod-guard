@@ -32,8 +32,7 @@ const USAGE = [
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
 ].join("\n");
 
-// `gh api --paginate --slurp` writes an array of pages; a plain read writes one
-// array.
+// `gh api --paginate --slurp` writes an array of pages; a plain read writes one array.
 function flatJson(path) {
   return readJsonFile(path).flat();
 }
