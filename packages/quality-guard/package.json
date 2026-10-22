@@ -6,7 +6,10 @@
   "imports": {
     "#quality-guard-architecture-facts": "./skills/quality-refactor/scripts/lib/architecture-facts.mjs",
     "#quality-guard-reachability-shadows": "./skills/quality-refactor/scripts/lib/rules-reachability-shadows.mjs",
-    "#quality-guard-severity": "./skills/quality-refactor/scripts/lib/severity.mjs"
+    "#quality-guard-severity": "./skills/quality-refactor/scripts/lib/severity.mjs",
+    "#quality-guard-config": "./skills/quality-refactor/scripts/lib/config.mjs",
+    "#quality-guard-formatter-width": "./skills/quality-refactor/scripts/lib/formatter-width.mjs",
+    "#quality-guard-scan-run": "./skills/quality-refactor/scripts/quality-scan-run.mjs"
   },
   "main": "dist/bundle.js",
   "bin": {
