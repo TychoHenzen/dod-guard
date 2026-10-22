@@ -68,6 +68,7 @@ Every structured PBI assesses four lenses: implementation; wiring and end-to-end
 - `acceptance-evidence` gives each acceptance checkbox id its evidence id. `planned-acceptance-matrix` plans every row before any proof runs.
 - The task list names dependencies, marks a task `independent` only if it can be committed and closed separately, keeps order stable, and maps each task to a functional slice or to a parent-level task with `parentLevel: "convergence"`. A task with no sub-issue is never `independent`; the refinement proof reports it.
 - `lens-ownership` says where each lens is covered, or why not.
+- Evidence ids are unique across every task, lens and row. A new convergence task that covers an existing lens takes over that `lens-ownership` entry; never list a lens twice.
 
 **Re-refinement.** Compare existing discovery notes to current code, tests, sources, and decisions. Reuse current evidence, repeat only stale or newly triggered phases, and update summaries in place, and replace the prior priority and effort rationale rather than appending. Create no duplicate sub-issues or scale labels.
 
