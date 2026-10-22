@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { test } from "node:test";
-import { CLIENTS, assertRejected, createInstall, runPreflight } from "./harness/preflight-fixture.mjs";
+import { assertRejected, CLIENTS, createInstall, runPreflight } from "./harness/preflight-fixture.mjs";
 import { registryFor } from "./harness/preflight-registry.mjs";
 
 test("reports stale pins and malformed inventories without changing the installation", async (t) => {

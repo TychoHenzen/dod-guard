@@ -1,7 +1,8 @@
 import { chmod, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import process from "node:process";
 import { test } from "node:test";
-import { CLIENTS, assertRejected, createInstall, runPreflight } from "./harness/preflight-fixture.mjs";
+import { assertRejected, CLIENTS, createInstall, runPreflight } from "./harness/preflight-fixture.mjs";
 import { registryFor } from "./harness/preflight-registry.mjs";
 
 test("rejects malformed or contradictory manifests and missing publish skills", async (t) => {

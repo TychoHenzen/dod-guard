@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { assertRejected, CLIENTS, createInstall, runPreflight } from "./harness/preflight-fixture.mjs";
 import { registrationCases } from "./harness/preflight-registrations.mjs";
-import { CLIENTS, assertRejected, createInstall, runPreflight } from "./harness/preflight-fixture.mjs";
 
 test("rejects absent, ambiguous, disabled, wrong-marketplace, and wrong-path registrations", async (t) => {
   for (const client of CLIENTS) {

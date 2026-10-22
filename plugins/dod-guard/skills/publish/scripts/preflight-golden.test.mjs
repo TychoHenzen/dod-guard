@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
+import process from "node:process";
 import { test } from "node:test";
+import { CLIENTS, createInstall, runPreflight } from "./harness/preflight-fixture.mjs";
 import { REGISTRY_CASES } from "./harness/preflight-golden-cases.mjs";
 import { INSTALL_CASES } from "./harness/preflight-golden-install-cases.mjs";
 import { normalizeRun } from "./harness/preflight-golden-normalize.mjs";
-import { CLIENTS, createInstall, runPreflight } from "./harness/preflight-fixture.mjs";
 import { registryFor } from "./harness/preflight-registry.mjs";
 
 const SNAPSHOT = new URL("./fixtures/preflight-golden.snapshot.json", import.meta.url);
