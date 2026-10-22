@@ -19,8 +19,9 @@ import {
   relationReasons,
 } from "./closure-index.mjs";
 import { collectingFrictionLog } from "./friction-log.mjs";
-import { parseIssueBodyRecords } from "./issue-body-records.mjs";
-import { parkedRecords } from "./parked-record.mjs";
+import { branchesOf } from "./queue-branches.mjs";
+import { firstDecision, hold, parkedDecision, readyDecision } from "./queue-readiness.mjs";
+import { sameRepository } from "./repository-identity.mjs";
 
 const OPEN_PULL_REQUEST = "open implementation pull request remains active";
 const ACTIVE_CHECKPOINT = "active implementation checkpoint remains";
@@ -85,54 +86,6 @@ function trustedHead(pullRequest) {
   return typeof trustedHeadSha === "string" && trustedHeadSha !== "" && trustedHeadSha === headSha;
 }
 
-// GitHub resolves owner/name case-insensitively, so the comparison must do the same.
-function sameRepository(left, right) {
-  return typeof left === "string" && typeof right === "string" && left.toLowerCase() === right.toLowerCase();
-}
-
-// A blocker holds the group unless it is closed or is the group's own work. A blocker whose state is not
-// "closed" counts as open, so an unreadable state never passes as unblocked. A queue candidate whose
-// blocker list was never read is held the way a missing sub-issue list is.
-function blockerReasons(records, context) {
-  const members = new Set(records.map(({ issueNumber }) => issueNumber));
-  const insideGroup = (blocker) =>
-    sameRepository(blocker?.repository, context.repository) && members.has(blocker?.number);
-  const closed = (blocker) => String(blocker?.state).toLowerCase() === "closed";
-  return records.flatMap(({ issueNumber, issue }) => {
-    if (!Array.isArray(issue.blockedBy)) return [`issue #${issueNumber} blocked_by relationship missing`];
-    return issue.blockedBy
-      .filter((blocker) => !closed(blocker) && !insideGroup(blocker))
-      .map((blocker) => `issue #${issueNumber} is blocked by ${blocker?.repository}#${blocker?.number}`);
-  });
-}
-
-// A Todo root is picked up by /next-ticket, which stops on a body whose refinement records cannot be read.
-// The parser's errors and remainder are the reasons, so the selector never holds a second copy of the
-// refinement rules.
-function refinementReasons({ issueNumber, issue }) {
-  if (typeof issue.body !== "string" || issue.body.trim() === "") return [`issue #${issueNumber} has no refined body`];
-  const { errors, remainder } = parseIssueBodyRecords(issue.body);
-  return [...errors, ...remainder].map((reason) => `issue #${issueNumber} ${reason}`);
-}
-
-// A parked root is held by the owner's decision, so the reason carries the record's own words. Only the
-// root is read: a parked sub-issue never parks the delivery it belongs to.
-function parkedReasons({ issueNumber, issue }) {
-  return parkedRecords(issue?.comments).map(
-    ({ blocked, unblocksWhen }) => `issue #${issueNumber} is parked: ${blocked}; unblocks when: ${unblocksWhen}`,
-  );
-}
-
-// A pushed codex/<issue>-* branch with no open pull request is a delivery that stopped partway. The
-// trailing hyphen keeps issue 9 from matching codex/90-x. Only an entry that says openPullRequest is true
-// counts as having one, so an unreadable entry never clears the hold.
-function branchReasons({ issueNumber }, context) {
-  const prefix = `codex/${issueNumber}-`;
-  return context.branches
-    .filter(({ name, openPullRequest }) => name.startsWith(prefix) && openPullRequest !== true)
-    .map(({ name }) => `issue #${issueNumber} has unfinished delivery branch ${name} without an open pull request`);
-}
-
 function mergedEvidenceReasons(records, context, mergedPullRequests) {
   const reasons = [];
   const { repository, defaultBranch } = context;
@@ -144,7 +97,7 @@ function mergedEvidenceReasons(records, context, mergedPullRequests) {
       reasons.push("pull request head repository is not the target repository");
     if (!defaultBranch || pullRequest.baseRef !== defaultBranch)
       reasons.push("pull request base is not the default branch");
-    if (!pullRequest.headRef || !pullRequest.headSha) reasons.push("trusted pull request head is missing");
+    if (!(pullRequest.headRef && pullRequest.headSha)) reasons.push("trusted pull request head is missing");
     if (!trustedHead(pullRequest)) reasons.push("trusted pull request head evidence is missing or stale");
     if (!pullRequest.mergeCommitSha) reasons.push("merge commit is missing");
     const checks = requiredChecksComplete(pullRequest.requiredChecks);
@@ -195,24 +148,15 @@ function resumableDecision(reasons, records) {
   };
 }
 
-function hold(reasons) {
-  return { kind: "hold", eligible: false, reasons: [...new Set(reasons)] };
-}
+const PARENT_GAP_ANCHORS = ["contradictory parent for issue #", "child issue #"];
 
 // A record's entries, with its parent-item gap rendered from its flag at the position the text always
 // had: before the first contradictory-parent or child entry, otherwise last.
 function evidenceOf(record) {
   const entries = [...(record.missingEvidence ?? [])];
   if (record.parentItemMissing) {
-    const entry = `parent issue #${record.parentIssueNumber} Project item`;
-    const at = entries.findIndex(
-      (text) => text.startsWith("contradictory parent for issue #") || text.startsWith("child issue #"),
-    );
-    if (at === -1) {
-      entries.push(entry);
-    } else {
-      entries.splice(at, 0, entry);
-    }
+    const at = entries.findIndex((text) => PARENT_GAP_ANCHORS.some((anchor) => text.startsWith(anchor)));
+    entries.splice(at === -1 ? entries.length : at, 0, `parent issue #${record.parentIssueNumber} Project item`);
   }
   return [...new Set(entries)];
 }
@@ -254,47 +198,50 @@ function groupEvidence(records, context) {
   return { reasons, uniqueStatuses, merged };
 }
 
+// A closed issue with no verified merged delivery holds its group. A friction log still collecting entries
+// is named first, so the reason order stays what it has always been.
+function closedIssueDecision(records, reasons, context) {
+  const closed = records
+    .filter((record) => issueState(record.issue) === "CLOSED")
+    .map((record) => `issue #${record.issueNumber} is closed without a verified merged delivery`);
+  if (closed.length === 0) return null;
+  const collecting = typeof context.today === "string" && collectingFrictionLog(records, context.today);
+  return hold([...reasons, ...(collecting ? ["friction log still collecting entries"] : []), ...closed]);
+}
+
+// Each row is [reason, blocks]. Without a date the friction log cannot be read, so the group is held
+// rather than assumed clear. The first blocking row names the hold.
+const QUEUE_CHECKS = [
+  ["local date missing", (records, { today }) => typeof today !== "string"],
+  ["friction log still collecting entries", (records, { today }) => collectingFrictionLog(records, today)],
+  [
+    "Project status is not a queue status",
+    (records, context, statuses) => statuses.length !== 1 || !["Todo", "Backlog"].includes(statuses[0]),
+  ],
+  ["issue readback missing", (records) => records.some((record) => record.issue === null)],
+];
+
+function queueDecision(records, context, { reasons, uniqueStatuses }) {
+  if (reasons.length > 0) return hold(reasons);
+  const failed = QUEUE_CHECKS.find(([, blocks]) => blocks(records, context, uniqueStatuses));
+  return failed ? hold([failed[0]]) : readyDecision(records, context, uniqueStatuses[0]);
+}
+
+function unmergedDecision(records, context, evidence) {
+  return firstDecision([
+    () => closedIssueDecision(records, evidence.reasons, context),
+    () => parkedDecision(records),
+    () => resumableDecision(evidence.reasons, records),
+    () => queueDecision(records, context, evidence),
+  ]);
+}
+
 // A merged delivery is judged by its completion evidence alone, so it is either complete or held and
 // is never queued as work.
 function decideGroup(records, context) {
   if (!Array.isArray(records) || records.length === 0) return hold(["delivery record missing"]);
-  const { reasons, uniqueStatuses, merged } = groupEvidence(records, context);
-  if (merged.length > 0) {
-    return mergedDecision(reasons);
-  }
-
-  const closedIssueReasons = records
-    .filter((record) => issueState(record.issue) === "CLOSED")
-    .map((record) => `issue #${record.issueNumber} is closed without a verified merged delivery`);
-  if (closedIssueReasons.length > 0) {
-    if (typeof context.today === "string" && collectingFrictionLog(records, context.today)) {
-      reasons.push("friction log still collecting entries");
-    }
-    return hold([...reasons, ...closedIssueReasons]);
-  }
-
-  const root = records.find((record) => record.parentIssueNumber === null);
-  const parked = root ? parkedReasons(root) : [];
-  if (parked.length > 0) return hold(parked);
-
-  const resumable = resumableDecision(reasons, records);
-  if (resumable) return resumable;
-  if (reasons.length > 0) return hold(reasons);
-  // Without a date the friction log cannot be read, so the group is held rather than assumed clear.
-  if (typeof context.today !== "string") return hold(["local date missing"]);
-  if (collectingFrictionLog(records, context.today)) return hold(["friction log still collecting entries"]);
-  if (uniqueStatuses.length !== 1 || !["Todo", "Backlog"].includes(uniqueStatuses[0])) {
-    return hold(["Project status is not a queue status"]);
-  }
-  if (records.some((record) => record.issue === null)) return hold(["issue readback missing"]);
-  // The marker lets selectGroup withhold new work for as long as any root has an unfinished branch.
-  const unfinished = root ? branchReasons(root, context) : [];
-  if (unfinished.length > 0) return { ...hold(unfinished), unfinishedBranch: true };
-  const blocked = blockerReasons(records, context);
-  if (blocked.length > 0) return hold(blocked);
-  const unrefined = uniqueStatuses[0] === "Todo" && root ? refinementReasons(root) : [];
-  if (unrefined.length > 0) return { kind: "needs-refinement", eligible: false, reasons: unrefined };
-  return { kind: "eligible", eligible: true, status: uniqueStatuses[0], reasons: [] };
+  const evidence = groupEvidence(records, context);
+  return evidence.merged.length > 0 ? mergedDecision(evidence.reasons) : unmergedDecision(records, context, evidence);
 }
 
 // The closure judges completion evidence only, so it never reads the date, the friction log, or the
@@ -307,16 +254,21 @@ function decideDelivery(records, context) {
   return mergedDecision(reasons);
 }
 
+// A field of the wrong type reads as absent, and absent is never read as finished or unblocked.
+const orNull = (isExpected) => (value) => (isExpected(value) ? value : null);
+const listOrNull = orNull(Array.isArray);
+const stringOrNull = orNull((value) => typeof value === "string");
+const booleanOrNull = orNull((value) => typeof value === "boolean");
+
 function issueRecord(number, issue, overlay) {
-  const checkpoint = overlay ? overlay.checkpoints.get(number) : issue.activeCheckpoint;
   return {
     number,
     state: issue.state,
     title: issue.title ?? null,
-    activeCheckpoint: typeof checkpoint === "boolean" ? checkpoint : null,
-    blockedBy: Array.isArray(issue.blockedBy) ? issue.blockedBy : null,
-    body: typeof issue.body === "string" ? issue.body : null,
-    comments: Array.isArray(issue.comments) ? issue.comments : null,
+    activeCheckpoint: booleanOrNull(overlay ? overlay.checkpoints.get(number) : issue.activeCheckpoint),
+    blockedBy: listOrNull(issue.blockedBy),
+    body: stringOrNull(issue.body),
+    comments: listOrNull(issue.comments),
   };
 }
 
@@ -483,14 +435,24 @@ function classifyDelivery(records, rootNumber, context) {
 // Resume In Progress work first, the furthest along (an open pull request) ahead of the rest, then
 // start Todo before Backlog. While any root has an unfinished delivery branch, no Todo or Backlog group
 // is started, so new work never buries it; In Progress groups still resume.
+const NEW_WORK_STATUSES = new Set(["Todo", "Backlog"]);
+const NEW_WORK_RANK = { Todo: 2, Backlog: 3 };
+
+function startRank({ status, openPullRequest }) {
+  if (status === "In Progress") return openPullRequest ? 0 : 1;
+  return NEW_WORK_RANK[status] ?? 4;
+}
+
+function startable({ decision }, withheld) {
+  if (!decision?.eligible) return false;
+  return !(withheld && NEW_WORK_STATUSES.has(decision.status));
+}
+
 function selectGroup(groups) {
-  const rank = ({ status, openPullRequest }) =>
-    ({ "In Progress": openPullRequest ? 0 : 1, Todo: 2, Backlog: 3 })[status] ?? 4;
-  const startsNewWork = ({ status }) => status === "Todo" || status === "Backlog";
   const withheld = groups.some(({ decision }) => decision?.unfinishedBranch === true);
   const candidates = groups
-    .filter(({ decision }) => decision?.eligible && !(withheld && startsNewWork(decision)))
-    .sort((left, right) => rank(left.decision) - rank(right.decision) || left.order - right.order);
+    .filter((group) => startable(group, withheld))
+    .sort((left, right) => startRank(left.decision) - startRank(right.decision) || left.order - right.order);
   return candidates[0] ?? null;
 }
 
@@ -517,7 +479,7 @@ function countRecords(records) {
 // A record without repository identity cannot be named as owner/name#N, so it is named by what it is.
 function subjectOf({ kind, number, itemId }) {
   const shown = number ?? "?";
-  if (kind === "item") return itemId !== null ? `Project item ${itemId}` : `Project item #${shown}`;
+  if (kind === "item") return itemId === null ? `Project item #${shown}` : `Project item ${itemId}`;
   if (kind === "issue") return `issue #${shown}`;
   return `pull request #${shown}`;
 }
@@ -545,14 +507,6 @@ function snapshotCauses(index) {
     }
   }
   return [...new Set(causes)];
-}
-
-// ASSUMPTION (Medium risk): a snapshot without a branches list holds nothing, so a hand-built snapshot or one
-// made before the key existed still selects. closure.mjs snapshot always writes the key, so a live run
-// always carries the list. An entry without a string name is dropped, never read as a branch.
-function branchesOf(snapshot) {
-  if (!Array.isArray(snapshot?.branches)) return [];
-  return snapshot.branches.filter((branch) => typeof branch?.name === "string");
 }
 
 function classifyQueue(snapshot, { today }) {

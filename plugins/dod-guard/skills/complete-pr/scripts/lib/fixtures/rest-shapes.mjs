@@ -29,7 +29,12 @@ function subIssuesSummary(total) {
 }
 
 function dependenciesSummary(blockedBy) {
-  return { blocked_by: blockedBy, total_blocked_by: blockedBy, blocking: 0, total_blocking: 0 };
+  return {
+    blocked_by: blockedBy,
+    total_blocked_by: blockedBy,
+    blocking: 0,
+    total_blocking: 0,
+  };
 }
 
 // parentRepo names the repository of the parent issue, which may differ

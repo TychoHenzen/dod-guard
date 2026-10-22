@@ -79,10 +79,4 @@ function fakeRest(routes) {
   return { runner, calls };
 }
 
-// The branch and open pull request reads of a repository with no codex branch, for route tables that do
-// not exercise the branch list.
-function emptyBranchRoutes() {
-  return { [ENDPOINT.branches]: ok([[]]), [ENDPOINT.openPulls]: ok([[]]) };
-}
-
-export { ENDPOINT, emptyBranchRoutes, fakeRest, linkedProjectNode, linkedProjectsReply, NOT_FOUND, SERVER_ERROR };
+export { ENDPOINT, fakeRest, linkedProjectNode, linkedProjectsReply, NOT_FOUND, SERVER_ERROR };

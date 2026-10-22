@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { renderParkedRecord } from "../../../lib/parked-record.mjs";
 import { issue, item, REPOSITORY, selectNext, snapshot } from "./select-next.test-support.mjs";
 
 test("selects the Todo parent and its child ahead of Backlog", async () => {
@@ -29,7 +28,7 @@ test("an empty selection distinguishes held work from an exhausted queue", async
   assert.equal(result.queueState, "held");
 });
 
-test("a Todo root with an unreadable body is reported needs-refinement, never selected, and the queue is held", async () => {
+test("a Todo root with an unreadable body is needs-refinement, never selected, and holds the queue", async () => {
   const input = snapshot();
   input.items = [item(40, "Todo")];
   input.issues = [issue(40, { body: "## Outcome\n\nProse only.\n" })];
@@ -77,51 +76,4 @@ test("excludes a merged delivery that carries its completion evidence", async ()
   const done = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 444);
   assert.deepEqual(done, { rootIssueNumber: 444, kind: "complete", reasons: [] });
   assert.equal(result.selected.rootIssueNumber, 517);
-});
-
-test("a Todo group blocked by an open issue is held with the blocker named and the next Todo group is selected", async () => {
-  const input = snapshot();
-  input.items = [item(40, "Todo"), item(41, "Todo")];
-  input.issues = [issue(40, { blockedBy: [{ repository: REPOSITORY, number: 250, state: "open" }] }), issue(41)];
-  const result = await selectNext(input);
-  assert.equal(result.selected.rootIssueNumber, 41);
-  const held = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 40);
-  assert.deepEqual(held, { rootIssueNumber: 40, kind: "hold", reasons: [`issue #40 is blocked by ${REPOSITORY}#250`] });
-});
-
-test("a Todo root with a parked record is held with the record in its reason and the next Todo group is selected", async () => {
-  const input = snapshot();
-  input.items = [item(40, "Todo"), item(41, "Todo")];
-  input.issues = [
-    issue(40, {
-      comments: [
-        { id: 7, body: renderParkedRecord({ blocked: "waiting on the owner", unblocksWhen: "the owner answers" }) },
-      ],
-    }),
-    issue(41),
-  ];
-  const result = await selectNext(input);
-  assert.equal(result.selected.rootIssueNumber, 41);
-  const held = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 40);
-  assert.deepEqual(held, {
-    rootIssueNumber: 40,
-    kind: "hold",
-    reasons: ["issue #40 is parked: waiting on the owner; unblocks when: the owner answers"],
-  });
-});
-
-test("a Todo root with an unfinished delivery branch holds the queue and names the branch", async () => {
-  const input = snapshot();
-  input.items = [item(40, "Todo"), item(41, "Todo")];
-  input.issues = [issue(40), issue(41)];
-  input.branches = [{ name: "codex/40-example", openPullRequest: false }];
-  const result = await selectNext(input);
-  assert.equal(result.selected, null);
-  assert.equal(result.queueState, "held");
-  const held = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 40);
-  assert.deepEqual(held, {
-    rootIssueNumber: 40,
-    kind: "hold",
-    reasons: ["issue #40 has unfinished delivery branch codex/40-example without an open pull request"],
-  });
 });

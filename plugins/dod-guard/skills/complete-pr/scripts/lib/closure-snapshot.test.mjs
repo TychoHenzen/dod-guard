@@ -130,7 +130,7 @@ test("AC-05: issues list only target records, with children and parent as reposi
         { repository: REPO, number: 12 },
       ],
       blockedBy: [],
-      comments: [{ id: 9001, body: COMMENT_BODY }],
+      comments: [{ id: 9001, body: COMMENT_BODY, author_association: "OWNER" }],
     },
     {
       number: 11,

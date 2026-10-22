@@ -8,11 +8,11 @@ import {
   supersedesBody,
 } from "../lib/closure.test-support.mjs";
 import {
-  emptyBranchRoutes,
   ENDPOINT,
   linkedProjectNode,
   linkedProjectsReply,
 } from "../lib/closure-snapshot.test-support.mjs";
+import { emptyBranchRoutes } from "../lib/fixtures/closure-snapshot-routes.mjs";
 import {
   checkRunsReply,
   commitStatusReply,

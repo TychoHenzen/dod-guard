@@ -54,6 +54,12 @@ function urlReference(url, pattern) {
   return { repository: match[1], number: Number(match[2]) };
 }
 
+// GitHub resolves owner/name case-insensitively, so the comparison must do the same. A missing name
+// matches nothing.
+function sameRepository(left, right) {
+  return typeof left === "string" && typeof right === "string" && left.toLowerCase() === right.toLowerCase();
+}
+
 export {
   API_ISSUE_URL,
   API_PULL_URL,
@@ -62,6 +68,7 @@ export {
   isRepositoryName,
   REPOSITORY_NAME,
   repositoryName,
+  sameRepository,
   urlReference,
   urlRepository,
 };

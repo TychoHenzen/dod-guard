@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { classifyQueue } from "../../../lib/queue-classifier.mjs";
-import { issue, item, pullRequest, snapshot, TODAY } from "./queue-decision.test-support.mjs";
+import { TODAY } from "./harness/queue-decision-checks.mjs";
+import { issue, item, pullRequest, snapshot } from "./queue-decision.test-support.mjs";
 
 test("queue selection resumes In Progress work before starting Todo", () => {
   const input = snapshot({

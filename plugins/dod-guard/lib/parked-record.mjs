@@ -2,20 +2,16 @@
 // the comment. The classifier reads it and goal-sdlc's park.mjs writes it, so both live on one definition.
 // Every function is pure.
 import { lines } from "./acceptance-criteria.mjs";
+import { isRecordComment, recordPrefix } from "./comment-record.mjs";
 
-const PARKED_HEADING = "## Parked";
-const PARKED_MARKER = "<!-- dod-guard-parked -->";
-const PARKED_PREFIX = `${PARKED_HEADING}\n\n${PARKED_MARKER}`;
+const PARKED_KIND = Object.freeze({ heading: "## Parked", marker: "<!-- dod-guard-parked -->" });
 const NOT_STATED = "not stated";
+// Only a comment by someone with write-level standing on the repository can park a root, so a stranger's
+// comment never holds the queue. A comment that does not state its author association is not trusted.
+const TRUSTED_AUTHORS = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
 
-// A comment is a parked record only when its body, with CRLF normalized to LF first, begins with the
-// heading, a blank line, and the marker line, followed by a line break or the end of the body. A comment
-// that quotes the marker anywhere else is never read as a record.
 function isParkedRecord(comment) {
-  const body = lines(comment?.body);
-  return (
-    body.startsWith(PARKED_PREFIX) && (body.length === PARKED_PREFIX.length || body[PARKED_PREFIX.length] === "\n")
-  );
+  return TRUSTED_AUTHORS.has(comment?.author_association) && isRecordComment(comment, PARKED_KIND);
 }
 
 function fieldOf(body, pattern) {
@@ -36,7 +32,7 @@ function parkedRecords(comments) {
 }
 
 function renderParkedRecord({ blocked, unblocksWhen }) {
-  return [PARKED_PREFIX, "", `Blocked: ${blocked}`, `Unblocks when: ${unblocksWhen}`].join("\n");
+  return [recordPrefix(PARKED_KIND), "", `Blocked: ${blocked}`, `Unblocks when: ${unblocksWhen}`].join("\n");
 }
 
 export { parkedRecords, renderParkedRecord };

@@ -27,7 +27,7 @@ function readComments(read, repository, number) {
     if (!isCommentEntry(comment)) {
       throw readFailure(endpoint, "every comment must carry an id and a string body");
     }
-    return { id: comment.id, body: comment.body };
+    return { id: comment.id, body: comment.body, author_association: comment.author_association ?? null };
   });
 }
 

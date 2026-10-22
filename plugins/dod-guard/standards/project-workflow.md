@@ -324,7 +324,10 @@ blank line, the marker line `<!-- dod-guard-parked -->`, a blank line, a line
 `Blocked: <what blocks the root>`, and a line `Unblocks when: <what releases it>`.
 
 A comment counts only when its body begins with the heading, a blank line, and the
-marker line. A comment that quotes the marker elsewhere does not park the root. A
+marker line, and its `author_association` is `OWNER`, `MEMBER`, or `COLLABORATOR`.
+A comment that quotes the marker elsewhere, or comes from anyone else, does not park
+the root. The closure snapshot keeps `author_association` on every comment it reads.
+`lib/comment-record.mjs` holds the prefix match that closure records share. A
 record missing a field line still parks, and the field reads "not stated". Only the
 root's comments are read, in every queue status, and the check runs after the
 closed-issue and merged-delivery checks and before the resume check, so a parked

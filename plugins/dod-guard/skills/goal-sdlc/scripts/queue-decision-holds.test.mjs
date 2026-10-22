@@ -1,16 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { classifyQueue } from "../../../lib/queue-classifier.mjs";
-import {
-  assertHold,
-  completeDelivery,
-  findIssue,
-  issue,
-  item,
-  pullRequest,
-  snapshot,
-  TODAY,
-} from "./queue-decision.test-support.mjs";
+import { assertHold, findIssue, TODAY } from "./harness/queue-decision-checks.mjs";
+import { completeDelivery, issue, item, pullRequest, snapshot } from "./queue-decision.test-support.mjs";
 
 test("a contradictory parent holds the delivery", () => {
   const input = completeDelivery();

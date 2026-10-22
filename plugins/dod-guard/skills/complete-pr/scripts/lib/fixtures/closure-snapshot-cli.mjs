@@ -60,17 +60,14 @@ function buildFailureWith(overrides) {
 
 const LINKED_AT = failedAt(ENDPOINT.linkedProjects);
 const ONE_PROJECT = "expected exactly one open linked Project, found";
+const NO_PARENT = 'must include exactly one "Parent issue" field, found 0';
+const BAD_BRANCH = "every branch must carry a ref under refs/heads/";
+const BAD_PULL = "every open pull request must carry a head ref";
 const FAULTS = [
   ["repository", [failedAt(ENDPOINT.repository)]],
   ["items", [failedAt(ENDPOINT.values(2))]],
   ["missing-page", [failedAt(ENDPOINT.values(2)), "missing page"]],
-  [
-    "no-parent-field",
-    [
-      failedAt(ENDPOINT.fields(2)),
-      'must include exactly one "Parent issue" field, found 0',
-    ],
-  ],
+  ["no-parent-field", [failedAt(ENDPOINT.fields(2)), NO_PARENT]],
   ["no-linked-project", [LINKED_AT, `${ONE_PROJECT} none`]],
   ["two-linked-projects", [LINKED_AT, `${ONE_PROJECT} 2 (#2, #4)`]],
   [
@@ -84,8 +81,8 @@ const FAULTS = [
   ["blocked-failure", [failedAt(ENDPOINT.blockedBy(12))]],
   ["branches-failure", [failedAt(ENDPOINT.branches)]],
   ["open-pulls-failure", [failedAt(ENDPOINT.openPulls)]],
-  ["bad-branch-ref", [failedAt(ENDPOINT.branches), "every branch must carry a ref under refs/heads/"]],
-  ["bad-open-pull", [failedAt(ENDPOINT.openPulls), "every open pull request must carry a head ref"]],
+  ["bad-branch-ref", [failedAt(ENDPOINT.branches), BAD_BRANCH]],
+  ["bad-open-pull", [failedAt(ENDPOINT.openPulls), BAD_PULL]],
   ...REJECTED_NAMES.map((variant) => [variant, [failedAt(ENDPOINT.values(2))]]),
 ];
 
