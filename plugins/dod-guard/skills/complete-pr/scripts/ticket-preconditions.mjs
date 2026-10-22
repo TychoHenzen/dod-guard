@@ -4,7 +4,9 @@
 // an item of that Project, and the item's Status is the one the caller expects. The
 // checks run in that order and the first failure stops. Exit 0 is ready, exit 1 is
 // a stop naming its check, and exit 2 is a usage error or a read that could not be
-// trusted.
+// trusted. Project membership and Status come from one GraphQL query on the issue
+// (its projectItems), not the REST items list, whose pages are unstable. A failed or
+// incomplete read is exit 2 and never issue-not-in-project.
 // biome-ignore lint/correctness/noNodejsModules: A shipped Node command.
 import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: A shipped Node command.

@@ -1,4 +1,5 @@
 import { ghJson, ghJsonArrayPages, githubResponseContractError, githubResponseError } from "./gh-runner.mjs";
+import { ISSUE_PROJECT_ITEMS_READ, readIssueProjectItems } from "./issue-project-items.mjs";
 import { isPresent, projectItemId } from "./project-item-ids.mjs";
 import { projectItemsForRead } from "./project-item-list.mjs";
 import { projectItemMatchesRepository, validateProjectItemReadback } from "./project-item-readback.mjs";
@@ -65,19 +66,31 @@ function itemStatusName(context, project, item) {
   return projectStatusName(data, statusFieldId, itemEndpoint);
 }
 
-// The Status of one issue in a Project the caller already resolved: null when the Project holds no item for the issue, a
-// contract error when it holds several. The caller owns the choice of Project, so no other Project is listed.
-export function readIssueStatusInProject({ basePath, number }, repository, issueNumber, commandRunner) {
-  const context = { basePath, issue: { repository, number: issueNumber }, commandRunner };
-  const item = linkedItem({ number }, context);
-  if (item === null) {
+// The Status of one issue in a Project the caller already resolved ({ownerLogin, number}): null when the
+// issue's complete Project item relation holds no item in that Project, a contract error when it holds
+// several or the item has no Status. The relation comes from one GraphQL query on the issue, never from
+// the REST items list, whose pages are unstable. Any failed or incomplete read throws.
+export function readIssueStatusInProject({ ownerLogin, number }, repository, issueNumber, commandRunner) {
+  const sameProject = (item) =>
+    item.number === number && item.ownerLogin.toLowerCase() === String(ownerLogin).toLowerCase();
+  const matching = readIssueProjectItems(repository, issueNumber, commandRunner).filter(sameProject);
+  if (matching.length > 1) {
+    throw githubResponseContractError(ISSUE_PROJECT_ITEMS_READ, "exactly one item of the issue in the Project");
+  }
+  if (matching.length === 0) {
     return null;
   }
-  return itemStatusName(context, { number }, item);
+  if (matching[0].status === null) {
+    throw githubResponseContractError(ISSUE_PROJECT_ITEMS_READ, "exactly one non-blank Status field/value");
+  }
+  return matching[0].status;
 }
 
 // The Status of one issue in the one open Project that holds exactly one item for it. An item whose
-// repository cannot be read stops the read, because it could be the issue's own item.
+// repository cannot be read stops the read, because it could be the issue's own item. It lists REST
+// Project items, whose pages are unstable, and that is safe only because it fails closed: a short or
+// empty page leaves no linked Project, which is a thrown contract error and never a "not in project"
+// answer. Its callers (complete-pr's issue confirmation and merged recovery) treat a throw as a stop.
 export function readIssueProjectStatuses(repository, issueNumber, commandRunner) {
   const owner = ownerOf(repository);
   const { basePath, projects } = listOwnedProjects(owner, commandRunner);

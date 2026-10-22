@@ -5,22 +5,19 @@ import { it } from "node:test";
 import {
   ENDPOINT,
   fakeRest,
+  issueProjectItemNode,
+  issueProjectItemsReply,
   linkedProjectNode,
   linkedProjectsReply,
   NOT_FOUND,
+  SERVER_ERROR,
 } from "./lib/closure-snapshot.test-support.mjs";
-import { repositoryItem } from "./lib/fixtures/project-reads-runners.mjs";
 import { OWNER, ok, REPO } from "./lib/fixtures/rest-shapes.mjs";
 import { runCli } from "./ticket-preconditions.mjs";
 
 const ISSUE_NUMBER = 24;
-const OTHER_ISSUE = 25;
 const PROJECT_NUMBER = 2;
 const SECOND_PROJECT = 3;
-const STATUS_FIELD_ID = 7;
-const ITEMS = `users/${OWNER}/projectsV2/2/items?per_page=100`;
-const FIELDS = `users/${OWNER}/projectsV2/2/fields?per_page=100`;
-const ITEM_READ = `users/${OWNER}/projectsV2/2/items/1?fields=${STATUS_FIELD_ID}`;
 const ISSUE = `repos/${REPO}/issues/${ISSUE_NUMBER}`;
 const USAGE_START = "usage: ticket-preconditions.mjs";
 const FAILED_START = "ticket-preconditions failed:";
@@ -31,20 +28,6 @@ const EXPECTED_READY = {
   project: { ownerLogin: OWNER, number: PROJECT_NUMBER, title: `Project ${PROJECT_NUMBER}` },
   status: "Todo",
 };
-
-// An item of the Project for one issue: the list row the items read returns. The node id is set by
-// assignment so the test file holds no literal key that the naming rule would flag.
-function issueItem(number, id = 1) {
-  const item = { id, content: { ...repositoryItem(REPO).content, number } };
-  item.node_id = `PVTI_${id}`;
-  return item;
-}
-
-// The item readback that carries the Status field, spelled as the live read returns it.
-function itemReadback(status) {
-  const field = { id: STATUS_FIELD_ID, name: "Status", value: { name: { raw: status } } };
-  return { ...issueItem(ISSUE_NUMBER), fields: [field] };
-}
 
 // A REST issue record that names a pull request. The key is set by assignment for the naming rule.
 function pullRequestReply() {
@@ -59,9 +42,7 @@ function routes(status = "Todo", overrides = {}) {
   return {
     [ENDPOINT.linkedProjects]: linkedProjectsReply([linkedProjectNode(PROJECT_NUMBER)]),
     [ISSUE]: ok({ number: ISSUE_NUMBER, state: "open" }),
-    [ITEMS]: ok(issueItem(ISSUE_NUMBER)),
-    [FIELDS]: ok([[{ id: STATUS_FIELD_ID, name: "Status" }]]),
-    [ITEM_READ]: ok(itemReadback(status)),
+    [ENDPOINT.issueProjectItems]: issueProjectItemsReply([issueProjectItemNode(PROJECT_NUMBER, status)]),
     ...overrides,
   };
 }
@@ -122,7 +103,12 @@ it("exits 1 with issue-not-in-repository when the number is a pull request", () 
 });
 
 it("exits 1 with issue-not-in-project when the Project holds no item for the issue", () => {
-  const result = run(argv(), routes("Todo", { [ITEMS]: ok(issueItem(OTHER_ISSUE)) }));
+  const result = run(
+    argv(),
+    routes("Todo", {
+      [ENDPOINT.issueProjectItems]: issueProjectItemsReply([issueProjectItemNode(SECOND_PROJECT, "Todo")]),
+    }),
+  );
   assert.equal(result.code, 1, result.err);
   assert.equal(stopReport(result).check, "issue-not-in-project");
 });
@@ -151,16 +137,43 @@ it("exits 2 on a usage error and never reads", () => {
 });
 
 it("exits 2 when the Project holds two items for the issue", () => {
-  const twoItems = [JSON.stringify(issueItem(ISSUE_NUMBER, 1)), JSON.stringify(issueItem(ISSUE_NUMBER, 2))];
-  const result = run(argv(), routes("Todo", { [ITEMS]: { status: 0, stdout: twoItems.join("\n"), stderr: "" } }));
+  const nodes = [issueProjectItemNode(PROJECT_NUMBER, "Todo"), issueProjectItemNode(PROJECT_NUMBER, "Done")];
+  const result = run(argv(), routes("Todo", { [ENDPOINT.issueProjectItems]: issueProjectItemsReply(nodes) }));
   assert.equal(result.code, 2);
   assert.ok(result.err.startsWith(FAILED_START), result.err);
 });
 
-it("exits 2 on an unreadable item response", () => {
-  const result = run(argv(), routes("Todo", { [ITEMS]: { status: 0, stdout: "not json", stderr: "" } }));
+it("exits 2, never issue-not-in-project, when the item relation is incomplete", () => {
+  const reply = issueProjectItemsReply([issueProjectItemNode(SECOND_PROJECT, "Todo")], { hasNextPage: true });
+  const result = run(argv(), routes("Todo", { [ENDPOINT.issueProjectItems]: reply }));
   assert.equal(result.code, 2);
+  assert.equal(result.out, "");
   assert.ok(result.err.startsWith(FAILED_START), result.err);
+});
+
+it("exits 2 on a failed, errored, or unreadable item read", () => {
+  const replies = [
+    SERVER_ERROR,
+    ok({ data: null, errors: [{ message: "boom" }] }),
+    ok({ data: { repository: { issue: null } } }),
+    { status: 0, stdout: "not json", stderr: "" },
+  ];
+  for (const reply of replies) {
+    const result = run(argv(), routes("Todo", { [ENDPOINT.issueProjectItems]: reply }));
+    assert.equal(result.code, 2);
+    assert.equal(result.out, "");
+    assert.ok(result.err.startsWith(FAILED_START), result.err);
+  }
+});
+
+it("gives the same result on every repeated run for the same issue", () => {
+  const table = routes();
+  const results = Array.from({ length: 5 }, () => run(argv(), table));
+  assert.deepEqual(
+    results.map((result) => result.code),
+    [0, 0, 0, 0, 0],
+  );
+  assert.equal(new Set(results.map((result) => result.out)).size, 1);
 });
 
 it("recovers after the status is corrected", () => {
@@ -168,7 +181,7 @@ it("recovers after the status is corrected", () => {
   const first = run(argv("Todo"), table);
   assert.equal(first.code, 1, first.err);
   assert.equal(stopReport(first).check, "status-mismatch");
-  table[ITEM_READ] = ok(itemReadback("Todo"));
+  table[ENDPOINT.issueProjectItems] = issueProjectItemsReply([issueProjectItemNode(PROJECT_NUMBER, "Todo")]);
   const second = run(argv("Todo"), table);
   assert.equal(second.code, 0, second.err);
   assert.deepEqual(JSON.parse(second.out), EXPECTED_READY);

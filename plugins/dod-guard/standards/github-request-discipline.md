@@ -198,7 +198,11 @@ cursor-paginated, read-only `reviewThreads` read, because REST exposes no
 thread resolution state), and the step 3 linked-Project read (one read-only
 `repository.projectsV2` query made by
 `skills/complete-pr/scripts/linked-project.mjs`, because REST has no endpoint
-for a repository's explicit Project link). Do not use any of these exceptions
+for a repository's explicit Project link), and the single-issue Project item
+read (one read-only `repository.issue.projectItems` query made by
+`skills/complete-pr/scripts/ticket-preconditions.mjs`, because the REST Project
+items list returns unstable partial pages and cannot say reliably that an
+issue is absent). Do not use any of these exceptions
 for rate limits or other transport stops, and do not use `gh pr view --json`
 for repeated metadata reads when the REST endpoint provides the required
 fields.

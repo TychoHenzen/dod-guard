@@ -8,8 +8,10 @@
 // a repository is linked to is a different rule, read from the explicit link by
 // plugins/dod-guard/lib/linked-project.mjs. readIssueStatusInProject reads the
 // Status of one issue inside a Project the caller resolved and returns null when
-// that Project holds no item for it. Every read goes through an injected runner
-// in gh-runner's convention.
+// the issue's complete Project item relation holds no item in that Project. It is
+// the one read here that is not REST: it uses issue-project-items' single GraphQL
+// query, because the REST items list returns unstable partial pages. Every read
+// goes through an injected runner in gh-runner's convention.
 import { API_REPOSITORY_URL, isRepositoryName, urlRepository } from "../../../../lib/repository-identity.mjs";
 import { isPresent } from "./project-item-ids.mjs";
 import { ProjectReadError } from "./project-read-error.mjs";
