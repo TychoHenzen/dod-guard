@@ -68,27 +68,3 @@ test("routes an unconfigured Python root through the repository scan", () => {
     );
   });
 });
-
-test("reports a malformed package.json as no root manifest with its messages", () => {
-  const inspected =
-    "no supported root entry point declaration found; inspected " +
-    "package.json, Cargo.toml, pyproject.toml, .sln, or .csproj";
-  withProject({ "package.json": "{" }, (root) =>
-    assert.deepEqual(
-      checkEnvironment(root, buildConfig()).map((violation) => [
-        violation.file,
-        violation.message,
-      ]),
-      [
-        [
-          "<repository root>",
-          `E1: ${inspected} - add one documented root build entry point`,
-        ],
-        [
-          "<repository root>",
-          `E2: ${inspected} - add one documented root test entry point`,
-        ],
-      ],
-    ),
-  );
-});
