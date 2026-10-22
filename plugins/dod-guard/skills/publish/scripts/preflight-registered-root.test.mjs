@@ -1,14 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { copyFile, mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import process from "node:process";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
+import { copyPreflightHelper } from "./harness/preflight-fixture.mjs";
 
-const sourceHelper = fileURLToPath(new URL("./preflight-installation.mjs", import.meta.url));
-const sourceArguments = fileURLToPath(new URL("./preflight-arguments.mjs", import.meta.url));
 const loadedVersion = "5.4.56";
 const releasedVersion = "5.4.57";
 const manifestDirectory = { codex: ".codex-plugin", claude: ".claude-plugin" };
@@ -29,8 +27,7 @@ async function createReleaseFixture(t, client) {
   const loadedRoot = await createRoot(parent, "loaded", client, loadedVersion);
   const registeredRoot = await createRoot(parent, "registered", client, releasedVersion);
   const helperPath = join(loadedRoot, "skills", "publish", "scripts", "preflight-installation.mjs");
-  await copyFile(sourceHelper, helperPath);
-  await copyFile(sourceArguments, join(dirname(helperPath), "preflight-arguments.mjs"));
+  await copyPreflightHelper(dirname(helperPath));
   return { parent, loadedRoot, registeredRoot, helperPath };
 }
 
