@@ -98,7 +98,9 @@ failed, unverified, blocked, or head-mismatched rows stop the handoff; an
 fenced `json` array of rows under that heading; it replaces any markdown
 table, and a second matrix heading is refused. Each row holds `id`, `contract`,
 `path`, `proof`, `expected`, `observed`, `status`, `evidence`, and `headSha`,
-plus `reason` on an `inapplicable` row.
+plus `reason` on an `inapplicable` row. `handoff-build.mjs` prints the comment
+from the issue body's planned matrix and an evidence file, so the matrix JSON
+is never hand-written.
 
 The same handoff also carries one `## Preflight checkpoint` record for the
 selected pull request once its branch exists. It records the exact branch and
