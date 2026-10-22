@@ -76,7 +76,7 @@ The emergency case deliberately has tiny effort: urgency must not inflate size.
 |---|---|
 | Existing Prio 1 and Prio 4, Effort 8 and stale `Effort 4 - Old`, plus an unrelated label; new evidence supports Prio 5 and Effort 2. | Replace all stale scale labels, preserve unrelated label, update rationale. Readback has exactly Prio 5 and Effort 2. |
 | Repeat the previous refinement after returning the issue to Backlog. | Same final labels, no duplicates or duplicate sub-issues. |
-| Re-refinement requested while issue is Todo. | Stop at the Backlog precondition; no mutations. |
+| Re-refinement requested while issue is Todo. | Refine in place: rewrite the body records, labels, and step plans. Status stays Todo and no move to Todo runs. |
 | Remove `Effort 3 - Medium`, even though the chosen effort would be 2. | Stop before mutations; report the missing scale member. |
 | Supply duplicate exact-name entries for `Prio 2 - Urgent` in the API fixture. | Stop before mutations; report ambiguity. |
 | Put the only matching scale label on the second API page. | Follow pagination and resolve it successfully. |

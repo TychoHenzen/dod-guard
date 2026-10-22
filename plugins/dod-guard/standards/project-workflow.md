@@ -301,6 +301,13 @@ that is not closed and is not part of the group. The hold names the blocker as
 read fails. An In Progress delivery that resumes is never held by a blocker. The
 closure judgement does not read `blockedBy`.
 
+A Todo root whose body `parseIssueBodyRecords` cannot read cleanly is classified
+`needs-refinement`: not eligible, never selected, and counted as held work. A
+missing or unreadable record, or acceptance ids that disagree with the Acceptance
+criteria checkboxes, are its reasons. Only the Todo root's own body is read. A
+Backlog root and a child body are not, and a blocker hold is reported first.
+`refine-backlog-item` clears it in place and leaves the Status at Todo.
+
 A delivery is verified only when its completion record matches the live pull
 request readback (merge commit, trusted head, default base, passing checks) and
 the goal-sdlc queue decision classifies its group as `complete` with

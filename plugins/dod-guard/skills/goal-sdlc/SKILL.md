@@ -9,7 +9,7 @@ Read `standards/working-defaults.md` and `standards/github-request-discipline.md
 
 ## Owners
 
-- [refine-backlog-item](../refine-backlog-item/SKILL.md): Backlog, or next-ticket stopped with `step-plan-missing`.
+- [refine-backlog-item](../refine-backlog-item/SKILL.md): Backlog, a Todo root that select-next reports as `needs-refinement` (Status stays Todo), or next-ticket stopped with `step-plan-missing`.
 - [next-ticket](../next-ticket/SKILL.md): Todo, or In Progress with no pushed handoff.
 - [submit-draft-pr](../submit-draft-pr/SKILL.md): In Progress, pushed handoff, no converged draft PR.
 - [review-pr](../review-pr/SKILL.md): converged draft PR, no review.
@@ -34,6 +34,7 @@ Repeat until a stop condition holds. Take one parent at a time, in the current c
    - Delegate closes and status repairs to complete-pr's section `Close delivered issues for goal-sdlc` as one write-capable stage, then reread.
    - Run `closure.mjs annotate` on the snapshot. It supplies `activeCheckpoint` and `trustedHeadSha`.
    - In this skill's directory, run `node scripts/select-next.mjs --snapshot=<file>`. Report its holds. `queueState: held` is not exhaustion.
+   - For each group of kind `needs-refinement`, run `refine-backlog-item` on its root as one stage with the Status left at Todo, then take a fresh snapshot and select again, because the snapshot holds the old body.
 3. Follow `dod-guard:quick-pbi` steps 2 to 6 and run the owner whose condition the parent meets. On `step-plan-missing`, refine, then rerun next-ticket. If refinement needs a user answer, leave the parent in Backlog with the questions recorded and move on.
 4. On `conflict-triaged`, go to submit-draft-pr for the new head. Otherwise, if any parent or child status is not Done, return to the completion owner. If all are Done, go to step 1.
 

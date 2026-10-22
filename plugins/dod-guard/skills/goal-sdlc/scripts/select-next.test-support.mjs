@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { REFINED_BODY } from "../../../lib/refined-body.test-support.mjs";
 import { withSnapshotFile } from "./snapshot-file.test-support.mjs";
 
 export const REPOSITORY = "TychoHenzen/dod-guard";
@@ -31,6 +32,7 @@ export function issue(number, overrides = {}) {
     parent: null,
     children: [],
     blockedBy: [],
+    body: REFINED_BODY,
     ...overrides,
   };
 }

@@ -21,6 +21,7 @@ import {
   projectItem,
   pull,
 } from "../lib/fixtures/rest-shapes.mjs";
+import { REFINED_BODY } from "../../../../lib/refined-body.test-support.mjs";
 
 const ROOT = 840;
 const ORIGINAL = DELIVERIES[ROOT].replaces;
@@ -95,7 +96,7 @@ function roundTripPages(verifiedPull, pendingPull) {
       projectItem({
         nodeId: "PVTI_950",
         databaseId: 9501,
-        content: issueContent(950),
+        content: issueContent(950, { body: REFINED_BODY }),
         status: "Todo",
       }),
     ],
@@ -174,7 +175,7 @@ const CROSS_REPOSITORY_ITEMS = [
   {
     nodeId: "PVTI_21",
     databaseId: 2021,
-    content: issueContent(21),
+    content: issueContent(21, { body: REFINED_BODY }),
     status: "Todo",
   },
   {

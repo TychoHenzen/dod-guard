@@ -19,6 +19,7 @@ import {
   relationReasons,
 } from "./closure-index.mjs";
 import { collectingFrictionLog } from "./friction-log.mjs";
+import { parseIssueBodyRecords } from "./issue-body-records.mjs";
 
 const OPEN_PULL_REQUEST = "open implementation pull request remains active";
 const ACTIVE_CHECKPOINT = "active implementation checkpoint remains";
@@ -102,6 +103,15 @@ function blockerReasons(records, context) {
       .filter((blocker) => !closed(blocker) && !insideGroup(blocker))
       .map((blocker) => `issue #${issueNumber} is blocked by ${blocker?.repository}#${blocker?.number}`);
   });
+}
+
+// A Todo root is picked up by /next-ticket, which stops on a body whose refinement records cannot be read.
+// The parser's errors and remainder are the reasons, so the selector never holds a second copy of the
+// refinement rules.
+function refinementReasons({ issueNumber, issue }) {
+  if (typeof issue.body !== "string" || issue.body.trim() === "") return [`issue #${issueNumber} has no refined body`];
+  const { errors, remainder } = parseIssueBodyRecords(issue.body);
+  return [...errors, ...remainder].map((reason) => `issue #${issueNumber} ${reason}`);
 }
 
 function mergedEvidenceReasons(records, context, mergedPullRequests) {
@@ -256,6 +266,9 @@ function decideGroup(records, context) {
   if (records.some((record) => record.issue === null)) return hold(["issue readback missing"]);
   const blocked = blockerReasons(records, context);
   if (blocked.length > 0) return hold(blocked);
+  const root = records.find((record) => record.parentIssueNumber === null);
+  const unrefined = uniqueStatuses[0] === "Todo" && root ? refinementReasons(root) : [];
+  if (unrefined.length > 0) return { kind: "needs-refinement", eligible: false, reasons: unrefined };
   return { kind: "eligible", eligible: true, status: uniqueStatuses[0], reasons: [] };
 }
 
@@ -277,6 +290,7 @@ function issueRecord(number, issue, overlay) {
     title: issue.title ?? null,
     activeCheckpoint: typeof checkpoint === "boolean" ? checkpoint : null,
     blockedBy: Array.isArray(issue.blockedBy) ? issue.blockedBy : null,
+    body: typeof issue.body === "string" ? issue.body : null,
   };
 }
 

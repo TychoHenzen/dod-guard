@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { classifyQueue } from "../../../lib/queue-classifier.mjs";
+import { REFINED_BODY } from "../../../lib/refined-body.test-support.mjs";
 
 // Each case builds a closure-shaped snapshot and classifies it through classifyQueue, so the cases
 // exercise the classifier that select-next and the closure judgement share.
@@ -27,7 +28,14 @@ export function item(number, status, { parent = null, linked = [], parentField =
 // An issue of the repository. Its checkpoint is explicitly false unless a case changes it.
 export function issue(
   number,
-  { state = "closed", parent = null, children = [], blockedBy = [], activeCheckpoint = false } = {},
+  {
+    state = "closed",
+    parent = null,
+    children = [],
+    blockedBy = [],
+    body = REFINED_BODY,
+    activeCheckpoint = false,
+  } = {},
 ) {
   return {
     number,
@@ -37,6 +45,7 @@ export function issue(
     parent: parent === null ? null : ref(parent),
     children: children.map((child) => ref(child)),
     blockedBy,
+    body,
     activeCheckpoint,
   };
 }
