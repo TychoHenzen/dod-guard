@@ -4,58 +4,11 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { executionEvidence, failure, processEvidence, stageFailure } from "./advisor-evidence.mjs";
 import { childEnv, MAX_OUTPUT_BYTES, runProcess } from "./advisor-process.mjs";
 import { buildCodexExecArgs, buildCodexPreflightArgs, resolveCodexExecutable } from "./codex-launch-contract.mjs";
 
 const defaultSchemaPath = fileURLToPath(new URL("../response-schema.json", import.meta.url));
-
-function errorMessage(error) {
-  return error?.message ?? null;
-}
-
-function processEvidence(executable, args, processResult) {
-  const { code = null, signal = null, stderr = "", stdout = "", startError, stdinError } = { ...processResult };
-  return {
-    command: [executable, ...args],
-    shell: false,
-    exitCode: code,
-    signal,
-    stderr,
-    stdout,
-    startError: errorMessage(startError),
-    stdinError: errorMessage(stdinError),
-  };
-}
-
-function executionEvidence(executable, args, processResult, stage, prefixArgs = []) {
-  return {
-    status: "incomplete",
-    stage,
-    prefixArgs,
-    ...processEvidence(executable, args, processResult),
-  };
-}
-
-function completedExecutionEvidence(executable, args, processResult, prefixArgs) {
-  return {
-    status: "completed",
-    stage: "reviewer-process",
-    prefixArgs,
-    ...processEvidence(executable, args, processResult),
-  };
-}
-
-function failure(message, processResult, executable, args, stage, prefixArgs = []) {
-  const details = processResult?.stderr?.trim();
-  return {
-    ok: false,
-    error: details ? `${message}: ${details}` : message,
-    stderr: processResult?.stderr ?? "",
-    stdout: processResult?.stdout ?? "",
-    execution:
-      executable && args && stage ? executionEvidence(executable, args, processResult, stage, prefixArgs) : undefined,
-  };
-}
 
 function attemptedExecArgs({ mode = "read-only", prefixArgs, model, reasoningEffort }) {
   const attemptedPrefix = Array.isArray(prefixArgs) ? prefixArgs : [];
@@ -150,11 +103,6 @@ function oneTurnViolation(events) {
   }
 }
 
-// A step is one process invocation: its launcher (executable and prefix arguments), arguments, and result.
-function stageFailure(step, stage, message) {
-  return failure(message, step.result, step.launcher.executable, step.args, stage, step.launcher.prefixArgs);
-}
-
 function invalidOptionMessage({ prefixArgs, model, reasoningEffort }) {
   const options = [
     ["model", model],
@@ -178,13 +126,15 @@ function launcherRejection(attempt) {
   const message = attempt.executable ? invalidOptionMessage(attempt) : UNAVAILABLE_MESSAGE;
   if (!message) return;
   const { executable, attemptedArgs, prefixArgs } = attempt;
-  return failure(message, undefined, executable, attemptedArgs, "launcher-contract", prefixArgs);
+  const launch = { executable, args: attemptedArgs, stage: "launcher-contract", prefixArgs };
+  return failure(message, undefined, launch);
 }
 
 function launcherCrash(attempt, error) {
   const { executable, attemptedArgs, prefixArgs } = attempt;
   const message = `Codex advisor could not start: ${error.message}`;
-  return failure(message, undefined, executable, attemptedArgs, "launcher-contract", prefixArgs);
+  const launch = { executable, args: attemptedArgs, stage: "launcher-contract", prefixArgs };
+  return failure(message, undefined, launch);
 }
 
 function preflightMessage(stage, result) {
@@ -203,7 +153,7 @@ async function runPreflight({ executable, prefixArgs, workdir, env, signal, spaw
     const result = await runProcess(spec);
     const message = preflightMessage(stage, result);
     if (message) return { failure: stageFailure({ launcher, args, result }, stage, message) };
-    probes[stage] = processEvidence(executable, args, result);
+    probes[stage] = processEvidence({ executable, args }, result);
   }
   return { probes };
 }
@@ -285,11 +235,12 @@ async function launchReviewer(run) {
 
 function adviceSuccess(step, preflight, advice) {
   const { executable, prefixArgs } = step.launcher;
+  const launch = { executable, args: step.args, stage: "reviewer-process", prefixArgs };
   return {
     ok: true,
     ...(advice.value ?? {}),
     capability: { executable, probes: preflight.probes },
-    execution: completedExecutionEvidence(executable, step.args, step.result, prefixArgs),
+    execution: executionEvidence(launch, step.result, "completed"),
   };
 }
 
