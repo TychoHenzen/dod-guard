@@ -99,8 +99,12 @@ fenced `json` array of rows under that heading; it replaces any markdown
 table, and a second matrix heading is refused. Each row holds `id`, `contract`,
 `path`, `proof`, `expected`, `observed`, `status`, `evidence`, and `headSha`,
 plus `reason` on an `inapplicable` row. `handoff-build.mjs` prints the comment
-from the issue body's planned matrix and an evidence file, so the matrix JSON
-is never hand-written.
+from the issue body's records and an evidence file, so the matrix JSON is never
+hand-written. The body owns every identity field: a row's `id`, `contract`,
+`path`, `proof`, `expected` and `evidence` id come from the planned matrix, and
+a task bullet's id, functional slice and evidence ids come from the task list.
+The evidence file supplies only `observed`, `status` and `reason` per row and
+`commit`, `files` and `result` per task, and the builder rejects any other field.
 
 The same handoff also carries one `## Preflight checkpoint` record for the
 selected pull request once its branch exists. It records the exact branch and

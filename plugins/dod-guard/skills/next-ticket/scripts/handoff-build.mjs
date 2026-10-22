@@ -1,23 +1,27 @@
 #!/usr/bin/env node
 // Prints the next-ticket implementation handoff comment from an issue body's
-// planned acceptance matrix and an evidence file, so the observed matrix JSON
-// is encoded by JSON.stringify and never hand-written.
+// planned records and an evidence file, so the observed matrix JSON is encoded
+// by JSON.stringify and never hand-written.
 //
 // Usage: node handoff-build.mjs --body-file=<issue-body.md> --evidence-file=<evidence.json> --head-sha=<sha>
 //
-// The evidence file is JSON in this shape:
+// Identity comes from the body, never from the evidence file: each matrix row's
+// id, contract, path, proof, expected and evidence ids come from the planned
+// acceptance matrix, and each task bullet's id, functional slice and evidence
+// ids come from the task list. The evidence file supplies only what was
+// observed:
 //   {
 //     "tasks": [{ "id": "T1", "commit": "<sha>", "files": ["a.mjs"], "result": "text" }],
 //     "rows": {
-//       "R1": { "observed": "text", "status": "pass", "evidence": "text" },
-//       "R2": { "observed": "text", "status": "inapplicable", "evidence": "text", "reason": "text" }
+//       "R1": { "observed": "text", "status": "pass" },
+//       "R2": { "observed": "text", "status": "inapplicable", "reason": "text" }
 //     }
 //   }
-// Every planned row needs one rows entry, and no rows entry may name a row the
-// body does not plan. stdout is the comment text, which post-push reads as the
-// handoff file. stderr lists each problem, one per line, and nothing is printed
-// on stdout then. Exit status: 0 built, 1 problems in the body or evidence,
-// 2 usage error.
+// Every planned task and row needs one entry, and no entry may name a task or
+// row the body does not plan or carry a field other than the ones above. stdout
+// is the comment text, which post-push reads as the handoff file. stderr lists
+// each problem, one per line, and nothing is printed on stdout then. Exit
+// status: 0 built, 1 problems in the body or evidence, 2 usage error.
 // biome-ignore lint/correctness/noNodejsModules: This CLI runs under Node.js.
 import path from "node:path";
 // biome-ignore lint/correctness/noNodejsModules: This CLI runs under Node.js.
@@ -26,6 +30,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
 import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
+import { evidenceValues } from "./convergence-core.mjs";
 import { readText, UsageError } from "./handoff-proof-cli.mjs";
 
 const USAGE =
@@ -74,14 +79,65 @@ function readEvidence(file) {
   return evidence;
 }
 
-// ASSUMPTION: a rows entry that is not a JSON object counts as missing, since
-// the plan names no error for it and reading its fields would throw.
+const STATUSES = new Set(["pass", "unverified", "failed", "blocked", "inapplicable"]);
+const ROW_FIELDS = new Set(["observed", "status", "reason"]);
+const TASK_FIELDS = new Set(["id", "commit", "files", "result"]);
+
+// ASSUMPTION: an entry that is not a JSON object counts as missing, since the
+// plan names no error for it and reading its fields would throw.
 function hasEntry(rows, id) {
   return Object.hasOwn(rows, id) && isPlainObject(rows[id]);
 }
 
-// Keys come in the order post-push and the reader expect. The planned row's own
-// evidence and status fields are not copied, so the entry's values are the only ones.
+function isText(value) {
+  return typeof value === "string" && value.trim() !== "";
+}
+
+// One problem per field the evidence file may not carry or carries badly.
+function rowProblems(id, entry) {
+  const problems = Object.keys(entry)
+    .filter((key) => !ROW_FIELDS.has(key))
+    .map((key) => `row ${id} entry field ${key} comes from the plan, not the evidence file`);
+  if (!isText(entry.observed)) {
+    problems.push(`row ${id} entry needs a non-empty observed`);
+  }
+  if (!STATUSES.has(entry.status)) {
+    problems.push(`row ${id} entry status must be one of ${[...STATUSES].join(", ")}`);
+  }
+  if (Object.hasOwn(entry, "reason") && !isText(entry.reason)) {
+    problems.push(`row ${id} entry reason must be non-empty text`);
+  }
+  return problems;
+}
+
+function taskEntryProblems(entry) {
+  const problems = Object.keys(entry)
+    .filter((key) => !TASK_FIELDS.has(key))
+    .map((key) => `task ${entry.id} entry field ${key} comes from the plan, not the evidence file`);
+  if (!isText(entry.commit)) {
+    problems.push(`task ${entry.id} entry needs a commit`);
+  }
+  if (!(Array.isArray(entry.files) && entry.files.length > 0 && entry.files.every(isText))) {
+    problems.push(`task ${entry.id} entry needs a non-empty files list`);
+  }
+  if (!isText(entry.result)) {
+    problems.push(`task ${entry.id} entry needs a result`);
+  }
+  return problems;
+}
+
+function taskProblems(planned, entries) {
+  const plannedIds = new Set(planned.map((task) => task.id));
+  const entryIds = entries.map((entry) => entry?.id);
+  return [
+    ...planned.filter((task) => !entryIds.includes(task.id)).map((task) => `task ${task.id} has no evidence entry`),
+    ...entryIds.filter((id) => !plannedIds.has(id)).map((id) => `task entry ${id} matches no planned task`),
+    ...entries.filter((entry) => isPlainObject(entry) && plannedIds.has(entry.id)).flatMap(taskEntryProblems),
+  ];
+}
+
+// Keys come in the order post-push and the reader expect. The planned row owns
+// every identity field, evidence id included; the entry owns what was observed.
 function matrixRow(row, entry, headSha) {
   const out = {
     id: row.id,
@@ -91,7 +147,7 @@ function matrixRow(row, entry, headSha) {
     expected: row.expected,
     observed: entry.observed,
     status: entry.status,
-    evidence: entry.evidence,
+    evidence: row.evidence,
     headSha,
   };
   if (Object.hasOwn(entry, "reason")) {
@@ -100,11 +156,22 @@ function matrixRow(row, entry, headSha) {
   return out;
 }
 
-function commentText(tasks, rows) {
-  const bullets = tasks.map(
-    (task) =>
-      `- ${task.id}: commit ${task.commit}, files ${task.files.join(", ")}, result ${String(task.result).replace(/\s+/g, " ")}`,
-  );
+function oneLine(text) {
+  return String(text).replace(/\s+/g, " ");
+}
+
+// The bullet names the task's functional slice (or its parent-level marker) and its
+// planned evidence ids, all from the task list, so the comment maps each task to its child.
+function taskBullet(task, entry) {
+  let owner = `parent-level ${task.parentLevel ?? "none"}`;
+  if (task.child) {
+    owner = `slice ${task.child}`;
+  }
+  const evidence = evidenceValues(task.evidence).join(", ");
+  return `- ${task.id} (${owner}): commit ${entry.commit}, files ${entry.files.join(", ")}, evidence ${evidence}, result ${oneLine(entry.result)}`;
+}
+
+function commentText(bullets, rows) {
   const open = rows.filter((row) => !SETTLED.has(row.status)).map((row) => row.id);
   let remainder = open.join(", ");
   if (open.length === 0) {
@@ -120,26 +187,33 @@ function commentText(tasks, rows) {
   );
 }
 
-// Returns { text } when every planned row has an entry and no entry is extra,
-// else { errors } naming each mismatch, with nothing built.
+function rowSetProblems(planned, rows) {
+  const plannedIds = new Set(planned.map((row) => row.id));
+  return [
+    ...planned.filter((row) => !hasEntry(rows, row.id)).map((row) => `row ${row.id} has no evidence entry`),
+    ...Object.keys(rows)
+      .filter((key) => !plannedIds.has(key))
+      .map((key) => `evidence entry ${key} matches no planned row`),
+    ...planned.filter((row) => hasEntry(rows, row.id)).flatMap((row) => rowProblems(row.id, rows[row.id])),
+  ];
+}
+
+// Returns { text } when every planned task and row has a well-formed entry and no
+// entry is extra, else { errors } naming each mismatch, with nothing built.
 function build({ body, evidence, headSha }) {
   const { input, errors } = parseIssueBodyRecords(body);
   if (errors.length > 0) {
     return { errors };
   }
   const planned = input.plannedAcceptanceMatrix;
-  const plannedIds = new Set(planned.map((row) => row.id));
-  const problems = [
-    ...planned.filter((row) => !hasEntry(evidence.rows, row.id)).map((row) => `row ${row.id} has no evidence entry`),
-    ...Object.keys(evidence.rows)
-      .filter((key) => !plannedIds.has(key))
-      .map((key) => `evidence entry ${key} matches no planned row`),
-  ];
+  const problems = [...taskProblems(input.tasks, evidence.tasks), ...rowSetProblems(planned, evidence.rows)];
   if (problems.length > 0) {
     return { errors: problems };
   }
   const rows = planned.map((row) => matrixRow(row, evidence.rows[row.id], headSha));
-  return { text: commentText(evidence.tasks, rows) };
+  const entries = new Map(evidence.tasks.map((entry) => [entry.id, entry]));
+  const bullets = input.tasks.map((task) => taskBullet(task, entries.get(task.id)));
+  return { text: commentText(bullets, rows) };
 }
 
 function runCli(argv, { stdout = process.stdout, stderr = process.stderr } = {}) {
