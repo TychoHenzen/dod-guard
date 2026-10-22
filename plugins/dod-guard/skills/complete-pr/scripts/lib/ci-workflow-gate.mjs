@@ -27,7 +27,11 @@ function requireCiWorkflowRun(runs, headSha) {
       stop("unknown_ci_workflow_state", `GitHub returned an invalid ci.yml run event for ${headSha}.`);
     }
     if (runsByEvent.has(run.event)) {
-      stop("duplicate_ci_workflow_run", `Found multiple ci.yml runs for ${headSha} and event ${run.event}.`);
+      stop(
+        "duplicate_ci_workflow_run",
+        `Found multiple ci.yml runs for ${headSha} and event ${run.event}.`,
+        `Do not dispatch again. Rerun only the failed jobs of the existing run with: gh run rerun <run-id> --failed (list runs with: gh run list --workflow ci.yml --commit ${headSha}). Then rerun complete-pr.`,
+      );
     }
     runsByEvent.set(run.event, requireExactCiWorkflowRun(run, headSha));
   }
@@ -102,17 +106,11 @@ async function readCiWorkflowState(client, headSha) {
 
 function requireTrustedCiHead(repository, pullRequest) {
   const { headBranch, headRepository, headSha, isCrossRepository } = pullRequest;
-  if (!headSha || !headBranch) {
-    stop(
-      "missing_pull_request_head",
-      "The pull request has no trusted head SHA " + "or branch ref for ci.yml recovery.",
-    );
+  if (!(headSha && headBranch)) {
+    stop("missing_pull_request_head", "The pull request has no trusted head SHA or branch ref for ci.yml recovery.");
   }
   if (isCrossRepository || headRepository !== repository) {
-    stop(
-      "cross_repository_head",
-      "The pull request head must belong to the current repository " + "for ci.yml recovery.",
-    );
+    stop("cross_repository_head", "The pull request head must belong to the current repository for ci.yml recovery.");
   }
 }
 
@@ -129,12 +127,19 @@ async function requireUnchangedCiBranch(client, headBranch, headSha) {
   }
 }
 
+function errorMessage(error) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
 function handleCiDispatchReadError(readError, dispatchError, headSha) {
   if (readError instanceof CompletionError || !dispatchError) {
     throw readError;
   }
-  const dispatchMessage = dispatchError instanceof Error ? dispatchError.message : String(dispatchError);
-  const readMessage = readError instanceof Error ? readError.message : String(readError);
+  const dispatchMessage = errorMessage(dispatchError);
+  const readMessage = errorMessage(readError);
   const message = [`Dispatch failed (${dispatchMessage});`, `readback failed (${readMessage}) for ${headSha}.`].join(
     " ",
   );
@@ -149,7 +154,7 @@ async function readCiDispatchResult(client, headSha, dispatchError) {
     return handleCiDispatchReadError(readError, dispatchError, headSha);
   }
   if (dispatchError && !state) {
-    const dispatchMessage = dispatchError instanceof Error ? dispatchError.message : String(dispatchError);
+    const dispatchMessage = errorMessage(dispatchError);
     const message = [`Dispatch failed (${dispatchMessage});`, "no exact-head run was found."].join(" ");
     stop("ci_workflow_dispatch_failed", message);
   }
@@ -178,6 +183,7 @@ async function ensureCiWorkflowRun(client, pullRequest, recovery) {
   const { headSha } = pullRequest;
   let sawPendingRun = false;
   for (let attempt = 0; attempt < recovery.pollLimit; attempt += 1) {
+    // biome-ignore lint/performance/noAwaitInLoops: Each convergence poll depends on the preceding GitHub state.
     const observedState = await readOrDispatchCiWorkflow(client, pullRequest, recovery, headSha);
     if (observedState === "pass") {
       return observedState;

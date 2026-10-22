@@ -58,7 +58,7 @@ Apply the smallest coherent batch. Add a user-path or edge-case test when the fi
 
 Given a written fix plan per finding (file, edit, test, command, expected result), you may dispatch edits to `dod-guard:stage-cheap`. Save the plan unchanged outside the repo and use the Stage brief in `standards/model-routing.md`. The brief's first line is exactly `Follow the fix plan in <scratch file>.`. Verify its output. You commit and push, with the attribution line your brief gives, verbatim, and never your own model's trailer.
 
-Run focused tests, then the repo's full pre-PR gates, and map each fixed finding to fresh evidence. Inspect the full diff, stage only reviewed files, commit concisely only after fixes and checks pass, and push to the existing upstream.
+Run focused tests, then the repo's full pre-PR gates, and map each fixed finding to fresh evidence. Inspect the full diff, stage only reviewed files, commit concisely only after fixes and checks pass, and push to the existing upstream. When CI must run again on a head, rerun the existing run with `gh run rerun <run-id> --failed`; never dispatch a second workflow run for the same head.
 
 ## Update proven findings
 

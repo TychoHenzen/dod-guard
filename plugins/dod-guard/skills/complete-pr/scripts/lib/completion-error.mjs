@@ -3,10 +3,14 @@ class CompletionError extends Error {
     super(message, options);
     this.name = "CompletionError";
     this.code = code;
+    this.recovery = options?.recovery;
   }
 }
 
-function stop(code, message) {
+function stop(code, message, recovery) {
+  if (recovery) {
+    throw new CompletionError(code, message, { recovery });
+  }
   throw new CompletionError(code, message);
 }
 

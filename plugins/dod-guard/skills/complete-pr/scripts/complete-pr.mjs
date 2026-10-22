@@ -5,16 +5,24 @@ import { completePullRequest } from "./lib/complete-pr.mjs";
 import { GitHubClient } from "./lib/github-client.mjs";
 import { LocalGit } from "./lib/local-git.mjs";
 import { recoverMergedPullRequest } from "./lib/merged-recovery.mjs";
+import { buildStopReport } from "./lib/stop-report.mjs";
 
 const [repository, pullNumberText, ...flags] = process.argv.slice(2);
 const pullNumber = Number.parseInt(pullNumberText, 10);
 const recoveryMode = flags.includes("--recover-merged");
 const dryRun = flags.includes("--dry-run");
-const pushedHead = flags[0] === "--pushed-head" ? flags[1] : null;
+let pushedHead = null;
+const [firstFlag, firstFlagValue] = flags;
+if (firstFlag === "--pushed-head") {
+  pushedHead = firstFlagValue;
+}
 const validPushedHead = typeof pushedHead === "string" && /^[0-9a-f]{40}$/i.test(pushedHead);
-const validFlags = recoveryMode
-  ? flags.length === 1 || (flags.length === 2 && dryRun)
-  : flags.length === 2 && flags[0] === "--pushed-head" && validPushedHead;
+let validFlags;
+if (recoveryMode) {
+  validFlags = flags.length === 1 || (flags.length === 2 && dryRun);
+} else {
+  validFlags = flags.length === 2 && flags[0] === "--pushed-head" && validPushedHead;
+}
 
 if (repository && Number.isInteger(pullNumber) && pullNumber > 0 && validFlags) {
   try {
@@ -33,6 +41,7 @@ if (repository && Number.isInteger(pullNumber) && pullNumber > 0 && validFlags) 
       code = ` [${error.code}]`;
     }
     process.stderr.write(`complete-pr failed${code}: ${error.message}\n`);
+    process.stdout.write(`${JSON.stringify(buildStopReport(error), null, 2)}\n`);
     process.exitCode = 1;
   }
 } else {

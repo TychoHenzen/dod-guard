@@ -25,9 +25,9 @@ Apply `standards/working-defaults.md` and `standards/github-request-discipline.m
 
 Read the `## Preflight checkpoint` from the implementation handoff (format in `standards/project-workflow.md`). Before any ready transition, branch update, merge, or cleanup, require the exact head, base ref and SHA, mergeability, and a complete row for every required provider context. Stop with expected and observed values on missing, pending, failed, unavailable, stale, duplicate, forked, or provider-mismatched evidence, never inferred from a passing aggregate. An exact-head `skipped` context counts as passing. `handoff-proof.mjs finalization` applies this row check to the saved handoff before the helper runs.
 
-To recover a draft-skipped workflow, verify draft readiness at the same ref and head, dispatch once through the existing guarded workflow owner, and read back run, workflow, ref, and head before waiting.
+To recover a draft-skipped workflow, verify draft readiness at the same ref and head, dispatch once through the existing guarded workflow owner, and read back run, workflow, ref, and head before waiting. Never dispatch a second run. If the head already has a failed ci.yml run, rerun it with `gh run rerun <run-id> --failed`.
 
-A base advance invalidates the handoff and acceptance matrix. Bounded branch synchronization (the next section) is the only recovery, and it needs fresh acceptance and required-check proof at the final head. On an unresolvable conflict, unexpected branch movement, failed readback, or a second dispatch, stop before any merge, cleanup, force-push, or generated-ref mutation.
+Compare the merge ref's first parent with the current base branch tip, and record in the checkpoint whether the base advanced after the required checks started. A base advance invalidates the handoff and acceptance matrix. Bounded branch synchronization (the next section) is the only recovery, and it needs fresh acceptance and required-check proof at the final head. On an unresolvable conflict, unexpected branch movement, failed readback, or a second dispatch, stop before any merge, cleanup, force-push, or generated-ref mutation.
 
 ## Bounded branch synchronization
 
@@ -65,10 +65,13 @@ Pass repository and PR number as separate native arguments. Keep a non-zero pref
 node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha>
 ```
 
+The helper can wait about 30 minutes. For a foreground limit shorter than that, start it with `node <skill-dir>/scripts/run-detached.mjs start <state-dir> -- node <skill-dir>/scripts/complete-pr.mjs ...`, then call `node <skill-dir>/scripts/run-detached.mjs wait <state-dir> --seconds 240` until it prints `exited`; its exitCode is the helper's. Wait on the same state directory, never start a second copy, never kill it. On a stop the helper also writes `{ok:false, code, message, recovery}` to stdout.
+
 Pass the exact pushed head SHA already verified. The helper never adopts a mutable provider head as its first acceptance signal. It readies the draft, dispatches CI if needed, waits for every required check, merges through REST with the expected head SHA, confirms the linked issue, and deletes the remote branch. Local cleanup touches only the current checkout, and only when it is clean and fast-forwardable; report any preserved checkout state or local ref, and never touch another checkout. A successful workflow run alone is not acceptance.
 
 - `merge_conflict`: see "Triage a merge conflict".
 - `missing_linked_issue`: the PR closes no issue. The helper stops before any ready, auto-merge, CI, or merge step. Add `Closes #<parent>` to the PR body, or split the undelivered scope into its own issue and narrow the parent so this PR delivers all of it, then rerun. There is no partial-delivery mode: a PR closes its parent.
+- `duplicate_ci_workflow_run`: follow the printed recovery (rerun the failed run), then rerun this skill.
 - Every other stop, including `missing_required_checks` and `base_branch_missing`: report it and end the run.
 
 Never use `--admin`, force-push, weaken repository protections, or delete a ref whose SHA differs from the merged PR head.
@@ -118,7 +121,7 @@ Prefer numeric REST ids: a `PVTI_` id comes only from the items list, which can 
 
 ## Record completion and close replaced issues
 
-After readback shows the delivered issues `Done`, save the helper's JSON result and the `## Implementation handoff` comment text to files. Record evidence on each linked closing issue and finalized child, in the `## Completion evidence` format from `standards/project-workflow.md`. Recording is safe to rerun.
+After readback shows the delivered issues `Done`, save the helper's JSON result and the `## Implementation handoff` comment text to files. Record evidence on each linked closing issue and finalized child, in the `## Completion evidence` format from `standards/project-workflow.md`. Recording is safe to rerun. The matrix file is a JSON array (or an object with a `rows` array) of rows with at least `id` and `status`; the full row shape is in `standards/project-workflow.md`.
 
 ```text
 node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --result=<helper-result.json> --handoff-file=<handoff-comment.md> --children=<child-number>,...
