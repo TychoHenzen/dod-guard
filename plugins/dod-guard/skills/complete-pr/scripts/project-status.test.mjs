@@ -24,7 +24,7 @@ test("writes REST single-select updates in child-before-parent order with readba
   assert.equal(result.projectId, PROJECT_ID);
   assert.deepEqual(
     result.mutations,
-    ITEM_IDS.map((itemId) => ({ itemId, status: "Done" })),
+    ITEM_IDS.map((itemId) => ({ itemId, status: "Done", changed: true })),
   );
   assert.deepEqual(patchedIds(calls), [...ITEM_NUMERIC_IDS.values()].map(String));
   assert.deepEqual(patchCalls(calls)[0], firstItemEditCommand());
@@ -56,7 +56,7 @@ test("does not PATCH a Project item already at the requested status", () => {
 
   const result = writeFirst(runner);
 
-  assert.deepEqual(result.mutations, [{ itemId: ITEM_IDS[0], status: "Done" }]);
+  assert.deepEqual(result.mutations, [{ itemId: ITEM_IDS[0], status: "Done", changed: false }]);
   assertPatchCount(calls, 0);
   assert.equal(itemListCalls(calls).length, 1);
 });

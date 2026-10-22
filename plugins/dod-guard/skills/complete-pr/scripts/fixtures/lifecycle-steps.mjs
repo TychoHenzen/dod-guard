@@ -83,6 +83,9 @@ export async function writeStatus(context, expectedStatus) {
   };
   const slug = expectedStatus.toLowerCase().replaceAll(" ", "-");
   const operation = `status-write-${slug}`;
+  // ASSUMPTION: every lifecycle run starts with each item at Backlog; captureBaseline asserts that before its first write.
+  const priorStatus = context.projectStatus ?? "Backlog";
+  const changed = priorStatus !== expectedStatus;
   const raw = await applyStatusWrite(context, writeOptions, operation);
   if (context.mcpRateLimited) context.restCalls.push(operation);
   assert.deepEqual(context.mcpRateLimited ? raw.value : raw, {
@@ -90,8 +93,10 @@ export async function writeStatus(context, expectedStatus) {
     mutations: ITEM_NODE_IDS.map((itemId) => ({
       itemId,
       status: expectedStatus,
+      changed,
     })),
   });
+  context.projectStatus = expectedStatus;
   await assertStatuses(context, expectedStatus, slug);
 }
 

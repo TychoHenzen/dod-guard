@@ -110,6 +110,8 @@ The gate calls `evaluateConvergence` from `next-ticket/scripts/structured-workfl
 node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> ... <parent-item-id>
 ```
 
+The fifth argument (`Done` here) is the Status name to set and the readback target, not a precondition; an item already at it prints `changed: false` and gets no write. `--help` prints this contract.
+
 Prefer numeric REST ids: a `PVTI_` id comes only from the items list, which can lag. The runner refuses two IDs for one item.
 
 7. If a parent or child is still Backlog, Todo, or In Progress, repair it and read it back before reporting completion.

@@ -21,7 +21,7 @@ test("AC-01 numeric input writes one PATCH to its numeric endpoint and reports t
 
   assertPatchCount(calls, 1);
   assert.equal(patchedIds(calls)[0], numericId);
-  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done" }]);
+  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done", changed: true }]);
 });
 
 test("AC-01 mixed numeric and node inputs PATCH in the given order and report each input as given", () => {
@@ -36,7 +36,7 @@ test("AC-01 mixed numeric and node inputs PATCH in the given order and report ea
   );
   assert.deepEqual(
     result.mutations,
-    itemIds.map((itemId) => ({ itemId, status: "Done" })),
+    itemIds.map((itemId) => ({ itemId, status: "Done", changed: true })),
   );
 });
 
@@ -47,7 +47,7 @@ test("R10 numeric input absent from the items list is written and read back thro
 
   const result = writeItems([numericId], runner, sleep);
 
-  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done" }]);
+  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done", changed: true }]);
   assertPatchCount(calls, 1);
   assert.equal(listReads(calls).length, 0);
   const expectedRead = buildProjectItemReadCommand({
@@ -67,7 +67,7 @@ test("R10 a transient single-item 404 is read again and the write succeeds withi
 
   const result = writeItems([numericId], runner, sleep);
 
-  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done" }]);
+  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done", changed: true }]);
   assertPatchCount(calls, 1);
   assert.equal(singleItemReads(calls).length, TRANSIENT_404_RUN_READS);
   assert.deepEqual(delays, [PROJECT_ITEM_RETRY_DELAY_MS]);

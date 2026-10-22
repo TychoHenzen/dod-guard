@@ -28,7 +28,7 @@ function resolveStatusTarget({ commandRunner, owner, projectNumber, statusFieldI
 function writeItemStatus(context, itemId, { identity, status: initialStatus }) {
   const { expectedStatus, restStatusFieldId } = context;
   if (initialStatus === expectedStatus) {
-    return { itemId, status: expectedStatus };
+    return { itemId, status: expectedStatus, changed: false };
   }
   const { owner, projectNumber, statusOptionId } = context;
   const editCommand = buildProjectItemEditCommand({
@@ -47,7 +47,7 @@ function writeItemStatus(context, itemId, { identity, status: initialStatus }) {
     statusFieldId: restStatusFieldId,
     expectedStatus,
   });
-  return { itemId, status };
+  return { itemId, status, changed: true };
 }
 
 function writeProjectStatuses({

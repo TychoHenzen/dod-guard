@@ -15,11 +15,11 @@ test("routes an interactive status form only after a no-op readback", async () =
   const result = await writeProjectStatusesWithFallback({
     ...writeOptions({ itemIds: [ITEM_IDS[0]] }),
     commandRunner: runner,
-    primaryMutation: async () => {
+    primaryMutation: () => {
       primaryCalls += 1;
       return { isError: true, structuredContent: { status: "awaiting_user_submission" } };
     },
-    readback: async ({ phase }) => {
+    readback: ({ phase }) => {
       phases.push(phase);
       return { mutated: phase === "after-fallback" };
     },
@@ -29,5 +29,5 @@ test("routes an interactive status form only after a no-op readback", async () =
   assert.equal(primaryCalls, 1);
   assert.deepEqual(phases, ["before-fallback", "after-fallback"]);
   assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
-  assert.deepEqual(result.value.mutations, [{ itemId: ITEM_IDS[0], status: "Done" }]);
+  assert.deepEqual(result.value.mutations, [{ itemId: ITEM_IDS[0], status: "Done", changed: true }]);
 });
