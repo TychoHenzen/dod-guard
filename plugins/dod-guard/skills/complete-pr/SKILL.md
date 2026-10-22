@@ -121,7 +121,7 @@ Prefer numeric REST ids: a `PVTI_` id comes only from the items list, which can 
 
 ## Record completion and close replaced issues
 
-After readback shows the delivered issues `Done`, save the helper's JSON result and the `## Implementation handoff` comment text to files. Record evidence on each linked closing issue and finalized child, in the `## Completion evidence` format from `standards/project-workflow.md`. Recording is safe to rerun. The matrix file is a JSON array (or an object with a `rows` array) of rows with at least `id` and `status`; the full row shape is in `standards/project-workflow.md`.
+After readback shows the delivered issues `Done`, save the helper's JSON result and the `## Implementation handoff` comment text to files. Record evidence on each linked closing issue and finalized child, in the `## Completion evidence` format from `standards/project-workflow.md`. Recording is safe to rerun. The acceptance matrix is read from the handoff comment file: its `## Acceptance matrix` section holds one fenced `json` block with a JSON array of rows, each with at least `id` and `status`. The command takes no separate matrix file and rejects `--matrix`; the full row shape is in `standards/project-workflow.md`.
 
 ```text
 node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --result=<helper-result.json> --handoff-file=<handoff-comment.md> --children=<child-number>,...
