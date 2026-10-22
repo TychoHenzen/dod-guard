@@ -3,25 +3,18 @@
 // saved snapshot and writes nothing; `apply` re-plans the same snapshot and
 // performs the planned closes; `record` writes the completion evidence a later
 // plan verifies. standards/project-workflow.md defines both records.
-// biome-ignore lint/correctness/noNodejsModules: This shipped command reads snapshot files and removes an earlier one.
-import { readFileSync, rmSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
 import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
-import { REPOSITORY_NAME } from "../../../lib/repository-identity.mjs";
-import { applyClosures, recordCompletion } from "./lib/closure-apply.mjs";
-import { annotateSnapshot } from "./lib/closure-delivery.mjs";
-import { planClosures } from "./lib/closure-plan.mjs";
-import { buildClosureSnapshot, writeClosureSnapshot } from "./lib/closure-snapshot.mjs";
-import { runGh } from "./lib/gh-runner.mjs";
+import { COMMANDS } from "./lib/closure-commands.mjs";
 
 const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs apply --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs record --repository=<owner/name> --result=<complete-pr.json>
-                          --matrix=<rows.json> [--children=<n,...>]
-       closure.mjs annotate --snapshot=<file.json>
+                          --handoff-file=<handoff-comment.md> [--children=<n,...>]
+       closure.mjs annotate --snapshot=<file.json> [--output=<file.json>]
        closure.mjs snapshot --repository=<owner/name> --output=<file.json>
 
 The snapshot is the closure snapshot that standards/project-workflow.md defines,
@@ -35,96 +28,32 @@ close as read, comment, close, readback, Project Done, and it also sets Done on
 each status repair. --hierarchy asks to close that issue as a pure hierarchy
 record (not_planned). annotate prints the snapshot with activeCheckpoint and
 trustedHeadSha taken from the completion records, ready for select-next.mjs.
-snapshot builds that closure snapshot for one repository from GitHub REST GET requests and the one
-read-only GraphQL read that resolves the explicitly linked Project, as linked-project.mjs does. The
-command removes any earlier output first and writes the new one in one step, so a failed read
-leaves no file at that path.`;
+With --output the annotated snapshot goes to that file and stdout holds a
+one-object summary; without it the snapshot prints to stdout.
+record reads the acceptance matrix from the json block under ## Acceptance
+matrix in the handoff comment file; --children= with no value means no extra
+children.
+snapshot builds that closure snapshot for one repository from GitHub REST GET
+requests and the one read-only GraphQL read that resolves the explicitly linked
+Project, as linked-project.mjs does. The command removes any earlier output
+first and writes the new one in one step, so a failed read leaves no file at
+that path.`;
 
-function readJson(path) {
-  return JSON.parse(readFileSync(path, "utf8"));
+function outputOf(command, rest, runner) {
+  const run = COMMANDS[command];
+  const args = parseArgs(rest);
+  return run && args ? run(args, runner) : false;
 }
 
-function given(value) {
-  return typeof value === "string" && value !== "true" && value.length > 0;
+function failureLine(command, error) {
+  const state = error.state ? ` ${JSON.stringify(error.state)}` : "";
+  return `closure ${command} failed: ${error.message}${state}\n`;
 }
-
-// --children=<n,...> lists the issues a completion record also covers. A typo must stop
-// before the first write, so one entry that is not a positive integer makes the whole
-// list false, and the record command reports that as a usage error.
-function childList(value) {
-  if (value === undefined) return [];
-  if (!given(value)) return false;
-  const numbers = value.split(",").map((entry) => Number(entry.trim()));
-  if (!numbers.every((number) => Number.isInteger(number) && number > 0)) return false;
-  return numbers;
-}
-
-// --hierarchy=<issue> is the refinement request to close that issue as a pure
-// hierarchy record; false marks a value that is not an issue number.
-function hierarchyOption(value) {
-  if (value === undefined) return null;
-  const number = Number(value);
-  return Number.isInteger(number) && number > 0 ? number : false;
-}
-
-function snapshotOptions(args) {
-  const hierarchy = hierarchyOption(args.hierarchy);
-  return given(args.snapshot) && hierarchy !== false && { hierarchy };
-}
-
-const COMMANDS = {
-  plan: (args) => {
-    const options = snapshotOptions(args);
-    return options && planClosures(readJson(args.snapshot), options);
-  },
-  apply: (args, runner = runGh) => {
-    const options = snapshotOptions(args);
-    return options && applyClosures(readJson(args.snapshot), { runner, ...options });
-  },
-  annotate: (args) => given(args.snapshot) && annotateSnapshot(readJson(args.snapshot)),
-  // The snapshot reads pass the exit codes they can read, such as the 1 of an HTTP 404; apply and
-  // record pass none, so any non-zero exit throws.
-  snapshot: (args, runner = runGh) => {
-    if (!given(args.output) || !REPOSITORY_NAME.test(args.repository ?? "")) {
-      return false;
-    }
-    // A failed build must never leave an earlier snapshot for plan or apply to read, so the old file goes first.
-    rmSync(args.output, { force: true });
-    const snapshot = buildClosureSnapshot({ repository: args.repository, runner });
-    writeClosureSnapshot(args.output, snapshot);
-    return {
-      output: args.output,
-      repository: snapshot.repository,
-      projectNumber: snapshot.project.number,
-      items: snapshot.items.length,
-      issues: snapshot.issues.length,
-      pullRequests: snapshot.pullRequests.length,
-    };
-  },
-  record: (args, runner = runGh) => {
-    const children = childList(args.children);
-    if (children === false) return false;
-    return (
-      given(args.repository) &&
-      given(args.result) &&
-      given(args.matrix) &&
-      recordCompletion({
-        repository: args.repository,
-        result: readJson(args.result),
-        matrix: readJson(args.matrix),
-        children,
-        runner,
-      })
-    );
-  },
-};
 
 function runCli(argv, { runner, stdout = process.stdout, stderr = process.stderr } = {}) {
   const [command, ...rest] = argv;
-  const args = parseArgs(rest);
-  const run = COMMANDS[command];
   try {
-    const output = run && args ? run(args, runner) : false;
+    const output = outputOf(command, rest, runner);
     if (!output) {
       stderr.write(`${USAGE}\n`);
       return 2;
@@ -132,8 +61,7 @@ function runCli(argv, { runner, stdout = process.stdout, stderr = process.stderr
     stdout.write(`${JSON.stringify(output, null, 2)}\n`);
     return 0;
   } catch (error) {
-    const state = error.state ? ` ${JSON.stringify(error.state)}` : "";
-    stderr.write(`closure ${command} failed: ${error.message}${state}\n`);
+    stderr.write(failureLine(command, error));
     return 1;
   }
 }

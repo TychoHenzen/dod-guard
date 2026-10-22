@@ -23,7 +23,7 @@ Apply `standards/working-defaults.md` and `standards/github-request-discipline.m
 
 ## Preflight checkpoint
 
-Read the `## Preflight checkpoint` from the implementation handoff (format in `standards/project-workflow.md`). Before any ready transition, branch update, merge, or cleanup, require the exact head, base ref and SHA, mergeability, and a complete row for every required provider context. Stop with expected and observed values on missing, pending, failed, unavailable, stale, duplicate, forked, or provider-mismatched evidence, never inferred from a passing aggregate. An exact-head `skipped` context counts as passing.
+Read the `## Preflight checkpoint` from the implementation handoff (format in `standards/project-workflow.md`). Before any ready transition, branch update, merge, or cleanup, require the exact head, base ref and SHA, mergeability, and a complete row for every required provider context. Stop with expected and observed values on missing, pending, failed, unavailable, stale, duplicate, forked, or provider-mismatched evidence, never inferred from a passing aggregate. An exact-head `skipped` context counts as passing. `handoff-proof.mjs finalization` applies this row check to the saved handoff before the helper runs.
 
 To recover a draft-skipped workflow, verify draft readiness at the same ref and head, dispatch once through the existing guarded workflow owner, and read back run, workflow, ref, and head before waiting.
 
@@ -110,22 +110,26 @@ The gate calls `evaluateConvergence` from `next-ticket/scripts/structured-workfl
 node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> ... <parent-item-id>
 ```
 
+The fifth argument (`Done` here) is the Status name to set and the readback target, not a precondition; an item already at it prints `changed: false` and gets no write. `--help` prints this contract.
+
 Prefer numeric REST ids: a `PVTI_` id comes only from the items list, which can lag. The runner refuses two IDs for one item.
 
 7. If a parent or child is still Backlog, Todo, or In Progress, repair it and read it back before reporting completion.
 
 ## Record completion and close replaced issues
 
-After readback shows the delivered issues `Done`, save the helper's JSON result and the handoff's acceptance-matrix rows to files. Record evidence on each linked closing issue and finalized child, in the `## Completion evidence` format from `standards/project-workflow.md`. Recording is safe to rerun.
+After readback shows the delivered issues `Done`, save the helper's JSON result and the `## Implementation handoff` comment text to files. Record evidence on each linked closing issue and finalized child, in the `## Completion evidence` format from `standards/project-workflow.md`. Recording is safe to rerun.
 
 ```text
-node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --result=<helper-result.json> --matrix=<matrix-rows.json> --children=<child-number>,...
+node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --result=<helper-result.json> --handoff-file=<handoff-comment.md> --children=<child-number>,...
 node <skill-dir>/scripts/closure.mjs snapshot --repository=<owner/repository> --output=<file>
 node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
 node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 ```
 
 If snapshot exits non-zero, stop and report its error. Never plan or apply on an older file. The snapshot, holds such as `child #N readback missing` and `issue #P readback missing`, and `unverified-closed` scope are defined in `standards/project-workflow.md`. `plan` is read-only. `apply` closes each planned issue with its `state_reason` (`completed` or `not_planned`). It stops with the observed partial state on a readback disagreement, and a rerun finishes the rest. Report each hold with its reason.
+
+When the merged PR closes a child of an open epic, the helper closes only the child. The epic stays open and `plan` and `apply` list it under `holds` with the sub-issues that are still open; that hold is expected, so report it and do not close the epic by hand. Read `holdSummary` first, then the full `holds` list only for an issue you act on. `apply` prints `applied` and `repaired` before the plan.
 
 ## Close delivered issues for goal-sdlc
 

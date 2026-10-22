@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import test from "node:test";
 import { runCli } from "./closure.mjs";
-import { capture, saved, shippedPlan } from "./fixtures/closure-cli.mjs";
+import { capture, saved, savedText, shippedPlan } from "./fixtures/closure-cli.mjs";
 import {
   DELIVERIES,
   fakeGitHub,
@@ -11,6 +13,8 @@ import {
   REPOSITORY,
   recordedSnapshot,
 } from "./lib/closure.test-support.mjs";
+
+const HANDOFF = '## Implementation handoff\n\n## Acceptance matrix\n\n```json\n[{"id":"AC-01","status":"pass"}]\n```\n';
 
 test("the shipped plan command prints the planned close for a verified root", async () => {
   const file = await saved("snapshot.json", recordedSnapshot({ roots: [840] }));
@@ -55,7 +59,7 @@ test("apply and record run through the injected gh runner", async () => {
     "record",
     `--repository=${REPOSITORY}`,
     `--result=${await saved("result.json", result)}`,
-    `--matrix=${await saved("matrix.json", [{ id: "AC-01", status: "pass" }])}`,
+    `--handoff-file=${await savedText("handoff.md", HANDOFF)}`,
   ];
   assert.equal(runCli(argv, { runner: github.runner, ...recordIo }), 0, recordIo.text.err);
   assert.deepEqual(JSON.parse(recordIo.text.out).records, [{ issue: 840, action: "unchanged" }]);
@@ -71,7 +75,7 @@ test("the shipped record command posts its own record and leaves a quoting hando
     "record",
     `--repository=${REPOSITORY}`,
     `--result=${await saved("result.json", result)}`,
-    `--matrix=${await saved("matrix.json", [{ id: "AC-01", status: "pass" }])}`,
+    `--handoff-file=${await savedText("handoff.md", HANDOFF)}`,
   ];
 
   const first = capture();
@@ -95,7 +99,7 @@ test("record rejects a malformed --children list before any call", async () => {
     mergeCommitSha: DELIVERIES[840].merge,
     linkedIssues: [{ number: 840 }],
   });
-  const matrix = await saved("matrix.json", [{ id: "AC-01", status: "pass" }]);
+  const handoff = await savedText("handoff.md", HANDOFF);
   for (const flag of ["--children=12,abc", "--children=12,", "--children=0", "--children=-3", "--children"]) {
     const calls = [];
     const runner = (args) => {
@@ -103,9 +107,93 @@ test("record rejects a malformed --children list before any call", async () => {
       return { status: 0, stdout: "", stderr: "" };
     };
     const io = capture();
-    const argv = ["record", `--repository=${REPOSITORY}`, `--result=${result}`, `--matrix=${matrix}`, flag];
+    const argv = ["record", `--repository=${REPOSITORY}`, `--result=${result}`, `--handoff-file=${handoff}`, flag];
     assert.equal(runCli(argv, { runner, ...io }), 2, flag);
     assert.match(io.text.err, /usage: closure\.mjs plan --snapshot=<file\.json>/, flag);
     assert.deepEqual(calls, [], flag);
   }
+});
+
+test("record rejects the removed --matrix option", async () => {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    return { status: 0, stdout: "", stderr: "" };
+  };
+  const io = capture();
+  const argv = [
+    "record",
+    `--repository=${REPOSITORY}`,
+    `--result=${await saved("result.json", mergeResult([840]))}`,
+    `--handoff-file=${await savedText("handoff.md", HANDOFF)}`,
+    `--matrix=${await saved("matrix.json", [{ id: "AC-01", status: "pass" }])}`,
+  ];
+  assert.equal(runCli(argv, { runner, ...io }), 2);
+  assert.match(io.text.err, /usage: closure\.mjs plan/);
+  assert.deepEqual(calls, []);
+});
+
+test("record names a handoff with no matrix", async () => {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    return { status: 0, stdout: "", stderr: "" };
+  };
+  const io = capture();
+  const argv = [
+    "record",
+    `--repository=${REPOSITORY}`,
+    `--result=${await saved("result.json", mergeResult([840]))}`,
+    `--handoff-file=${await savedText("handoff.md", "## Implementation handoff\n")}`,
+  ];
+  assert.equal(runCli(argv, { runner, ...io }), 1);
+  assert.match(io.text.err, /handoff has no ## Acceptance matrix section/);
+  assert.deepEqual(calls, []);
+});
+
+test("record accepts an empty --children list", async () => {
+  const snapshot = recordedSnapshot({ roots: [840] });
+  const result = await saved("result.json", mergeResult([840]));
+  const handoff = await savedText("handoff.md", HANDOFF);
+  const withEmpty = capture();
+  const emptyGitHub = fakeGitHub(snapshot);
+  assert.equal(
+    runCli(["record", `--repository=${REPOSITORY}`, `--result=${result}`, `--handoff-file=${handoff}`, "--children="], {
+      runner: emptyGitHub.runner,
+      ...withEmpty,
+    }),
+    0,
+    withEmpty.text.err,
+  );
+  const without = capture();
+  const plainGitHub = fakeGitHub(snapshot);
+  assert.equal(
+    runCli(["record", `--repository=${REPOSITORY}`, `--result=${result}`, `--handoff-file=${handoff}`], {
+      runner: plainGitHub.runner,
+      ...without,
+    }),
+    0,
+    without.text.err,
+  );
+  assert.deepEqual(JSON.parse(withEmpty.text.out).records, JSON.parse(without.text.out).records);
+});
+
+test("annotate --output writes the same snapshot it prints without --output", async () => {
+  const file = await saved("snapshot.json", recordedSnapshot({ roots: [840] }));
+  const printedIo = capture();
+  assert.equal(runCli(["annotate", `--snapshot=${file}`], printedIo), 0, printedIo.text.err);
+  const printed = JSON.parse(printedIo.text.out);
+
+  const target = join(dirname(file), "annotated.json");
+  const io = capture();
+  assert.equal(runCli(["annotate", `--snapshot=${file}`, `--output=${target}`], io), 0, io.text.err);
+  assert.deepEqual(JSON.parse(readFileSync(target, "utf8")), printed);
+  assert.deepEqual(Object.keys(JSON.parse(io.text.out)), ["output", "repository", "items"]);
+});
+
+test("annotate rejects an empty --output", async () => {
+  const file = await saved("snapshot.json", recordedSnapshot({ roots: [840] }));
+  const io = capture();
+  assert.equal(runCli(["annotate", `--snapshot=${file}`, "--output="], io), 2);
+  assert.equal(io.text.out, "");
 });

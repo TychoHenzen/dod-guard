@@ -41,7 +41,7 @@ Run triage again after every interview, research, advisor, or debate round. Neve
 
 ## Choose labels
 
-The live label descriptions are the classification contract. Pick exactly one priority and one effort label whose descriptions fit the researched impact, urgency, scope, dependencies, risk, and uncertainty. The scales are independent: never infer urgency from effort, or estimate from the title alone. Use `Prio 6 - Unknown` only when evidence supports no other priority, and say in the notes what information would let you reassess. Pick one or more standard labels, never the whole set. Stop if no label's description supports the classification.
+The live label descriptions are the classification contract. Pick exactly one priority and one effort label whose descriptions fit the researched impact, urgency, scope, dependencies, risk, and uncertainty. The scales are independent: never infer urgency from effort, or estimate from the title alone. Use `Prio 6 - Unknown` only when evidence supports no other priority, and say in the notes what information would let you reassess. Pick one or more standard labels, never the whole set. Stop if no label's description supports the classification. Priority and effort are labels in a repository whose Project has no Priority or Effort fields; never create those fields, and read them back as labels.
 
 ## Refine the PBI body
 
@@ -68,6 +68,7 @@ Every structured PBI assesses four lenses: implementation; wiring and end-to-end
 - `acceptance-evidence` gives each acceptance checkbox id its evidence id. `planned-acceptance-matrix` plans every row before any proof runs.
 - The task list names dependencies, marks a task `independent` only if it can be committed and closed separately, keeps order stable, and maps each task to a functional slice or to a parent-level task with `parentLevel: "convergence"`. A task with no sub-issue is never `independent`; the refinement proof reports it.
 - `lens-ownership` says where each lens is covered, or why not.
+- Evidence ids are unique across every task, lens and row. A new convergence task that covers an existing lens takes over that `lens-ownership` entry; never list a lens twice.
 
 **Re-refinement.** Compare existing discovery notes to current code, tests, sources, and decisions. Reuse current evidence, repeat only stale or newly triggered phases, and update summaries in place, and replace the prior priority and effort rationale rather than appending. Create no duplicate sub-issues or scale labels.
 
@@ -100,7 +101,7 @@ Post as the authenticated user. Write a plan for every task lacking a comment th
 3. Read back the body, labels, linked sub-issues, step-plan comments, and Project status. Confirm the sections, evidence, a step-plan comment per task, linked sub-issues, Status unchanged (`Backlog` for a Backlog parent, `Todo` for a Todo parent), exactly one label per scale plus a standard label, and effort below 13. An unknown priority must explain the missing evidence.
 4. For a structured PBI also confirm that the seven records are coherent, each linked child matches one independently deliverable slice and is actionable and Todo, and each lens has an owner.
 5. Save the readback body as a UTF-8 file and run `node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]`, passing `outcome: "verified"`. With children, `--children` is a JSON array of slice id and evidence per child. Exit 0 is ok, 1 is an actionable remainder, 2 is a missing or invalid record or argument (including a UTF-16 file, as PowerShell 5.1 `>` writes). On exit 1 or 2, correct the records and rerun. Stop on any actionable remainder.
-6. Move to Todo only on exit 0 with outcome `verified`, using the shared REST Project status writer. A parent already in `Todo` skips the move. Read back the final Project status.
+6. Move to Todo only on exit 0 with outcome `verified`, using `node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <todo-option-id> Todo <item-id>`; `Todo` is the Status to set and the readback target (see that script's `--help`). A parent already in `Todo` skips the move. Read back the final Project status.
 
 If an edit fails or a readback disagrees, stop before the status change, report the actual partial state, and never claim readiness.
 

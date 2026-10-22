@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   BODY_TEXT,
   buildHandoff,
+  checkpointRows,
   gate,
   HEAD_904,
   LENSES_904,
@@ -95,6 +96,45 @@ test("finalization and post-push agree on the same inputs", async () => {
     assert.equal(finalization.status, postPush.status);
     assert.deepEqual(finalization.json, postPush.json);
   }
+});
+
+test("finalization fails and names a failed required context", async () => {
+  const [build, guard] = checkpointRows();
+  const result = await gate("finalization", { checkpoint: [build, { ...guard, state: "failed" }] });
+
+  assert.equal(result.status, 1);
+  assert.ok(result.json.remainder.includes("required context quality-guard is failed"), JSON.stringify(result.json));
+});
+
+test("finalization fails when the handoff has no checkpoint", async () => {
+  const result = await gate("finalization", { checkpoint: null });
+
+  assert.equal(result.status, 1);
+  assert.ok(
+    result.json.remainder.includes("handoff has no ## Preflight checkpoint section"),
+    JSON.stringify(result.json),
+  );
+});
+
+test("finalization passes present and skipped rows at the head", async () => {
+  const [build, guard] = checkpointRows();
+  const rows = [build, { ...guard, state: "skipped" }];
+
+  assert.deepEqual(await gate("finalization", { checkpoint: rows }), {
+    status: 0,
+    json: { outcome: "verified", remainder: [] },
+  });
+});
+
+test("post-push accepts a handoff with no checkpoint", async () => {
+  assert.equal((await gate("post-push")).status, 0);
+});
+
+test("post-push names a pending context when a checkpoint exists", async () => {
+  const result = await gate("post-push", { checkpoint: checkpointRows(HEAD_904, "pending") });
+
+  assert.equal(result.status, 1);
+  assert.ok(result.json.remainder.includes("required context build-test is pending"), JSON.stringify(result.json));
 });
 
 test("a lens that stores no head passes finalization", async () => {

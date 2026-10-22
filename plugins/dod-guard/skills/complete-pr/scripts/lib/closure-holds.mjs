@@ -63,4 +63,13 @@ function planned(context, number) {
   return context.closes.some((close) => close.issue === number);
 }
 
-export { addHold, admitClose, admitWrite, mergeHolds, planned };
+// The summary is the part of a plan a reader scans before the full holds list. Issues keep their
+// first-seen order, and a hold that names no issue counts without adding an entry.
+function holdSummary(holds) {
+  return {
+    count: holds.length,
+    issues: [...new Set(holds.map((hold) => hold.issue).filter((issue) => issue !== null))],
+  };
+}
+
+export { addHold, admitClose, admitWrite, holdSummary, mergeHolds, planned };

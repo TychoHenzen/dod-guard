@@ -13,12 +13,11 @@ import {
   completeDelivery,
   verifyDraftHandoff,
 } from "./lifecycle-delivery.mjs";
+import { assertStatuses, writeStatus } from "./lifecycle-status.mjs";
 import {
   assertIssueReadbacks,
-  assertStatuses,
   linkHierarchy,
   writeIssueLabels,
-  writeStatus,
 } from "./lifecycle-steps.mjs";
 import {
   CHILD_NUMBERS,

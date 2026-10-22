@@ -10,6 +10,7 @@ import { writeProjectStatuses } from "./project-status.mjs";
 import { createRunner } from "./project-status-fixtures.mjs";
 
 const READBACK_ERROR = /PVTI_child-two.*read back Todo/;
+const UNAPPLIED_WRITE_ERROR = /status mutation failed.*read back Backlog, expected Done/;
 
 test("reads back after an ambiguous status write and never retries it", () => {
   const { calls, runner } = backlogRunner();
@@ -23,17 +24,14 @@ test("reads back after an ambiguous status write and never retries it", () => {
 
   const result = writeFirst(ambiguousRunner);
 
-  assert.deepEqual(result.mutations, [{ itemId: ITEM_IDS[0], status: "Done" }]);
+  assert.deepEqual(result.mutations, [{ itemId: ITEM_IDS[0], status: "Done", changed: true }]);
   assertPatchCount(calls, 1);
 });
 
 test("stops after an ambiguous status write lacks the desired readback", () => {
   const fixture = backlogRunner();
 
-  assert.throws(
-    () => writeFirst(timedOutPatchRunner(fixture)),
-    /status mutation failed.*read back Backlog, expected Done/,
-  );
+  assert.throws(() => writeFirst(timedOutPatchRunner(fixture)), UNAPPLIED_WRITE_ERROR);
   assertPatchCount(fixture.calls, 1);
 });
 

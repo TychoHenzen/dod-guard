@@ -11,6 +11,7 @@ import {
   recordedSnapshot,
   setField,
 } from "./closure.test-support.mjs";
+import { holdSummary } from "./closure-holds.mjs";
 import { planClosures } from "./closure-plan.mjs";
 import { renderClosureEvidence } from "./closure-records.mjs";
 
@@ -200,7 +201,7 @@ test("a not_planned original named by an unverified root is still reported with 
 test("a not_planned close with a malformed completion record is still reported", () => {
   const snapshot = handClosed("not_planned");
   const malformed = completionComment(840).body.replace(JSON_BLOCK, "```json\n{ not json\n```");
-  snapshot.issues.find(({ number }) => number === 875).comments = [{ id: 87501, body: malformed }];
+  snapshot.issues.find(({ number }) => number === 875).comments = [{ id: 87_501, body: malformed }];
   assert.deepEqual(
     planClosures(snapshot).reports.find((report) => report.issue === 875),
     {
@@ -256,4 +257,11 @@ test("a closed sub-issue whose parent is archived holds that parent with its rea
   const plan = planClosures(snapshot);
   assert.deepEqual(plan.closes, []);
   assert.deepEqual(holdOf(plan, 684), { issue: 684, reasons: ["issue #684 readback missing"] });
+});
+
+test("plan carries a hold summary before the lists", () => {
+  const plan = planClosures(recordedSnapshot({ roots: [840], record: { 840: null } }));
+  assert.equal(Object.keys(plan)[1], "holdSummary");
+  assert.deepEqual(plan.holdSummary, holdSummary(plan.holds));
+  assert.ok(plan.holdSummary.issues.includes(777));
 });

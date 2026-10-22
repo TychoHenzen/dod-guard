@@ -24,6 +24,13 @@ async function saved(name, value) {
   return file;
 }
 
+async function savedText(name, text) {
+  const directory = await mkdtemp(join(tmpdir(), "closure-"));
+  const file = join(directory, name);
+  await writeFile(file, text);
+  return file;
+}
+
 function capture() {
   const text = { out: "", err: "" };
   return {
@@ -91,6 +98,7 @@ export {
   closureJson,
   methodOf,
   saved,
+  savedText,
   selectNextOf,
   shippedPlan,
 };

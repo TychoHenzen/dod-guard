@@ -135,6 +135,7 @@ test("reads only local files: no network, process, or GitHub module is imported"
   assert.deepEqual(await importsOf("handoff-proof-runs.mjs"), [
     "../../../lib/handoff-matrix.mjs",
     "../../../lib/issue-body-records.mjs",
+    "../../../lib/preflight-checkpoint.mjs",
     "../../complete-pr/scripts/finalization-gate.mjs",
     "./structured-workflow-proof.mjs",
   ]);

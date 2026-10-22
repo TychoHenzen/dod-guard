@@ -6,16 +6,15 @@
 // (the failure type). readIssueProjectStatuses wants the open Project holding
 // exactly one item for one issue and stops on an item it cannot place. Which Project
 // a repository is linked to is a different rule, read from the explicit link by
-// plugins/dod-guard/lib/linked-project.mjs. Every read goes through an injected
-// runner in gh-runner's convention.
+// plugins/dod-guard/lib/linked-project.mjs. readIssueStatusInProject reads the
+// Status of one issue inside a Project the caller resolved and returns null when
+// the issue's complete Project item relation holds no item in that Project. It is
+// the one read here that is not REST: it uses issue-project-items' single GraphQL
+// query, because the REST items list returns unstable partial pages. Every read
+// goes through an injected runner in gh-runner's convention.
 import { API_REPOSITORY_URL, isRepositoryName, urlRepository } from "../../../../lib/repository-identity.mjs";
 import { isPresent } from "./project-item-ids.mjs";
 import { ProjectReadError } from "./project-read-error.mjs";
-
-export { readIssueProjectStatuses } from "./project-issue-status.mjs";
-export { PULL_REQUEST_CONTENT_TYPE } from "./project-item-list.mjs";
-export { isNotFoundResult, ProjectReadError } from "./project-read-error.mjs";
-export { statusValueName } from "./project-status-value.mjs";
 
 function fullNameRepository(fullName, endpoint) {
   if (!isRepositoryName(fullName)) {
@@ -67,3 +66,8 @@ export function sameRepository(name, repository) {
   }
   return name.toLowerCase() === repository.toLowerCase();
 }
+
+export { readIssueProjectStatuses, readIssueStatusInProject } from "./project-issue-status.mjs";
+export { PULL_REQUEST_CONTENT_TYPE } from "./project-item-list.mjs";
+export { isNotFoundResult, ProjectReadError } from "./project-read-error.mjs";
+export { statusValueName } from "./project-status-value.mjs";

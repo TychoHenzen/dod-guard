@@ -3,6 +3,7 @@
 // fixtures/rest-shapes.mjs. The *.test-support.mjs name keeps the test glob from running it as a test.
 import { isLinkedProjectRead, LINKED_PROJECT_READ } from "../../../../lib/linked-project-read.mjs";
 import { failed, OWNER, ok, REPO } from "./fixtures/rest-shapes.mjs";
+import { ISSUE_PROJECT_ITEMS_READ, isIssueProjectItemsRead } from "./issue-project-items-query.mjs";
 
 const FIELD_IDS = [101, 102, 103, 104];
 
@@ -10,6 +11,7 @@ const ENDPOINT = {
   repository: `repos/${REPO}`,
   // The route key for the one GraphQL read, whose last argument is a variable, not an endpoint.
   linkedProjects: LINKED_PROJECT_READ,
+  issueProjectItems: ISSUE_PROJECT_ITEMS_READ,
   fields: (number) => `users/${OWNER}/projectsV2/${number}/fields?per_page=100`,
   values: (number) => `users/${OWNER}/projectsV2/${number}/items?per_page=100&fields=${FIELD_IDS.join(",")}`,
   subIssues: (number) => `repos/${REPO}/issues/${number}/sub_issues?per_page=100`,
@@ -42,9 +44,28 @@ function linkedProjectsReply(nodes, { hasNextPage = false } = {}) {
   return ok({ data: { repository: { projectsV2 } } });
 }
 
+// One Project item of the issue in the shape the issue.projectItems read returns. A null status is an
+// item with no Status value.
+function issueProjectItemNode(number, status, { closed = false, login = OWNER } = {}) {
+  let fieldValueByName = null;
+  if (status !== null) {
+    fieldValueByName = { name: status };
+  }
+  return { project: { number, closed, owner: { __typename: "User", login } }, fieldValueByName };
+}
+
+// The issue.projectItems read's answer: the whole relation, or a first page when hasNextPage is true.
+function issueProjectItemsReply(nodes, { hasNextPage = false } = {}) {
+  const projectItems = { nodes, pageInfo: { hasNextPage } };
+  return ok({ data: { repository: { issue: { projectItems } } } });
+}
+
 function endpointOf(args) {
   if (isLinkedProjectRead(args)) {
     return ENDPOINT.linkedProjects;
+  }
+  if (isIssueProjectItemsRead(args)) {
+    return ENDPOINT.issueProjectItems;
   }
   if (args.includes("graphql")) {
     throw new Error(`forbidden GraphQL request: ${args.join(" ")}`);
@@ -69,7 +90,8 @@ function replyFor(routes, endpoint, acceptedExitCodes) {
 
 // Answers each endpoint from its route and honors acceptedExitCodes the way the shared runGh in
 // gh-runner.mjs does. An endpoint without a route throws, so a read the fixture does not expect
-// fails the test. The documented linked-Project read is the only GraphQL it answers.
+// fails the test. The documented linked-Project read and the single-issue Project items read are
+// the only GraphQL it answers.
 function fakeRest(routes) {
   const calls = [];
   const runner = (args, acceptedExitCodes = [0]) => {
@@ -79,4 +101,13 @@ function fakeRest(routes) {
   return { runner, calls };
 }
 
-export { ENDPOINT, fakeRest, linkedProjectNode, linkedProjectsReply, NOT_FOUND, SERVER_ERROR };
+export {
+  ENDPOINT,
+  fakeRest,
+  issueProjectItemNode,
+  issueProjectItemsReply,
+  linkedProjectNode,
+  linkedProjectsReply,
+  NOT_FOUND,
+  SERVER_ERROR,
+};

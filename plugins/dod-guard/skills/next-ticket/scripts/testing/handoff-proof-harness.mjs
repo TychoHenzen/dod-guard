@@ -20,6 +20,20 @@ export const LENSES_904 = HANDOFF_904.reviewLenses;
 export const buildHandoff = (rows) =>
   `## Implementation handoff\n\n## Acceptance matrix\n\n\`\`\`json\n${JSON.stringify(rows)}\n\`\`\`\n`;
 
+const CHECKPOINT_CONTEXTS = ["build-test", "quality-guard"];
+export const checkpointRows = (head = HEAD_904, state = "present") =>
+  CHECKPOINT_CONTEXTS.map((context) => ({
+    context,
+    provider: "github-actions",
+    workflow: "ci.yml",
+    runId: 1,
+    ref: "codex/904",
+    headSha: head,
+    state,
+  }));
+export const withCheckpoint = (handoff, rows) =>
+  `${handoff}\n## Preflight checkpoint\n\n\`\`\`json\n${JSON.stringify(rows)}\n\`\`\`\n`;
+
 // Runs the CLI and returns its exit status with the one JSON line it prints.
 export function run(...args) {
   const result = spawnSync(process.execPath, [script, ...args], { encoding: "utf8" });
@@ -54,12 +68,20 @@ export const withStaleRow = (rows, id = "R1") =>
 
 // Runs a subcommand over a body and a handoff text, both saved to temporary
 // files, at the head under test. The defaults are the #904 body and handoff.
-export const gate = (subcommand, { body = BODY_TEXT, handoff = buildHandoff(ROWS_904), head = HEAD_904 } = {}) =>
-  withFiles(
+// checkpoint undefined means the default (rows at head for finalization only, none
+// for refinement and post-push); null means no record; an array is written as given.
+export const gate = (
+  subcommand,
+  { body = BODY_TEXT, handoff = buildHandoff(ROWS_904), head = HEAD_904, checkpoint } = {},
+) => {
+  const rows = checkpoint === undefined ? (subcommand === "finalization" ? checkpointRows(head) : null) : checkpoint;
+  const text = rows === null ? handoff : withCheckpoint(handoff, rows);
+  return withFiles(
     [
       ["body.md", body],
-      ["handoff.md", handoff],
+      ["handoff.md", text],
     ],
     ([bodyFile, handoffFile]) =>
       run(subcommand, `--body-file=${bodyFile}`, `--handoff-file=${handoffFile}`, `--head-sha=${head}`),
   );
+};

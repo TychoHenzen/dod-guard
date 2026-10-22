@@ -98,7 +98,13 @@ failed, unverified, blocked, or head-mismatched rows stop the handoff; an
 fenced `json` array of rows under that heading; it replaces any markdown
 table, and a second matrix heading is refused. Each row holds `id`, `contract`,
 `path`, `proof`, `expected`, `observed`, `status`, `evidence`, and `headSha`,
-plus `reason` on an `inapplicable` row.
+plus `reason` on an `inapplicable` row. `handoff-build.mjs` prints the comment
+from the issue body's records and an evidence file, so the matrix JSON is never
+hand-written. The body owns every identity field: a row's `id`, `contract`,
+`path`, `proof`, `expected` and `evidence` id come from the planned matrix, and
+a task bullet's id, functional slice and evidence ids come from the task list.
+The evidence file supplies only `observed`, `status` and `reason` per row and
+`commit`, `files` and `result` per task, and the builder rejects any other field.
 
 The same handoff also carries one `## Preflight checkpoint` record for the
 selected pull request once its branch exists. It records the exact branch and
@@ -113,6 +119,8 @@ invalidates the acceptance matrix and routes one bounded branch synchronization
 through `complete-pr`. A merge conflict on the PBI head goes to the triage in
 `standards/conflict-triage.md`; an unresolvable conflict or unexpected branch
 movement stops the workflow.
+
+The rows are one fenced `json` array under that heading, with fields `context`, `provider`, `workflow`, `runId`, `ref`, `headSha` and `state`. The base ref, base SHA and mergeability stay prose lines above the block. `handoff-proof.mjs finalization` requires the record and fails, naming the context, on any row that is not `present` or `skipped` at the exact head, on a duplicate context and on a missing record. `post-push` checks the rows only when the record exists, because the record is written after the draft PR.
 
 ## Structured handoff records
 

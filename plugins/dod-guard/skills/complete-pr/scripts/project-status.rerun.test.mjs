@@ -12,12 +12,9 @@ const IDENTITY_SHIFT = 1000;
 const IDENTITY_CHANGE_ERROR = /same numeric and global IDs/;
 const UNAPPLIED_WRITE_ERROR = /status mutation failed.*read back Backlog, expected Done/;
 
-function assertRerunIsNoOp(numericId, statuses) {
+function rerunFrom(numericId, statuses) {
   const rerun = createRunner({ statuses });
-  const result = writeItems([numericId], rerun.runner);
-
-  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done" }]);
-  assertPatchCount(rerun.calls, 0);
+  return { result: writeItems([numericId], rerun.runner), rerun };
 }
 
 test("AC-03 rerun after an identity-change stop makes no PATCH once the item already holds Done", () => {
@@ -27,7 +24,9 @@ test("AC-03 rerun after an identity-change stop makes no PATCH once the item alr
 
   assert.throws(() => writeItems([numericId], shifted), IDENTITY_CHANGE_ERROR);
   assertPatchCount(calls, 1);
-  assertRerunIsNoOp(numericId, new Map([[ITEM_IDS[0], "Done"]]));
+  const { result, rerun } = rerunFrom(numericId, new Map([[ITEM_IDS[0], "Done"]]));
+  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done", changed: false }]);
+  assertPatchCount(rerun.calls, 0);
 });
 
 test("AC-03 rerun after an unapplied ambiguous numeric write makes no PATCH once the item holds Done", () => {
@@ -38,5 +37,7 @@ test("AC-03 rerun after an unapplied ambiguous numeric write makes no PATCH once
   assert.throws(() => writeItems([numericId], timedOutPatchRunner(fixture)), UNAPPLIED_WRITE_ERROR);
   assertPatchCount(fixture.calls, 1);
   statuses.set(ITEM_IDS[0], "Done");
-  assertRerunIsNoOp(numericId, statuses);
+  const { result, rerun } = rerunFrom(numericId, statuses);
+  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done", changed: false }]);
+  assertPatchCount(rerun.calls, 0);
 });
