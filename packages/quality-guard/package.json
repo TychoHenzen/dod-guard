@@ -5,6 +5,7 @@
   "type": "module",
   "imports": {
     "#quality-guard-architecture-facts": "./skills/quality-refactor/scripts/lib/architecture-facts.mjs",
+    "#quality-guard-reachability-shadows": "./skills/quality-refactor/scripts/lib/rules-reachability-shadows.mjs",
     "#quality-guard-severity": "./skills/quality-refactor/scripts/lib/severity.mjs"
   },
   "main": "dist/bundle.js",

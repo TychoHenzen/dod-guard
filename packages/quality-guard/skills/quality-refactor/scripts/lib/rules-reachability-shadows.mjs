@@ -5,16 +5,19 @@ const IDENTIFIER = /[A-Za-z_$][\w$]*/g;
 const DESTRUCTURED = /^[{[(]/;
 const shadowsByScan = new WeakMap();
 
+function declaredNames(param) {
+  const declared = param.split("=", 1)[0].replaceAll("::", "");
+  return declared.split(":", 1)[0].match(IDENTIFIER) ?? [];
+}
+
 // ASSUMPTION: the binding is the last identifier of the text before any
 // default and type annotation (`int x`, `mut x: u32`, `...rest`), except
 // in Go, which writes the name first (`b int`). A destructured parameter
 // is not read, so a name bound only that way still counts as a use.
 function boundName(param, lang) {
   if (DESTRUCTURED.test(param)) return null;
-  const declared = param.split("=", 1)[0].replaceAll("::", "");
-  const names = declared.split(":", 1)[0].match(IDENTIFIER) ?? [];
-  if (lang === "go") return names[0] ?? null;
-  return names.at(-1) ?? null;
+  const names = declaredNames(param);
+  return (lang === "go" ? names[0] : names.at(-1)) ?? null;
 }
 
 function shadowTable(scan, lang) {
