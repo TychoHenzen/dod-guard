@@ -1,24 +1,17 @@
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
+import { readJsonFile, readTextFile } from "../../../../lib/read-text.mjs";
 import { scannerCandidates } from "./finding-ids.mjs";
 import { regenerate } from "./regenerated-inputs.mjs";
 import { pbiIssue, subIssueList } from "./review-slots.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
-function json(path) {
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch (error) {
-    throw new Error(`Cannot read JSON from ${path}: ${error.message}`, { cause: error });
-  }
-}
-
 // Reads the saved PBI issue and sub-issue listing, naming the file on any
 // fault.
 function pbiInputs(args) {
   return {
-    pbi: pbiIssue(json(args.pbi), args.pbi),
-    subIssues: subIssueList(json(args["sub-issues"]), args["sub-issues"]),
+    pbi: pbiIssue(readJsonFile(args.pbi), args.pbi),
+    subIssues: subIssueList(readJsonFile(args["sub-issues"]), args["sub-issues"]),
   };
 }
 
@@ -27,8 +20,8 @@ function writeJson(path, value) {
 }
 
 function scannerList(args) {
-  const changedLines = parseChangedLines(readFileSync(args.diff, "utf8"));
-  return { changedLines, scanner: scannerCandidates(json(args.scan), changedLines) };
+  const changedLines = parseChangedLines(readTextFile(args.diff));
+  return { changedLines, scanner: scannerCandidates(readJsonFile(args.scan), changedLines) };
 }
 
 // The S ids come from the scan and diff alone, so they exist before planning
@@ -44,14 +37,14 @@ function violations(args) {
 // both id sets from the same inputs, so an edited file cannot move an id.
 function candidates(args) {
   const { judged, scanner } = regenerate({
-    scan: json(args.scan),
-    diff: readFileSync(args.diff, "utf8"),
+    scan: readJsonFile(args.scan),
+    diff: readTextFile(args.diff),
     ...pbiInputs(args),
-    plan: json(args.plan),
-    results: json(args.results),
+    plan: readJsonFile(args.plan),
+    results: readJsonFile(args.results),
   });
   writeJson(args.out, { judged, scanner });
   return { out: args.out, judged: judged.length, scanner: scanner.length };
 }
 
-export { candidates, json, pbiInputs, violations };
+export { candidates, pbiInputs, violations };

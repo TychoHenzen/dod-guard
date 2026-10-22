@@ -2,11 +2,12 @@
 // biome-ignore lint/correctness/noNodejsModules: This skill helper starts the quality-guard scanner.
 import { spawnSync } from "node:child_process";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import { closeSync, existsSync, openSync, readFileSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, openSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import process from "node:process";
 import { parseArgs } from "../../../lib/args.mjs";
-import { candidates, json, pbiInputs, violations } from "./lib/candidate-commands.mjs";
+import { readJsonFile, readTextFile } from "../../../lib/read-text.mjs";
+import { candidates, pbiInputs, violations } from "./lib/candidate-commands.mjs";
 import { ignoredPaths, scanArguments } from "./lib/ignored-paths.mjs";
 import { buildReview, existingReview, postedFindings } from "./lib/review-findings.mjs";
 import { reviewSlots } from "./lib/review-slots.mjs";
@@ -34,7 +35,7 @@ const USAGE = [
 // `gh api --paginate --slurp` writes an array of pages; a plain read writes one
 // array.
 function flatJson(path) {
-  return json(path).flat();
+  return readJsonFile(path).flat();
 }
 
 function slotCounts(slots) {
@@ -49,7 +50,7 @@ function slotCounts(slots) {
 // The whole-repository report runs to megabytes, so it goes straight to a file
 // instead of through a pipe.
 function scan(args) {
-  const scanner = scannerPath(args.client, json(args.registry));
+  const scanner = scannerPath(args.client, readJsonFile(args.registry));
   if (!existsSync(scanner)) {
     throw new Error(`quality-guard scanner not found at ${scanner}`);
   }
@@ -66,7 +67,7 @@ function scan(args) {
   return {
     scanner,
     out: args.out,
-    violations: json(args.out).violations.length,
+    violations: readJsonFile(args.out).violations.length,
   };
 }
 
@@ -75,7 +76,7 @@ const COMMANDS = {
   existing: (args) => existingReview(flatJson(args.reviews)),
   slots: (args) => {
     const slots = reviewSlots({
-      changedLines: parseChangedLines(readFileSync(args.diff, "utf8")),
+      changedLines: parseChangedLines(readTextFile(args.diff)),
       ...pbiInputs(args),
     });
     writeFileSync(args.out, `${JSON.stringify(slots, null, 2)}\n`);
@@ -86,11 +87,11 @@ const COMMANDS = {
   build: (args) => {
     const review = buildReview({
       headSha: args.head,
-      scan: json(args.scan),
-      diff: readFileSync(args.diff, "utf8"),
-      results: json(args.results),
-      plan: json(args.plan),
-      merge: json(args.merge),
+      scan: readJsonFile(args.scan),
+      diff: readTextFile(args.diff),
+      results: readJsonFile(args.results),
+      plan: readJsonFile(args.plan),
+      merge: readJsonFile(args.merge),
       ...pbiInputs(args),
     });
     writeFileSync(args.out, JSON.stringify(review.payload));

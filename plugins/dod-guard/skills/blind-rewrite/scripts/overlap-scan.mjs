@@ -2,7 +2,9 @@
 
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
+import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { readTextFile } from "../../../lib/read-text.mjs";
 
 function tokens(text) {
   return text.toLowerCase().match(/[a-z0-9_$#@.-]+/g) ?? [];
@@ -210,7 +212,7 @@ export function scoreOverlap(original, rewrite, { mode = "code", whitelist = [],
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  if (!options.original || !options.rewrite) {
+  if (!(options.original && options.rewrite)) {
     console.error("usage: overlap-scan.mjs --original=<path> --rewrite=<path> [--mode=code|prose]");
     process.exitCode = 2;
     return;
@@ -219,7 +221,7 @@ async function main() {
   const metrics = scoreOverlap(original, rewrite, {
     mode: options.mode,
     whitelist: options.whitelist,
-    contract: loadContract(options["contract-file"] ? await readFile(options["contract-file"], "utf8") : ""),
+    contract: loadContract(options["contract-file"] ? readTextFile(options["contract-file"]) : ""),
   });
   console.log(
     JSON.stringify({

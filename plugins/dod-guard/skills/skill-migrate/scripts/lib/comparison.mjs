@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import process from "node:process";
+import { readJsonFile } from "../../../../lib/read-text.mjs";
 import { printComparison } from "./report.mjs";
 import { overallScore } from "./scoring.mjs";
 
@@ -53,7 +53,7 @@ function printComparisonResult(beforeData, run, asJson) {
 }
 
 export function runComparison(args, run) {
-  const beforeData = JSON.parse(readFileSync(args.before, "utf8"));
+  const beforeData = readJsonFile(args.before);
   const mismatch = kindMismatch(beforeData.kind, run.kind);
   if (mismatch) {
     process.stderr.write(`Cannot compare: baseline kind "${mismatch}" does not match current kind "${run.kind}"\n`);

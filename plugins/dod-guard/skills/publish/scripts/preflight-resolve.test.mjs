@@ -44,6 +44,19 @@ test("accepts one leading BOM for Codex and Claude registry JSON", async (t) => 
   }
 });
 
+test("accepts a registry saved as marked UTF-16 for Codex and Claude", async (t) => {
+  for (const client of CLIENTS) {
+    const fixture = await createInstall(t, client);
+    const registry = registryFor(client, fixture.pluginRoot);
+    const plain = runPreflight(fixture, registry);
+    const utf16 = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(JSON.stringify(registry), "utf16le")]);
+    const marked = runPreflight(fixture, registry, { rawInput: utf16 });
+
+    assert.equal(marked.status, 0, marked.stderr);
+    assert.deepEqual(marked.response, plain.response);
+  }
+});
+
 test("Codex accepts a marketplace source path separate from the loaded plugin root", async (t) => {
   const fixture = await createInstall(t, "codex");
   const marketplaceRoot = join(fixture.pluginRoot, "..", "marketplace");
