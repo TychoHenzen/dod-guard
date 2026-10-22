@@ -1,76 +1,17 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import { assessGitHubSnapshot, inspectRepository, summarizeRepository } from "./inspect-repository.mjs";
-import {
-  assertPublicRepositoryReadback,
-  buildPublicRepositoryPayload,
-  createPublicRepository,
-  PUBLIC_VISIBILITY,
-} from "./repository-visibility.mjs";
+import { fixture, SAMPLE_GITHUB_TOKEN } from "./fixtures/inspector-fixtures.mjs";
+import { inspectRepository, summarizeRepository } from "./inspect-repository.mjs";
 
 const execFileAsync = promisify(execFile);
-const inspectorPath = fileURLToPath(new URL("./inspect-repository.mjs", import.meta.url));
-const workflowLabelsPath = new URL("./workflow-labels.json", import.meta.url);
-const EXPECTED_WORKFLOW_LABELS = [
-  ["Prio 1 - Emergency", "Critical/Urgent issue, requires immediate action.", "b60205"],
-  ["Prio 2 - Urgent", "Serious issues or important milestones that heavily impact progress", "fbca04"],
-  ["Prio 3 - Standard", "Moderate tasks or minor issues not halting overall progress.", "0e8a16"],
-  ["Prio 4 - Non-Urgent", "Minor inconveniences, cosmetic fixes, or standard requests", "006b75"],
-  ["Prio 5 - Planned", "Proactive improvements, exploratory tasks, or routine updates", "1d76db"],
-  ["Prio 6 - Unknown", "priority can not be assessed at this point, requires re-evaluation later", "FF00FF"],
-  ["Effort 1 - Trivial", "Tiny task. Extremely clear, zero risk, takes minutes to a couple of hours.", "1d76db"],
-  ["Effort 2 - Easy", "Simple task. Well-understood with minimal effort or risk", "006b75"],
-  ["Effort 3 - Medium", "Average task. About a day of work with minor unknowns.", "0e8a16"],
-  ["Effort 5 - Large", "Complex task. Requires significant effort or has notable dependencies.", "fbca04"],
-  ["Effort 8 - Huge", "Very complex. Hard to estimate accurately; often needs to be broken down.", "d93f0b"],
-  ["Effort 13 - Epic", "Too big to implement. Must be split into smaller issues before development.", "b60205"],
-  ["bug", "Something isn't working", "d73a4a"],
-  ["documentation", "Improvements or additions to documentation", "0075ca"],
-  ["duplicate", "This issue or pull request already exists", "cfd3d7"],
-  ["enhancement", "New feature or request", "a2eeef"],
-  ["good first issue", "Good for newcomers", "7057ff"],
-  ["help wanted", "Extra attention is needed", "008672"],
-  ["invalid", "This doesn't seem right", "e4e669"],
-  ["question", "Further information is requested", "d876e3"],
-  ["wontfix", "This will not be worked on", "ffffff"],
-].map(([name, description, color]) => ({ name, description, color }));
-const HTTP_FORBIDDEN = 403;
-
-function visibilityRepository({ visibility = PUBLIC_VISIBILITY, isPrivate = false } = {}) {
-  return {
-    full_name: "owner/target",
-    name: "target",
-    private: isPrivate,
-    visibility,
-  };
-}
-
-async function fixture(t, name) {
-  const root = await mkdtemp(path.join(tmpdir(), `setup-repository-${name}-`));
-  t.after(() => rm(root, { recursive: true, force: true }));
-  return root;
-}
 
 async function git(root, ...args) {
   await execFileAsync("git", ["-C", root, ...args], { windowsHide: true });
-}
-
-async function runInspector(...args) {
-  return execFileAsync(process.execPath, [inspectorPath, ...args], { windowsHide: true });
-}
-
-async function assertInspectorUsage(args, expected) {
-  await assert.rejects(runInspector(...args), (error) => {
-    assert.match(error.stderr, expected);
-    return true;
-  });
 }
 
 test("inventories a fresh project without inventing Git state", async (t) => {
@@ -132,7 +73,7 @@ test("reports unclassified source extensions so unsupported checks need an expli
   assert.deepEqual(report.unclassifiedSourceExtensions, [".zig"]);
 });
 
-test("excludes generated, fixture, archive, dependency, and snapshot paths from maintained-language signals", async (t) => {
+test("excludes generated, fixture, archive, dependency, and snapshot paths from language signals", async (t) => {
   const root = await fixture(t, "non-maintained-paths");
   await mkdir(path.join(root, "generated"), { recursive: true });
   await mkdir(path.join(root, "Fixtures"), { recursive: true });
@@ -155,31 +96,20 @@ test("excludes generated, fixture, archive, dependency, and snapshot paths from 
   assert.deepEqual(report.unclassifiedSourceExtensions, []);
 });
 
-test("reports likely credentials without returning their values", async (t) => {
-  const root = await fixture(t, "credentials");
-  await writeFile(path.join(root, ".env"), "TOKEN=secret\n");
-  const token = ["github", "_pat_", "abcdefghijklmnopqrstuvwxyz123456"].join("");
-  await writeFile(path.join(root, "config.txt"), `${token}\n`);
-
-  const report = await inspectRepository(root);
-
-  assert.deepEqual(report.credentialFindings, [
-    { file: ".env", line: null, signal: "secret-like-filename" },
-    { file: "config.txt", line: 1, signal: "github-token" },
-  ]);
-  assert.doesNotMatch(JSON.stringify(report), new RegExp(token));
-});
-
-test("projects a bounded summary without inventory arrays or credential values", async (t) => {
-  const root = await fixture(t, "summary");
-  const token = ["github", "_pat_", "abcdefghijklmnopqrstuvwxyz123456"].join("");
+async function seedSummaryProject(root) {
   await mkdir(path.join(root, ".github", "workflows"), { recursive: true });
   await writeFile(path.join(root, ".env"), "TOKEN=secret\n");
-  await writeFile(path.join(root, "config.txt"), `${token}\n`);
+  await writeFile(path.join(root, "config.txt"), `${SAMPLE_GITHUB_TOKEN}\n`);
   await writeFile(path.join(root, "index.ts"), "export const answer = 42;\n");
   await writeFile(path.join(root, "main.zig"), "pub fn main() void {}\n");
   await writeFile(path.join(root, "package.json"), "{}\n");
   await writeFile(path.join(root, ".github", "workflows", "ci.yml"), "name: test\n");
+}
+
+test("projects a bounded summary without inventory arrays or credential values", async (t) => {
+  const root = await fixture(t, "summary");
+  await seedSummaryProject(root);
+  const token = SAMPLE_GITHUB_TOKEN;
 
   const summary = summarizeRepository(await inspectRepository(root));
 
@@ -202,63 +132,6 @@ test("projects a bounded summary without inventory arrays or credential values",
   assert.equal("credentialFindings" in summary, false);
 });
 
-test("summary CLI stays bounded while the default and snapshot modes remain detailed", async (t) => {
-  const root = await fixture(t, "cli");
-  await writeFile(path.join(root, "index.ts"), "export const answer = 42;\n");
-  await writeFile(path.join(root, ".env"), "TOKEN=secret\n");
-  const token = ["github", "_pat_", "abcdefghijklmnopqrstuvwxyz123456"].join("");
-  await writeFile(path.join(root, "config.txt"), `${token}\n`);
-
-  const summaryOutput = await runInspector("--summary", root);
-  const summary = JSON.parse(summaryOutput.stdout);
-  assert.deepEqual(summary.counts, {
-    files: 3,
-    manifests: 0,
-    configurations: 0,
-    instructions: 0,
-    sourceExtensions: 2,
-    languages: 1,
-    unclassifiedExtensions: 0,
-    credentialFindings: 2,
-  });
-  assert.ok(summaryOutput.stdout.length < 500);
-  assert.doesNotMatch(summaryOutput.stdout, new RegExp(token));
-  assert.equal("files" in summary, false);
-  assert.equal("credentialFindings" in summary, false);
-
-  const full = JSON.parse((await runInspector(root)).stdout);
-  assert.deepEqual(full.files, [".env", "config.txt", "index.ts"]);
-  assert.deepEqual(full.credentialFindings, [
-    { file: ".env", line: null, signal: "secret-like-filename" },
-    { file: "config.txt", line: 1, signal: "github-token" },
-  ]);
-
-  const snapshotPath = path.join(root, "snapshot.json");
-  await writeFile(
-    snapshotPath,
-    JSON.stringify({
-      projects: [{ closed: false, statusOptions: ["Backlog", "Todo", "In Progress", "Done"] }],
-      checks: [{ name: "test", conclusion: "SUCCESS" }],
-    }),
-  );
-  const snapshot = JSON.parse((await runInspector("--github-snapshot", snapshotPath)).stdout);
-  assert.equal(snapshot.readyForProtection, true);
-  assert.deepEqual(snapshot.requiredChecks, ["test"]);
-});
-
-test("keeps summary output bounded as the inventory grows", async (t) => {
-  const root = await fixture(t, "summary-bound");
-  await Promise.all(
-    Array.from({ length: 400 }, (_, index) => writeFile(path.join(root, `file-${index}.ts`), "export {}\n")),
-  );
-
-  const output = await runInspector("--summary", root);
-  const summary = JSON.parse(output.stdout);
-
-  assert.equal(summary.counts.files, 400);
-  assert.ok(output.stdout.length < 500);
-});
-
 test("rejects malformed roots without echoing the supplied path", async (t) => {
   const root = await fixture(t, "malformed-root");
   const missing = path.join(root, "missing-secret-token");
@@ -271,290 +144,27 @@ test("rejects malformed roots without echoing the supplied path", async (t) => {
   await assert.rejects(inspectRepository(undefined), /Project root must be a non-empty path/);
 });
 
-test("rejects malformed summary arguments", async () => {
-  await assertInspectorUsage(["--summary"], /Usage: inspect-repository\.mjs --summary <project-root>/);
-  await assertInspectorUsage(["--summary", "one", "two"], /Usage: inspect-repository\.mjs --summary <project-root>/);
-  await assertInspectorUsage(["project", "--summary"], /Usage: inspect-repository\.mjs \[project-root\]/);
-});
+test("rejects a project root that is a file without echoing it", async (t) => {
+  const root = await fixture(t, "file-root");
+  const file = path.join(root, "not-a-directory.txt");
+  await writeFile(file, "x\n");
 
-test("rejects malformed GitHub snapshot arguments", async () => {
-  const usage = /Usage: inspect-repository\.mjs --github-snapshot <snapshot\.json>/;
-
-  await assertInspectorUsage(["--github-snapshot"], usage);
-  await assertInspectorUsage(["--github-snapshot", "snapshot.json", "extra"], usage);
-  await assertInspectorUsage(["snapshot.json", "--github-snapshot"], usage);
-});
-
-test("ships the canonical workflow labels while preserving repository-specific labels", async () => {
-  const labels = JSON.parse(await readFile(workflowLabelsPath, "utf8"));
-
-  assert.deepEqual(labels, EXPECTED_WORKFLOW_LABELS);
-});
-
-test("blocks ambiguous linked Project state", () => {
-  const assessment = assessGitHubSnapshot({
-    projects: [
-      { closed: false, statusOptions: ["Backlog", "Todo", "In Progress", "Done"] },
-      { closed: false, statusOptions: ["Backlog", "Todo", "In Progress", "Done"] },
-    ],
-    checks: [{ name: "test", conclusion: "SUCCESS" }],
+  await assert.rejects(inspectRepository(file), (error) => {
+    assert.equal(error.message, "Project root is not a directory");
+    return true;
   });
-
-  assert.equal(assessment.readyForProtection, false);
-  assert.match(assessment.blockers[0], /exactly one open linked Project, found 2/);
-  assert.equal(assessment.protectionPayload, null);
 });
 
-const EXPECTED_ONE_PROJECT = "expected exactly one open linked Project, found";
+test("keeps a remote line the parser cannot split as a raw entry", async (t) => {
+  const root = await fixture(t, "raw-remote");
+  await git(root, "init", "-b", "main");
+  await git(root, "remote", "add", "origin", "https://example.invalid/a b");
 
-test("applies the shared linked-Project count rule to zero, one, and two open Projects", () => {
-  const statusOptions = ["Backlog", "Todo", "In Progress", "Done"];
-  const checks = [{ name: "test", conclusion: "SUCCESS" }];
-  const assess = (projects) => assessGitHubSnapshot({ projects, checks });
-  const isProjectBlocker = (blocker) => blocker.includes("linked Project");
-  const projectBlocker = ({ blockers }) => blockers.find(isProjectBlocker);
+  const report = await inspectRepository(root);
 
-  for (const projects of [[], [{ closed: true, statusOptions }]]) {
-    const none = assess(projects);
-    assert.equal(none.readyForProtection, false);
-    assert.equal(projectBlocker(none), `${EXPECTED_ONE_PROJECT} 0`);
+  assert.equal(report.git.remotes.length, 2);
+  for (const remote of report.git.remotes) {
+    assert.deepEqual(Object.keys(remote), ["raw"]);
+    assert.match(remote.raw, /^origin\s+https:\/\/example\.invalid\/a b \((fetch|push)\)$/);
   }
-
-  const one = assess([
-    { closed: false, statusOptions },
-    { closed: true, statusOptions },
-  ]);
-  assert.equal(one.readyForProtection, true);
-  assert.equal(projectBlocker(one), undefined);
-
-  const two = assess([
-    { closed: false, statusOptions },
-    { closed: false, statusOptions },
-  ]);
-  assert.equal(two.readyForProtection, false);
-  assert.equal(projectBlocker(two), `${EXPECTED_ONE_PROJECT} 2`);
-});
-
-test("blocks protection after a failed check", () => {
-  const assessment = assessGitHubSnapshot({
-    projects: [{ closed: false, statusOptions: ["Backlog", "Todo", "In Progress", "Done"] }],
-    checks: [{ name: "build-test", conclusion: "FAILURE" }],
-  });
-
-  assert.equal(assessment.readyForProtection, false);
-  assert.ok(assessment.blockers.includes("check build-test concluded FAILURE"));
-  assert.equal(assessment.protectionPayload, null);
-});
-
-test("turns malformed GitHub snapshots into a safe protection stop", () => {
-  const assessment = assessGitHubSnapshot({
-    projects: [{ closed: undefined, statusOptions: "Done" }],
-    checks: [{ name: "build-test", conclusion: "SUCCESS" }, null],
-  });
-
-  assert.equal(assessment.readyForProtection, false);
-  assert.ok(assessment.blockers.includes("expected exactly one open linked Project, found 0"));
-  assert.ok(assessment.blockers.includes("check result is missing or malformed"));
-  assert.ok(assessment.blockers.includes("required check names are missing or duplicated"));
-  assert.equal(assessment.protectionPayload, null);
-  assert.deepEqual(assessGitHubSnapshot(null), {
-    readyForProtection: false,
-    blockers: ["GitHub snapshot must be an object"],
-    requiredChecks: [],
-    protectionPayload: null,
-  });
-});
-
-test("builds strict protection from successful observed check names", () => {
-  const assessment = assessGitHubSnapshot({
-    projects: [{ closed: false, statusOptions: ["Backlog", "Todo", "In Progress", "Done"] }],
-    checks: [
-      { name: "test", conclusion: "SUCCESS" },
-      { name: "lint", conclusion: "SUCCESS" },
-    ],
-  });
-
-  assert.equal(assessment.readyForProtection, true);
-  assert.deepEqual(assessment.requiredChecks, ["lint", "test"]);
-  assert.deepEqual(assessment.protectionPayload.required_status_checks, {
-    strict: true,
-    contexts: ["lint", "test"],
-  });
-  assert.deepEqual(assessment.protectionPayload.required_pull_request_reviews, {
-    required_approving_review_count: 0,
-  });
-  assert.equal(assessment.protectionPayload.enforce_admins, true);
-  assert.equal(assessment.protectionPayload.allow_force_pushes, false);
-  assert.equal(assessment.protectionPayload.allow_deletions, false);
-});
-
-test("builds an explicit public create payload without initializing remote content", () => {
-  assert.deepEqual(
-    buildPublicRepositoryPayload({
-      name: "target",
-      organization: "owner",
-      description: "fixture",
-    }),
-    {
-      name: "target",
-      organization: "owner",
-      description: "fixture",
-      private: false,
-      autoInit: false,
-    },
-  );
-});
-
-test("creates only an absent target and verifies public visibility after the mutation", async () => {
-  const calls = [];
-  let observed = null;
-  const ledger = [];
-  const result = await createPublicRepository({
-    owner: "owner",
-    name: "target",
-    organization: "owner",
-    readRepository: () => {
-      calls.push("read");
-      return observed;
-    },
-    createRepository: (payload) => {
-      calls.push(["create", payload]);
-      observed = visibilityRepository();
-    },
-    mutationLedger: ledger,
-  });
-
-  assert.deepEqual(calls, [
-    "read",
-    ["create", { name: "target", organization: "owner", private: false, autoInit: false }],
-    "read",
-  ]);
-  assert.equal(result.repository.visibility, PUBLIC_VISIBILITY);
-  assert.equal(result.repository.private, false);
-  assert.deepEqual(ledger, [
-    {
-      operation: "create_repository",
-      target: "owner/target",
-      requestedVisibility: PUBLIC_VISIBILITY,
-      status: "verified",
-    },
-  ]);
-});
-
-test("refuses to mutate an existing private repository", async () => {
-  let createCalls = 0;
-  const ledger = [];
-
-  await assert.rejects(
-    createPublicRepository({
-      owner: "owner",
-      name: "target",
-      readRepository: () => visibilityRepository({ visibility: "private", isPrivate: true }),
-      createRepository: () => {
-        createCalls += 1;
-      },
-      mutationLedger: ledger,
-    }),
-    (error) =>
-      error.name === "RepositoryVisibilityStopError" &&
-      error.details.stage === "pre-create read" &&
-      error.details.mutationAttempted === false,
-  );
-  assert.equal(createCalls, 0);
-  assert.deepEqual(ledger, []);
-});
-
-test("fails closed when creation readback is missing", async () => {
-  const ledger = [];
-  await assert.rejects(
-    createPublicRepository({
-      owner: "owner",
-      name: "target",
-      readRepository: () => null,
-      createRepository: () => undefined,
-      mutationLedger: ledger,
-    }),
-    (error) =>
-      error.name === "RepositoryVisibilityStopError" &&
-      error.details.stage === "post-create readback" &&
-      error.details.mutationAttempted === true,
-  );
-  assert.equal(ledger[0].status, "attempted");
-});
-
-test("does not expose provider error text in failure diagnostics", async () => {
-  const providerError = Object.assign(new Error("token=secret-value"), {
-    status: HTTP_FORBIDDEN,
-    category: "permission",
-  });
-  let observedError;
-
-  await assert.rejects(
-    createPublicRepository({
-      owner: "owner",
-      name: "target",
-      readRepository: () => null,
-      createRepository: () => {
-        throw providerError;
-      },
-    }),
-    (error) => {
-      observedError = error;
-      return (
-        error.details.provider.status === HTTP_FORBIDDEN &&
-        error.details.provider.category === "permission" &&
-        error.cause === undefined &&
-        !Object.hasOwn(error, "cause") &&
-        !JSON.stringify(error, Object.getOwnPropertyNames(error)).includes("secret-value")
-      );
-    },
-  );
-  assert.equal(observedError.cause, undefined);
-});
-
-test("accepts case-insensitive GitHub identity in the public readback", () => {
-  const repository = visibilityRepository();
-  repository.full_name = "OWNER/TARGET";
-  assert.equal(assertPublicRepositoryReadback(repository, { owner: "owner", name: "target" }), repository);
-});
-
-test("rejects a create destination that differs from the resolved owner", async () => {
-  const ledger = [];
-  let readCalls = 0;
-  let createCalls = 0;
-
-  await assert.rejects(
-    createPublicRepository({
-      owner: "owner",
-      name: "target",
-      organization: "other-owner",
-      readRepository: () => {
-        readCalls += 1;
-        return null;
-      },
-      createRepository: () => {
-        createCalls += 1;
-      },
-      mutationLedger: ledger,
-    }),
-    (error) =>
-      error.name === "RepositoryVisibilityStopError" &&
-      error.details.stage === "destination validation" &&
-      error.details.mutationAttempted === false,
-  );
-
-  assert.equal(readCalls, 0);
-  assert.equal(createCalls, 0);
-  assert.deepEqual(ledger, []);
-});
-
-test("rejects a contradictory repository readback", () => {
-  assert.throws(
-    () =>
-      assertPublicRepositoryReadback(visibilityRepository({ visibility: "private", isPrivate: true }), {
-        owner: "owner",
-        name: "target",
-      }),
-    (error) => error.name === "RepositoryVisibilityStopError" && error.details.stage === "repository readback",
-  );
 });
