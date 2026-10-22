@@ -69,10 +69,10 @@ export function fencedBlocks(body) {
     if (start < 0) {
       start = i + 1;
       lang = fence[1];
-    } else {
-      blocks.push({ start, end: i, lang, lines: raw.slice(start, i) });
-      start = -1;
+      continue;
     }
+    blocks.push({ start, end: i, lang, lines: raw.slice(start, i) });
+    start = -1;
   }
   return blocks;
 }

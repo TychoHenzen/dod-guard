@@ -1,3 +1,4 @@
+import { hitsDetail } from "./check-result.mjs";
 import { fencedBlocks } from "./text.mjs";
 
 // --- Scope and structure checks ---
@@ -14,42 +15,46 @@ export function checkExplicitScope(body) {
   };
 }
 
-const CAP_RE = /\bcap\b.*\b(delegat|dispatch|agent)/i;
-const CAP_NUM_RE = /\bmax(imum|)\s+\d+\s+(sub)?agent/i;
-const CAP_COLON_RE = /\bcap:\s*\d+/i;
+const CAP_PATTERNS = [/\bcap\b.*\b(delegat|dispatch|agent)/i, /\bmax(imum|)\s+\d+\s+(sub)?agent/i, /\bcap:\s*\d+/i];
+const DISPATCH_RE = /\b(?:re)?dispatch(?:es|ed|ing)?\s+`/gi;
+const hasDelegationCap = (body) => CAP_PATTERNS.some((re) => re.test(body));
+
+function delegationDetail(agents, hasCap) {
+  if (agents === 0) return "no dispatches";
+  return hasCap ? "cap found" : `${agents} dispatches, no cap`;
+}
 
 export function checkDelegationCap(body) {
-  const agents = (body.match(/\b(?:re)?dispatch(?:es|ed|ing)?\s+`/gi) ?? []).length;
-  const hasCap = CAP_RE.test(body) || CAP_NUM_RE.test(body) || CAP_COLON_RE.test(body);
+  const agents = (body.match(DISPATCH_RE) ?? []).length;
+  const hasCap = hasDelegationCap(body);
   return {
     id: "delegation-cap",
     label: "Subagent delegation capped (when dispatching)",
     value: agents,
     pass: agents === 0 || hasCap,
-    detail: agents === 0 ? "no dispatches" : hasCap ? "cap found" : `${agents} dispatches, no cap`,
+    detail: delegationDetail(agents, hasCap),
   };
 }
 
-function isScriptRef(blockLines) {
-  return blockLines.some((l) => /\bnode\b.*\.mjs\b/.test(l) || /\$\{CLAUDE_PLUGIN_ROOT\}/.test(l));
+const MAX_EXAMPLE_LINES = 15;
+const COMMAND_LANGS = new Set(["bash", "sh", "shell", "zsh", "cmd", "powershell"]);
+const isScriptRef = (lines) => lines.some((l) => /\bnode\b.*\.mjs\b/.test(l) || /\$\{CLAUDE_PLUGIN_ROOT\}/.test(l));
+
+function isWorkedExample(block) {
+  const long = block.end - block.start > MAX_EXAMPLE_LINES;
+  return long && !isScriptRef(block.lines) && !COMMAND_LANGS.has(block.lang.toLowerCase());
 }
 
-const COMMAND_LANGS = new Set(["bash", "sh", "shell", "zsh", "cmd", "powershell"]);
-
 export function checkWorkedExamples(body) {
-  const hits = [];
-  for (const block of fencedBlocks(body)) {
-    const len = block.end - block.start;
-    if (len > 15 && !isScriptRef(block.lines) && !COMMAND_LANGS.has(block.lang.toLowerCase())) {
-      hits.push({ line: block.start, length: len });
-    }
-  }
+  const hits = fencedBlocks(body)
+    .filter(isWorkedExample)
+    .map((b) => ({ line: b.start, length: b.end - b.start }));
   return {
     id: "no-constraining-examples",
     label: "No long worked examples (>15 lines, non-script)",
     value: hits.length,
     pass: hits.length === 0,
-    detail: hits.length === 0 ? "none found" : hits.map((h) => `L${h.line}: ${h.length} lines`).join("; "),
+    detail: hitsDetail(hits, { none: "none found", describe: (h) => `L${h.line}: ${h.length} lines` }),
   };
 }
 

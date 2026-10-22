@@ -1,6 +1,10 @@
+import { hitsResult } from "./check-result.mjs";
 import { proseLines } from "./text.mjs";
 
 // --- Redundant repetition ---
+
+const SIMILARITY_THRESHOLD = 0.75;
+const MIN_LINE_GAP = 3;
 
 function normalizeForComparison(line) {
   return line
@@ -39,34 +43,27 @@ function collectInstructions(body) {
   return result;
 }
 
+function duplicateHit(a, b) {
+  if (Math.abs(a.line - b.line) < MIN_LINE_GAP) return null;
+  const sim = trigramSimilarity(a.norm, b.norm);
+  return sim < SIMILARITY_THRESHOLD ? null : { lineA: a.line, lineB: b.line, similarity: sim.toFixed(2) };
+}
+
 function findNearDuplicates(instructions) {
-  const seen = new Set();
-  const hits = [];
-  for (let i = 0; i < instructions.length; i++) {
-    for (let j = i + 1; j < instructions.length; j++) {
-      if (Math.abs(instructions[i].line - instructions[j].line) < 3) continue;
-      const sim = trigramSimilarity(instructions[i].norm, instructions[j].norm);
-      if (sim < 0.75) continue;
-      const key = `${instructions[i].line}:${instructions[j].line}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      hits.push({ lineA: instructions[i].line, lineB: instructions[j].line, similarity: sim.toFixed(2) });
-    }
-  }
-  return hits;
+  return instructions.flatMap((a, i) =>
+    instructions
+      .slice(i + 1)
+      .map((b) => duplicateHit(a, b))
+      .filter(Boolean),
+  );
 }
 
 export function checkRedundantRepetition(body) {
-  const hits = findNearDuplicates(collectInstructions(body));
-  return {
+  return hitsResult({
     id: "no-redundant-repetition",
     label: "No redundant repeated instructions",
-    value: hits.length,
-    pass: hits.length === 0,
-    detail:
-      hits.length === 0
-        ? "no near-duplicates"
-        : hits.map((h) => `L${h.lineA}~L${h.lineB} (${h.similarity})`).join("; "),
-    hits,
-  };
+    hits: findNearDuplicates(collectInstructions(body)),
+    none: "no near-duplicates",
+    describe: (h) => `L${h.lineA}~L${h.lineB} (${h.similarity})`,
+  });
 }

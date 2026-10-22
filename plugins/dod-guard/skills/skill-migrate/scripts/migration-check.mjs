@@ -6,14 +6,11 @@
 // With --json, writes structured output. With --before=<path>, loads a
 // prior run and prints a before/after comparison.
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import process from "node:process";
-import { parseArgs, resolveKind } from "./lib/cli.mjs";
+import { loadRun, parseArgs } from "./lib/cli.mjs";
 import { runComparison } from "./lib/comparison.mjs";
-import { KINDS } from "./lib/kind-tables.mjs";
 import { printChecks } from "./lib/report.mjs";
-import { runChecks } from "./lib/run-checks.mjs";
-import { overallScore } from "./lib/scoring.mjs";
 
 const USAGE = [
   "Usage: node migration-check.mjs <path-to-file> [options]",
@@ -33,42 +30,38 @@ const USAGE = [
 
 // --- CLI ---
 
+function fail(message) {
+  process.stderr.write(message);
+  return 3;
+}
+
+function saveRun(args, target, run) {
+  if (!args.save) return;
+  const timestamp = new Date().toISOString();
+  const data = { file: target, kind: run.kind, score: run.score, checks: run.checks, timestamp };
+  writeFileSync(args.save, JSON.stringify(data, null, 2));
+}
+
+function printRun(args, run) {
+  if (args.json === "true") {
+    process.stdout.write(`${JSON.stringify({ score: run.score, checks: run.checks, kind: run.kind }, null, 2)}\n`);
+    return;
+  }
+  printChecks(run.checks, run.score, run.kind);
+}
+
+const exitCode = (checks) => (checks.every((c) => c.pass) ? 0 : 1);
+
 function main(argv) {
   const args = parseArgs(argv);
   const target = args.positional[0];
-  if (!target) {
-    process.stderr.write(`${USAGE}\n`);
-    return 3;
-  }
-
-  let text;
-  try {
-    text = readFileSync(target, "utf8");
-  } catch (err) {
-    process.stderr.write(`Cannot read ${target}: ${err.message}\n`);
-    return 3;
-  }
-  const kind = resolveKind(args, target, text);
-  if (!kind) {
-    process.stderr.write(`Unknown --kind: ${args.kind}. Expected one of: ${Object.keys(KINDS).join(", ")}\n`);
-    return 3;
-  }
-  const checks = runChecks(text, kind);
-  const score = overallScore(checks);
-
-  if (args.save) {
-    const data = { file: target, kind, score, checks, timestamp: new Date().toISOString() };
-    writeFileSync(args.save, JSON.stringify(data, null, 2));
-  }
-
-  if (args.before) return runComparison(args, checks, score, kind);
-
-  if (args.json === "true") {
-    process.stdout.write(`${JSON.stringify({ score, checks, kind }, null, 2)}\n`);
-  } else {
-    printChecks(checks, score, kind);
-  }
-  return checks.every((c) => c.pass) ? 0 : 1;
+  if (!target) return fail(`${USAGE}\n`);
+  const loaded = loadRun(args, target);
+  if (loaded.error) return fail(loaded.error);
+  saveRun(args, target, loaded.run);
+  if (args.before) return runComparison(args, loaded.run);
+  printRun(args, loaded.run);
+  return exitCode(loaded.run.checks);
 }
 
 process.exit(main(process.argv.slice(2)));

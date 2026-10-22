@@ -69,7 +69,6 @@ export function applyScores(checks, weights) {
 }
 
 export function overallScore(checks) {
-  let total = 0;
-  for (const c of checks) total += (c.weight ?? 0) * (c.score ?? 0);
+  const total = checks.reduce((sum, c) => sum + (c.weight ?? 0) * (c.score ?? 0), 0);
   return Math.round(total);
 }

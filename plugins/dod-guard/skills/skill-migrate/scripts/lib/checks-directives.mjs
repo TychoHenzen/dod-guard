@@ -1,3 +1,4 @@
+import { atLine, hitsResult, snippet } from "./check-result.mjs";
 import { proseLines } from "./text.mjs";
 
 // The positive regex must not swallow "must not" / "must never" lines;
@@ -54,24 +55,24 @@ function isDescriptiveNegative(line) {
   return false;
 }
 
+const NEGATIVE_RE = /\b(never|do not|don't|must not|shall not)\s+(.{5,60})/i;
+const nextText = (lines, i) => (lines[i + 1]?.text ?? "").trim();
+
+function bareNegativeAt(lines, i) {
+  const { text, line } = lines[i];
+  if (!NEGATIVE_RE.test(text) || isDescriptiveNegative(text)) return null;
+  return hasAlternative(text, nextText(lines, i)) ? null : { line, text: snippet(text) };
+}
+
 export function checkBareNegatives(body) {
-  const hits = [];
   const lines = proseLines(body);
-  for (let i = 0; i < lines.length; i++) {
-    const neg = /\b(never|do not|don't|must not|shall not)\s+(.{5,60})/i.exec(lines[i].text);
-    if (!neg) continue;
-    if (isDescriptiveNegative(lines[i].text)) continue;
-    const next = (lines[i + 1]?.text ?? "").trim();
-    if (!hasAlternative(lines[i].text, next)) {
-      hits.push({ line: lines[i].line, text: lines[i].text.trim().slice(0, 60) });
-    }
-  }
-  return {
+  const hits = lines.map((_, i) => bareNegativeAt(lines, i)).filter(Boolean);
+  return hitsResult({
     id: "no-bare-negatives",
     label: "Negative rules have alternatives",
-    value: hits.length,
-    pass: hits.length === 0,
-    detail: hits.length === 0 ? "all negatives have alternatives" : hits.map((h) => `L${h.line}`).join(", "),
     hits,
-  };
+    none: "all negatives have alternatives",
+    describe: atLine,
+    separator: ", ",
+  });
 }

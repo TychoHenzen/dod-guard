@@ -14,29 +14,37 @@ function kindMismatch(beforeKind, currentKind) {
   return beforeKind;
 }
 
-function compare(before, after) {
-  const rows = [];
-  const beforeById = Object.fromEntries(before.map((c) => [c.id, c]));
-  for (const a of after) {
-    const b = beforeById[a.id] ?? { pass: false, value: "n/a", detail: "n/a" };
-    const status = a.pass && !b.pass ? "FIXED" : !a.pass && b.pass ? "REGRESSED" : a.pass ? "PASS" : "FAIL";
-    rows.push({
-      id: a.id,
-      label: a.label,
-      before: { pass: b.pass, value: b.value, detail: b.detail, score: b.score ?? 0 },
-      after: { pass: a.pass, value: a.value, detail: a.detail, score: a.score ?? 0 },
-      status,
-    });
-  }
-  return rows;
+const MISSING_BASELINE = { pass: false, value: "n/a", detail: "n/a" };
+
+function rowStatus(after, before) {
+  const passed = Boolean(after.pass);
+  if (passed === Boolean(before.pass)) return passed ? "PASS" : "FAIL";
+  return passed ? "FIXED" : "REGRESSED";
 }
 
-function printComparisonResult(beforeData, checks, score, kind, asJson) {
-  const rows = compare(beforeData.checks, checks);
-  const scores = { before: beforeData.score ?? overallScore(beforeData.checks), after: score };
+const side = ({ pass, value, detail, score }) => ({ pass, value, detail, score: score ?? 0 });
+
+function compareRow(after, before) {
+  return {
+    id: after.id,
+    label: after.label,
+    before: side(before),
+    after: side(after),
+    status: rowStatus(after, before),
+  };
+}
+
+function compare(before, after) {
+  const beforeById = Object.fromEntries(before.map((c) => [c.id, c]));
+  return after.map((a) => compareRow(a, beforeById[a.id] ?? MISSING_BASELINE));
+}
+
+function printComparisonResult(beforeData, run, asJson) {
+  const rows = compare(beforeData.checks, run.checks);
+  const scores = { before: beforeData.score ?? overallScore(beforeData.checks), after: run.score };
   const exit = rows.some((r) => r.status === "REGRESSED") ? 1 : 0;
   if (asJson) {
-    const out = { ...scores, delta: scores.after - scores.before, kind, rows };
+    const out = { ...scores, delta: scores.after - scores.before, kind: run.kind, rows };
     process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
     return exit;
   }
@@ -44,12 +52,12 @@ function printComparisonResult(beforeData, checks, score, kind, asJson) {
   return exit;
 }
 
-export function runComparison(args, checks, score, kind) {
+export function runComparison(args, run) {
   const beforeData = JSON.parse(readFileSync(args.before, "utf8"));
-  const mismatch = kindMismatch(beforeData.kind, kind);
+  const mismatch = kindMismatch(beforeData.kind, run.kind);
   if (mismatch) {
-    process.stderr.write(`Cannot compare: baseline kind "${mismatch}" does not match current kind "${kind}"\n`);
+    process.stderr.write(`Cannot compare: baseline kind "${mismatch}" does not match current kind "${run.kind}"\n`);
     return 3;
   }
-  return printComparisonResult(beforeData, checks, score, kind, args.json === "true");
+  return printComparisonResult(beforeData, run, args.json === "true");
 }

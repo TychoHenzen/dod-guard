@@ -1,3 +1,4 @@
+import { checkConservativeFilters, checkScaffolding } from "./checks-anti-patterns.mjs";
 import { checkBareNegatives, checkContradictions } from "./checks-directives.mjs";
 import { checkInstinctFrontmatter } from "./checks-instinct.mjs";
 import { checkAgentTools, checkMemoryFrontmatter } from "./checks-kind-frontmatter.mjs";
@@ -9,14 +10,7 @@ import {
   checkNameFormat,
   checkNoAtImports,
 } from "./checks-metadata.mjs";
-import {
-  checkConservativeFilters,
-  checkDripFed,
-  checkEmphasisDensity,
-  checkImplicitScope,
-  checkScaffolding,
-  checkTimeSensitive,
-} from "./checks-patterns.mjs";
+import { checkDripFed, checkEmphasisDensity, checkImplicitScope, checkTimeSensitive } from "./checks-patterns.mjs";
 import { checkRedundantRepetition } from "./checks-repetition.mjs";
 import {
   checkConsistentTerminology,
