@@ -1,43 +1,10 @@
 import assert from "node:assert/strict";
-import { realpathSync } from "node:fs";
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { readFile } from "node:fs/promises";
 import process from "node:process";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
-import { parsePowerShellFile, runPowerShell } from "./maintenance-harness.mjs";
-import { releaseVerificationPath, runReleaseVerification } from "./release-harness.mjs";
-
-// A throwaway registered plugin root (the released version) plus a separate loaded root holding
-// the real preflight helper and the previous release, so neither the inventory-status rule nor
-// the registered-root rule under test is re-implemented in the PowerShell stub.
-async function createRealHelperFixture(t) {
-  const parent = await mkdtemp(join(tmpdir(), "dod-guard-release-helper-"));
-  t.after(() => rm(parent, { recursive: true, force: true }));
-  const root = join(parent, "registered");
-  const loaded = join(parent, "loaded");
-  const helper = join(loaded, "skills", "publish", "scripts", "preflight-installation.mjs");
-  const manifest = JSON.stringify({ name: "dod-guard", version: "5.4.56" });
-  await mkdir(join(loaded, "skills", "publish", "scripts"), { recursive: true });
-  await mkdir(join(loaded, ".claude-plugin"), { recursive: true });
-  const previous = JSON.stringify({ name: "dod-guard", version: "5.4.55" });
-  await writeFile(join(loaded, ".claude-plugin", "plugin.json"), previous);
-  await mkdir(join(root, "skills", "publish"), { recursive: true });
-  await mkdir(join(root, ".codex-plugin"), { recursive: true });
-  await mkdir(join(root, ".claude-plugin"), { recursive: true });
-  await Promise.all([
-    copyFile(fileURLToPath(new URL("./preflight-installation.mjs", import.meta.url)), helper),
-    copyFile(
-      fileURLToPath(new URL("./preflight-arguments.mjs", import.meta.url)),
-      join(dirname(helper), "preflight-arguments.mjs"),
-    ),
-    writeFile(join(root, "skills", "publish", "SKILL.md"), "# publish fixture\n"),
-    writeFile(join(root, ".codex-plugin", "plugin.json"), manifest),
-    writeFile(join(root, ".claude-plugin", "plugin.json"), manifest),
-  ]);
-  return { root, helper };
-}
+import { createRealHelperFixture } from "./harness/real-helper-fixture.mjs";
+import { releaseVerificationPath, runReleaseVerification } from "./harness/release-harness.mjs";
+import { parsePowerShellFile } from "./maintenance-harness.mjs";
 
 test("release verification parses and proves the complete read-only evidence boundary", {
   skip: process.platform !== "win32",
@@ -90,93 +57,4 @@ test("release verification fails closed before parsing incomplete or mismatched 
     assert.equal(outcome.Commands[commandName].ExitCode, exitCode, failureStage);
     if (failureStage === "inventory") assert.equal(outcome.Stage, "claude-preflight", failureStage);
   }
-});
-
-test("a non-zero codex inventory is judged by the real preflight helper", {
-  skip: process.platform !== "win32",
-}, async (t) => {
-  const fixture = await createRealHelperFixture(t);
-
-  const tolerated = runReleaseVerification("codex-inventory-nonzero", fixture);
-  assert.equal(tolerated.Success, true, tolerated.Error);
-  assert.equal(tolerated.Stage, "complete");
-  assert.equal(tolerated.Commands["codex-inventory"].ExitCode, 1);
-  assert.equal(tolerated.Commands["codex-inventory"].StderrPresent, true);
-  assert.equal(tolerated.Clients.codex.InventoryStatus, 1);
-  assert.equal(tolerated.Clients.codex.PluginIdentity.pluginId, "dod-guard@dod-guard-monorepo");
-
-  for (const failureStage of ["codex-inventory-nonzero-missing", "codex-inventory-nonzero-malformed"]) {
-    const rejected = runReleaseVerification(failureStage, fixture);
-    assert.equal(rejected.Success, false, failureStage);
-    assert.equal(rejected.Stage, "codex-preflight", failureStage);
-    assert.match(rejected.Error, /codex-preflight failed with exit code 1/, failureStage);
-    assert.equal(rejected.Commands["codex-inventory"].ExitCode, 1, failureStage);
-  }
-});
-
-test("release verification checks the registered root even when the loaded root is older", {
-  skip: process.platform !== "win32",
-}, async (t) => {
-  const fixture = await createRealHelperFixture(t);
-
-  const outcome = runReleaseVerification("", fixture);
-  assert.equal(outcome.Success, true, outcome.Error);
-  // The helper resolves roots with fs.promises.realpath, which expands 8.3 short names such as
-  // RUNNER~1 like the native resolver does; the JS realpathSync does not, so compare native forms.
-  for (const client of ["codex", "claude"]) {
-    assert.equal(outcome.Clients[client].Version, "5.4.56", client);
-    assert.equal(
-      outcome.Clients[client].PluginRoot.toLowerCase(),
-      realpathSync.native(fixture.root).toLowerCase(),
-      client,
-    );
-    assert.match(outcome.Clients[client].SkillPath, /registered[\\/]skills[\\/]publish[\\/]SKILL\.md$/i, client);
-  }
-});
-
-test("the shared native command helper keeps stderr out of stdout and returns the real exit status", {
-  skip: process.platform !== "win32",
-}, async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), "dod-guard-release-native-"));
-  t.after(() => rm(directory, { recursive: true, force: true }));
-  const script = join(directory, "native.mjs");
-  await writeFile(
-    script,
-    ["process.stdout.write('{\"installed\":[]}\\n');", "process.stderr.write('warn\\n');", "process.exit(3);"].join(
-      "\n",
-    ),
-  );
-  const publishNativeCommandPath = fileURLToPath(new URL("./publish-native-command.ps1", import.meta.url));
-  const command = String.raw`$ErrorActionPreference = 'Stop'
-. $env:DOD_GUARD_NATIVE_COMMAND
-$result = Invoke-PublishNativeCommand node @($env:DOD_GUARD_NATIVE_SCRIPT) $null
-$result | ConvertTo-Json -Depth 5 -Compress
-`;
-  const result = runPowerShell(command, {
-    DOD_GUARD_NATIVE_COMMAND: publishNativeCommandPath,
-    DOD_GUARD_NATIVE_SCRIPT: script,
-  });
-  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-  const captured = JSON.parse(result.stdout.trim().split(/\r?\n/).at(-1));
-  assert.equal(captured.ExitCode, 3);
-  assert.equal(captured.Output, '{"installed":[]}');
-  assert.equal(captured.Stderr, "warn");
-});
-
-test("the shared failure message names the exit code and appends stderr only when present", {
-  skip: process.platform !== "win32",
-}, () => {
-  const command = String.raw`$ErrorActionPreference = 'Stop'
-. $env:DOD_GUARD_NATIVE_COMMAND
-$with = Get-PublishNativeFailureMessage 'git push' 5 'rejected'
-$without = Get-PublishNativeFailureMessage 'git push' 5 ''
-@{ With = $with; Without = $without } | ConvertTo-Json -Compress
-`;
-  const result = runPowerShell(command, {
-    DOD_GUARD_NATIVE_COMMAND: fileURLToPath(new URL("./publish-native-command.ps1", import.meta.url)),
-  });
-  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-  const messages = JSON.parse(result.stdout.trim().split(/\r?\n/).at(-1));
-  assert.equal(messages.With, "git push failed with exit code 5: rejected");
-  assert.equal(messages.Without, "git push failed with exit code 5");
 });

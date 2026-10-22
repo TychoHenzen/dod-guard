@@ -1,0 +1,3094 @@
+{
+  "codex: success": {
+    "status": 0,
+    "stream": "stdout",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "pluginIdentity",
+      "identity",
+      "requested"
+    ],
+    "observedKeys": [],
+    "body": {
+      "ok": true,
+      "client": "codex",
+      "version": "5.4.56",
+      "pluginRoot": "<ROOT>/plugin",
+      "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+      "pluginIdentity": {
+        "pluginId": "dod-guard@dod-guard-monorepo",
+        "name": "dod-guard",
+        "marketplaceName": "dod-guard-monorepo",
+        "version": "5.4.56",
+        "installed": true,
+        "enabled": true,
+        "sourcePath": "<ROOT>/plugin",
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/TychoHenzen/dod-guard.git"
+        }
+      },
+      "identity": {
+        "pluginId": "dod-guard@dod-guard-monorepo",
+        "name": "dod-guard",
+        "marketplaceName": "dod-guard-monorepo",
+        "version": "5.4.56",
+        "installed": true,
+        "enabled": true,
+        "sourcePath": "<ROOT>/plugin",
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/TychoHenzen/dod-guard.git"
+        }
+      },
+      "requested": {}
+    }
+  },
+  "claude: success": {
+    "status": 0,
+    "stream": "stdout",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "pluginIdentity",
+      "identity",
+      "requested"
+    ],
+    "observedKeys": [],
+    "body": {
+      "ok": true,
+      "client": "claude",
+      "version": "5.4.56",
+      "pluginRoot": "<ROOT>/plugin",
+      "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+      "pluginIdentity": {
+        "id": "dod-guard@dod-guard",
+        "version": "5.4.56",
+        "enabled": true,
+        "installPath": "<ROOT>/plugin"
+      },
+      "identity": {
+        "id": "dod-guard@dod-guard",
+        "version": "5.4.56",
+        "enabled": true,
+        "installPath": "<ROOT>/plugin"
+      },
+      "requested": {}
+    }
+  },
+  "codex: success with --registered-root": {
+    "status": 0,
+    "stream": "stdout",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "pluginIdentity",
+      "identity",
+      "requested"
+    ],
+    "observedKeys": [],
+    "body": {
+      "ok": true,
+      "client": "codex",
+      "version": "5.4.56",
+      "pluginRoot": "<ROOT>/plugin",
+      "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+      "pluginIdentity": {
+        "pluginId": "dod-guard@dod-guard-monorepo",
+        "name": "dod-guard",
+        "marketplaceName": "dod-guard-monorepo",
+        "version": "5.4.56",
+        "installed": true,
+        "enabled": true,
+        "sourcePath": "<ROOT>/plugin",
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/TychoHenzen/dod-guard.git"
+        }
+      },
+      "identity": {
+        "pluginId": "dod-guard@dod-guard-monorepo",
+        "name": "dod-guard",
+        "marketplaceName": "dod-guard-monorepo",
+        "version": "5.4.56",
+        "installed": true,
+        "enabled": true,
+        "sourcePath": "<ROOT>/plugin",
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/TychoHenzen/dod-guard.git"
+        }
+      },
+      "requested": {
+        "registeredRoot": true
+      }
+    }
+  },
+  "claude: success with --registered-root": {
+    "status": 0,
+    "stream": "stdout",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "pluginIdentity",
+      "identity",
+      "requested"
+    ],
+    "observedKeys": [],
+    "body": {
+      "ok": true,
+      "client": "claude",
+      "version": "5.4.56",
+      "pluginRoot": "<ROOT>/plugin",
+      "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+      "pluginIdentity": {
+        "id": "dod-guard@dod-guard",
+        "version": "5.4.56",
+        "enabled": true,
+        "installPath": "<ROOT>/plugin"
+      },
+      "identity": {
+        "id": "dod-guard@dod-guard",
+        "version": "5.4.56",
+        "enabled": true,
+        "installPath": "<ROOT>/plugin"
+      },
+      "requested": {
+        "registeredRoot": true
+      }
+    }
+  },
+  "codex: success pinned": {
+    "status": 0,
+    "stream": "stdout",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "pluginIdentity",
+      "identity",
+      "requested"
+    ],
+    "observedKeys": [],
+    "body": {
+      "ok": true,
+      "client": "codex",
+      "version": "5.4.56",
+      "pluginRoot": "<ROOT>/plugin",
+      "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+      "pluginIdentity": {
+        "pluginId": "dod-guard@dod-guard-monorepo",
+        "name": "dod-guard",
+        "marketplaceName": "dod-guard-monorepo",
+        "version": "5.4.56",
+        "installed": true,
+        "enabled": true,
+        "sourcePath": "<ROOT>/plugin",
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/TychoHenzen/dod-guard.git"
+        }
+      },
+      "identity": {
+        "pluginId": "dod-guard@dod-guard-monorepo",
+        "name": "dod-guard",
+        "marketplaceName": "dod-guard-monorepo",
+        "version": "5.4.56",
+        "installed": true,
+        "enabled": true,
+        "sourcePath": "<ROOT>/plugin",
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/TychoHenzen/dod-guard.git"
+        }
+      },
+      "requested": {
+        "version": "5.4.56",
+        "path": "<ROOT>/plugin/skills/publish/SKILL.md"
+      }
+    }
+  },
+  "claude: success pinned": {
+    "status": 0,
+    "stream": "stdout",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "pluginIdentity",
+      "identity",
+      "requested"
+    ],
+    "observedKeys": [],
+    "body": {
+      "ok": true,
+      "client": "claude",
+      "version": "5.4.56",
+      "pluginRoot": "<ROOT>/plugin",
+      "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+      "pluginIdentity": {
+        "id": "dod-guard@dod-guard",
+        "version": "5.4.56",
+        "enabled": true,
+        "installPath": "<ROOT>/plugin"
+      },
+      "identity": {
+        "id": "dod-guard@dod-guard",
+        "version": "5.4.56",
+        "enabled": true,
+        "installPath": "<ROOT>/plugin"
+      },
+      "requested": {
+        "version": "5.4.56",
+        "path": "<ROOT>/plugin/skills/publish/SKILL.md"
+      }
+    }
+  },
+  "codex: malformed stdin": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Registry input is missing or malformed",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: malformed stdin": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Registry input is missing or malformed",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: empty stdin": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Registry input is missing or malformed",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: empty stdin": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Registry input is missing or malformed",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: BOM then malformed": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Registry input is missing or malformed",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: BOM then malformed": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Registry input is missing or malformed",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: registry of the wrong shape": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "malformed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Registry does not contain the expected codex plugin list.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: registry of the wrong shape": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "malformed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Registry does not contain the expected claude plugin list.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: missing registration": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": []
+      },
+      "reason": "Expected exactly one installed and enabled dod-guard registration; found 0.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: ambiguous enabled registrations": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": [
+          {
+            "pluginId": "dod-guard@dod-guard-monorepo",
+            "name": "dod-guard",
+            "marketplaceName": "dod-guard-monorepo",
+            "version": "5.4.56",
+            "installed": true,
+            "enabled": true,
+            "sourcePath": "<ROOT>/plugin",
+            "marketplaceSource": {
+              "sourceType": "git",
+              "source": "https://github.com/TychoHenzen/dod-guard.git"
+            }
+          },
+          {
+            "pluginId": "dod-guard@dod-guard-monorepo",
+            "name": "dod-guard",
+            "marketplaceName": "dod-guard-monorepo",
+            "version": "5.4.56",
+            "installed": true,
+            "enabled": true,
+            "sourcePath": "<ROOT>/plugin",
+            "marketplaceSource": {
+              "sourceType": "git",
+              "source": "https://github.com/TychoHenzen/dod-guard.git"
+            }
+          }
+        ]
+      },
+      "reason": "Expected exactly one installed and enabled dod-guard registration; found 2.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: disabled registration": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": [
+          {
+            "pluginId": "dod-guard@dod-guard-monorepo",
+            "name": "dod-guard",
+            "marketplaceName": "dod-guard-monorepo",
+            "version": "5.4.56",
+            "installed": true,
+            "enabled": false,
+            "sourcePath": "<ROOT>/plugin",
+            "marketplaceSource": {
+              "sourceType": "git",
+              "source": "https://github.com/TychoHenzen/dod-guard.git"
+            }
+          }
+        ]
+      },
+      "reason": "Expected exactly one installed and enabled dod-guard registration; found 0.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: wrong marketplace identity": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "expectedIdentity"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "other-marketplace",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "expectedIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        }
+      },
+      "reason": "The enabled dod-guard registration does not match the expected plugin and marketplace identity.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: uninstalled registration": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": [
+          {
+            "pluginId": "dod-guard@dod-guard-monorepo",
+            "name": "dod-guard",
+            "marketplaceName": "dod-guard-monorepo",
+            "version": "5.4.56",
+            "installed": false,
+            "enabled": true,
+            "sourcePath": "<ROOT>/plugin",
+            "marketplaceSource": {
+              "sourceType": "git",
+              "source": "https://github.com/TychoHenzen/dod-guard.git"
+            }
+          }
+        ]
+      },
+      "reason": "Expected exactly one installed and enabled dod-guard registration; found 0.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: wrong plugin id": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "expectedIdentity"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@other-marketplace",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "expectedIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        }
+      },
+      "reason": "The enabled dod-guard registration does not match the expected plugin and marketplace identity.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: wrong plugin name": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "expectedIdentity"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "other-plugin",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "expectedIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        }
+      },
+      "reason": "The enabled dod-guard registration does not match the expected plugin and marketplace identity.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: wrong marketplace source": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "expectedIdentity"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://example.com/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "expectedIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        }
+      },
+      "reason": "The enabled dod-guard registration does not match the expected plugin and marketplace identity.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: missing registration": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": []
+      },
+      "reason": "Expected exactly one installed and enabled dod-guard registration; found 0.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: ambiguous enabled registrations": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": [
+          {
+            "id": "dod-guard@dod-guard",
+            "version": "5.4.56",
+            "enabled": true,
+            "installPath": "<ROOT>/plugin"
+          },
+          {
+            "id": "dod-guard@dod-guard",
+            "version": "5.4.56",
+            "enabled": true,
+            "installPath": "<ROOT>/plugin"
+          }
+        ]
+      },
+      "reason": "Expected exactly one installed and enabled dod-guard registration; found 2.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: disabled registration": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": [
+          {
+            "id": "dod-guard@dod-guard",
+            "version": "5.4.56",
+            "enabled": false,
+            "installPath": "<ROOT>/plugin"
+          }
+        ]
+      },
+      "reason": "Expected exactly one installed and enabled dod-guard registration; found 0.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: wrong marketplace identity": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "expectedIdentity"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@other-marketplace",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "expectedIdentity": {
+          "id": "dod-guard@dod-guard"
+        }
+      },
+      "reason": "The enabled dod-guard registration does not match the expected plugin and marketplace identity.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: registration path differs from loaded skill": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registeredRoot"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "unavailable",
+        "registeredRoot": "<ROOT>"
+      },
+      "reason": "The loaded publish skill is not from the registered dod-guard installation.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: registration with no version": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "unavailable",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "unavailable"
+      },
+      "reason": "The enabled registration is missing an absolute install path or version.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: registration with no version": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "unavailable",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "unavailable"
+      },
+      "reason": "The enabled registration is missing an absolute install path or version.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: registration with a relative install path": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "relative/dir",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "relative/dir",
+        "skillPath": "unavailable"
+      },
+      "reason": "The enabled registration is missing an absolute install path or version.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: registration with a relative install path": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "relative/dir"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "relative/dir",
+        "skillPath": "unavailable"
+      },
+      "reason": "The enabled registration is missing an absolute install path or version.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: unknown flag": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Invalid or duplicate argument",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: unknown flag": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Invalid or duplicate argument",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: duplicate value flag": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {
+        "version": "1"
+      },
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Invalid or duplicate argument",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: duplicate value flag": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {
+        "version": "1"
+      },
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Invalid or duplicate argument",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: value flag without value": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Invalid or duplicate argument",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: value flag without value": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Invalid or duplicate argument",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: value flag followed by a flag": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Invalid or duplicate argument",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: value flag followed by a flag": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Invalid or duplicate argument",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: inventory status abc": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {
+        "inventoryStatus": "abc"
+      },
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Invalid --inventory-status",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: inventory status abc": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {
+        "inventoryStatus": "abc"
+      },
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable"
+      },
+      "reason": "Invalid --inventory-status",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: inventory status 0 with a valid registration": {
+    "status": 0,
+    "stream": "stdout",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "pluginIdentity",
+      "identity",
+      "requested",
+      "inventoryStatus"
+    ],
+    "observedKeys": [],
+    "body": {
+      "ok": true,
+      "client": "codex",
+      "version": "5.4.56",
+      "pluginRoot": "<ROOT>/plugin",
+      "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+      "pluginIdentity": {
+        "pluginId": "dod-guard@dod-guard-monorepo",
+        "name": "dod-guard",
+        "marketplaceName": "dod-guard-monorepo",
+        "version": "5.4.56",
+        "installed": true,
+        "enabled": true,
+        "sourcePath": "<ROOT>/plugin",
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/TychoHenzen/dod-guard.git"
+        }
+      },
+      "identity": {
+        "pluginId": "dod-guard@dod-guard-monorepo",
+        "name": "dod-guard",
+        "marketplaceName": "dod-guard-monorepo",
+        "version": "5.4.56",
+        "installed": true,
+        "enabled": true,
+        "sourcePath": "<ROOT>/plugin",
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/TychoHenzen/dod-guard.git"
+        }
+      },
+      "requested": {
+        "inventoryStatus": "0"
+      },
+      "inventoryStatus": 0
+    }
+  },
+  "claude: inventory status 0 with a valid registration": {
+    "status": 0,
+    "stream": "stdout",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "pluginIdentity",
+      "identity",
+      "requested",
+      "inventoryStatus"
+    ],
+    "observedKeys": [],
+    "body": {
+      "ok": true,
+      "client": "claude",
+      "version": "5.4.56",
+      "pluginRoot": "<ROOT>/plugin",
+      "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+      "pluginIdentity": {
+        "id": "dod-guard@dod-guard",
+        "version": "5.4.56",
+        "enabled": true,
+        "installPath": "<ROOT>/plugin"
+      },
+      "identity": {
+        "id": "dod-guard@dod-guard",
+        "version": "5.4.56",
+        "enabled": true,
+        "installPath": "<ROOT>/plugin"
+      },
+      "requested": {
+        "inventoryStatus": "0"
+      },
+      "inventoryStatus": 0
+    }
+  },
+  "codex: inventory status 3 with a valid registration": {
+    "status": 0,
+    "stream": "stdout",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "pluginIdentity",
+      "identity",
+      "requested",
+      "inventoryStatus"
+    ],
+    "observedKeys": [],
+    "body": {
+      "ok": true,
+      "client": "codex",
+      "version": "5.4.56",
+      "pluginRoot": "<ROOT>/plugin",
+      "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+      "pluginIdentity": {
+        "pluginId": "dod-guard@dod-guard-monorepo",
+        "name": "dod-guard",
+        "marketplaceName": "dod-guard-monorepo",
+        "version": "5.4.56",
+        "installed": true,
+        "enabled": true,
+        "sourcePath": "<ROOT>/plugin",
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/TychoHenzen/dod-guard.git"
+        }
+      },
+      "identity": {
+        "pluginId": "dod-guard@dod-guard-monorepo",
+        "name": "dod-guard",
+        "marketplaceName": "dod-guard-monorepo",
+        "version": "5.4.56",
+        "installed": true,
+        "enabled": true,
+        "sourcePath": "<ROOT>/plugin",
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/TychoHenzen/dod-guard.git"
+        }
+      },
+      "requested": {
+        "inventoryStatus": "3"
+      },
+      "inventoryStatus": 3
+    }
+  },
+  "claude: inventory status 3 with a valid registration": {
+    "status": 0,
+    "stream": "stdout",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "pluginIdentity",
+      "identity",
+      "requested",
+      "inventoryStatus"
+    ],
+    "observedKeys": [],
+    "body": {
+      "ok": true,
+      "client": "claude",
+      "version": "5.4.56",
+      "pluginRoot": "<ROOT>/plugin",
+      "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+      "pluginIdentity": {
+        "id": "dod-guard@dod-guard",
+        "version": "5.4.56",
+        "enabled": true,
+        "installPath": "<ROOT>/plugin"
+      },
+      "identity": {
+        "id": "dod-guard@dod-guard",
+        "version": "5.4.56",
+        "enabled": true,
+        "installPath": "<ROOT>/plugin"
+      },
+      "requested": {
+        "inventoryStatus": "3"
+      },
+      "inventoryStatus": 3
+    }
+  },
+  "codex: inventory status 3 with a missing registration": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations",
+      "inventoryStatus"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {
+        "inventoryStatus": "3"
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": [],
+        "inventoryStatus": 3
+      },
+      "reason": "Inventory command exited with status 3; Expected exactly one installed and enabled dod-guard registration; found 0.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: inventory status 3 with a missing registration": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations",
+      "inventoryStatus"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {
+        "inventoryStatus": "3"
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": [],
+        "inventoryStatus": 3
+      },
+      "reason": "Inventory command exited with status 3; Expected exactly one installed and enabled dod-guard registration; found 0.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: inventory status 0 with a missing registration": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations",
+      "inventoryStatus"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {
+        "inventoryStatus": "0"
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": [],
+        "inventoryStatus": 0
+      },
+      "reason": "Expected exactly one installed and enabled dod-guard registration; found 0.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: inventory status 0 with a missing registration": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registrations",
+      "inventoryStatus"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {
+        "inventoryStatus": "0"
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "registrations": [],
+        "inventoryStatus": 0
+      },
+      "reason": "Expected exactly one installed and enabled dod-guard registration; found 0.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: inventory status 3 with malformed stdin": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "inventoryStatus"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {
+        "inventoryStatus": "3"
+      },
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "inventoryStatus": 3
+      },
+      "reason": "Inventory command exited with status 3; Registry input is missing or malformed",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: inventory status 3 with malformed stdin": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "inventoryStatus"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {
+        "inventoryStatus": "3"
+      },
+      "observed": {
+        "registry": "unavailable",
+        "pluginIdentity": "unavailable",
+        "version": "unavailable",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "inventoryStatus": 3
+      },
+      "reason": "Inventory command exited with status 3; Registry input is missing or malformed",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: manifest invalid JSON": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "manifestPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "unavailable",
+        "manifestPath": "<ROOT>/plugin/.codex-plugin/plugin.json"
+      },
+      "reason": "Installed plugin manifest could not be read as valid JSON",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: manifest invalid JSON": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "manifestPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "unavailable",
+        "manifestPath": "<ROOT>/plugin/.claude-plugin/plugin.json"
+      },
+      "reason": "Installed plugin manifest could not be read as valid JSON",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: manifest wrong name": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "manifestName",
+      "manifestVersion",
+      "manifestPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "manifestName": "other-plugin",
+        "manifestVersion": "5.4.56",
+        "manifestPath": "<ROOT>/plugin/.codex-plugin/plugin.json"
+      },
+      "reason": "The installed plugin manifest name or version disagrees with the registration.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: manifest wrong name": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "manifestName",
+      "manifestVersion",
+      "manifestPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "manifestName": "other-plugin",
+        "manifestVersion": "5.4.56",
+        "manifestPath": "<ROOT>/plugin/.claude-plugin/plugin.json"
+      },
+      "reason": "The installed plugin manifest name or version disagrees with the registration.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: manifest wrong version": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "manifestName",
+      "manifestVersion",
+      "manifestPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "manifestName": "dod-guard",
+        "manifestVersion": "5.4.57",
+        "manifestPath": "<ROOT>/plugin/.codex-plugin/plugin.json"
+      },
+      "reason": "The installed plugin manifest name or version disagrees with the registration.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: manifest wrong version": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "manifestName",
+      "manifestVersion",
+      "manifestPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "unavailable",
+        "skillPath": "unavailable",
+        "manifestName": "dod-guard",
+        "manifestVersion": "5.4.57",
+        "manifestPath": "<ROOT>/plugin/.claude-plugin/plugin.json"
+      },
+      "reason": "The installed plugin manifest name or version disagrees with the registration.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: manifest outside the plugin root": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "manifestPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "unavailable",
+        "manifestPath": "<ROOT>/external-manifest/plugin.json"
+      },
+      "reason": "Installed plugin manifest path resolves outside the registered plugin root.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: manifest outside the plugin root": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "manifestPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "unavailable",
+        "manifestPath": "<ROOT>/external-manifest/plugin.json"
+      },
+      "reason": "Installed plugin manifest path resolves outside the registered plugin root.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: publish skill missing": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md"
+      },
+      "reason": "The registered installation is missing its publish skill",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: publish skill missing": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md"
+      },
+      "reason": "The registered installation is missing its publish skill",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: publish skill is a directory": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md"
+      },
+      "reason": "The registered installation's publish skill is not a readable regular file",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: publish skill is a directory": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {},
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md"
+      },
+      "reason": "The registered installation's publish skill is not a readable regular file",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: version pin stale": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "manifestVersion"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {
+        "version": "5.4.55"
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+        "manifestVersion": "5.4.56"
+      },
+      "reason": "The requested version does not exactly match the active registration and manifest.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: version pin stale": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "manifestVersion"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {
+        "version": "5.4.55"
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md",
+        "manifestVersion": "5.4.56"
+      },
+      "reason": "The requested version does not exactly match the active registration and manifest.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: path pin stale": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {
+        "path": "<ROOT>/plugin/old/skills/publish/SKILL.md"
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md"
+      },
+      "reason": "The requested path must exactly match the normalized absolute path of the loaded skills/publish/SKILL.md.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: path pin stale": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {
+        "path": "<ROOT>/plugin/old/skills/publish/SKILL.md"
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md"
+      },
+      "reason": "The requested path must exactly match the normalized absolute path of the loaded skills/publish/SKILL.md.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: path pin not absolute": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {
+        "path": "SKILL.md"
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/plugin",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md"
+      },
+      "reason": "The requested path must exactly match the normalized absolute path of the loaded skills/publish/SKILL.md.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: path pin not absolute": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {
+        "path": "SKILL.md"
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/plugin"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/plugin",
+        "skillPath": "<ROOT>/plugin/skills/publish/SKILL.md"
+      },
+      "reason": "The requested path must exactly match the normalized absolute path of the loaded skills/publish/SKILL.md.",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "codex: registered root missing": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registeredRoot"
+    ],
+    "body": {
+      "ok": false,
+      "client": "codex",
+      "requested": {
+        "registeredRoot": true
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "pluginId": "dod-guard@dod-guard-monorepo",
+          "name": "dod-guard",
+          "marketplaceName": "dod-guard-monorepo",
+          "version": "5.4.56",
+          "installed": true,
+          "enabled": true,
+          "sourcePath": "<ROOT>/missing",
+          "marketplaceSource": {
+            "sourceType": "git",
+            "source": "https://github.com/TychoHenzen/dod-guard.git"
+          }
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/missing",
+        "skillPath": "unavailable",
+        "registeredRoot": "<ROOT>/missing"
+      },
+      "reason": "The registered plugin path is unavailable",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  },
+  "claude: registered root missing": {
+    "status": 1,
+    "stream": "stderr",
+    "otherStreamEmpty": true,
+    "formatted": true,
+    "topKeys": [
+      "ok",
+      "client",
+      "requested",
+      "observed",
+      "reason",
+      "nextStep"
+    ],
+    "observedKeys": [
+      "registry",
+      "pluginIdentity",
+      "version",
+      "pluginRoot",
+      "skillPath",
+      "registeredRoot"
+    ],
+    "body": {
+      "ok": false,
+      "client": "claude",
+      "requested": {
+        "registeredRoot": true
+      },
+      "observed": {
+        "registry": "parsed",
+        "pluginIdentity": {
+          "id": "dod-guard@dod-guard",
+          "version": "5.4.56",
+          "enabled": true,
+          "installPath": "<ROOT>/missing"
+        },
+        "version": "5.4.56",
+        "pluginRoot": "<ROOT>/missing",
+        "skillPath": "unavailable",
+        "registeredRoot": "<ROOT>/missing"
+      },
+      "reason": "The registered plugin path is unavailable",
+      "nextStep": "Refresh or correct this client installation and rerun /dod-guard:publish; do not use another cache or checkout."
+    }
+  }
+}
