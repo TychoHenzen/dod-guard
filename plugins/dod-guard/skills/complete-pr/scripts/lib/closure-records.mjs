@@ -104,9 +104,8 @@ function parseCompletionRecord(comments) {
 }
 
 function pendingMatrixRows(matrix) {
-  const rows = Array.isArray(matrix) ? matrix : matrix?.rows;
-  if (!Array.isArray(rows)) throw new TypeError("acceptance matrix must be an array of rows.");
-  return rows
+  if (!Array.isArray(matrix)) throw new TypeError("acceptance matrix must be an array of rows.");
+  return matrix
     .filter((row) => !SETTLED_ROW_STATUSES.has(String(row?.status ?? "").toLowerCase()))
     .map((row) => String(row?.id));
 }

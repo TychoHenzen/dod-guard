@@ -134,7 +134,6 @@ test("counts every matrix row that is neither pass nor inapplicable as pending",
     { id: "AC-04", status: "blocked" },
   ];
   assert.deepEqual(pendingMatrixRows(rows), ["AC-03", "AC-04"]);
-  assert.deepEqual(pendingMatrixRows({ rows }), ["AC-03", "AC-04"]);
   assert.throws(() => pendingMatrixRows(null), /acceptance matrix must be an array/);
   const record = renderCompletionRecord({
     pullRequest: 901,

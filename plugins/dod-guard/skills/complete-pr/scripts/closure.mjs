@@ -10,6 +10,7 @@ import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
+import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
 import { REPOSITORY_NAME } from "../../../lib/repository-identity.mjs";
 import { applyClosures, recordCompletion } from "./lib/closure-apply.mjs";
 import { annotateSnapshot } from "./lib/closure-delivery.mjs";
@@ -20,7 +21,7 @@ import { runGh } from "./lib/gh-runner.mjs";
 const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs apply --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs record --repository=<owner/name> --result=<complete-pr.json>
-                          --matrix=<rows.json> [--children=<n,...>]
+                          --handoff-file=<handoff-comment.md> [--children=<n,...>]
        closure.mjs annotate --snapshot=<file.json>
        closure.mjs snapshot --repository=<owner/name> --output=<file.json>
 
@@ -35,6 +36,7 @@ close as read, comment, close, readback, Project Done, and it also sets Done on
 each status repair. --hierarchy asks to close that issue as a pure hierarchy
 record (not_planned). annotate prints the snapshot with activeCheckpoint and
 trustedHeadSha taken from the completion records, ready for select-next.mjs.
+record reads the acceptance matrix from the json block under ## Acceptance matrix in the handoff comment file; --children= with no value means no extra children.
 snapshot builds that closure snapshot for one repository from GitHub REST GET requests and the one
 read-only GraphQL read that resolves the explicitly linked Project, as linked-project.mjs does. The
 command removes any earlier output first and writes the new one in one step, so a failed read
@@ -42,6 +44,12 @@ leaves no file at that path.`;
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
+}
+
+function readMatrixRows(path) {
+  const read = readHandoffMatrix(readFileSync(path, "utf8"));
+  if (read.error) throw new Error(read.error);
+  return read.rows;
 }
 
 function given(value) {
@@ -52,7 +60,7 @@ function given(value) {
 // before the first write, so one entry that is not a positive integer makes the whole
 // list false, and the record command reports that as a usage error.
 function childList(value) {
-  if (value === undefined) return [];
+  if (value === undefined || value === "") return [];
   if (!given(value)) return false;
   const numbers = value.split(",").map((entry) => Number(entry.trim()));
   if (!numbers.every((number) => Number.isInteger(number) && number > 0)) return false;
@@ -85,7 +93,7 @@ const COMMANDS = {
   // The snapshot reads pass the exit codes they can read, such as the 1 of an HTTP 404; apply and
   // record pass none, so any non-zero exit throws.
   snapshot: (args, runner = runGh) => {
-    if (!given(args.output) || !REPOSITORY_NAME.test(args.repository ?? "")) {
+    if (!(given(args.output) && REPOSITORY_NAME.test(args.repository ?? ""))) {
       return false;
     }
     // A failed build must never leave an earlier snapshot for plan or apply to read, so the old file goes first.
@@ -102,16 +110,17 @@ const COMMANDS = {
     };
   },
   record: (args, runner = runGh) => {
+    if (args.matrix !== undefined) return false;
     const children = childList(args.children);
     if (children === false) return false;
     return (
       given(args.repository) &&
       given(args.result) &&
-      given(args.matrix) &&
+      given(args["handoff-file"]) &&
       recordCompletion({
         repository: args.repository,
         result: readJson(args.result),
-        matrix: readJson(args.matrix),
+        matrix: readMatrixRows(args["handoff-file"]),
         children,
         runner,
       })

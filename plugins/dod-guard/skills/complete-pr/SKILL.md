@@ -116,10 +116,10 @@ Prefer numeric REST ids: a `PVTI_` id comes only from the items list, which can 
 
 ## Record completion and close replaced issues
 
-After readback shows the delivered issues `Done`, save the helper's JSON result and the handoff's acceptance-matrix rows to files. Record evidence on each linked closing issue and finalized child, in the `## Completion evidence` format from `standards/project-workflow.md`. Recording is safe to rerun.
+After readback shows the delivered issues `Done`, save the helper's JSON result and the `## Implementation handoff` comment text to files. Record evidence on each linked closing issue and finalized child, in the `## Completion evidence` format from `standards/project-workflow.md`. Recording is safe to rerun.
 
 ```text
-node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --result=<helper-result.json> --matrix=<matrix-rows.json> --children=<child-number>,...
+node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --result=<helper-result.json> --handoff-file=<handoff-comment.md> --children=<child-number>,...
 node <skill-dir>/scripts/closure.mjs snapshot --repository=<owner/repository> --output=<file>
 node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
 node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
