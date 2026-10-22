@@ -33,9 +33,7 @@ test("AC-09: an item whose issue is missing from issues selects nothing and is n
   assert.equal((await selectNext(snapshot())).selected.rootIssueNumber, 517);
 });
 
-const AC09 =
-  "AC-09: a linked pull request missing from pullRequests selects nothing" +
-  " and is named in missingEvidence";
+const AC09 = "AC-09: a linked pull request missing from pullRequests selects nothing and is named in missingEvidence";
 
 test(AC09, async () => {
   const input = snapshot();
