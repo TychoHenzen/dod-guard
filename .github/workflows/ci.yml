@@ -11,7 +11,7 @@
 #   static-analysis   advisory quality diagnostics plus Biome, then rejects generated-file drift
 #   package-integrity whether the built bundle actually speaks MCP
 #
-# advisor-windows and opencode also run on every pull request but are not
+# windows-shell-helpers and opencode also run on every pull request but are not
 # required checks: they need a Windows host or a pinned OpenCode CLI.
 #
 # Quality metrics remain visible as advisory diagnostics. They do not decide
@@ -30,7 +30,7 @@ permissions:
   contents: read
 
 jobs:
-  # ── Always runs ──────────────────────────────────────────────────────
+  # -- Always runs ------------------------------------------------------
 
   build-test:
     runs-on: ubuntu-latest
@@ -50,7 +50,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - run: npm test
 
-  advisor-windows:
+  windows-shell-helpers:
     runs-on: windows-latest
     timeout-minutes: 10
     steps:
@@ -60,7 +60,7 @@ jobs:
           node-version: 22
       - name: Run the Windows command-composition boundary
         run: node --test scripts/ci/command-composition.test.mjs
-      - name: Run the Windows advisor contract
+      - name: Run the Windows Codex launcher contract
         run: node --test plugins/dod-guard/skills/codex-advisor/scripts/advisor-contract.test.mjs
       - name: Run the publish PowerShell helpers
         run: >-
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - run: git config core.fileMode false  # Windows builds set +x on bundle.js — ignore mode changes
+      - run: git config core.fileMode false  # Windows builds set +x on bundle.js - ignore mode changes
       - uses: actions/setup-node@v7
         with:
           node-version: 22
