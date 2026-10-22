@@ -138,6 +138,34 @@ export async function createIssueWithGuard(context, number) {
   });
 }
 
+function membershipOf(transport, issue) {
+  return readProjectMembership(transport).filter(
+    ({ content }) => content.number === issue.number,
+  );
+}
+
+function addMembershipIfMissing(context, issue) {
+  if (membershipOf(context.transport, issue).length === 0) {
+    runRest(context.transport, [
+      "api",
+      "--method",
+      "POST",
+      `users/${OWNER}/projectsV2/${PROJECT_NUMBER}/items`,
+      "-f",
+      "type=Issue",
+      "-F",
+      `id=${issue.id}`,
+    ]);
+  }
+  const readback = membershipOf(context.transport, issue);
+  if (readback.length !== 1) {
+    throw new Error(
+      `Project membership for issue ${issue.number} was unresolved.`,
+    );
+  }
+  return readback[0];
+}
+
 export async function ensureProjectMembership(context, issue) {
   await runBoundary(context, {
     operation: `membership-${issue.number}`,
@@ -148,31 +176,6 @@ export async function ensureProjectMembership(context, issue) {
       issueId: issue.id,
     },
     restEndpoint: `POST /users/${OWNER}/projectsV2/${PROJECT_NUMBER}/items`,
-    rest: () => {
-      const existing = readProjectMembership(context.transport).some(
-        ({ content }) => content.number === issue.number,
-      );
-      if (!existing) {
-        runRest(context.transport, [
-          "api",
-          "--method",
-          "POST",
-          `users/${OWNER}/projectsV2/${PROJECT_NUMBER}/items`,
-          "-f",
-          "type=Issue",
-          "-F",
-          `id=${issue.id}`,
-        ]);
-      }
-      const readback = readProjectMembership(context.transport).filter(
-        ({ content }) => content.number === issue.number,
-      );
-      if (readback.length !== 1) {
-        throw new Error(
-          `Project membership for issue ${issue.number} was unresolved.`,
-        );
-      }
-      return readback[0];
-    },
+    rest: () => addMembershipIfMissing(context, issue),
   });
 }

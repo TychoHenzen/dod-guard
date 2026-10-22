@@ -95,6 +95,26 @@ export async function writeStatus(context, expectedStatus) {
   await assertStatuses(context, expectedStatus, slug);
 }
 
+function linkChildIfMissing(context, parentNumber, child) {
+  const endpoint = `repos/${REPOSITORY}/issues/${parentNumber}/sub_issues`;
+  const hasChild = (list) => list.some(({ number }) => number === child.number);
+  if (!hasChild(runRest(context.transport, ["api", endpoint]))) {
+    runRest(context.transport, [
+      "api",
+      "--method",
+      "POST",
+      endpoint,
+      "-F",
+      `sub_issue_id=${child.id}`,
+    ]);
+  }
+  const readback = runRest(context.transport, ["api", endpoint]);
+  if (!hasChild(readback)) {
+    throw new Error(`Hierarchy link for issue ${child.number} was unresolved.`);
+  }
+  return readback;
+}
+
 export async function linkHierarchy(context, parentNumber, child) {
   await runBoundary(context, {
     operation: `hierarchy-link-${child.number}`,
@@ -105,27 +125,7 @@ export async function linkHierarchy(context, parentNumber, child) {
       childId: child.id,
     },
     restEndpoint: `POST /repos/${REPOSITORY}/issues/${parentNumber}/sub_issues`,
-    rest: () => {
-      const endpoint = `repos/${REPOSITORY}/issues/${parentNumber}/sub_issues`;
-      const existing = runRest(context.transport, ["api", endpoint]);
-      if (!existing.some(({ number }) => number === child.number)) {
-        runRest(context.transport, [
-          "api",
-          "--method",
-          "POST",
-          endpoint,
-          "-F",
-          `sub_issue_id=${child.id}`,
-        ]);
-      }
-      const readback = runRest(context.transport, ["api", endpoint]);
-      if (!readback.some(({ number }) => number === child.number)) {
-        throw new Error(
-          `Hierarchy link for issue ${child.number} was unresolved.`,
-        );
-      }
-      return readback;
-    },
+    rest: () => linkChildIfMissing(context, parentNumber, child),
   });
 }
 
@@ -184,6 +184,19 @@ export async function closeIssue(context, number) {
   });
 }
 
+function mergeIfOpen(context) {
+  const existing = context.client.getPullRequest();
+  if (existing.state === "MERGED") {
+    return { merged: true, sha: existing.mergeCommitSha };
+  }
+  const result = context.client.mergePullRequest(PULL_NUMBER, HEAD_SHA);
+  const readback = context.client.getPullRequest();
+  if (readback.state !== "MERGED") {
+    throw new Error(`Pull request ${PULL_NUMBER} merge was unresolved.`);
+  }
+  return result;
+}
+
 export async function mergePullRequest(context) {
   return runBoundary(context, {
     operation: "completion-merge",
@@ -193,19 +206,6 @@ export async function mergePullRequest(context) {
       headSha: HEAD_SHA,
     },
     restEndpoint: `PUT /repos/${REPOSITORY}/pulls/${PULL_NUMBER}/merge`,
-    rest: () => {
-      const existing = context.client.getPullRequest();
-      if (existing.state === "MERGED") {
-        return { merged: true, sha: existing.mergeCommitSha };
-      }
-      const result = context.client.mergePullRequest(PULL_NUMBER, HEAD_SHA);
-      const readback = context.client.getPullRequest();
-      if (readback.state !== "MERGED") {
-        throw new Error(
-          `Pull request ${PULL_NUMBER} merge was unresolved.`,
-        );
-      }
-      return result;
-    },
+    rest: () => mergeIfOpen(context),
   });
 }

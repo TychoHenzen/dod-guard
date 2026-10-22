@@ -3,13 +3,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { runCli } from "../closure.mjs";
-import {
-  ENDPOINT,
-  fakeRest,
-  linkedProjectNode,
-  linkedProjectsReply,
-  SERVER_ERROR,
-} from "./closure-snapshot.test-support.mjs";
+import * as support from "./closure-snapshot.test-support.mjs";
 import {
   buildFailureWith,
   capture,
@@ -22,6 +16,8 @@ import {
 import { HEAD } from "./fixtures/closure-snapshot-pages.mjs";
 import { build, buildFailure, fixtureRoutes } from "./fixtures/closure-snapshot-routes.mjs";
 import { ok, REPO } from "./fixtures/rest-shapes.mjs";
+
+const { ENDPOINT, fakeRest, linkedProjectNode, linkedProjectsReply, SERVER_ERROR } = support;
 
 test("the linked-Project read names itself once for a failed, erroring, or untrustworthy answer", () => {
   const errors = ok({ errors: [{ message: "Something went wrong" }] });

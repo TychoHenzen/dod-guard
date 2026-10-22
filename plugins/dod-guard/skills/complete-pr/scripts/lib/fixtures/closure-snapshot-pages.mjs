@@ -29,61 +29,67 @@ const CHECKS = [
 // matches target issue #11. PVTI_t12 also links a foreign pull request: the
 // item keeps that link, but the snapshot never lists it as a pull request
 // record of the target repository.
-function valuePages() {
+function firstValuePage() {
   return [
-    [
-      projectItem({
-        nodeId: "PVTI_t10",
-        databaseId: 1010,
-        content: issueContent(10, {
-          body: EPIC_BODY,
-          subIssues: 2,
-          comments: 1,
-        }),
+    projectItem({
+      nodeId: "PVTI_t10",
+      databaseId: 1010,
+      content: issueContent(10, {
+        body: EPIC_BODY,
+        subIssues: 2,
+        comments: 1,
       }),
-      projectItem({
-        nodeId: "PVTI_f11",
-        databaseId: 1011,
-        content: issueContent(11, { repo: FOREIGN }),
-      }),
-    ],
-    [
-      projectItem({
-        nodeId: "PVTI_t11",
-        databaseId: 1111,
-        content: issueContent(11, {
-          state: "closed",
-          stateReason: "completed",
-          parent: 10,
-        }),
-        status: "Done",
-        parent: 10,
-        linked: [pull(21, { sha: HEAD[21], mergeCommit: MERGE[21] })],
-      }),
-      projectItem({
-        nodeId: "PVTI_t12",
-        databaseId: 1112,
-        content: issueContent(12, { parent: 10 }),
-        status: "Todo",
-        parent: 10,
-        linked: [
-          pull(23, { sha: HEAD[23], mergeCommit: MERGE[23] }),
-          // An open pull request carries the test-merge commit GitHub reports
-          // for it, with merged_at still null.
-          {
-            ...pull(22, { sha: HEAD[22], state: "open", merged: false }),
-            merge_commit_sha: MERGE[22],
-          },
-          pull(77, {
-            repo: FOREIGN,
-            sha: "d7".repeat(20),
-            state: "open",
-            merged: false,
-          }),
-        ],
-      }),
-    ],
+    }),
+    projectItem({
+      nodeId: "PVTI_f11",
+      databaseId: 1011,
+      content: issueContent(11, { repo: FOREIGN }),
+    }),
   ];
+}
+
+function closedSubIssueItem() {
+  return projectItem({
+    nodeId: "PVTI_t11",
+    databaseId: 1111,
+    content: issueContent(11, {
+      state: "closed",
+      stateReason: "completed",
+      parent: 10,
+    }),
+    status: "Done",
+    parent: 10,
+    linked: [pull(21, { sha: HEAD[21], mergeCommit: MERGE[21] })],
+  });
+}
+
+function openSubIssueItem() {
+  return projectItem({
+    nodeId: "PVTI_t12",
+    databaseId: 1112,
+    content: issueContent(12, { parent: 10 }),
+    status: "Todo",
+    parent: 10,
+    linked: [
+      pull(23, { sha: HEAD[23], mergeCommit: MERGE[23] }),
+      // An open pull request carries the test-merge commit GitHub reports
+      // for it, with merged_at still null.
+      {
+        ...pull(22, { sha: HEAD[22], state: "open", merged: false }),
+        merge_commit_sha: MERGE[22],
+      },
+      pull(77, {
+        repo: FOREIGN,
+        sha: "d7".repeat(20),
+        state: "open",
+        merged: false,
+      }),
+    ],
+  });
+}
+
+function valuePages() {
+  return [firstValuePage(), [closedSubIssueItem(), openSubIssueItem()]];
 }
 
 // The repository's explicit links. Project 3 is closed, so it is dropped before

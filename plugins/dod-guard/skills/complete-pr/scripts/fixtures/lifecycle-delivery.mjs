@@ -14,18 +14,19 @@ import {
   REPOSITORY,
 } from "./lifecycle-constants.mjs";
 
-export async function verifyDraftHandoff(ctx) {
-  const pullRequest = await runBoundary(ctx, {
-    operation: "draft-handoff-pull",
+const PULL_PATH = `/repos/${REPOSITORY}/pulls/${PULL_NUMBER}`;
+
+function readPull(ctx, operation, rest) {
+  return runBoundary(ctx, {
+    operation,
     request: { repository: REPOSITORY, pullNumber: PULL_NUMBER },
-    restEndpoint: `GET /repos/${REPOSITORY}/pulls/${PULL_NUMBER}`,
-    rest: () => ctx.client.getPullRequest(),
+    restEndpoint: `GET ${PULL_PATH}`,
+    rest,
   });
-  assert.equal(pullRequest.state, "OPEN");
-  assert.equal(pullRequest.isDraft, false);
-  assert.equal(pullRequest.headSha, HEAD_SHA);
-  assert.equal(pullRequest.mergeable, "MERGEABLE");
-  const checks = await runBoundary(ctx, {
+}
+
+function readChecks(ctx, pullRequest) {
+  return runBoundary(ctx, {
     operation: "draft-handoff-checks",
     request: {
       repository: REPOSITORY,
@@ -35,34 +36,70 @@ export async function verifyDraftHandoff(ctx) {
     restEndpoint: `GET /repos/${REPOSITORY}/commits/${HEAD_SHA}/check-runs`,
     rest: () => ctx.client.getRequiredChecks(pullRequest),
   });
-  assert.deepEqual(checks, [
-    { bucket: "pass", name: "build-test", state: "SUCCESS" },
-    { bucket: "pass", name: "static-analysis", state: "SUCCESS" },
-  ]);
-  const reviews = await runBoundary(ctx, {
+}
+
+function readReviews(ctx) {
+  return runBoundary(ctx, {
     operation: "draft-handoff-reviews",
     request: { repository: REPOSITORY, pullNumber: PULL_NUMBER },
-    restEndpoint: `GET /repos/${REPOSITORY}/pulls/${PULL_NUMBER}/reviews`,
+    restEndpoint: `GET ${PULL_PATH}/reviews`,
     rest: () =>
       runRest(ctx.transport, [
         "api",
         `repos/${REPOSITORY}/pulls/${PULL_NUMBER}/reviews`,
       ]),
   });
+}
+
+function linkedIssueStates(issues) {
+  return issues.map(({ number, state }) => ({ number, state }));
+}
+
+export async function verifyDraftHandoff(ctx) {
+  const pullRequest = await readPull(ctx, "draft-handoff-pull", () =>
+    ctx.client.getPullRequest(),
+  );
+  assert.equal(pullRequest.state, "OPEN");
+  assert.equal(pullRequest.isDraft, false);
+  assert.equal(pullRequest.headSha, HEAD_SHA);
+  assert.equal(pullRequest.mergeable, "MERGEABLE");
+  assert.deepEqual(await readChecks(ctx, pullRequest), [
+    { bucket: "pass", name: "build-test", state: "SUCCESS" },
+    { bucket: "pass", name: "static-analysis", state: "SUCCESS" },
+  ]);
+  const reviews = await readReviews(ctx);
   assert.deepEqual(
     reviews.map(({ state }) => state),
     ["APPROVED"],
   );
-  const linkedIssues = await runBoundary(ctx, {
-    operation: "draft-handoff-linked-issues",
-    request: { repository: REPOSITORY, pullNumber: PULL_NUMBER },
-    restEndpoint: `GET /repos/${REPOSITORY}/pulls/${PULL_NUMBER}`,
-    rest: () => ctx.client.getLinkedIssues(PULL_NUMBER),
-  });
+  const linkedIssues = await readPull(ctx, "draft-handoff-linked-issues", () =>
+    ctx.client.getLinkedIssues(PULL_NUMBER),
+  );
   assert.deepEqual(
-    linkedIssues.map(({ number, state }) => ({ number, state })),
+    linkedIssueStates(linkedIssues),
     ISSUE_NUMBERS.map((number) => ({ number, state: "OPEN" })),
   );
+}
+
+async function assertDeliveryReadbacks(ctx) {
+  const completedPull = await readPull(ctx, "completion-pull-readback", () =>
+    ctx.client.getPullRequest(),
+  );
+  assert.equal(completedPull.state, "MERGED");
+  const closedIssues = await readPull(
+    ctx,
+    "closure-linked-issues-readback",
+    () => ctx.client.getLinkedIssues(PULL_NUMBER),
+  );
+  assert.deepEqual(
+    linkedIssueStates(closedIssues),
+    ISSUE_NUMBERS.map((number) => ({ number, state: "CLOSED" })),
+  );
+  await assertIssueReadbacks(ctx, {
+    labels: ISSUE_LABELS,
+    state: "closed",
+    phase: "closure",
+  });
 }
 
 export async function completeDelivery(ctx) {
@@ -74,26 +111,5 @@ export async function completeDelivery(ctx) {
     await closeIssue(ctx, number);
   }
   await writeStatus(ctx, "Done");
-  const completedPull = await runBoundary(ctx, {
-    operation: "completion-pull-readback",
-    request: { repository: REPOSITORY, pullNumber: PULL_NUMBER },
-    restEndpoint: `GET /repos/${REPOSITORY}/pulls/${PULL_NUMBER}`,
-    rest: () => ctx.client.getPullRequest(),
-  });
-  assert.equal(completedPull.state, "MERGED");
-  const closedIssues = await runBoundary(ctx, {
-    operation: "closure-linked-issues-readback",
-    request: { repository: REPOSITORY, pullNumber: PULL_NUMBER },
-    restEndpoint: `GET /repos/${REPOSITORY}/pulls/${PULL_NUMBER}`,
-    rest: () => ctx.client.getLinkedIssues(PULL_NUMBER),
-  });
-  assert.deepEqual(
-    closedIssues.map(({ number, state }) => ({ number, state })),
-    ISSUE_NUMBERS.map((number) => ({ number, state: "CLOSED" })),
-  );
-  await assertIssueReadbacks(ctx, {
-    labels: ISSUE_LABELS,
-    state: "closed",
-    phase: "closure",
-  });
+  await assertDeliveryReadbacks(ctx);
 }

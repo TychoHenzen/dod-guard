@@ -24,6 +24,10 @@ function issueUrl(url, parent) {
   return `${url}/issues/${parent}`;
 }
 
+function subIssuesSummary(total) {
+  return { total, completed: 0, percent_completed: 0 };
+}
+
 // parentRepo names the repository of the parent issue, which may differ
 // from the issue's own repository.
 function issueContent(
@@ -50,11 +54,7 @@ function issueContent(
     repository: { full_name: repo },
     repository_url: url,
     parent_issue_url: issueUrl(parentUrl, parent),
-    sub_issues_summary: {
-      total: subIssues,
-      completed: 0,
-      percent_completed: 0,
-    },
+    sub_issues_summary: subIssuesSummary(subIssues),
     comments,
   };
 }
@@ -143,10 +143,9 @@ function pull(
 }
 
 // The Status options spell their names both ways: Backlog and Done as
-// {raw, html}, Todo as a bare string. The fields list is split across two
-// pages, as a long Project's list is.
-function fieldPages({ withParent = true } = {}) {
-  const status = {
+// {raw, html}, Todo as a bare string.
+const PROJECT_FIELDS = {
+  status: {
     id: 101,
     node_id: "PVTSSF_status",
     name: "Status",
@@ -156,40 +155,35 @@ function fieldPages({ withParent = true } = {}) {
       { id: "opt-todo", name: "Todo" },
       { id: "opt-done", name: { raw: "Done", html: "Done" } },
     ],
-  };
-  const repository = {
+  },
+  repository: {
     id: 102,
     node_id: "PVTF_repository",
     name: "Repository",
     data_type: "repository",
-  };
-  const parent = {
+  },
+  parent: {
     id: 103,
     node_id: "PVTF_parent",
     name: "Parent issue",
     data_type: "parent_issue",
-  };
-  const linked = {
+  },
+  linked: {
     id: 104,
     node_id: "PVTF_linked",
     name: "Linked pull requests",
     data_type: "pull_request",
-  };
-  const title = {
-    id: 900,
-    node_id: "PVTF_title",
-    name: "Title",
-    data_type: "title",
-  };
-  if (!withParent) {
-    return [
-      [status, repository],
-      [linked, title],
-    ];
-  }
+  },
+  title: { id: 900, node_id: "PVTF_title", name: "Title", data_type: "title" },
+};
+
+// The fields list is split across two pages, as a long Project's list is.
+function fieldPages({ withParent = true } = {}) {
+  const { status, repository, parent, linked, title } =
+    structuredClone(PROJECT_FIELDS);
   return [
     [status, repository],
-    [parent, linked, title],
+    withParent ? [parent, linked, title] : [linked, title],
   ];
 }
 

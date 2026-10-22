@@ -164,37 +164,37 @@ function roundTripFixture() {
 // #32 has parent BeeHAIve#31, while target issues #21 and #31 exist under the
 // same numbers. A classifier that grouped by bare number would join them, and
 // this test proves it does not.
+const CROSS_REPOSITORY_ITEMS = [
+  {
+    nodeId: "PVTI_20",
+    databaseId: 2020,
+    content: issueContent(20, { subIssues: 1 }),
+    status: "Backlog",
+  },
+  {
+    nodeId: "PVTI_21",
+    databaseId: 2021,
+    content: issueContent(21),
+    status: "Todo",
+  },
+  {
+    nodeId: "PVTI_31",
+    databaseId: 3131,
+    content: issueContent(31),
+    status: "Backlog",
+  },
+  {
+    nodeId: "PVTI_32",
+    databaseId: 3232,
+    content: issueContent(32, { parent: 31, parentRepo: BEEHAIVE }),
+    status: "Backlog",
+    parent: 31,
+    parentRepo: BEEHAIVE,
+  },
+];
+
 function crossRepositoryFixture() {
-  const pages = [
-    [
-      projectItem({
-        nodeId: "PVTI_20",
-        databaseId: 2020,
-        content: issueContent(20, { subIssues: 1 }),
-        status: "Backlog",
-      }),
-      projectItem({
-        nodeId: "PVTI_21",
-        databaseId: 2021,
-        content: issueContent(21),
-        status: "Todo",
-      }),
-      projectItem({
-        nodeId: "PVTI_31",
-        databaseId: 3131,
-        content: issueContent(31),
-        status: "Backlog",
-      }),
-      projectItem({
-        nodeId: "PVTI_32",
-        databaseId: 3232,
-        content: issueContent(32, { parent: 31, parentRepo: BEEHAIVE }),
-        status: "Backlog",
-        parent: 31,
-        parentRepo: BEEHAIVE,
-      }),
-    ],
-  ];
+  const pages = [CROSS_REPOSITORY_ITEMS.map((item) => projectItem(item))];
   const foreignSubIssue = {
     number: 21,
     repository_url: `https://api.github.com/repos/${FOREIGN_REPOSITORY}`,

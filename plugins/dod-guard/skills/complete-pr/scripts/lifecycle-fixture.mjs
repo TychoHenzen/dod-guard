@@ -53,14 +53,21 @@ function isAmbiguousCreate(options, number) {
   return options.ambiguousIssueCreate === number || options.unresolvedIssueCreate === number;
 }
 
+function recordIssue(state, options, issue) {
+  state.issues.set(issue.number, issue);
+  if (options.autoAddProjectItems) {
+    state.projectItems.set(issue.number, createProjectItem(issue));
+  }
+}
+
+function requestedTitle(args, number) {
+  return formValues(args, "title=")[0] ?? `Disposable fixture ${number}`;
+}
+
 function createIssueRoute(state, { args, options }) {
   const number = markedIssueNumber(state, formValues(args, "body=")[0] ?? "");
-  const title = formValues(args, "title=")[0] ?? `Disposable fixture ${number}`;
-  const issue = createIssue(number, title);
-  state.issues.set(number, issue);
-  if (options.autoAddProjectItems) {
-    state.projectItems.set(number, createProjectItem(issue));
-  }
+  const issue = createIssue(number, requestedTitle(args, number));
+  recordIssue(state, options, issue);
   if (isAmbiguousCreate(options, number)) {
     throw new Error(`Ambiguous issue create for ${number}.`);
   }
@@ -181,56 +188,56 @@ const ROUTES = [
   },
 ];
 
-export function createRecordingTransport({
-  missingProjectItem,
-  contradictoryStatus = false,
-  autoAddProjectItems = false,
-  ambiguousStatusWrite,
-  existingIssueNumbers = [],
-  ambiguousIssueCreate,
-  unresolvedIssueCreate,
-} = {}) {
-  const calls = [];
+function createState(existingIssueNumbers) {
   const state = {
     issues: new Map(),
     projectItems: new Map(),
     transitions: [],
     pull: { merged: false },
   };
-  const options = {
-    missingProjectItem,
-    contradictoryStatus,
-    autoAddProjectItems,
-    ambiguousStatusWrite,
-    ambiguousIssueCreate,
-    unresolvedIssueCreate,
-  };
-
   for (const number of existingIssueNumbers) {
     state.issues.set(number, createIssue(number));
   }
+  return state;
+}
+
+function parseRequest(args, options) {
+  const endpoint = args.find(
+    (value) => typeof value === "string" && (value.startsWith("repos/") || value.startsWith("users/")),
+  );
+  const methodIndex = args.indexOf("--method");
+  const method = methodIndex === -1 ? "GET" : args[methodIndex + 1];
+  return { args, endpoint, method, options };
+}
+
+function dispatch(state, args, options) {
+  // The documented linked-Project read is the one GraphQL a lifecycle makes.
+  if (isLinkedProjectRead(args)) {
+    return commandResult(linkedProjectReply());
+  }
+  if (args.some((value) => /graphql/i.test(String(value)))) {
+    throw new Error("Forbidden routine GraphQL request.");
+  }
+  const request = parseRequest(args, options);
+  const reply = staticReply(request.endpoint, state);
+  if (reply !== undefined) return reply;
+  const route = ROUTES.find((candidate) => candidate.matches(request));
+  if (route) return route.handle(state, request);
+  throw new Error(`Unexpected command: ${args.join(" ")}`);
+}
+
+export function createRecordingTransport({ existingIssueNumbers = [], ...rest } = {}) {
+  const calls = [];
+  const state = createState(existingIssueNumbers);
+  const options = {
+    contradictoryStatus: false,
+    autoAddProjectItems: false,
+    ...rest,
+  };
 
   function run(args) {
     calls.push([...args]);
-    // The documented linked-Project read is the one GraphQL a lifecycle makes.
-    if (isLinkedProjectRead(args)) {
-      return commandResult(linkedProjectReply());
-    }
-    if (args.some((value) => /graphql/i.test(String(value)))) {
-      throw new Error("Forbidden routine GraphQL request.");
-    }
-    const endpoint = args.find(
-      (value) => typeof value === "string" && (value.startsWith("repos/") || value.startsWith("users/")),
-    );
-    const methodIndex = args.indexOf("--method");
-    const method = methodIndex === -1 ? "GET" : args[methodIndex + 1];
-    const request = { args, endpoint, method, options };
-
-    const reply = staticReply(endpoint, state);
-    if (reply !== undefined) return reply;
-    const route = ROUTES.find((candidate) => candidate.matches(request));
-    if (route) return route.handle(state, request);
-    throw new Error(`Unexpected command: ${args.join(" ")}`);
+    return dispatch(state, args, options);
   }
 
   return {

@@ -12,15 +12,23 @@ const CLOSE_ORDER = [775, 776, 777, 778, 683];
 
 // Names each gh call by what it does, folding runs of the same kind, so the
 // order of one close reads as a sentence.
+const ISSUE_METHOD_KINDS = { POST: "comment", PATCH: "close" };
+
+function methodOf(args) {
+  const index = args.indexOf("--method");
+  return index === -1 ? "GET" : args[index + 1];
+}
+
+function callKind(args) {
+  const method = methodOf(args);
+  if (args.some((value) => String(value).startsWith("users/"))) {
+    return method === "GET" ? "project-read" : "project-status";
+  }
+  return ISSUE_METHOD_KINDS[method] ?? "read";
+}
+
 function callKinds(calls) {
-  const kinds = calls.map((args) => {
-    const method = args.includes("--method") ? args[args.indexOf("--method") + 1] : "GET";
-    const project = args.some((value) => String(value).startsWith("users/"));
-    if (project) return method === "GET" ? "project-read" : "project-status";
-    if (method === "POST") return "comment";
-    if (method === "PATCH") return "close";
-    return "read";
-  });
+  const kinds = calls.map(callKind);
   return kinds.filter((kind, index) => kind !== kinds[index - 1]);
 }
 
