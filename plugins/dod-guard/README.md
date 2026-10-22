@@ -189,7 +189,7 @@ GitHub-backed skills share the request policy in
 | `/complete-pr` | Complete an explicitly accepted draft through guarded REST merge and branch deletion, stopping while any review thread is unresolved. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
-| `/codex-advisor` | Get a bounded advice-only second opinion from a separate Codex process. |
+| `/codex-advisor` | Get a bounded advice-only second opinion: Claude's built-in `advisor` tool in Claude Code, a separate Codex process in Codex sessions. |
 | `/codex-migrate` | Adapt Claude-oriented repository instructions for Codex. |
 | `/doc-reconcile` | Resolve contradictory documentation using Git history. |
 | `/skill-debug` | Compare skill instructions with recorded executions. |
