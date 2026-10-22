@@ -1,76 +1,7 @@
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
-import { readText } from "../walk.mjs";
+import { rootEntrypoints } from "./environment-entrypoints.mjs";
 
-const BUILD_SYSTEM = /\[build-system\]/;
-const DOTNET_PROJECT = /\.csproj$/i;
-const DOTNET_SOLUTION = /\.sln$/i;
-const PYTEST_CONFIGURATION = /\[tool\.pytest(?:\.|\])/i;
-const SUPPORTED_ROOT_EVIDENCE = "package.json, Cargo.toml, pyproject.toml, .sln, or .csproj";
-
-function read(root, name) {
-  return readText(join(root, name));
-}
-
-function packageJson(root) {
-  const text = read(root, "package.json");
-  if (text === null) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-function rootFiles(root) {
-  try {
-    return readdirSync(root, { withFileTypes: true })
-      .filter((entry) => entry.isFile())
-      .map((entry) => entry.name)
-      .sort();
-  } catch {
-    return [];
-  }
-}
-
-function command(value, name) {
-  return typeof value === "string" && value.trim() !== "" ? name : null;
-}
-
-function nodeEntrypoints(root) {
-  const node = packageJson(root);
-  if (node === null) return [];
-  const scripts = node.scripts ?? {};
-  return [{ file: "package.json", build: command(scripts.build, "npm run build"), test: command(scripts.test, "npm test") }];
-}
-
-function cargoEntrypoints(root) {
-  return rootFiles(root).includes("Cargo.toml") ? [{ file: "Cargo.toml", build: "cargo build", test: "cargo test" }] : [];
-}
-
-function dotnetEntrypoints(root) {
-  const files = rootFiles(root);
-  const solutions = files.filter((name) => DOTNET_SOLUTION.test(name));
-  if (solutions.length === 1) return [dotnetCommand(solutions[0])];
-  if (solutions.length > 1) return [ambiguousDotnet(solutions[0], "solution", solutions)];
-  const projects = files.filter((name) => DOTNET_PROJECT.test(name));
-  if (projects.length === 1) return [dotnetCommand(projects[0])];
-  if (projects.length > 1) return [ambiguousDotnet(projects[0], "project", projects)];
-  return [];
-}
-
-const dotnetCommand = (file) => ({ file, build: `dotnet build ${file}`, test: `dotnet test ${file}` });
-const ambiguousDotnet = (file, kind, files) => ({ file, build: null, test: null, reason: `multiple root .NET ${kind} files (${files.join(", ")})` });
-
-function pythonEntrypoints(root) {
-  const python = read(root, "pyproject.toml");
-  if (python === null) return [];
-  return [{ file: "pyproject.toml", build: BUILD_SYSTEM.test(python) ? "python -m build" : null, test: PYTEST_CONFIGURATION.test(python) ? "python -m pytest" : null }];
-}
-
-function rootEntrypoints(root) {
-  return [...nodeEntrypoints(root), ...cargoEntrypoints(root), ...dotnetEntrypoints(root), ...pythonEntrypoints(root)];
-}
+const SUPPORTED_ROOT_EVIDENCE =
+  "package.json, Cargo.toml, pyproject.toml, " + ".sln, or .csproj";
 
 function finding(input) {
   const { file, rule, severity, message } = input;
@@ -84,7 +15,9 @@ export function resolveEntrypoints(root) {
 export function checkEnvironment(root, config) {
   const manifests = rootEntrypoints(root);
   if (manifests.length === 0) {
-    const reason = `no supported root entry point declaration found; inspected ${SUPPORTED_ROOT_EVIDENCE}`;
+    const reason =
+      "no supported root entry point declaration found; inspected " +
+      SUPPORTED_ROOT_EVIDENCE;
     return [
       ["build-entrypoint", "E1", "build"],
       ["test-entrypoint", "E2", "test"],
@@ -93,13 +26,16 @@ export function checkEnvironment(root, config) {
         file: "<repository root>",
         rule,
         severity: config.presence[rule],
-        message: `${prefix}: ${reason} - add one documented root ${kind} entry point`,
+        message:
+          `${prefix}: ${reason} - add one documented root ` +
+          `${kind} entry point`,
       }),
     );
   }
   return manifests.flatMap((manifest) => {
     const found = [];
-    const reason = manifest.reason || `no declared ${manifest.file} entry point`;
+    const reason =
+      manifest.reason || `no declared ${manifest.file} entry point`;
     const missing = (rule, prefix, kind) =>
       finding({
         file: manifest.file,
@@ -107,8 +43,12 @@ export function checkEnvironment(root, config) {
         severity: config.presence[rule],
         message: `${prefix}: ${reason} - add one root ${kind} entry point`,
       });
-    if (manifest.build === null) found.push(missing("build-entrypoint", "E1", "build"));
-    if (manifest.test === null) found.push(missing("test-entrypoint", "E2", "test"));
+    if (manifest.build === null) {
+      found.push(missing("build-entrypoint", "E1", "build"));
+    }
+    if (manifest.test === null) {
+      found.push(missing("test-entrypoint", "E2", "test"));
+    }
     return found;
   });
 }
