@@ -14,7 +14,10 @@
 // implementation handoff saved to a local file, and checks every row and every
 // review lens against the pushed head SHA, so a row or lens bound to another
 // head is reported. finalization is the same proof plus the complete-pr gate's
-// own head check; complete-pr runs it before it readies or merges. No subcommand
+// own head check; complete-pr runs it before it readies or merges. finalization
+// also requires the handoff's ## Preflight checkpoint and fails on any required
+// context that is not present or skipped at the head; post-push checks the rows
+// only when the record exists. No subcommand
 // makes a network or GitHub call; fetching the issue and the handoff belongs to
 // the caller. Each prints one JSON object
 // {outcome, remainder} and exits:

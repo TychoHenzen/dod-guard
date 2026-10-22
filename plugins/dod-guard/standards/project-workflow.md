@@ -114,6 +114,8 @@ through `complete-pr`. A merge conflict on the PBI head goes to the triage in
 `standards/conflict-triage.md`; an unresolvable conflict or unexpected branch
 movement stops the workflow.
 
+The rows are one fenced `json` array under that heading, with fields `context`, `provider`, `workflow`, `runId`, `ref`, `headSha` and `state`. The base ref, base SHA and mergeability stay prose lines above the block. `handoff-proof.mjs finalization` requires the record and fails, naming the context, on any row that is not `present` or `skipped` at the exact head, on a duplicate context and on a missing record. `post-push` checks the rows only when the record exists, because the record is written after the draft PR.
+
 ## Structured handoff records
 
 For a structured PBI, keep these records in the issue's `## Implementation

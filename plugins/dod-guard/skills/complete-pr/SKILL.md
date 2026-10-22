@@ -23,7 +23,7 @@ Apply `standards/working-defaults.md` and `standards/github-request-discipline.m
 
 ## Preflight checkpoint
 
-Read the `## Preflight checkpoint` from the implementation handoff (format in `standards/project-workflow.md`). Before any ready transition, branch update, merge, or cleanup, require the exact head, base ref and SHA, mergeability, and a complete row for every required provider context. Stop with expected and observed values on missing, pending, failed, unavailable, stale, duplicate, forked, or provider-mismatched evidence, never inferred from a passing aggregate. An exact-head `skipped` context counts as passing.
+Read the `## Preflight checkpoint` from the implementation handoff (format in `standards/project-workflow.md`). Before any ready transition, branch update, merge, or cleanup, require the exact head, base ref and SHA, mergeability, and a complete row for every required provider context. Stop with expected and observed values on missing, pending, failed, unavailable, stale, duplicate, forked, or provider-mismatched evidence, never inferred from a passing aggregate. An exact-head `skipped` context counts as passing. `handoff-proof.mjs finalization` applies this row check to the saved handoff before the helper runs.
 
 To recover a draft-skipped workflow, verify draft readiness at the same ref and head, dispatch once through the existing guarded workflow owner, and read back run, workflow, ref, and head before waiting.
 

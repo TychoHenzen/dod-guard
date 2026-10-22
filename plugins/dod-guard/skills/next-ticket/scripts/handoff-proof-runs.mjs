@@ -1,7 +1,11 @@
 // The three proofs behind handoff-proof.mjs, with no file access. Each takes
 // { body, handoff, headSha, children } and returns { outcome, remainder }.
+// finalization requires the handoff's ## Preflight checkpoint and fails on any
+// required context that is not present or skipped at the head; post-push checks
+// the rows only when the record exists.
 import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
 import { parseIssueBodyRecords, postPushInput } from "../../../lib/issue-body-records.mjs";
+import { checkpointRemainder, readPreflightCheckpoint } from "../../../lib/preflight-checkpoint.mjs";
 import { evaluateStructuredFinalization } from "../../complete-pr/scripts/finalization-gate.mjs";
 import { evaluateConvergence } from "./structured-workflow-proof.mjs";
 
@@ -16,6 +20,15 @@ function refinementProof({ body, children }) {
   if (parsed.errors.length > 0) return { outcome: "parse error", remainder: parsed.errors };
   const convergence = evaluateConvergence({ ...parsed.input, children });
   return outcomeOf([...parsed.remainder, ...convergence.remainder]);
+}
+
+// The record is written after the draft PR, so post-push passes a handoff with no
+// record and checks only the rows of a record that exists. Finalization requires it.
+function checkpointProblems({ handoff, headSha, required }) {
+  const read = readPreflightCheckpoint(handoff);
+  if (read.absent) return required ? ["handoff has no ## Preflight checkpoint section"] : [];
+  if (read.error) return [read.error];
+  return checkpointRemainder(read.rows, headSha);
 }
 
 // The post-push input: the observed rows and the pushed head replace the
@@ -40,7 +53,11 @@ function postPushProof(request) {
     return assembled.failure;
   }
   const convergence = evaluateConvergence(assembled.input);
-  return outcomeOf([...assembled.parsed.remainder, ...convergence.remainder]);
+  return outcomeOf([
+    ...assembled.parsed.remainder,
+    ...convergence.remainder,
+    ...checkpointProblems({ handoff: request.handoff, headSha: request.headSha, required: false }),
+  ]);
 }
 
 // finalization is the same proof as post-push minus the planned matrix, plus the
@@ -53,6 +70,7 @@ function finalizationProof(request) {
   }
   const result = evaluateStructuredFinalization(assembled.input);
   const remainder = [...assembled.parsed.remainder, ...result.remainder];
+  remainder.push(...checkpointProblems({ handoff: request.handoff, headSha: request.headSha, required: true }));
   if (result.outcome !== "verified" && remainder.length === 0) {
     remainder.push(`finalization gate reported ${result.outcome}`);
   }

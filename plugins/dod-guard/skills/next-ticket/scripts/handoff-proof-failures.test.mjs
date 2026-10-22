@@ -51,7 +51,7 @@ test("finalization exits 2 with no --head-sha or an empty one", async () => {
 
 test("finalization exits 2 on an ordinary-path body and names every missing record", async () => {
   const ordinary = "## Summary\n\nA plain fix.\n\n## Acceptance criteria\n\n- [ ] AC-1 It works\n";
-  const result = await gate("finalization", { body: ordinary });
+  const result = await gate("finalization", { body: ordinary, checkpoint: null });
 
   assert.deepEqual(
     result,
@@ -78,7 +78,7 @@ test("finalization exits 2 and names a matrix block that is missing, not JSON, o
   ];
 
   for (const [handoff, message] of cases) {
-    assert.deepEqual(await gate("finalization", { handoff }), parseError([message]), message);
+    assert.deepEqual(await gate("finalization", { handoff, checkpoint: null }), parseError([message]), message);
   }
 });
 
