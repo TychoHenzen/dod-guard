@@ -28,6 +28,10 @@ function subIssuesSummary(total) {
   return { total, completed: 0, percent_completed: 0 };
 }
 
+function dependenciesSummary(blockedBy) {
+  return { blocked_by: blockedBy, total_blocked_by: blockedBy, blocking: 0, total_blocking: 0 };
+}
+
 // parentRepo names the repository of the parent issue, which may differ
 // from the issue's own repository.
 function issueContent(
@@ -40,6 +44,7 @@ function issueContent(
     body = "",
     parent = null,
     subIssues = 0,
+    blockedBy = 0,
     comments = 0,
   } = {},
 ) {
@@ -55,6 +60,7 @@ function issueContent(
     repository_url: url,
     parent_issue_url: issueUrl(parentUrl, parent),
     sub_issues_summary: subIssuesSummary(subIssues),
+    issue_dependencies_summary: dependenciesSummary(blockedBy),
     comments,
   };
 }

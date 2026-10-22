@@ -30,6 +30,7 @@ export function issue(number, overrides = {}) {
     title: `Issue ${number}`,
     parent: null,
     children: [],
+    blockedBy: [],
     ...overrides,
   };
 }

@@ -25,7 +25,10 @@ export function item(number, status, { parent = null, linked = [], parentField =
 }
 
 // An issue of the repository. Its checkpoint is explicitly false unless a case changes it.
-export function issue(number, { state = "closed", parent = null, children = [], activeCheckpoint = false } = {}) {
+export function issue(
+  number,
+  { state = "closed", parent = null, children = [], blockedBy = [], activeCheckpoint = false } = {},
+) {
   return {
     number,
     repository: REPOSITORY,
@@ -33,6 +36,7 @@ export function issue(number, { state = "closed", parent = null, children = [], 
     title: `Issue ${number}`,
     parent: parent === null ? null : ref(parent),
     children: children.map((child) => ref(child)),
+    blockedBy,
     activeCheckpoint,
   };
 }

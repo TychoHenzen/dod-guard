@@ -81,6 +81,7 @@ const FAULTS = [
   ],
   ["check-runs-failure", [failedAt(ENDPOINT.checkRuns(HEAD[21]))]],
   ["status-failure", [failedAt(ENDPOINT.statuses(HEAD[21]))]],
+  ["blocked-failure", [failedAt(ENDPOINT.blockedBy(12))]],
   ...REJECTED_NAMES.map((variant) => [variant, [failedAt(ENDPOINT.values(2))]]),
 ];
 

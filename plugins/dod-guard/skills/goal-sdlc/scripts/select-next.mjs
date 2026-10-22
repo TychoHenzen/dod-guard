@@ -18,9 +18,10 @@ The snapshot is one JSON object:
   items           every Project item from every page, each with fields
                   Status, Repository, Parent issue, and Linked pull requests
   issues          every listed issue, with number, state, title, parent,
-                  children (an empty array when it has none), and
-                  activeCheckpoint (true while its delivery checkpoint is
-                  open, false once it is finished)
+                  children (an empty array when it has none), blockedBy
+                  ([{repository, number, state}], empty when nothing blocks
+                  it), and activeCheckpoint (true while its delivery
+                  checkpoint is open, false once it is finished)
   pullRequests    every linked pull request, with number, state, mergedAt,
                   head {repository, ref, sha}, base {ref, sha}, mergeCommit,
                   requiredChecks, and trustedHeadSha (the head SHA its
@@ -43,8 +44,9 @@ A Backlog ancestor with no delivery PR or active checkpoint and refined
 Todo/In Progress children is a hierarchy. Its children are independent
 delivery roots; their own nested checklist children stay together. Completed
 siblings do not block unfinished roots, and unsafe ancestor relations hold
-the descendant roots. Honor the issue's declared dependency order before
-implementation; Project order is only the selector's default ranking.
+the descendant roots. A Todo or Backlog group whose issue has an open
+blocker outside the group is held and names the blocker; Project order is
+only the selector's default ranking.
 queueState is ready, held, or exhausted. A null selection with held work is
 not an exhausted queue.`;
 

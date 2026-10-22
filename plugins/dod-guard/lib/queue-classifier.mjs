@@ -88,6 +88,22 @@ function sameRepository(left, right) {
   return typeof left === "string" && typeof right === "string" && left.toLowerCase() === right.toLowerCase();
 }
 
+// A blocker holds the group unless it is closed or is the group's own work. A blocker whose state is not
+// "closed" counts as open, so an unreadable state never passes as unblocked. A queue candidate whose
+// blocker list was never read is held the way a missing sub-issue list is.
+function blockerReasons(records, context) {
+  const members = new Set(records.map(({ issueNumber }) => issueNumber));
+  const insideGroup = (blocker) =>
+    sameRepository(blocker?.repository, context.repository) && members.has(blocker?.number);
+  const closed = (blocker) => String(blocker?.state).toLowerCase() === "closed";
+  return records.flatMap(({ issueNumber, issue }) => {
+    if (!Array.isArray(issue.blockedBy)) return [`issue #${issueNumber} blocked_by relationship missing`];
+    return issue.blockedBy
+      .filter((blocker) => !closed(blocker) && !insideGroup(blocker))
+      .map((blocker) => `issue #${issueNumber} is blocked by ${blocker?.repository}#${blocker?.number}`);
+  });
+}
+
 function mergedEvidenceReasons(records, context, mergedPullRequests) {
   const reasons = [];
   const { repository, defaultBranch } = context;
@@ -238,6 +254,8 @@ function decideGroup(records, context) {
     return hold(["Project status is not a queue status"]);
   }
   if (records.some((record) => record.issue === null)) return hold(["issue readback missing"]);
+  const blocked = blockerReasons(records, context);
+  if (blocked.length > 0) return hold(blocked);
   return { kind: "eligible", eligible: true, status: uniqueStatuses[0], reasons: [] };
 }
 
@@ -258,6 +276,7 @@ function issueRecord(number, issue, overlay) {
     state: issue.state,
     title: issue.title ?? null,
     activeCheckpoint: typeof checkpoint === "boolean" ? checkpoint : null,
+    blockedBy: Array.isArray(issue.blockedBy) ? issue.blockedBy : null,
   };
 }
 

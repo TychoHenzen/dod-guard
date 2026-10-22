@@ -240,8 +240,9 @@ string), Repository, Parent issue (`{repository, number}`), and Linked pull
 requests (`[{repository, number}]`) fields. `issues` and `pullRequests` hold
 only target-repository records, each with `repository`. On every issue it also
 carries `children` as `[{repository, number}]` (an empty array when it has
-none), `parent` as `{repository, number}` or null, `body`, `state_reason`, and
-`comments` as `[{id, body}]`. On every pull request it carries its state, merge
+none), `parent` as `{repository, number}` or null, `blockedBy` as
+`[{repository, number, state}]` (empty for a closed issue, and for an open one with
+no blocker), `body`, `state_reason`, and `comments` as `[{id, body}]`. On every pull request it carries its state, merge
 time, head, base, merge commit, and REST-read `requiredChecks`; the merge commit
 and `requiredChecks` are null until the pull request merges. `requiredChecks`
 comes from the REST reader `dod-guard:complete-pr` uses,
@@ -292,6 +293,13 @@ identity, a duplicated record, an item whose issue is missing, and a linked pull
 request missing from `pullRequests`. `annotate` changes only target-repository
 records, and only their `activeCheckpoint` and `trustedHeadSha`. It leaves every
 relation as read, so select-next holds such a group and never selects it.
+
+select-next also holds a Todo or Backlog group when any of its issues has a blocker
+that is not closed and is not part of the group. The hold names the blocker as
+`owner/name#N`. An open queue issue whose `blockedBy` list is missing is held with
+"blocked_by relationship missing", and `closure.mjs snapshot` fails when a blocker
+read fails. An In Progress delivery that resumes is never held by a blocker. The
+closure judgement does not read `blockedBy`.
 
 A delivery is verified only when its completion record matches the live pull
 request readback (merge commit, trusted head, default base, passing checks) and

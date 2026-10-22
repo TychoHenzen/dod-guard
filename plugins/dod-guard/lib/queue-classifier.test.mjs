@@ -35,10 +35,11 @@ function issue(
     title = `Issue ${number}`,
     parent = null,
     children = [],
+    blockedBy = [],
     activeCheckpoint,
   } = {},
 ) {
-  const record = { number, repository, state, title, parent, children };
+  const record = { number, repository, state, title, parent, children, blockedBy };
   if (activeCheckpoint !== undefined) record.activeCheckpoint = activeCheckpoint;
   return record;
 }
@@ -568,4 +569,67 @@ test("a Backlog parent's own delivery checkpoint or pull request prevents a chil
 test("classifyDelivery returns null for a number no record carries", () => {
   const records = buildQueueRecords(indexSnapshot(healthy()));
   assert.equal(classifyDelivery(records, 999, { repository: REPOSITORY, defaultBranch: "master" }), null);
+});
+
+const OPEN_250 = { repository: REPOSITORY, number: 250, state: "open" };
+
+test("a Todo group with an open blocker outside the group is held, naming it, and the unblocked group is selected", () => {
+  const input = snapshot({
+    items: [item(100, "Todo"), item(101, "Todo")],
+    issues: [issue(100, { blockedBy: [OPEN_250] }), issue(101)],
+  });
+  const result = classify(input);
+  assert.equal(groupOf(result, 100).decision.kind, "hold");
+  assert.deepEqual(groupOf(result, 100).decision.reasons, [`issue #100 is blocked by ${REPOSITORY}#250`]);
+  assert.equal(result.selected.rootIssueNumber, 101);
+});
+
+test("a Backlog group with an open blocker is held", () => {
+  const input = snapshot({ items: [item(100, "Backlog")], issues: [issue(100, { blockedBy: [OPEN_250] })] });
+  assert.equal(groupOf(classify(input), 100).decision.kind, "hold");
+  assert.equal(classify(input).selected, null);
+});
+
+test("a closed blocker and a blocker inside the group do not hold it", () => {
+  const closed = snapshot({
+    items: [item(100, "Todo")],
+    issues: [issue(100, { blockedBy: [{ ...OPEN_250, state: "closed" }] })],
+  });
+  assert.equal(classify(closed).selected.rootIssueNumber, 100);
+  const inside = snapshot({
+    items: [item(517, "Todo"), item(518, "Todo", { parent: ref(517) })],
+    issues: [
+      issue(517, { children: [ref(518)], blockedBy: [{ repository: REPOSITORY, number: 518, state: "open" }] }),
+      issue(518, { parent: ref(517) }),
+    ],
+  });
+  assert.equal(classify(inside).selected.rootIssueNumber, 517);
+});
+
+test("a same-numbered open blocker in another repository still holds the group", () => {
+  const foreign = { repository: FOREIGN_REPOSITORY, number: 518, state: "open" };
+  const input = snapshot({
+    items: [item(517, "Todo"), item(518, "Todo", { parent: ref(517) })],
+    issues: [issue(517, { children: [ref(518)], blockedBy: [foreign] }), issue(518, { parent: ref(517) })],
+  });
+  assert.deepEqual(groupOf(classify(input), 517).decision.reasons, [
+    `issue #517 is blocked by ${FOREIGN_REPOSITORY}#518`,
+  ]);
+});
+
+test("an open Todo issue with no blocker list is held and names the relationship", () => {
+  const input = snapshot({ items: [item(100, "Todo")], issues: [issue(100)] });
+  delete input.issues[0].blockedBy;
+  const result = classify(input);
+  assert.equal(result.selected, null);
+  assert.deepEqual(groupOf(result, 100).decision.reasons, ["issue #100 blocked_by relationship missing"]);
+});
+
+test("an In Progress delivery with an open pull request still resumes while a blocker is open", () => {
+  const input = snapshot({
+    items: [item(100, "In Progress", { linked: [ref(540)] })],
+    issues: [issue(100, { blockedBy: [OPEN_250] })],
+    pullRequests: [pull(540, { state: "open", mergedAt: null })],
+  });
+  assert.equal(groupOf(classify(input), 100).decision.kind, "in-progress");
 });

@@ -65,3 +65,13 @@ test("excludes a merged delivery that carries its completion evidence", async ()
   assert.deepEqual(done, { rootIssueNumber: 444, kind: "complete", reasons: [] });
   assert.equal(result.selected.rootIssueNumber, 517);
 });
+
+test("a Todo group blocked by an open issue is held with the blocker named and the next Todo group is selected", async () => {
+  const input = snapshot();
+  input.items = [item(40, "Todo"), item(41, "Todo")];
+  input.issues = [issue(40, { blockedBy: [{ repository: REPOSITORY, number: 250, state: "open" }] }), issue(41)];
+  const result = await selectNext(input);
+  assert.equal(result.selected.rootIssueNumber, 41);
+  const held = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 40);
+  assert.deepEqual(held, { rootIssueNumber: 40, kind: "hold", reasons: [`issue #40 is blocked by ${REPOSITORY}#250`] });
+});

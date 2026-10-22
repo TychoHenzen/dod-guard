@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildClosureSnapshot } from "./closure-snapshot.mjs";
 import { ENDPOINT, fakeRest, linkedProjectNode, linkedProjectsReply } from "./closure-snapshot.test-support.mjs";
-import { fieldPages, issueContent, ok, projectItem, pull, REPO } from "./fixtures/rest-shapes.mjs";
+import { fieldPages, issueContent, ok, projectItem, pull, REPO, REPO_URL } from "./fixtures/rest-shapes.mjs";
 
 const HEAD_SHA = "a1".repeat(20);
 const DEEP_SEEK = "TychoHenzen/Deep+Seek";
@@ -131,6 +131,15 @@ const CASES = [
     },
     endpoint: ENDPOINT.subIssues(10),
     detail: "every sub-issue must name its repository_url and number",
+  },
+  {
+    name: "blocker entry without a state",
+    change: (pages) => {
+      issueTen(pages).content.issue_dependencies_summary.total_blocked_by = 1;
+      return { [ENDPOINT.blockedBy(10)]: ok([[{ number: 250, repository_url: REPO_URL }]]) };
+    },
+    endpoint: ENDPOINT.blockedBy(10),
+    detail: "every blocker must name its repository_url, number, and state",
   },
   {
     name: "comment entry without a body (461)",

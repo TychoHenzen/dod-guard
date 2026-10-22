@@ -89,6 +89,12 @@ const ROUTE_VARIANTS = {
   "no-protection": (routes) => {
     routes[ENDPOINT.protection] = NOT_FOUND;
   },
+  blocked: (routes) => {
+    routes[ENDPOINT.blockedBy(12)] = ok([[{ number: 250, state: "open", repository_url: REPO_URL }]]);
+  },
+  "blocked-failure": (routes) => {
+    routes[ENDPOINT.blockedBy(12)] = SERVER_ERROR;
+  },
 };
 
 // The healthy fixture, or one deliberate departure named by variant.
