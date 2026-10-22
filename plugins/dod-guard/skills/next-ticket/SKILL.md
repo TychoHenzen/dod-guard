@@ -25,7 +25,7 @@ Resolve the plugin root from this skill's directory. Before editing, read `stand
 
 Run `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`. Stop on outcome `none`, outcome `several`, or exit 2. Never pick a Project by title similarity or from a remembered owner. Report the Project owner, number, and title, then use it for lookup.
 
-A user-supplied issue number must belong to this repository and appear in the linked Project. Without one, list open Project items from this repository, keep unassigned issues with Status exactly `Todo`, drop pull requests, and show number, title, assignee, status. Select a lone result automatically. Otherwise the user chooses.
+For a user-supplied issue number run `node <plugin-root>/skills/complete-pr/scripts/ticket-preconditions.mjs --repository=<owner/name> --issue=<n> --expect-status=Todo`. Stop on exit 1 and report its `check` and `detail`; exit 2 is a read failure to report. It replaces checking repository membership, Project membership and Status by hand. Without one, list open Project items from this repository, keep unassigned issues with Status exactly `Todo`, drop pull requests, and show number, title, assignee, status. Select a lone result automatically. Otherwise the user chooses.
 
 ## Readiness
 

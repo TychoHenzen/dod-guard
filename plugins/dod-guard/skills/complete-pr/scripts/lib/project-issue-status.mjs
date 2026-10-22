@@ -55,6 +55,27 @@ function statusFieldIdOf(projectPath, commandRunner) {
   return statusFields[0].id;
 }
 
+function itemStatusName(context, project, item) {
+  const projectPath = `${context.basePath}/projectsV2/${project.number}`;
+  const statusFieldId = statusFieldIdOf(projectPath, context.commandRunner);
+  projectItemId(item, `${projectPath}/items?per_page=100`);
+  const itemEndpoint = `${projectPath}/items/${item.id}?fields=${statusFieldId}`;
+  const { data } = ghJson(["api", itemEndpoint], [0], context.commandRunner);
+  validateProjectItemReadback({ item: data, expected: item }, context.issue, itemEndpoint);
+  return projectStatusName(data, statusFieldId, itemEndpoint);
+}
+
+// The Status of one issue in a Project the caller already resolved: null when the Project holds no item for the issue, a
+// contract error when it holds several. The caller owns the choice of Project, so no other Project is listed.
+export function readIssueStatusInProject({ basePath, number }, repository, issueNumber, commandRunner) {
+  const context = { basePath, issue: { repository, number: issueNumber }, commandRunner };
+  const item = linkedItem({ number }, context);
+  if (item === null) {
+    return null;
+  }
+  return itemStatusName(context, { number }, item);
+}
+
 // The Status of one issue in the one open Project that holds exactly one item for it. An item whose
 // repository cannot be read stops the read, because it could be the issue's own item.
 export function readIssueProjectStatuses(repository, issueNumber, commandRunner) {
@@ -62,12 +83,5 @@ export function readIssueProjectStatuses(repository, issueNumber, commandRunner)
   const { basePath, projects } = listOwnedProjects(owner, commandRunner);
   const context = { basePath, issue: { repository, number: issueNumber }, commandRunner };
   const { project, item } = singleLinkedProject(context, projects);
-  const projectPath = `${basePath}/projectsV2/${project.number}`;
-  const statusFieldId = statusFieldIdOf(projectPath, commandRunner);
-  projectItemId(item, `${projectPath}/items?per_page=100`);
-
-  const itemEndpoint = `${projectPath}/items/${item.id}?fields=${statusFieldId}`;
-  const { data } = ghJson(["api", itemEndpoint], [0], commandRunner);
-  validateProjectItemReadback({ item: data, expected: item }, context.issue, itemEndpoint);
-  return [projectStatusName(data, statusFieldId, itemEndpoint)];
+  return [itemStatusName(context, project, item)];
 }

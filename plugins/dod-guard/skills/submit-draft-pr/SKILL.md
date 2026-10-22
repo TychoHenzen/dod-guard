@@ -14,7 +14,7 @@ Resolve the plugin root from this skill's directory; the target checkout may lac
 All must hold, in order, before any PR write.
 
 1. Resolve repository, default branch, linked Project, and `In Progress` status (heading "Resolve the repository and Project"). Run `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`. Stop on outcome `none`, `several`, or exit code 2. To read the Status option names, run `project-status.mjs --list-options` (see "ProjectV2 status writes" in `standards/github-request-discipline.md`); never write a reader.
-2. Confirm the parent issue belongs to the repository, sits in that Project, and has Status `In Progress`.
+2. Run `node <plugin-root>/skills/complete-pr/scripts/ticket-preconditions.mjs --repository=<owner/name> --issue=<parent> --expect-status="In Progress"` and stop on exit 1 or 2; it confirms the parent belongs to the repository, sits in that Project, and has Status `In Progress`.
 3. Run `git status --short` and classify pending paths. A dirty worktree alone is not a blocker. Leave in-scope ordinary changes uncommitted until branch, PBI, and acceptance evidence are verified. Stop for secrets, destructive intent, unrelated changes, or inseparable work.
 4. Confirm the branch is the PBI's `codex/<issue>-<slug>`, has an `origin` upstream, and has pushed commits ahead of the default branch.
 5. Read the PBI and its linked sub-issues. Stop if a required acceptance criterion lacks evidence or a code-backed closed sub-issue lacks a pushed implementation commit.
