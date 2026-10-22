@@ -44,8 +44,12 @@ only alternate-transport decisions are:
   query made by `skills/complete-pr/scripts/linked-project.mjs`, because REST
   has no endpoint for a repository's explicit Project link. It reads at most
   100 links and exits 2 on a failed, malformed, or incompletely paginated
-  read. All four exceptions preserve redacted transport evidence, stop on
-  failure or ambiguity, and never serve as quota fallbacks.
+  read. The fifth exception is the single-issue Project item read made by
+  `skills/complete-pr/scripts/ticket-preconditions.mjs`: one read-only
+  `repository.issue.projectItems` query, because the REST Project items list
+  returns unstable partial pages. It exits 2 on a failed, malformed, or
+  incomplete read. All five exceptions preserve redacted transport evidence,
+  stop on failure or ambiguity, and never serve as quota fallbacks.
 
 The executable boundary is `<plugin-root>/lib/transport-policy.mjs`: call the
 primary once, provide one named REST handler only for a supported operation, and

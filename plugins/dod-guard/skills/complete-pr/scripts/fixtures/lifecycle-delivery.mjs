@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
 import { runBoundary, runRest } from "./lifecycle-boundary.mjs";
-import {
-  assertIssueReadbacks,
-  closeIssue,
-  mergePullRequest,
-  writeStatus,
-} from "./lifecycle-steps.mjs";
+import { closeIssue, mergePullRequest } from "./lifecycle-closure.mjs";
+import { writeStatus } from "./lifecycle-status.mjs";
+import { assertIssueReadbacks } from "./lifecycle-steps.mjs";
 import {
   HEAD_SHA,
   ISSUE_LABELS,

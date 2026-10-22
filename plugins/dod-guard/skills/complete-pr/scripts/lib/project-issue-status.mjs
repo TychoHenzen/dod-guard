@@ -1,5 +1,6 @@
 import { ghJson, ghJsonArrayPages, githubResponseContractError, githubResponseError } from "./gh-runner.mjs";
-import { ISSUE_PROJECT_ITEMS_READ, readIssueProjectItems } from "./issue-project-items.mjs";
+import { readIssueProjectItems } from "./issue-project-items.mjs";
+import { ISSUE_PROJECT_ITEMS_READ } from "./issue-project-items-query.mjs";
 import { isPresent, projectItemId } from "./project-item-ids.mjs";
 import { projectItemsForRead } from "./project-item-list.mjs";
 import { projectItemMatchesRepository, validateProjectItemReadback } from "./project-item-readback.mjs";
@@ -66,24 +67,22 @@ function itemStatusName(context, project, item) {
   return projectStatusName(data, statusFieldId, itemEndpoint);
 }
 
+function inProject({ ownerLogin, number }) {
+  const owner = String(ownerLogin).toLowerCase();
+  return (item) => item.number === number && item.ownerLogin.toLowerCase() === owner;
+}
+
 // The Status of one issue in a Project the caller already resolved ({ownerLogin, number}): null when the
 // issue's complete Project item relation holds no item in that Project, a contract error when it holds
-// several or the item has no Status. The relation comes from one GraphQL query on the issue, never from
-// the REST items list, whose pages are unstable. Any failed or incomplete read throws.
-export function readIssueStatusInProject({ ownerLogin, number }, repository, issueNumber, commandRunner) {
-  const sameProject = (item) =>
-    item.number === number && item.ownerLogin.toLowerCase() === String(ownerLogin).toLowerCase();
-  const matching = readIssueProjectItems(repository, issueNumber, commandRunner).filter(sameProject);
+// several. An item whose Status field holds no value answers "", so the caller can name that stop. The
+// relation comes from one GraphQL query on the issue, never from the REST items list, whose pages are
+// unstable. Any failed or incomplete read throws. The issue is {repository, number}.
+export function readIssueStatusInProject(project, issue, commandRunner) {
+  const matching = readIssueProjectItems(issue.repository, issue.number, commandRunner).filter(inProject(project));
   if (matching.length > 1) {
     throw githubResponseContractError(ISSUE_PROJECT_ITEMS_READ, "exactly one item of the issue in the Project");
   }
-  if (matching.length === 0) {
-    return null;
-  }
-  if (matching[0].status === null) {
-    throw githubResponseContractError(ISSUE_PROJECT_ITEMS_READ, "exactly one non-blank Status field/value");
-  }
-  return matching[0].status;
+  return matching.length === 0 ? null : (matching[0].status ?? "");
 }
 
 // The Status of one issue in the one open Project that holds exactly one item for it. An item whose

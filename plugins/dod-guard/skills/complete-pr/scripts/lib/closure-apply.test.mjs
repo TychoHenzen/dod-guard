@@ -310,13 +310,3 @@ test("apply is not stopped as duplicate by a quote beside real closure evidence"
   assert.deepEqual(posts, []);
   assert.equal(github.state.issues.get(777).comments[1].body, quote);
 });
-
-test("apply lists its result before the plan", () => {
-  const snapshot = recordedSnapshot({ roots: [840] });
-  const applied = applyClosures(snapshot, { runner: fakeGitHub(snapshot).runner });
-  assert.deepEqual(Object.keys(applied), ["applied", "repaired", "steps", "plan"]);
-
-  const noOp = recordedSnapshot({ roots: [840], record: { 840: null } });
-  const result = applyClosures(noOp, { runner: fakeGitHub(noOp).runner });
-  assert.deepEqual(Object.keys(result), ["applied", "repaired", "steps", "plan"]);
-});

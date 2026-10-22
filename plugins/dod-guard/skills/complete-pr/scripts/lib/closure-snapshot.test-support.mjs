@@ -3,7 +3,7 @@
 // fixtures/rest-shapes.mjs. The *.test-support.mjs name keeps the test glob from running it as a test.
 import { isLinkedProjectRead, LINKED_PROJECT_READ } from "../../../../lib/linked-project-read.mjs";
 import { failed, OWNER, ok, REPO } from "./fixtures/rest-shapes.mjs";
-import { ISSUE_PROJECT_ITEMS_READ, isIssueProjectItemsRead } from "./issue-project-items.mjs";
+import { ISSUE_PROJECT_ITEMS_READ, isIssueProjectItemsRead } from "./issue-project-items-query.mjs";
 
 const FIELD_IDS = [101, 102, 103, 104];
 
@@ -90,7 +90,8 @@ function replyFor(routes, endpoint, acceptedExitCodes) {
 
 // Answers each endpoint from its route and honors acceptedExitCodes the way the shared runGh in
 // gh-runner.mjs does. An endpoint without a route throws, so a read the fixture does not expect
-// fails the test. The documented linked-Project read is the only GraphQL it answers.
+// fails the test. The documented linked-Project read and the single-issue Project items read are
+// the only GraphQL it answers.
 function fakeRest(routes) {
   const calls = [];
   const runner = (args, acceptedExitCodes = [0]) => {

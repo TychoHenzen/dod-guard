@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { ENDPOINT, fakeRest, issueProjectItemNode, issueProjectItemsReply } from "./closure-snapshot.test-support.mjs";
 import { OWNER, ok } from "./fixtures/rest-shapes.mjs";
-import { isIssueProjectItemsRead, issueProjectItemsReadArgs } from "./issue-project-items.mjs";
+import { isIssueProjectItemsRead, issueProjectItemsReadArgs } from "./issue-project-items-query.mjs";
 import { readIssueStatusInProject } from "./project-reads.mjs";
 
 const PROJECT_NUMBER = 2;
@@ -20,7 +20,8 @@ const ISSUE_NUMBER = 24;
 
 function read(reply) {
   const { calls, runner } = fakeRest({ [ENDPOINT.issueProjectItems]: reply });
-  return { calls, read: () => readIssueStatusInProject(PROJECT, REPOSITORY, ISSUE_NUMBER, runner) };
+  const issue = { repository: REPOSITORY, number: ISSUE_NUMBER };
+  return { calls, read: () => readIssueStatusInProject(PROJECT, issue, runner) };
 }
 
 it("reads the Status of the issue's item in the given Project with one GraphQL call", () => {
@@ -92,15 +93,19 @@ it("stops on a failed gh call, GraphQL errors, and a body that is not JSON", () 
   }
 });
 
-it("stops when the Project holds two items for the issue or the item has no Status", () => {
+it("stops when the Project holds two items for the issue", () => {
   const two = issueProjectItemsReply([
     issueProjectItemNode(PROJECT_NUMBER, "Todo"),
     issueProjectItemNode(PROJECT_NUMBER, "Done"),
   ]);
-  const blank = issueProjectItemsReply([issueProjectItemNode(PROJECT_NUMBER, null)]);
 
   assert.throws(() => read(two).read(), { code: "github_response_shape" });
-  assert.throws(() => read(blank).read(), { code: "github_response_shape" });
+});
+
+it("answers an empty Status when the item has no Status value", () => {
+  const blank = issueProjectItemsReply([issueProjectItemNode(PROJECT_NUMBER, null)]);
+
+  assert.equal(read(blank).read(), "");
 });
 
 it("recognizes exactly the documented read", () => {

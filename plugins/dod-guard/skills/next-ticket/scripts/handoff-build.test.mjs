@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { test } from "node:test";
+import { ACCEPTANCE_MATRIX_FIELDS } from "../../../lib/acceptance-matrix.mjs";
 import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
 import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
 import { runCli } from "./handoff-build.mjs";
@@ -74,17 +75,7 @@ test("orders the row keys", async () => {
   const planned = parseIssueBodyRecords(BODY_TEXT).input.plannedAcceptanceMatrix;
   const { rows } = readHandoffMatrix(out);
   assert.equal(rows.length, planned.length);
-  assert.deepEqual(Object.keys(rows[0]), [
-    "id",
-    "contract",
-    "path",
-    "proof",
-    "expected",
-    "observed",
-    "status",
-    "evidence",
-    "headSha",
-  ]);
+  assert.deepEqual(Object.keys(rows[0]), ACCEPTANCE_MATRIX_FIELDS);
 });
 
 test("names a planned row with no evidence", async () => {
@@ -145,6 +136,15 @@ test("names a malformed row or task entry", async () => {
   ]) {
     assert.ok(err.includes(message), `${message} missing from ${err}`);
   }
+});
+
+test("refuses two evidence entries for one task and builds nothing", async () => {
+  const evidence = evidenceFor();
+  evidence.tasks.push({ ...evidence.tasks[0], commit: "other" });
+  const { code, out, err } = await build(evidence);
+  assert.equal(code, 1);
+  assert.ok(err.includes("task entry T1 appears more than once"), err);
+  assert.equal(out, "");
 });
 
 test("names the functional slice and planned evidence ids in each task bullet", async () => {

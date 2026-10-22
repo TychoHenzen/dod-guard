@@ -121,6 +121,12 @@ it("exits 1 with status-mismatch when the Status is not the expected one", () =>
   assert.equal(report.detail, "status is In Progress, expected Todo");
 });
 
+it("exits 1 with status-blank when the item has no Status value", () => {
+  const result = run(argv(), routes(null));
+  assert.equal(result.code, 1, result.err);
+  assert.equal(stopReport(result).check, "status-blank");
+});
+
 it("exits 2 on a usage error and never reads", () => {
   const usage = [
     [`--repository=${REPO}`, "--expect-status=Todo"],

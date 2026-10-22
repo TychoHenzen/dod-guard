@@ -79,8 +79,7 @@ from the completion records and leaves every relation as read. With
 pass starts with a cleanup report from `closure.mjs plan`: the delivered and
 superseded issues it closes through `apply`, every hold, and every closed or
 Done record without verified evidence, which it reports and never reopens. The
-snapshot
-reads only non-archived Project items, so a verified root archived before
+snapshot reads only non-archived Project items, so a verified root archived before
 `apply` no longer closes its `supersedes` originals, and an archived sub-issue
 or parent leaves a `readback missing` hold instead of a parent close. An
 owner's `not_planned` hand close with no `supersedes` root, completion record,

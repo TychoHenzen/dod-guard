@@ -41,34 +41,43 @@ function isPlainObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-// Returns the remainder lines for the rows, in row order. A row can produce both
-// a state line and a head line, so each check runs on its own.
+function hasContextName(row) {
+  return typeof row.context === "string" && row.context !== "";
+}
+
+function isWellFormedRow(row) {
+  return isPlainObject(row) && hasContextName(row) && KNOWN_STATES.has(row.state);
+}
+
+// A well-formed row can produce both a state line and a head line, so each check
+// runs on its own.
+function contextRemainder({ context, state, headSha: boundSha }, headSha) {
+  const remainder = [];
+  if (!PASSING_STATES.has(state)) {
+    remainder.push(`required context ${context} is ${state}`);
+  }
+  if (boundSha !== headSha) {
+    remainder.push(`required context ${context} is bound to ${boundSha ?? "no head"}, expected ${headSha}`);
+  }
+  return remainder;
+}
+
+// Returns the remainder lines for the rows, in row order.
 function checkpointRemainder(rows, headSha) {
   if (rows.length === 0) {
     return ["preflight checkpoint has no required context row"];
   }
-  const remainder = [];
   const seen = new Set();
-  rows.forEach((row, index) => {
-    const n = index + 1;
-    if (!isPlainObject(row) || typeof row.context !== "string" || row.context === "" || !KNOWN_STATES.has(row.state)) {
-      remainder.push(`preflight checkpoint row ${n} is malformed`);
-      return;
+  return rows.flatMap((row, index) => {
+    if (!isWellFormedRow(row)) {
+      return [`preflight checkpoint row ${index + 1} is malformed`];
     }
-    const { context, state } = row;
-    if (seen.has(context)) {
-      remainder.push(`required context ${context} appears more than once`);
-      return;
+    if (seen.has(row.context)) {
+      return [`required context ${row.context} appears more than once`];
     }
-    seen.add(context);
-    if (!PASSING_STATES.has(state)) {
-      remainder.push(`required context ${context} is ${state}`);
-    }
-    if (row.headSha !== headSha) {
-      remainder.push(`required context ${context} is bound to ${row.headSha ?? "no head"}, expected ${headSha}`);
-    }
+    seen.add(row.context);
+    return contextRemainder(row, headSha);
   });
-  return remainder;
 }
 
 export { checkpointRemainder, readPreflightCheckpoint };
