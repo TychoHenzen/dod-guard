@@ -3,18 +3,8 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { buildClosureSnapshot } from "./closure-snapshot.mjs";
-import {
-  ENDPOINT,
-  fakeRest,
-  fieldPages,
-  issueContent,
-  linkedProjectNode,
-  linkedProjectsReply,
-  ok,
-  projectItem,
-  pull,
-  REPO,
-} from "./closure-snapshot.test-support.mjs";
+import { ENDPOINT, fakeRest, linkedProjectNode, linkedProjectsReply } from "./closure-snapshot.test-support.mjs";
+import { fieldPages, issueContent, ok, projectItem, pull, REPO } from "./fixtures/rest-shapes.mjs";
 
 const HEAD_SHA = "a1".repeat(20);
 const DEEP_SEEK = "TychoHenzen/Deep+Seek";
@@ -26,8 +16,11 @@ const PREFIX = "closure snapshot read failed: ";
 function basePages() {
   return [
     [
-      projectItem("PVTI_t10", 1010, issueContent(10)),
-      projectItem("PVTI_t11", 1111, issueContent(11, { parent: 10 }), {
+      projectItem({ nodeId: "PVTI_t10", databaseId: 1010, content: issueContent(10) }),
+      projectItem({
+        nodeId: "PVTI_t11",
+        databaseId: 1111,
+        content: issueContent(11, { parent: 10 }),
         parent: 10,
         linked: [pull(21, { sha: HEAD_SHA, state: "open", merged: false })],
       }),
