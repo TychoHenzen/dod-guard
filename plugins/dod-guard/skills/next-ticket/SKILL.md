@@ -75,6 +75,7 @@ Use the repository's documented build, test, lint, and format commands: focused 
 - Confirm the test glob includes every new test or fixture before calling a suite green.
 - Do not rerun an unchanged full suite. A suite consuming a changed or added fixture, scene, seed, or shared test data is not unchanged: run every consumer before push.
 - A consumer suite that cannot run locally is named in the handoff as pending exact-head CI outside the acceptance matrix, and carried into the PR body. That alone does not stop PR handoff, but its exact-head CI must pass before review, with the run ID in the Preflight checkpoint (or the handoff if none).
+- When CI must run again on a head, rerun the existing run with `gh run rerun <run-id> --failed`; never dispatch a second workflow run for the same head.
 - On a failing test, update a stale expectation or fix the implementation. Never weaken or delete a test just to pass.
 - Generate tracked build outputs on the feature branch. Never rely on CI to write or repair them.
 - Quality diagnostics are report-only: generate or persist no metric state.

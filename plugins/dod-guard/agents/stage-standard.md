@@ -56,3 +56,5 @@ stash, reset, or revert work you did not introduce.
 Return the evidence the brief asks for: changed files, commits, any external
 state you changed with its readback, and each named proof with its final output
 and result, not merely its command, exit status, or a pending state.
+
+When CI must run again on a head, rerun the existing run with `gh run rerun <run-id> --failed`; never dispatch a second workflow run for the same head.
