@@ -14,6 +14,7 @@ import {
   checkRunsReply,
   commitStatusReply,
   fieldPages,
+  FOREIGN,
   ok,
   REPO,
   REPO_URL,
@@ -25,6 +26,23 @@ import {
   PAGE_VARIANTS,
   valuePages,
 } from "./closure-snapshot-pages.mjs";
+
+const COMMENT = { id: 9001, body: COMMENT_BODY, author_association: "OWNER" };
+const OWN_BRANCH ="codex/10-example";
+const OPEN_BLOCKER = { number: 250, state: "open", repository_url: REPO_URL };
+const branch = (name) => ({ ref: `refs/heads/${name}` });
+
+// One open pull request from the given repository onto the own branch.
+function pullFrom(repository) {
+  const head = { ref: OWN_BRANCH, repo: { full_name: repository } };
+  return ok([[{ number: 31, head }]]);
+}
+
+// The branch and open pull request reads of a repository with no codex
+// branch, for route tables that do not exercise the branch list.
+function emptyBranchRoutes() {
+  return { [ENDPOINT.branches]: ok([[]]), [ENDPOINT.openPulls]: ok([[]]) };
+}
 
 function healthyRoutes(pages) {
   return {
@@ -38,7 +56,9 @@ function healthyRoutes(pages) {
         { number: 12, repository_url: REPO_URL },
       ],
     ]),
-    [ENDPOINT.comments(10)]: ok([[{ id: 9001, body: COMMENT_BODY }]]),
+    [ENDPOINT.comments(10)]: ok([[COMMENT]]),
+    [ENDPOINT.branches]: ok([[branch(OWN_BRANCH), branch("codex/11-stalled")]]),
+    [ENDPOINT.openPulls]: pullFrom(REPO),
     [ENDPOINT.protection]: ok({ contexts: ["build-test", "lint"] }),
     [ENDPOINT.checkRuns(HEAD[21])]: checkRunsReply(HEAD[21]),
     [ENDPOINT.statuses(HEAD[21])]: commitStatusReply(HEAD[21]),
@@ -89,6 +109,31 @@ const ROUTE_VARIANTS = {
   "no-protection": (routes) => {
     routes[ENDPOINT.protection] = NOT_FOUND;
   },
+  blocked: (routes) => {
+    routes[ENDPOINT.blockedBy(12)] = ok([[OPEN_BLOCKER]]);
+  },
+  "blocked-failure": (routes) => {
+    routes[ENDPOINT.blockedBy(12)] = SERVER_ERROR;
+  },
+  "branches-failure": (routes) => {
+    routes[ENDPOINT.branches] = SERVER_ERROR;
+  },
+  "open-pulls-failure": (routes) => {
+    routes[ENDPOINT.openPulls] = SERVER_ERROR;
+  },
+  "bad-branch-ref": (routes) => {
+    routes[ENDPOINT.branches] = ok([[{ ref: OWN_BRANCH }]]);
+  },
+  "bad-open-pull": (routes) => {
+    routes[ENDPOINT.openPulls] = ok([[{ number: 31, head: {} }]]);
+  },
+  "no-branches": (routes) => {
+    routes[ENDPOINT.branches] = ok([[]]);
+  },
+  // A fork pull request reusing the branch name is not the branch's own.
+  "fork-pull": (routes) => {
+    routes[ENDPOINT.openPulls] = pullFrom(FOREIGN);
+  },
 };
 
 // The healthy fixture, or one deliberate departure named by variant.
@@ -119,4 +164,4 @@ function buildFailure(routes) {
   return null;
 }
 
-export { build, buildFailure, fixtureRoutes };
+export { build, buildFailure, emptyBranchRoutes, fixtureRoutes };

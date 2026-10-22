@@ -2,96 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { indexSnapshot } from "./closure-index.mjs";
 import { localDate } from "./friction-log.mjs";
+import {
+  classify,
+  completedGroup,
+  FOREIGN_REPOSITORY,
+  groupOf,
+  healthy,
+  issue,
+  item,
+  pull,
+  REPOSITORY,
+  ref,
+  snapshot,
+  TODAY,
+} from "./harness/queue-snapshot.mjs";
 import { buildQueueRecords, classifyDelivery, classifyQueue } from "./queue-classifier.mjs";
-
-const REPOSITORY = "TychoHenzen/dod-guard";
-const FOREIGN_REPOSITORY = "other/repo";
-const TODAY = "2026-10-08";
-
-// A reference that names its repository, as every relation in a snapshot does.
-function ref(number, repository = REPOSITORY) {
-  return { repository, number };
-}
-
-// A Project item whose content, Repository field, and relations all name its repository.
-function item(number, status, { id = `PVTI_${number}`, parent = null, linked = [], repository = REPOSITORY } = {}) {
-  return {
-    id,
-    content: { number, repository },
-    fields: [
-      { name: "Status", value: { name: status } },
-      { name: "Repository", value: repository },
-      { name: "Parent issue", value: parent },
-      { name: "Linked pull requests", value: linked },
-    ],
-  };
-}
-
-function issue(
-  number,
-  {
-    repository = REPOSITORY,
-    state = "open",
-    title = `Issue ${number}`,
-    parent = null,
-    children = [],
-    activeCheckpoint,
-  } = {},
-) {
-  const record = { number, repository, state, title, parent, children };
-  if (activeCheckpoint !== undefined) record.activeCheckpoint = activeCheckpoint;
-  return record;
-}
-
-function pull(number, { state = "closed", mergedAt = "2026-10-01T00:00:00Z", trustedHeadSha } = {}) {
-  const record = {
-    number,
-    repository: REPOSITORY,
-    state,
-    mergedAt,
-    head: { repository: REPOSITORY, ref: `codex/${number}`, sha: `head-${number}` },
-    base: { ref: "master", sha: `base-${number}` },
-    mergeCommit: { oid: `merge-${number}` },
-    requiredChecks: [{ name: "build-test", bucket: "pass" }],
-  };
-  if (trustedHeadSha !== undefined) record.trustedHeadSha = trustedHeadSha;
-  return record;
-}
-
-function snapshot({ items = [], issues = [], pullRequests = [] } = {}) {
-  return { repository: REPOSITORY, defaultBranch: "master", items, issues, pullRequests };
-}
-
-// Target root 31 (Backlog) and root 517 (Todo) with child 518. Each group is healthy on its own.
-function healthy() {
-  return snapshot({
-    items: [item(31, "Backlog"), item(517, "Todo"), item(518, "Todo", { parent: ref(517) })],
-    issues: [issue(31), issue(517, { children: [ref(518)] }), issue(518, { parent: ref(517) })],
-  });
-}
-
-function classify(input, today = TODAY) {
-  return classifyQueue(input, { today });
-}
-
-function groupOf(result, root) {
-  return result.groups.find(({ rootIssueNumber }) => rootIssueNumber === root);
-}
-
-function completedGroup(parentPulls, childPulls = []) {
-  const pullNumbers = [...new Set([...parentPulls, ...childPulls])];
-  return snapshot({
-    items: [
-      item(444, "Done", { linked: parentPulls.map((number) => ref(number)) }),
-      item(445, "Done", { parent: ref(444), linked: childPulls.map((number) => ref(number)) }),
-    ],
-    issues: [
-      issue(444, { state: "closed", children: [ref(445)], activeCheckpoint: false }),
-      issue(445, { state: "closed", parent: ref(444), activeCheckpoint: false }),
-    ],
-    pullRequests: pullNumbers.map((number) => pull(number, { trustedHeadSha: `head-${number}` })),
-  });
-}
 
 test("AC-01: every record is keyed by owner/name and a foreign record never supplies target data", () => {
   const input = healthy();
@@ -333,7 +258,7 @@ test("AC-09: an item whose issue is absent selects nothing and is named in missi
   assert.equal(classify(healthy()).selected.rootIssueNumber, 517);
 });
 
-test("AC-09: a target linked pull request absent from pullRequests selects nothing and is named in missingEvidence", () => {
+test("AC-09: a target linked pull request absent from pullRequests selects nothing, named in missingEvidence", () => {
   const input = healthy();
   input.items[0] = item(31, "Backlog", { linked: [ref(540)] });
   const result = classify(input);

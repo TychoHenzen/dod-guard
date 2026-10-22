@@ -1,17 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { classifyQueue } from "../../../lib/queue-classifier.mjs";
-import {
-  assertHold,
-  decisionOf,
-  deliveryIssues,
-  deliveryItems,
-  issue,
-  item,
-  pullRequest,
-  snapshot,
-  TODAY,
-} from "./queue-decision.test-support.mjs";
+import { assertHold, decisionOf, TODAY } from "./harness/queue-decision-checks.mjs";
+import { deliveryIssues, deliveryItems, issue, item, pullRequest, snapshot } from "./queue-decision.test-support.mjs";
 
 test("queue selection groups children under their parent and keeps only the Todo", () => {
   const input = snapshot({

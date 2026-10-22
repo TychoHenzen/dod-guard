@@ -28,6 +28,18 @@ test("an empty selection distinguishes held work from an exhausted queue", async
   assert.equal(result.queueState, "held");
 });
 
+test("a Todo root with an unreadable body is needs-refinement, never selected, and holds the queue", async () => {
+  const input = snapshot();
+  input.items = [item(40, "Todo")];
+  input.issues = [issue(40, { body: "## Outcome\n\nProse only.\n" })];
+  const result = await selectNext(input);
+  assert.equal(result.selected, null);
+  assert.equal(result.queueState, "held");
+  const [group] = result.groups;
+  assert.equal(group.kind, "needs-refinement");
+  assert.ok(group.reasons.includes("issue #40 body has no ## Implementation notes section"), group.reasons.join("; "));
+});
+
 test("holds a group whose issue was not supplied", async () => {
   const input = snapshot();
   input.issues = input.issues.filter(({ number }) => number !== 518);

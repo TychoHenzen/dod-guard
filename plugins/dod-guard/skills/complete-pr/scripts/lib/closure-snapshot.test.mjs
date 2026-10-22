@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { planClosures } from "./closure-plan.mjs";
+import { buildClosureSnapshot } from "./closure-snapshot.mjs";
+import { ENDPOINT, fakeRest } from "./closure-snapshot.test-support.mjs";
 import { COMMENT_BODY, EPIC_BODY } from "./fixtures/closure-snapshot-pages.mjs";
 import { build, fixtureRoutes } from "./fixtures/closure-snapshot-routes.mjs";
 import { FOREIGN, OWNER, REPO } from "./fixtures/rest-shapes.mjs";
@@ -14,6 +16,7 @@ test("AC-05: the snapshot has the documented top-level keys and the project obje
     "items",
     "issues",
     "pullRequests",
+    "branches",
   ]);
   assert.equal(snapshot.repository, REPO);
   assert.equal(snapshot.defaultBranch, "master");
@@ -110,6 +113,7 @@ test("AC-05: issues list only target records, with children and parent as reposi
     "body",
     "parent",
     "children",
+    "blockedBy",
     "comments",
   ]);
   assert.deepEqual(snapshot.issues, [
@@ -125,7 +129,8 @@ test("AC-05: issues list only target records, with children and parent as reposi
         { repository: REPO, number: 11 },
         { repository: REPO, number: 12 },
       ],
-      comments: [{ id: 9001, body: COMMENT_BODY }],
+      blockedBy: [],
+      comments: [{ id: 9001, body: COMMENT_BODY, author_association: "OWNER" }],
     },
     {
       number: 11,
@@ -136,6 +141,7 @@ test("AC-05: issues list only target records, with children and parent as reposi
       body: "",
       parent: { repository: REPO, number: 10 },
       children: [],
+      blockedBy: [],
       comments: [],
     },
     {
@@ -147,6 +153,7 @@ test("AC-05: issues list only target records, with children and parent as reposi
       body: "",
       parent: { repository: REPO, number: 10 },
       children: [],
+      blockedBy: [],
       comments: [],
     },
   ]);
@@ -167,4 +174,17 @@ test("AC-07: the built snapshot plans with no repository identity hold", () => {
   const plan = planClosures(build(fixtureRoutes()));
   const identityHolds = plan.holds.filter((hold) => hold.reasons.includes("repository identity missing"));
   assert.deepEqual(identityHolds, []);
+});
+
+test("blocked_by: an open issue with blockers reads its list, a zero count or a closed issue reads none", () => {
+  const { runner, calls } = fakeRest(fixtureRoutes("blocked"));
+  const snapshot = buildClosureSnapshot({ repository: REPO, runner });
+  const blockedBy = (number) => snapshot.issues.find((issue) => issue.number === number).blockedBy;
+  assert.deepEqual(blockedBy(12), [{ repository: REPO, number: 250, state: "open" }]);
+  assert.deepEqual(blockedBy(10), []);
+  assert.deepEqual(blockedBy(11), []);
+  const endpoints = calls.map((args) => args.at(-1));
+  assert.ok(endpoints.includes(ENDPOINT.blockedBy(12)));
+  assert.ok(!endpoints.includes(ENDPOINT.blockedBy(10)));
+  assert.ok(!endpoints.includes(ENDPOINT.blockedBy(11)));
 });

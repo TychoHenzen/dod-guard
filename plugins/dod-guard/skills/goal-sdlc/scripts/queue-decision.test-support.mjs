@@ -1,10 +1,8 @@
-import assert from "node:assert/strict";
 import { classifyQueue } from "../../../lib/queue-classifier.mjs";
+import { REFINED_BODY } from "../../../lib/refined-body.test-support.mjs";
 
-// Each case builds a closure-shaped snapshot and classifies it through classifyQueue, so the cases
-// exercise the classifier that select-next and the closure judgement share.
+// Each case builds a closure-shaped snapshot for classifyQueue, the classifier select-next shares.
 const REPOSITORY = "TychoHenzen/dod-guard";
-export const TODAY = "2026-10-10";
 const CHILDREN = [536, 537, 538, 539];
 
 // A reference names its repository, as every relation in a snapshot does.
@@ -25,7 +23,18 @@ export function item(number, status, { parent = null, linked = [], parentField =
 }
 
 // An issue of the repository. Its checkpoint is explicitly false unless a case changes it.
-export function issue(number, { state = "closed", parent = null, children = [], activeCheckpoint = false } = {}) {
+export function issue(
+  number,
+  {
+    state = "closed",
+    parent = null,
+    children = [],
+    blockedBy = [],
+    body = REFINED_BODY,
+    comments = [],
+    activeCheckpoint = false,
+  } = {},
+) {
   return {
     number,
     repository: REPOSITORY,
@@ -33,6 +42,9 @@ export function issue(number, { state = "closed", parent = null, children = [], 
     title: `Issue ${number}`,
     parent: parent === null ? null : ref(parent),
     children: children.map((child) => ref(child)),
+    blockedBy,
+    body,
+    comments,
     activeCheckpoint,
   };
 }
@@ -69,29 +81,4 @@ export function deliveryIssues() {
 
 export function completeDelivery() {
   return snapshot({ items: deliveryItems(), issues: deliveryIssues(), pullRequests: [pullRequest(540)] });
-}
-
-export function decisionOf(input, root) {
-  const group = classifyQueue(input, { today: TODAY }).groups.find(({ rootIssueNumber }) => rootIssueNumber === root);
-  return group.decision;
-}
-
-export function assertHold(input, root, ...reasons) {
-  const decision = decisionOf(input, root);
-  assert.equal(decision.kind, "hold", JSON.stringify(decision));
-  for (const reason of reasons) {
-    assert.ok(decision.reasons.includes(reason), `missing "${reason}" in ${decision.reasons.join("; ")}`);
-  }
-}
-
-export function findIssue(input, number) {
-  return input.issues.find((entry) => entry.number === number);
-}
-
-function findItem(input, number) {
-  return input.items.find(({ content }) => content.number === number);
-}
-
-export function setStatus(input, number, name) {
-  findItem(input, number).fields.find((field) => field.name === "Status").value = { name };
 }

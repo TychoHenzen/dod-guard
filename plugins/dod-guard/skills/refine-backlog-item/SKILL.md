@@ -5,14 +5,15 @@ description: Research a backlog item and give it justified priority, Fibonacci e
 
 # Refine a backlog item
 
-Turn one existing Backlog issue into an implementation-ready parent PBI, in the issue's own target repository. Never create a branch, assign the PBI, set In Progress, implement code, or open a PR.
+Turn one existing Backlog or Todo issue into an implementation-ready parent PBI, in the issue's own target repository. Never create a branch, assign the PBI, set In Progress, implement code, or open a PR.
 
 Resolve the plugin root from this skill's directory. Read and apply `standards/working-defaults.md` and `standards/github-request-discipline.md`. Where this skill is stricter, it wins. After a failed or ambiguous write, read the resource back before you retry.
 
 ## Preconditions
 
 1. Resolve the repository, linked Project, and Backlog and Todo statuses per the discipline standard ("Resolve the repository and Project"). Get the Project from `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`. Stop on outcome `none` or `several`, or on exit 2.
-2. Verify the issue is in the repository, is in that Project, and has Status `Backlog`. Drafts are not accepted.
+2. Verify the issue is in the repository, is in that Project, and has Status `Backlog` or `Todo`. Drafts are not accepted.
+   - A `Todo` parent is refined in place, for example after `select-next` reported it as `needs-refinement`. Run the whole skill, leave its Status `Todo`, and skip step 6 of "Apply labels and verify".
    - Exception: a parent in `Todo` or `In Progress` after `dod-guard:next-ticket` stopped with `step-plan-missing`. Run only "Write the step plans", leave Status unchanged, and change nothing else.
 3. Fetch all live labels with descriptions: GitHub MCP, else `gh api --paginate "repos/{owner}/{repo}/labels?per_page=100"`.
 4. Check that each label below has exactly one exact-name match and a nonempty description. Otherwise stop before any mutation.
@@ -96,10 +97,10 @@ Post as the authenticated user. Write a plan for every task lacking a comment th
 
 1. Read the current labels. Add the chosen ones through the GitHub MCP issue update, else `gh issue edit {issue-number} --repo {owner}/{repo}` with repeated `--add-label` and `--remove-label`.
 2. In the same edit, remove every other priority or effort label, including stale `Prio <number>` and `Effort <number>` variants. Keep unrelated labels. Remove an obsolete standard label only when research shows it no longer applies.
-3. Read back the body, labels, linked sub-issues, step-plan comments, and Project status. Confirm the sections, evidence, a step-plan comment per task, linked sub-issues, Status still Backlog, exactly one label per scale plus a standard label, and effort below 13. An unknown priority must explain the missing evidence.
+3. Read back the body, labels, linked sub-issues, step-plan comments, and Project status. Confirm the sections, evidence, a step-plan comment per task, linked sub-issues, Status unchanged (`Backlog` for a Backlog parent, `Todo` for a Todo parent), exactly one label per scale plus a standard label, and effort below 13. An unknown priority must explain the missing evidence.
 4. For a structured PBI also confirm that the seven records are coherent, each linked child matches one independently deliverable slice and is actionable and Todo, and each lens has an owner.
 5. Save the readback body as a UTF-8 file and run `node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]`, passing `outcome: "verified"`. With children, `--children` is a JSON array of slice id and evidence per child. Exit 0 is ok, 1 is an actionable remainder, 2 is a missing or invalid record or argument (including a UTF-16 file, as PowerShell 5.1 `>` writes). On exit 1 or 2, correct the records and rerun. Stop on any actionable remainder.
-6. Move to Todo only on exit 0 with outcome `verified`, using the shared REST Project status writer. Read back the final Project status.
+6. Move to Todo only on exit 0 with outcome `verified`, using the shared REST Project status writer. A parent already in `Todo` skips the move. Read back the final Project status.
 
 If an edit fails or a readback disagrees, stop before the status change, report the actual partial state, and never claim readiness.
 

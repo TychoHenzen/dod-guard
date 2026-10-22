@@ -5,11 +5,11 @@ description: Work through the linked GitHub Project queue continuously, one pare
 
 # Goal SDLC
 
-Read `standards/working-defaults.md` and `standards/github-request-discipline.md` first. Under /goal, also read `standards/goal-stop.md`. This skill owns queue selection, sequencing, delegation, the friction log, and the stop decision. The owning skill wins on any difference. This skill never writes issue, Project, branch, or PR state itself. Closures run through the closure helper's apply, via the complete-pr section named below.
+Read `standards/working-defaults.md` and `standards/github-request-discipline.md` first. Under /goal, also read `standards/goal-stop.md`. This skill owns queue selection, sequencing, delegation, the friction log, and the stop decision. The owning skill wins on any difference. This skill never writes issue, Project, branch, or PR state itself, with one exception: `scripts/park.mjs` writes or deletes a parked record under "Blockers". Closures run through the closure helper's apply, via the complete-pr section named below.
 
 ## Owners
 
-- [refine-backlog-item](../refine-backlog-item/SKILL.md): Backlog, or next-ticket stopped with `step-plan-missing`.
+- [refine-backlog-item](../refine-backlog-item/SKILL.md): Backlog, a Todo root that select-next reports as `needs-refinement` (Status stays Todo), or next-ticket stopped with `step-plan-missing`.
 - [next-ticket](../next-ticket/SKILL.md): Todo, or In Progress with no pushed handoff.
 - [submit-draft-pr](../submit-draft-pr/SKILL.md): In Progress, pushed handoff, no converged draft PR.
 - [review-pr](../review-pr/SKILL.md): converged draft PR, no review.
@@ -27,13 +27,14 @@ Before the first Loop step, read the client's plugin list once (`claude plugin l
 
 Repeat until a stop condition holds. Take one parent at a time, in the current checkout, on one branch and one PR. Never create or use a Git worktree.
 
-1. Resume first. A dirty tree or in-progress branch usually means a delivery is underway: match its paths, branch, issue, children, and PR, then resume at the latest checkpoint. If nothing matches, capture it with `dod-guard:add-backlog-idea`, refine it, then resume it. Never discard, stash, or fold dirty work into an unrelated PBI.
+1. Resume first. A dirty tree or in-progress branch usually means a delivery is underway: match its paths, branch, issue, children, and PR, then resume at the latest checkpoint. If nothing matches, capture it with `dod-guard:add-backlog-idea`, refine it, then resume it. Never discard, stash, or fold dirty work into an unrelated PBI. A queue group the selector reports as `unfinished delivery branch` (a pushed `codex/<issue>-*` branch with no open pull request) is such a delivery: the selector starts no Todo or Backlog parent while one exists. Report it to the user and wait. Never resume it automatically and never delete the branch to clear the hold.
 2. Clean the queue, then select.
    - In `../complete-pr/scripts`, run `node closure.mjs snapshot --repository=<owner/name> --output=<file>`. On a non-zero exit, stop and report the error. Never plan from an older snapshot.
    - Run `node closure.mjs plan --snapshot=<file>`. Report every close, hold, and `unverified-closed` entry with its reason.
    - Delegate closes and status repairs to complete-pr's section `Close delivered issues for goal-sdlc` as one write-capable stage, then reread.
    - Run `closure.mjs annotate` on the snapshot. It supplies `activeCheckpoint` and `trustedHeadSha`.
    - In this skill's directory, run `node scripts/select-next.mjs --snapshot=<file>`. Report its holds. `queueState: held` is not exhaustion.
+   - For each group of kind `needs-refinement`, run `refine-backlog-item` on its root as one stage with the Status left at Todo, then take a fresh snapshot and select again, because the snapshot holds the old body.
 3. Follow `dod-guard:quick-pbi` steps 2 to 6 and run the owner whose condition the parent meets. On `step-plan-missing`, refine, then rerun next-ticket. If refinement needs a user answer, leave the parent in Backlog with the questions recorded and move on.
 4. On `conflict-triaged`, go to submit-draft-pr for the new head. Otherwise, if any parent or child status is not Done, return to the completion owner. If all are Done, go to step 1.
 
@@ -72,10 +73,19 @@ Agent names take the `dod-guard:` prefix.
 | Merge conflict triage owner/plan/judge | standard | stage-standard, read-standard | `standards/conflict-triage.md` |
 | Merge conflict triage investigate/apply | cheap | read-cheap, stage-cheap | `standards/conflict-triage.md` |
 | add-backlog-idea incl. friction log | cheap | stage-cheap-skill | Skill `dod-guard:add-backlog-idea <request>` |
+| Park or unpark a root (Blockers) | cheap | stage-cheap | In this skill's directory, run only the `node scripts/park.mjs` command the main thread gives, and return its JSON and exit code |
 
 ## Blockers
 
 Follow the failure-recovery rule in `standards/working-defaults.md`, including `dod-guard:codex-advisor` for a blocker that survives local triage. A blocked parent is not a reason to stop. Record on its issue what blocks it, what was tried, and what would unblock it. Keep its branch and checkpoint and select the next eligible parent. On a provider rate limit, record the reset time, work other parents, and retry once after it.
+
+The selector reads two records, so write the one that matches the cause:
+
+- A prerequisite issue must finish first: the parent is blocked by it through GitHub's `blocked_by` relationship, which the selector already reads. Add no parked record.
+- No issue can finish first (an unanswered owner decision, an external service, a failed attempt that needs a human): park the root with `node scripts/park.mjs --action=park --repository=<owner/name> --issue=<root> --blocked=<one line> --unblocks-when=<one line>`. The selector then holds that root, with both lines in its reason, until the comment is deleted. A parked In Progress root is held ahead of resume, so park only after recording the branch and checkpoint on the issue.
+- Only the user releases a park, by deleting the comment or by asking for `node scripts/park.mjs --action=unpark --repository=<owner/name> --issue=<root>`. A run never unparks on its own reading that the cause is gone.
+- An `unfinished delivery branch` hold needs no `blocked_by` link and no parked record, and a run never works around it: only the user finishes the branch into a pull request or deletes it.
+- Order that has no code dependency lives only in Project order, which is the selector's default ranking within a status. Only the user reorders a chain of Project items; a run never does so to schedule work.
 
 ## Friction log
 

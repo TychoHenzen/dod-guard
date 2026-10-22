@@ -1,19 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { classifyQueue } from "../../../lib/queue-classifier.mjs";
-import {
-  assertHold,
-  completeDelivery,
-  decisionOf,
-  findIssue,
-  issue,
-  item,
-  pullRequest,
-  ref,
-  setStatus,
-  snapshot,
-  TODAY,
-} from "./queue-decision.test-support.mjs";
+import { assertHold, decisionOf, findIssue, setStatus, TODAY } from "./harness/queue-decision-checks.mjs";
+import { completeDelivery, issue, item, pullRequest, ref, snapshot } from "./queue-decision.test-support.mjs";
 
 test("a fully evidenced merged delivery is complete", () => {
   assert.deepEqual(decisionOf(completeDelivery(), 444), {

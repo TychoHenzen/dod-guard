@@ -205,10 +205,23 @@ function addPullRequestItem(pages) {
   pages.at(-1).push(item);
 }
 
+// Issue #12 reports one blocker, so the builder must read its blocked_by list.
+function blockedOnTwelve(pages) {
+  const entry = pages.flat().find((item) => item.node_id === "PVTI_t12");
+  entry.content.issue_dependencies_summary = {
+    blocked_by: 1,
+    total_blocked_by: 1,
+    blocking: 0,
+    total_blocking: 0,
+  };
+}
+
 // Variants that change the item pages themselves, before any route serializes
 // them.
 const PAGE_VARIANTS = {
   ...DEPARTURES,
+  blocked: blockedOnTwelve,
+  "blocked-failure": blockedOnTwelve,
   "contradictory-status": (pages) => {
     setStatus(pages, "PVTI_t11", {
       id: "opt-done",

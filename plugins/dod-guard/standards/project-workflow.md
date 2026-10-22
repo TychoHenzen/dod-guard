@@ -240,8 +240,9 @@ string), Repository, Parent issue (`{repository, number}`), and Linked pull
 requests (`[{repository, number}]`) fields. `issues` and `pullRequests` hold
 only target-repository records, each with `repository`. On every issue it also
 carries `children` as `[{repository, number}]` (an empty array when it has
-none), `parent` as `{repository, number}` or null, `body`, `state_reason`, and
-`comments` as `[{id, body}]`. On every pull request it carries its state, merge
+none), `parent` as `{repository, number}` or null, `blockedBy` as
+`[{repository, number, state}]` (empty for a closed issue, and for an open one with
+no blocker), `body`, `state_reason`, and `comments` as `[{id, body}]`. On every pull request it carries its state, merge
 time, head, base, merge commit, and REST-read `requiredChecks`; the merge commit
 and `requiredChecks` are null until the pull request merges. `requiredChecks`
 comes from the REST reader `dod-guard:complete-pr` uses,
@@ -252,6 +253,15 @@ passed, so such a check was not required for that merge. The complete-pr live
 gate keeps every currently required check. Failed, pending, stale-head,
 wrong-provider, and duplicate entries stay in the snapshot, and several
 exact-head runs of one required check are settled by the newest run.
+
+The snapshot carries `branches` as `[{name, openPullRequest}]`: every pushed branch
+whose name starts with `codex/`, read from `git/matching-refs/heads/codex/`, with
+`openPullRequest` true when an open pull request of the target repository (read from
+`pulls?state=open`; a fork's pull request does not count) has that branch as its head.
+The selector holds an open Todo or Backlog root that has a branch named
+`codex/<issue>-...` with `openPullRequest` not true, naming the branch, and starts no
+Todo or Backlog group while one exists. An In Progress group still resumes. A snapshot
+without the `branches` key holds nothing.
 
 The snapshot also carries a `project` object with `owner`, `number`,
 `statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
@@ -292,6 +302,45 @@ identity, a duplicated record, an item whose issue is missing, and a linked pull
 request missing from `pullRequests`. `annotate` changes only target-repository
 records, and only their `activeCheckpoint` and `trustedHeadSha`. It leaves every
 relation as read, so select-next holds such a group and never selects it.
+
+select-next also holds a Todo or Backlog group when any of its issues has a blocker
+that is not closed and is not part of the group. The hold names the blocker as
+`owner/name#N`. An open queue issue whose `blockedBy` list is missing is held with
+"blocked_by relationship missing", and `closure.mjs snapshot` fails when a blocker
+read fails. An In Progress delivery that resumes is never held by a blocker. The
+closure judgement does not read `blockedBy`.
+
+A Todo root whose body `parseIssueBodyRecords` cannot read cleanly is classified
+`needs-refinement`: not eligible, never selected, and counted as held work. A
+missing or unreadable record, or acceptance ids that disagree with the Acceptance
+criteria checkboxes, are its reasons. Only the Todo root's own body is read. A
+Backlog root and a child body are not, and a blocker hold is reported first.
+`refine-backlog-item` clears it in place and leaves the Status at Todo.
+
+A parked record holds one queue root out of selection for a cause no issue can
+finish. It is an issue comment on the root, and `lib/parked-record.mjs` is the one
+definition that both writes and reads it. Its body is the heading `## Parked`, a
+blank line, the marker line `<!-- dod-guard-parked -->`, a blank line, a line
+`Blocked: <what blocks the root>`, and a line `Unblocks when: <what releases it>`.
+
+A comment counts only when its body begins with the heading, a blank line, and the
+marker line, and its `author_association` is `OWNER`, `MEMBER`, or `COLLABORATOR`.
+A comment that quotes the marker elsewhere, or comes from anyone else, does not park
+the root. The closure snapshot keeps `author_association` on every comment it reads.
+`lib/comment-record.mjs` holds the prefix match that closure records share. A
+record missing a field line still parks, and the field reads "not stated". Only the
+root's comments are read, in every queue status, and the check runs after the
+closed-issue and merged-delivery checks and before the resume check, so a parked
+In Progress root is held. A merged delivery is judged by its completion evidence
+and ignores the record. The hold reason reads
+`issue #N is parked: <Blocked>; unblocks when: <Unblocks when>`. The group is
+reported as `hold`. `goal-sdlc/scripts/park.mjs` writes and deletes the record;
+deleting the comment releases the root.
+
+Order comes from two places and a run must pick the right one. Work that needs
+another issue finished first carries that issue as a `blocked_by` relationship,
+which the selector reads. Work with no code dependency is ordered only by Project
+order, the selector's default ranking within a status. Neither is a parked record.
 
 A delivery is verified only when its completion record matches the live pull
 request readback (merge commit, trusted head, default base, passing checks) and

@@ -1,6 +1,6 @@
 import { API_ISSUE_URL, urlReference } from "../../../../lib/repository-identity.mjs";
 import { readFailure } from "./snapshot-failure.mjs";
-import { childrenOf, commentsOf } from "./snapshot-issue-reads.mjs";
+import { blockedByOf, childrenOf, commentsOf } from "./snapshot-issue-reads.mjs";
 import { isNullOrString, nonBlank, positiveInteger, present } from "./snapshot-values.mjs";
 
 const ISSUE_KEYS = ["body", "state_reason"];
@@ -53,6 +53,7 @@ export function issueRecord(content, repository, read) {
     body: content.body,
     parent,
     children: childrenOf(content, target, read),
+    blockedBy: blockedByOf(content, target, read),
     comments: commentsOf(content, target, read),
   };
 }

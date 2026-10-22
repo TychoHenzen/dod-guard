@@ -19,6 +19,9 @@ import {
   relationReasons,
 } from "./closure-index.mjs";
 import { collectingFrictionLog } from "./friction-log.mjs";
+import { branchesOf } from "./queue-branches.mjs";
+import { firstDecision, hold, parkedDecision, readyDecision } from "./queue-readiness.mjs";
+import { sameRepository } from "./repository-identity.mjs";
 
 const OPEN_PULL_REQUEST = "open implementation pull request remains active";
 const ACTIVE_CHECKPOINT = "active implementation checkpoint remains";
@@ -83,11 +86,6 @@ function trustedHead(pullRequest) {
   return typeof trustedHeadSha === "string" && trustedHeadSha !== "" && trustedHeadSha === headSha;
 }
 
-// GitHub resolves owner/name case-insensitively, so the comparison must do the same.
-function sameRepository(left, right) {
-  return typeof left === "string" && typeof right === "string" && left.toLowerCase() === right.toLowerCase();
-}
-
 function mergedEvidenceReasons(records, context, mergedPullRequests) {
   const reasons = [];
   const { repository, defaultBranch } = context;
@@ -99,7 +97,7 @@ function mergedEvidenceReasons(records, context, mergedPullRequests) {
       reasons.push("pull request head repository is not the target repository");
     if (!defaultBranch || pullRequest.baseRef !== defaultBranch)
       reasons.push("pull request base is not the default branch");
-    if (!pullRequest.headRef || !pullRequest.headSha) reasons.push("trusted pull request head is missing");
+    if (!(pullRequest.headRef && pullRequest.headSha)) reasons.push("trusted pull request head is missing");
     if (!trustedHead(pullRequest)) reasons.push("trusted pull request head evidence is missing or stale");
     if (!pullRequest.mergeCommitSha) reasons.push("merge commit is missing");
     const checks = requiredChecksComplete(pullRequest.requiredChecks);
@@ -150,24 +148,15 @@ function resumableDecision(reasons, records) {
   };
 }
 
-function hold(reasons) {
-  return { kind: "hold", eligible: false, reasons: [...new Set(reasons)] };
-}
+const PARENT_GAP_ANCHORS = ["contradictory parent for issue #", "child issue #"];
 
 // A record's entries, with its parent-item gap rendered from its flag at the position the text always
 // had: before the first contradictory-parent or child entry, otherwise last.
 function evidenceOf(record) {
   const entries = [...(record.missingEvidence ?? [])];
   if (record.parentItemMissing) {
-    const entry = `parent issue #${record.parentIssueNumber} Project item`;
-    const at = entries.findIndex(
-      (text) => text.startsWith("contradictory parent for issue #") || text.startsWith("child issue #"),
-    );
-    if (at === -1) {
-      entries.push(entry);
-    } else {
-      entries.splice(at, 0, entry);
-    }
+    const at = entries.findIndex((text) => PARENT_GAP_ANCHORS.some((anchor) => text.startsWith(anchor)));
+    entries.splice(at === -1 ? entries.length : at, 0, `parent issue #${record.parentIssueNumber} Project item`);
   }
   return [...new Set(entries)];
 }
@@ -209,36 +198,50 @@ function groupEvidence(records, context) {
   return { reasons, uniqueStatuses, merged };
 }
 
+// A closed issue with no verified merged delivery holds its group. A friction log still collecting entries
+// is named first, so the reason order stays what it has always been.
+function closedIssueDecision(records, reasons, context) {
+  const closed = records
+    .filter((record) => issueState(record.issue) === "CLOSED")
+    .map((record) => `issue #${record.issueNumber} is closed without a verified merged delivery`);
+  if (closed.length === 0) return null;
+  const collecting = typeof context.today === "string" && collectingFrictionLog(records, context.today);
+  return hold([...reasons, ...(collecting ? ["friction log still collecting entries"] : []), ...closed]);
+}
+
+// Each row is [reason, blocks]. Without a date the friction log cannot be read, so the group is held
+// rather than assumed clear. The first blocking row names the hold.
+const QUEUE_CHECKS = [
+  ["local date missing", (records, { today }) => typeof today !== "string"],
+  ["friction log still collecting entries", (records, { today }) => collectingFrictionLog(records, today)],
+  [
+    "Project status is not a queue status",
+    (records, context, statuses) => statuses.length !== 1 || !["Todo", "Backlog"].includes(statuses[0]),
+  ],
+  ["issue readback missing", (records) => records.some((record) => record.issue === null)],
+];
+
+function queueDecision(records, context, { reasons, uniqueStatuses }) {
+  if (reasons.length > 0) return hold(reasons);
+  const failed = QUEUE_CHECKS.find(([, blocks]) => blocks(records, context, uniqueStatuses));
+  return failed ? hold([failed[0]]) : readyDecision(records, context, uniqueStatuses[0]);
+}
+
+function unmergedDecision(records, context, evidence) {
+  return firstDecision([
+    () => closedIssueDecision(records, evidence.reasons, context),
+    () => parkedDecision(records),
+    () => resumableDecision(evidence.reasons, records),
+    () => queueDecision(records, context, evidence),
+  ]);
+}
+
 // A merged delivery is judged by its completion evidence alone, so it is either complete or held and
 // is never queued as work.
 function decideGroup(records, context) {
   if (!Array.isArray(records) || records.length === 0) return hold(["delivery record missing"]);
-  const { reasons, uniqueStatuses, merged } = groupEvidence(records, context);
-  if (merged.length > 0) {
-    return mergedDecision(reasons);
-  }
-
-  const closedIssueReasons = records
-    .filter((record) => issueState(record.issue) === "CLOSED")
-    .map((record) => `issue #${record.issueNumber} is closed without a verified merged delivery`);
-  if (closedIssueReasons.length > 0) {
-    if (typeof context.today === "string" && collectingFrictionLog(records, context.today)) {
-      reasons.push("friction log still collecting entries");
-    }
-    return hold([...reasons, ...closedIssueReasons]);
-  }
-
-  const resumable = resumableDecision(reasons, records);
-  if (resumable) return resumable;
-  if (reasons.length > 0) return hold(reasons);
-  // Without a date the friction log cannot be read, so the group is held rather than assumed clear.
-  if (typeof context.today !== "string") return hold(["local date missing"]);
-  if (collectingFrictionLog(records, context.today)) return hold(["friction log still collecting entries"]);
-  if (uniqueStatuses.length !== 1 || !["Todo", "Backlog"].includes(uniqueStatuses[0])) {
-    return hold(["Project status is not a queue status"]);
-  }
-  if (records.some((record) => record.issue === null)) return hold(["issue readback missing"]);
-  return { kind: "eligible", eligible: true, status: uniqueStatuses[0], reasons: [] };
+  const evidence = groupEvidence(records, context);
+  return evidence.merged.length > 0 ? mergedDecision(evidence.reasons) : unmergedDecision(records, context, evidence);
 }
 
 // The closure judges completion evidence only, so it never reads the date, the friction log, or the
@@ -251,13 +254,21 @@ function decideDelivery(records, context) {
   return mergedDecision(reasons);
 }
 
+// A field of the wrong type reads as absent, and absent is never read as finished or unblocked.
+const orNull = (isExpected) => (value) => (isExpected(value) ? value : null);
+const listOrNull = orNull(Array.isArray);
+const stringOrNull = orNull((value) => typeof value === "string");
+const booleanOrNull = orNull((value) => typeof value === "boolean");
+
 function issueRecord(number, issue, overlay) {
-  const checkpoint = overlay ? overlay.checkpoints.get(number) : issue.activeCheckpoint;
   return {
     number,
     state: issue.state,
     title: issue.title ?? null,
-    activeCheckpoint: typeof checkpoint === "boolean" ? checkpoint : null,
+    activeCheckpoint: booleanOrNull(overlay ? overlay.checkpoints.get(number) : issue.activeCheckpoint),
+    blockedBy: listOrNull(issue.blockedBy),
+    body: stringOrNull(issue.body),
+    comments: listOrNull(issue.comments),
   };
 }
 
@@ -422,13 +433,26 @@ function classifyDelivery(records, rootNumber, context) {
 }
 
 // Resume In Progress work first, the furthest along (an open pull request) ahead of the rest, then
-// start Todo before Backlog.
+// start Todo before Backlog. While any root has an unfinished delivery branch, no Todo or Backlog group
+// is started, so new work never buries it; In Progress groups still resume.
+const NEW_WORK_STATUSES = new Set(["Todo", "Backlog"]);
+const NEW_WORK_RANK = { Todo: 2, Backlog: 3 };
+
+function startRank({ status, openPullRequest }) {
+  if (status === "In Progress") return openPullRequest ? 0 : 1;
+  return NEW_WORK_RANK[status] ?? 4;
+}
+
+function startable({ decision }, withheld) {
+  if (!decision?.eligible) return false;
+  return !(withheld && NEW_WORK_STATUSES.has(decision.status));
+}
+
 function selectGroup(groups) {
-  const rank = ({ status, openPullRequest }) =>
-    ({ "In Progress": openPullRequest ? 0 : 1, Todo: 2, Backlog: 3 })[status] ?? 4;
+  const withheld = groups.some(({ decision }) => decision?.unfinishedBranch === true);
   const candidates = groups
-    .filter(({ decision }) => decision?.eligible)
-    .sort((left, right) => rank(left.decision) - rank(right.decision) || left.order - right.order);
+    .filter((group) => startable(group, withheld))
+    .sort((left, right) => startRank(left.decision) - startRank(right.decision) || left.order - right.order);
   return candidates[0] ?? null;
 }
 
@@ -455,7 +479,7 @@ function countRecords(records) {
 // A record without repository identity cannot be named as owner/name#N, so it is named by what it is.
 function subjectOf({ kind, number, itemId }) {
   const shown = number ?? "?";
-  if (kind === "item") return itemId !== null ? `Project item ${itemId}` : `Project item #${shown}`;
+  if (kind === "item") return itemId === null ? `Project item #${shown}` : `Project item ${itemId}`;
   if (kind === "issue") return `issue #${shown}`;
   return `pull request #${shown}`;
 }
@@ -490,7 +514,12 @@ function classifyQueue(snapshot, { today }) {
   const records = buildQueueRecords(index);
   const counts = countRecords(records);
   const causes = snapshotCauses(index);
-  const context = { repository: index.repository, defaultBranch: index.defaultBranch, today };
+  const context = {
+    repository: index.repository,
+    defaultBranch: index.defaultBranch,
+    today,
+    branches: branchesOf(snapshot),
+  };
   const groups = causes.length > 0 ? [] : classifyGroups(records, context);
   const selected = selectGroup(groups);
   const missingEvidence = [

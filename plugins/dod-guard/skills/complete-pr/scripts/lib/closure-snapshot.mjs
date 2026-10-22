@@ -9,6 +9,7 @@ import { renameSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command reads its process id for the partial file.
 import process from "node:process";
 import { sameRepository } from "./project-reads.mjs";
+import { branchRecords } from "./snapshot-branches.mjs";
 import { projectFields } from "./snapshot-fields.mjs";
 import { issueRecord } from "./snapshot-issues.mjs";
 import { readShapedItems } from "./snapshot-items.mjs";
@@ -39,6 +40,7 @@ export function buildClosureSnapshot({ repository, runner }) {
     items: shaped.map(({ item }) => item),
     issues,
     pullRequests: pullRequestRecords(targets, { repository: repo.fullName, read, endpoint }),
+    branches: branchRecords(read, repo.fullName),
   };
 }
 

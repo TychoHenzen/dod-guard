@@ -3,6 +3,7 @@
 // `## Completion evidence` comment, plus the evidence comment a close posts.
 // Every function is pure; reading and writing GitHub belongs to the callers.
 import { lines, markdownSection } from "../../../../lib/acceptance-criteria.mjs";
+import { isRecordComment, recordPrefix } from "../../../../lib/comment-record.mjs";
 import { jsonBlock, subsections } from "../../../../lib/issue-body-records.mjs";
 
 const COMPLETION_HEADING = "## Completion evidence";
@@ -16,10 +17,10 @@ const RECORD_KINDS = Object.freeze({
   closure: Object.freeze({ heading: CLOSURE_HEADING, marker: CLOSURE_MARKER }),
 });
 
-function recordPrefix(kind) {
+function kindOf(kind) {
   const record = Object.hasOwn(RECORD_KINDS, kind) ? RECORD_KINDS[kind] : null;
   if (!record) throw new TypeError(`unknown closure record kind: ${kind}`);
-  return `${record.heading}\n\n${record.marker}`;
+  return record;
 }
 
 const FULL_SHA = /^[0-9a-f]{40}$/;
@@ -59,17 +60,8 @@ function parseSupersedes(body, repository) {
   return { numbers: block.value };
 }
 
-// A comment is a record only when its body, with CRLF normalized to LF first,
-// begins with the heading line, a blank line, and the marker line, followed by
-// a line break or the end of the body: the shape the renderers write. A comment
-// that quotes a marker anywhere else (a handoff, a review) is not a record, so
-// no caller edits, counts, or parses it.
 function isRecord(comment, kind) {
-  const prefix = recordPrefix(kind);
-  const body = lines(comment?.body);
-  if (!body.startsWith(prefix)) return false;
-  const rest = body.slice(prefix.length);
-  return rest === "" || rest.startsWith("\n");
+  return isRecordComment(comment, kindOf(kind));
 }
 
 function recordComments(comments, kind) {
@@ -121,12 +113,12 @@ function pendingMatrixRows(matrix) {
 
 function renderCompletionRecord({ pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows }) {
   const fields = { pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows };
-  return [recordPrefix("completion"), "", "```json", JSON.stringify(fields, null, 2), "```"].join("\n");
+  return [recordPrefix(kindOf("completion")), "", "```json", JSON.stringify(fields, null, 2), "```"].join("\n");
 }
 
 function renderClosureEvidence({ issue, stateReason, evidence }) {
   return [
-    recordPrefix("closure"),
+    recordPrefix(kindOf("closure")),
     "",
     `Closed #${issue} as \`${stateReason}\`.`,
     "",
