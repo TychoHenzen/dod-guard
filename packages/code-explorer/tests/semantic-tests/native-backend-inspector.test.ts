@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { createNativeBackendInspector } from "../../src/semantic/adapters/native-backend-inspector.js";
+import {
+  createNativeBackendInspector,
+} from "../../src/semantic/adapters/native-backend-inspector.js";
 
 it("does not authorize a backend from a \
 project or ambient-PATH-like executable", () => {
