@@ -74,13 +74,23 @@ function compareFile({ path, basePath }, headByFile, baseByFile) {
   return compareFindings(groupAt(headByFile, path), groupAt(baseByFile, basePath));
 }
 
+// Messages such as duplicate-block name file paths, so a rename would change a finding's key. Rewrite base messages to
+// the HEAD paths so a moved file's findings keep their identity.
+function renameInMessages(base, files) {
+  const renames = files.filter(({ path, basePath }) => basePath && basePath !== path);
+  if (renames.length === 0) return base;
+  const rewrite = (message) =>
+    renames.reduce((text, { path, basePath }) => text.replaceAll(basePath, path), message);
+  return base.map((violation) => ({ ...violation, message: rewrite(violation.message) }));
+}
+
 /**
  * Classify every finding in the changed files. `files` is `[{ path, basePath }]` from parseNameStatus, and `head` and
  * `base` are the scanner's violations for HEAD and the merge base, scanned with the same roots.
  */
 export function classifyChanges({ files, head, base, excludes = GENERATED_PATHS }) {
   const headByFile = byFile(head, excludes);
-  const baseByFile = byFile(base, excludes);
+  const baseByFile = byFile(renameInMessages(base, files), excludes);
   const total = { fresh: [], existing: [], resolved: [], worsened: [] };
   for (const file of files) {
     const compared = compareFile(file, headByFile, baseByFile);

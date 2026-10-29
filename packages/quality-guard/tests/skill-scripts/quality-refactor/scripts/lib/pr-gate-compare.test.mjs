@@ -78,6 +78,19 @@ test("a renamed file keeps its pre-existing findings through the old path", () =
   assert.equal(result.existing.length, 1);
 });
 
+test("renamed files keep a duplicate-block finding whose message names their paths", () => {
+  const duplicate = (a, b, file) =>
+    finding({ file, rule: "duplicate-block", message: `6-line block duplicated at ${a}:10, ${b}:20` });
+  const base = [duplicate("old/A.cs", "old/B.cs", "old/A.cs"), duplicate("old/A.cs", "old/B.cs", "old/B.cs")];
+  const head = [duplicate("new/A.cs", "new/B.cs", "new/A.cs"), duplicate("new/A.cs", "new/B.cs", "new/B.cs")];
+  const result = classify(head, base, [
+    { path: "new/A.cs", basePath: "old/A.cs" },
+    { path: "new/B.cs", basePath: "old/B.cs" },
+  ]);
+  assert.equal(result.fresh.length, 0);
+  assert.equal(result.existing.length, 2);
+});
+
 test("code moved from one changed file to another is not new", () => {
   const message = "Helper() never touches instance state";
   const base = [finding({ file: "big.cs", rule: "stateless-method", message })];
