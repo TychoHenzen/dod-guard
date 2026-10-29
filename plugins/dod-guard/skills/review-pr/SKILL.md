@@ -124,12 +124,21 @@ BLOCKER and MAJOR findings are inline comments, each with a `GH-<id>`. MINOR fin
 Reread the PR head and stop if it moved. Post the payload as one review with event `COMMENT`. A post is ambiguous when it returns a 5xx status, times out, or returns a body you cannot read, because the review may exist even though the call failed. After any failed or ambiguous post, rerun step 2 before any retry and act on its result:
 
 - `found: false`: post the same payload once more.
-- `found: true` with `headSha` equal to the reviewed head: that review is the one you posted. Do not post. Continue at step 7 with its `reviewId`.
+- `found: true` with `headSha` equal to the reviewed head: that review is the one you posted. Do not post. Continue at "Post the scanner comment parts" below with its `reviewId`, then step 7.
 - `found: true` with any other `headSha`: stop, as step 2 says.
 
 Never post a second review.
 
-After the review is posted, post each part of `<scanner-comments.json>` as its own PR comment with `gh api --method POST "repos/{owner}/{repo}/issues/{n}/comments" --input <part.json>`, where `<part.json>` holds one `{ "body": ... }` element. First list the PR's issue comments and skip any part whose `head` and `part` marker is already there, so a retry never duplicates one. Post the parts in order.
+### Post the scanner comment parts
+
+Run this after every path that ends with a posted review: a fresh post and the `found: true` retry above. It does nothing when `<scanner-comments.json>` is an empty array. If the file is gone, rerun `build` with the same inputs; the parts depend only on those inputs and the head.
+
+```
+gh api --paginate --slurp "repos/{owner}/{repo}/issues/{n}/comments?per_page=100"
+gh api --method POST "repos/{owner}/{repo}/issues/{n}/comments" --input <part.json>
+```
+
+Save the listing, then post each part of `<scanner-comments.json>` in order as its own comment, where `<part.json>` holds one `{ "body": ... }` element. Skip a part whose `head` and `part` marker already appears in a listed comment, so no part is posted twice. After a failed or ambiguous part post, list the comments again and post only the parts still missing. If a part still fails, stop and report the missing part numbers: the review stands, and the body names comments that are not yet posted.
 
 ## 7. Report
 
