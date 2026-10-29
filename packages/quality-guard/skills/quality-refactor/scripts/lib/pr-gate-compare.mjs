@@ -1,4 +1,5 @@
-// Compares the quality findings of the files a pull request changes with the same files at the merge base.
+// Compares the quality findings of the files a pull request changes with
+// the same files at the merge base.
 
 import { GENERATED_PATHS, isGenerated, normalizePath } from "./pr-gate-paths.mjs";
 
@@ -56,7 +57,7 @@ function compareFindings(head, base) {
 // A finding that left one changed file and appeared in another with the same key is moved code, not new debt.
 function absorbMoves(total) {
   const pool = groupBy(total.resolved, findingKey);
-  // pop() both tests for a leftover fixed finding with this key and consumes it.
+  // pop() both tests for a leftover fixed finding with this key and uses it.
   const isMoved = (finding) => pool.get(findingKey(finding))?.pop() !== undefined;
   const fresh = [];
   const moved = [];
@@ -74,13 +75,26 @@ function compareFile({ path, basePath }, headByFile, baseByFile) {
   return compareFindings(groupAt(headByFile, path), groupAt(baseByFile, basePath));
 }
 
+// duplicate-block messages name `path:line` sites: map whole base paths to
+// HEAD paths so a renamed file's findings keep their key.
+function renameInMessages(base, files) {
+  const moves = new Map(files.filter((f) => f.basePath && f.basePath !== f.path)
+    .map((f) => [f.basePath, f.path]));
+  if (moves.size === 0) return base;
+  const quote = (p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const paths = [...moves.keys()].map(quote).join("|");
+  const site = new RegExp(`(?<![^\\s,(])(?:${paths})(?=:)`, "g");
+  const rename = (text) => text.replace(site, (p) => moves.get(p));
+  return base.map((v) => ({ ...v, message: rename(v.message) }));
+}
+
 /**
  * Classify every finding in the changed files. `files` is `[{ path, basePath }]` from parseNameStatus, and `head` and
  * `base` are the scanner's violations for HEAD and the merge base, scanned with the same roots.
  */
 export function classifyChanges({ files, head, base, excludes = GENERATED_PATHS }) {
   const headByFile = byFile(head, excludes);
-  const baseByFile = byFile(base, excludes);
+  const baseByFile = byFile(renameInMessages(base, files), excludes);
   const total = { fresh: [], existing: [], resolved: [], worsened: [] };
   for (const file of files) {
     const compared = compareFile(file, headByFile, baseByFile);
