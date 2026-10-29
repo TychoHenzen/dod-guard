@@ -56,7 +56,7 @@ function compareFindings(head, base) {
 // A finding that left one changed file and appeared in another with the same key is moved code, not new debt.
 function absorbMoves(total) {
   const pool = groupBy(total.resolved, findingKey);
-  // pop() both tests for a leftover fixed finding with this key and consumes it.
+  // pop() both tests for a leftover fixed finding with this key and uses it.
   const isMoved = (finding) => pool.get(findingKey(finding))?.pop() !== undefined;
   const fresh = [];
   const moved = [];
@@ -74,13 +74,10 @@ function compareFile({ path, basePath }, headByFile, baseByFile) {
   return compareFindings(groupAt(headByFile, path), groupAt(baseByFile, basePath));
 }
 
-// Messages such as duplicate-block name file paths, so a rename would change a finding's key. Rewrite base messages to
-// the HEAD paths so a moved file's findings keep their identity.
+// duplicate-block messages name file paths; map base paths to HEAD paths so a renamed file's findings keep their key.
 function renameInMessages(base, files) {
   const renames = files.filter(({ path, basePath }) => basePath && basePath !== path);
-  if (renames.length === 0) return base;
-  const rewrite = (message) =>
-    renames.reduce((text, { path, basePath }) => text.replaceAll(basePath, path), message);
+  const rewrite = (text) => renames.reduce((out, { path, basePath }) => out.replaceAll(basePath, path), text);
   return base.map((violation) => ({ ...violation, message: rewrite(violation.message) }));
 }
 
