@@ -14,7 +14,7 @@ const FILE = "plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mj
 const HEAD = "0909".repeat(10);
 const SLOT_INPUTS = ["unified0.diff", "pbi.json", "sub-issues.json"];
 const INPUTS = ["scan.json", ...SLOT_INPUTS, "plan.json", "results.json"];
-const OUTPUTS = ["violations.json", "candidates.json", "payload.json"];
+const OUTPUTS = ["violations.json", "candidates.json", "payload.json", "scanner-comments.json"];
 const PLACEHOLDER = /<[^>]+>/;
 const FLAG_START = / (?=--)/;
 const REFUSED = /The merge pass output is refused; do not post: .*missing J id J2/;

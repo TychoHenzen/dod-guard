@@ -113,11 +113,11 @@ With no finding and no violation, write `{ "groups": [], "scanner": [] }` and sk
 ## 6. Build and post
 
 ```
-node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --out=<payload.json>
+node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --out=<payload.json> --scanner-comments-out=<scanner-comments.json>
 gh api --method POST "repos/{owner}/{repo}/pulls/{n}/reviews" --input <payload.json>
 ```
 
-`build` regenerates ids and slots from its own inputs, validates the plan, results, and merge file, and prints the recommendation and severity counts. If the body would pass 65536 characters, it refuses: shorten question text in the saved plan and rebuild.
+`build` regenerates ids and slots from its own inputs, validates the plan, results, and merge file, and prints the recommendation and severity counts. Scanner findings are summarized per file in the body and inline comments (counts by severity and rule, the first five by line), under a fixed budget. When anything was summarized, `build` also writes the full kept-violation list to `<scanner-comments.json>`, a JSON array of `{ "body": ... }` parts that each start with a `<!-- dod-guard:review-pr-scanner head=<sha> part=<i>/<n> -->` marker; an empty array means nothing was summarized. If the body would still pass 65536 characters, it refuses: shorten question text in the saved plan and rebuild.
 
 BLOCKER and MAJOR findings are inline comments, each with a `GH-<id>`. MINOR findings go in "Minor notes" in the body. A file's scanner findings are MAJOR when any is `high`, else MINOR. Any BLOCKER gives `BLOCK`, else any MAJOR gives `REQUEST_CHANGES`, else `APPROVE`. The body carries the marker `<!-- dod-guard:review-pr head=<sha> recommendation=<REC> -->` that step 2 detects.
 
@@ -128,6 +128,8 @@ Reread the PR head and stop if it moved. Post the payload as one review with eve
 - `found: true` with any other `headSha`: stop, as step 2 says.
 
 Never post a second review.
+
+After the review is posted, post each part of `<scanner-comments.json>` as its own PR comment with `gh api --method POST "repos/{owner}/{repo}/issues/{n}/comments" --input <part.json>`, where `<part.json>` holds one `{ "body": ... }` element. First list the PR's issue comments and skip any part whose `head` and `part` marker is already there, so a retry never duplicates one. Post the parts in order.
 
 ## 7. Report
 
