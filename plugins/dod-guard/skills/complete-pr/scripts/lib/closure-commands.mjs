@@ -1,8 +1,9 @@
 // The closure.mjs subcommands. Each takes the parsed arguments and an optional
 // gh runner, and answers the JSON to print or false for a usage error.
 // biome-ignore lint/correctness/noNodejsModules: This shipped command reads snapshot files and removes an earlier one.
-import { readFileSync, rmSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { readHandoffMatrix } from "../../../../lib/handoff-matrix.mjs";
+import { readJsonFile, readTextFile } from "../../../../lib/read-text.mjs";
 import { REPOSITORY_NAME } from "../../../../lib/repository-identity.mjs";
 import { applyClosures, recordCompletion } from "./closure-apply.mjs";
 import { annotateSnapshot } from "./closure-delivery.mjs";
@@ -13,29 +14,25 @@ import { runGh } from "./gh-runner.mjs";
 
 const RECORD_FILE_OPTIONS = ["repository", "result", "handoff-file"];
 
-function readJson(path) {
-  return JSON.parse(readFileSync(path, "utf8"));
-}
-
 function readMatrixRows(path) {
-  const read = readHandoffMatrix(readFileSync(path, "utf8"));
+  const read = readHandoffMatrix(readTextFile(path));
   if (read.error) throw new Error(read.error);
   return read.rows;
 }
 
 function plan(args) {
   const options = snapshotOptions(args);
-  return options && planClosures(readJson(args.snapshot), options);
+  return options && planClosures(readJsonFile(args.snapshot), options);
 }
 
 function apply(args, runner = runGh) {
   const options = snapshotOptions(args);
-  return options && applyClosures(readJson(args.snapshot), { runner, ...options });
+  return options && applyClosures(readJsonFile(args.snapshot), { runner, ...options });
 }
 
 function annotate(args) {
   if (!given(args.snapshot)) return false;
-  const annotated = annotateSnapshot(readJson(args.snapshot));
+  const annotated = annotateSnapshot(readJsonFile(args.snapshot));
   if (args.output === undefined) return annotated;
   if (!given(args.output)) return false;
   rmSync(args.output, { force: true });
@@ -70,7 +67,7 @@ function record(args, runner = runGh) {
   if (!usable) return false;
   return recordCompletion({
     repository: args.repository,
-    result: readJson(args.result),
+    result: readJsonFile(args.result),
     matrix: readMatrixRows(args["handoff-file"]),
     children,
     runner,

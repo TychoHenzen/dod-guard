@@ -33,7 +33,7 @@ function withDir(body) {
 
 function write(dir, name, value) {
   const path = join(dir, name);
-  writeFileSync(path, typeof value === "string" ? value : JSON.stringify(value));
+  writeFileSync(path, typeof value === "string" || Buffer.isBuffer(value) ? value : JSON.stringify(value));
   return path;
 }
 
@@ -110,6 +110,18 @@ test("slots names a sub-issue listing with the wrong shape", () => {
     assert.notEqual(result.status, 0);
     assert.ok(result.stderr.includes(subs), result.stderr);
     assert.match(result.stderr, /must be a JSON array/);
+  });
+});
+
+test("violations reads a scan file with a UTF-8 byte-order mark and a diff saved as marked UTF-16", () => {
+  withDir((dir) => {
+    const scanText = Buffer.from(JSON.stringify({ violations: [] }));
+    const scan = write(dir, "scan.json", Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), scanText]));
+    const diff = write(dir, "unified0.diff", Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(DIFF, "utf16le")]));
+    const out = join(dir, "violations.json");
+    const result = run(["violations", `--scan=${scan}`, `--diff=${diff}`, `--out=${out}`]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { out, violations: 0, files: 0 });
   });
 });
 

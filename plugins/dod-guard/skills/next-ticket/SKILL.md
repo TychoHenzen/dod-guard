@@ -41,7 +41,7 @@ Before the branch exists, save the issue body as read back from GitHub to a UTF-
 
 `node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]`
 
-Pass `--children` as a JSON array of linked functional-slice children (slice id plus evidence) when any exist. It prints `{outcome, remainder}`: exit 0 is `verified`, exit 1 an actionable remainder, exit 2 a usage or parse error. Stop on 1 or 2. It rejects non-UTF-8 files such as PowerShell 5.1 `>` UTF-16, and accepts a UTF-8 BOM. After the handoff is pushed, rerun it with the exact head and matrix and require freshness. Implementation evidence must be pushed before commit or PR handoff, not before execution.
+Pass `--children` as a JSON array of linked functional-slice children (slice id plus evidence) when any exist. It prints `{outcome, remainder}`: exit 0 is `verified`, exit 1 an actionable remainder, exit 2 a usage or parse error. Stop on 1 or 2. It reads UTF-8, UTF-8 with a BOM, and UTF-16 with a BOM (what PowerShell 5.1 `>` writes), and rejects any other non-UTF-8 file with exit 2. After the handoff is pushed, rerun it with the exact head and matrix and require freshness. Implementation evidence must be pushed before commit or PR handoff, not before execution.
 
 ## Prepare and start
 
