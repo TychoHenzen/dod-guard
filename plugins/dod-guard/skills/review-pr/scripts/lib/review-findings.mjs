@@ -5,6 +5,7 @@ import { requireMergeOutput } from "./merge-output.mjs";
 import { regenerate } from "./regenerated-inputs.mjs";
 import { slotsBlock } from "./review-slots.mjs";
 import { splitRulings } from "./scanner-rulings.mjs";
+import { fitScanner, fullListComments, SHOWN, scannerBody } from "./scanner-summary.mjs";
 
 const MARKER = /<!-- dod-guard:review-pr head=([0-9a-f]{7,40}) recommendation=(APPROVE|REQUEST_CHANGES|BLOCK) -->/;
 const SEVERITY_PREFIX = /^\*\*(BLOCKER|MAJOR|MINOR)\*\*/;
@@ -28,12 +29,13 @@ function recommendationFor(severities) {
 function scannerFinding(file, violations) {
   const sorted = [...violations].sort((left, right) => left.line - right.line || left.rule.localeCompare(right.rule));
   const severity = sorted.some((violation) => violation.severity === "high") ? "MAJOR" : "MINOR";
-  const items = sorted.map((violation) => `- \`${violation.rule}\` line ${violation.line}: ${violation.message}`);
   return {
     severity,
     file,
     line: sorted[0].line,
-    body: [`**${severity}** quality-guard structural findings (${sorted.length})`, "", ...items].join("\n"),
+    body: scannerBody(severity, sorted),
+    scanner: true,
+    truncated: sorted.length > SHOWN,
   };
 }
 
@@ -86,7 +88,36 @@ function countSeverities(findings) {
   return counts;
 }
 
-function reviewBody({ headSha, recommendation, counts, block, unanchored, minor }) {
+function unanchoredText(finding) {
+  const heading = `### \`${finding.file}:${finding.line}\` (no added line to anchor on)`;
+  return { scanner: finding.scanner, text: ["", heading, finding.body].join("\n") };
+}
+
+function minorText(finding) {
+  const location = `\`${finding.file}:${finding.line}\``;
+  return { scanner: finding.scanner, text: ["", location, finding.body].join("\n") };
+}
+
+function omissionNote(omitted) {
+  const files = omitted === 1 ? "file has" : "files have";
+  return `\n${omitted} more ${files} scanner findings, listed only in the scanner findings comments.`;
+}
+
+// The scanner text shares one budget across the unanchored and minor sections,
+// so the body stays postable however many files the scanner flags.
+function fitSections(unanchored, minor) {
+  const entries = [...unanchored.map(unanchoredText), ...minor.map(minorText)];
+  const fitted = fitScanner(entries);
+  const placed = new Set(fitted.texts);
+  const split = (list) => list.map(({ text }) => text).filter((text) => placed.has(text));
+  return {
+    unanchored: split(entries.slice(0, unanchored.length)),
+    minor: split(entries.slice(unanchored.length)),
+    omitted: fitted.omitted,
+  };
+}
+
+function reviewBody({ headSha, recommendation, counts, block, sections, listed, hasMinor }) {
   const lines = [
     marker(headSha, recommendation),
     "## dod-guard review",
@@ -96,15 +127,16 @@ function reviewBody({ headSha, recommendation, counts, block, unanchored, minor 
     "",
     block,
   ];
-  for (const finding of unanchored) {
-    const heading = `### \`${finding.file}:${finding.line}\` (no added line to anchor on)`;
-    lines.push("", heading, finding.body);
+  if (listed) {
+    lines.push("", "Scanner findings are summarized per file here. The full list is posted as pull request comments");
+    lines.push("headed `dod-guard scanner findings`, right after this review.");
   }
-  if (minor.length > 0) {
-    lines.push("", "### Minor notes", "", "These do not block the merge and need no reply.");
-    for (const finding of minor) {
-      lines.push("", `\`${finding.file}:${finding.line}\``, finding.body);
-    }
+  lines.push(...sections.unanchored);
+  if (hasMinor) {
+    lines.push("", "### Minor notes", "", "These do not block the merge and need no reply.", ...sections.minor);
+  }
+  if (sections.omitted > 0) {
+    lines.push(omissionNote(sections.omitted));
   }
   return lines.join("\n");
 }
@@ -163,13 +195,20 @@ function buildReview(input) {
   // Only blocking findings become inline threads, so only they get a GH-<id>
   // that a caller can pass to /fix-pr-review.
   const blocking = findings.filter((finding) => finding.severity !== "MINOR");
+  const minor = findings.filter((finding) => finding.severity === "MINOR");
+  const sections = fitSections(
+    blocking.filter((finding) => !finding.anchored),
+    minor,
+  );
+  const listed = sections.omitted > 0 || findings.some((finding) => finding.truncated);
   const body = reviewBody({
     headSha: input.headSha,
     recommendation,
     counts,
     block: planBlocks(input.plan, checked),
-    unanchored: blocking.filter((finding) => !finding.anchored),
-    minor: findings.filter((finding) => finding.severity === "MINOR"),
+    sections,
+    listed,
+    hasMinor: minor.length > 0,
   });
   const payload = {
     commit_id: input.headSha,
@@ -177,7 +216,8 @@ function buildReview(input) {
     body: requirePostableBody(body, checked.slots.length),
     comments: inlineComments(blocking),
   };
-  return { recommendation, counts, payload };
+  const scannerComments = listed ? fullListComments(input.headSha, groupBy(checked.kept, "file")) : [];
+  return { recommendation, counts, payload, scannerComments };
 }
 
 function existingReview(reviews) {

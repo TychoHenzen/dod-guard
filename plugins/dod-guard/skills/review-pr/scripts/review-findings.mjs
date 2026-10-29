@@ -28,6 +28,7 @@ const USAGE = [
   "  review-findings.mjs build --head=<sha> --scan=<scan.json> --diff=<unified0.diff>",
   "    --pbi=<issue.json> --sub-issues=<sub-issues.json> --plan=<plan.json>",
   "    --results=<results.json> --merge=<merge.json> --out=<payload.json>",
+  "    --scanner-comments-out=<scanner-comments.json>",
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
 ].join("\n");
 
@@ -94,10 +95,12 @@ const COMMANDS = {
       ...pbiInputs(args),
     });
     writeFileSync(args.out, JSON.stringify(review.payload));
+    writeFileSync(args["scanner-comments-out"], JSON.stringify(review.scannerComments));
     return {
       recommendation: review.recommendation,
       counts: review.counts,
       inline: review.payload.comments.length,
+      scannerComments: review.scannerComments.length,
       payload: args.out,
     };
   },
@@ -110,7 +113,7 @@ const REQUIRED = {
   slots: ["diff", "pbi", "sub-issues", "out"],
   violations: ["scan", "diff", "out"],
   candidates: ["scan", "diff", "pbi", "sub-issues", "plan", "results", "out"],
-  build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "merge", "out"],
+  build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "merge", "out", "scanner-comments-out"],
   report: ["review-id", "comments"],
 };
 const FULL_SHA = /^[0-9a-f]{40}$/;
