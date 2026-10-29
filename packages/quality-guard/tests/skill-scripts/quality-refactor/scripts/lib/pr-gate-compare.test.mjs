@@ -97,6 +97,17 @@ test("renamed files keep duplicate-block findings naming their paths", () => {
   assert.equal(result.existing.length, 2);
 });
 
+test("a rename does not rewrite a longer path that ends in its name", () => {
+  const message = "6-line block duplicated at src/a.cs:1, src/c.cs:9";
+  const kept = finding({ file: "src/c.cs", rule: "duplicate-block", message });
+  const result = classify([kept], [kept], [
+    { path: "b.cs", basePath: "a.cs" },
+    modified("src/c.cs"),
+  ]);
+  assert.equal(result.fresh.length, 0);
+  assert.equal(result.existing.length, 1);
+});
+
 test("code moved from one changed file to another is not new", () => {
   const message = "Helper() never touches instance state";
   const base = [finding({ file: "big.cs", rule: "stateless-method", message })];
