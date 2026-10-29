@@ -33,12 +33,14 @@ export function issue(
     body = REFINED_BODY,
     comments = [],
     activeCheckpoint = false,
+    stateReason = null,
   } = {},
 ) {
   return {
     number,
     repository: REPOSITORY,
     state,
+    state_reason: stateReason,
     title: `Issue ${number}`,
     parent: parent === null ? null : ref(parent),
     children: children.map((child) => ref(child)),
