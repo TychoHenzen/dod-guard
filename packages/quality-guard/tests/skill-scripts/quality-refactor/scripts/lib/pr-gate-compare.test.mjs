@@ -78,11 +78,17 @@ test("a renamed file keeps its pre-existing findings through the old path", () =
   assert.equal(result.existing.length, 1);
 });
 
-test("renamed files keep a duplicate-block finding whose message names their paths", () => {
-  const duplicate = (a, b, file) =>
-    finding({ file, rule: "duplicate-block", message: `6-line block duplicated at ${a}:10, ${b}:20` });
-  const base = [duplicate("old/A.cs", "old/B.cs", "old/A.cs"), duplicate("old/A.cs", "old/B.cs", "old/B.cs")];
-  const head = [duplicate("new/A.cs", "new/B.cs", "new/A.cs"), duplicate("new/A.cs", "new/B.cs", "new/B.cs")];
+test("renamed files keep duplicate-block findings that name their paths", () => {
+  const pair = (dir) =>
+    ["A", "B"].map((name) =>
+      finding({
+        file: `${dir}/${name}.cs`,
+        rule: "duplicate-block",
+        message: `6-line block duplicated at ${dir}/A.cs:10, ${dir}/B.cs:20`,
+      }),
+    );
+  const base = pair("old");
+  const head = pair("new");
   const result = classify(head, base, [
     { path: "new/A.cs", basePath: "old/A.cs" },
     { path: "new/B.cs", basePath: "old/B.cs" },
