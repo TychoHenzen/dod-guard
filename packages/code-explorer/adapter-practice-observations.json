@@ -30,7 +30,7 @@
       "missing_handle_relation": "backend_unavailable"
     },
     "csharp": {
-      "version": "5.11.0-1.26380.4",
+      "version": "5.13.0-1.26514.10",
       "readiness_after_practice": "ready",
       "definition": { "local": 1, "external": 0 },
       "references": { "local": 2, "external": 0 },

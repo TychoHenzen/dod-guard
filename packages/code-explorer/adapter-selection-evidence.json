@@ -8,7 +8,7 @@
       "command_roots": ["cargo_home_bin", "dotnet_tools", "node_install", "npm_global", "code_explorer_backends"],
       "commands": ["<cargo_home_bin>\\rust-analyzer.exe --version", "read <npm_global>\\node_modules\\pyright\\package.json version after canonical identity and SHA-256 verification", "Windows ProductVersion/FileVersion for <dotnet_tools>\\roslyn-language-server.exe"],
       "bounded_output": "Rust and C# safe-mode sentinel positive controls passed. Python initialized through an owned mirror and returned a definition with stderr empty.",
-      "backend_versions": { "rust": "1.94.0", "python": "1.1.410", "csharp": "5.11.0-1.26380.4" },
+      "backend_versions": { "rust": "1.94.0", "python": "1.1.410", "csharp": "5.13.0-1.26514.10" },
       "positive_controls": { "rust": "passed", "python": "passed", "csharp": "passed" }
     },
     "posix": {
@@ -55,13 +55,13 @@
     },
     "csharp": {
       "executable": "roslyn-language-server.exe",
-      "executable_sha256": "9c16bcb4442d30b260942a7a1a0b919b29dfcbf8ed4c441cc68172056953c00b",
+      "executable_sha256": "ac51f01cb80ffcec68f95be2700c27b4b589382bf2e76bbee91bad1e324f9ce4",
       "entrypoints": [],
       "entrypoint_sha256s": [],
       "package_metadata_sha256": null,
-      "backend_version": "5.11.0-1.26380.4",
+      "backend_version": "5.13.0-1.26514.10",
       "fixture_sha256": "df2d38b254160328665bf02a4f40cd4a37242d2c06e7f6b4e22af26bdafa695c",
-      "version_probe": { "method": "windows_file_version", "command_root": "dotnet_tools", "executable": "roslyn-language-server.exe", "entrypoints": [], "arguments": [], "command_template": "ProductVersion/FileVersion(<dotnet_tools>\\roslyn-language-server.exe) => ProductVersion=5.11.0-1.26380.4+dc1db3e7dee178e2744a73eb06dce107c07fa7b1; FileVersion=5.1100.26.38004" },
+      "version_probe": { "method": "windows_file_version", "command_root": "dotnet_tools", "executable": "roslyn-language-server.exe", "entrypoints": [], "arguments": [], "command_template": "ProductVersion/FileVersion(<dotnet_tools>\\roslyn-language-server.exe) => ProductVersion=5.13.0-1.26514.10+d82b7f7dc6c203f66c41a23207e10bf462af896f; FileVersion=5.1300.26.51410" },
       "startup": true,
       "definition_navigation": true,
       "side_effect_absent": true,

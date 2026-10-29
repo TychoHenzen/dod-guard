@@ -23,7 +23,7 @@ it("resolves Roslyn from the pinned dotnet tool-store payload only", () => {
   );
   assert.ok(
     identity?.canonical_path?.includes(
-      "\\.store\\roslyn-language-server\\5.11.0-1.26380.4\\",
+      "\\.store\\roslyn-language-server\\5.13.0-1.26514.10\\",
     ),
   );
   assert.equal(

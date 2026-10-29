@@ -3,10 +3,10 @@
   "language": "csharp",
   "backend": {
     "name": "roslyn-language-server.exe",
-    "version": "5.11.0-1.26380.4"
+    "version": "5.13.0-1.26514.10"
   },
   "operation_states": {
-    "session": "created",
+    "session": "ready",
     "status": "ready",
     "search": "ready",
     "focus": "ready",
@@ -79,6 +79,6 @@
     "start": 1,
     "final": 3
   },
-  "elapsed_ms": 4689,
+  "elapsed_ms": 5199,
   "error_code": null
 }
