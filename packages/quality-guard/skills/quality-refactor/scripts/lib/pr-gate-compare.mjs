@@ -74,11 +74,13 @@ function compareFile({ path, basePath }, headByFile, baseByFile) {
   return compareFindings(groupAt(headByFile, path), groupAt(baseByFile, basePath));
 }
 
-// duplicate-block messages name file paths; map base paths to HEAD paths so a renamed file's findings keep their key.
+// duplicate-block messages name file paths: map base paths to HEAD paths
+// so a renamed file's findings keep their key.
 function renameInMessages(base, files) {
-  const renames = files.filter(({ path, basePath }) => basePath && basePath !== path);
-  const rewrite = (text) => renames.reduce((out, { path, basePath }) => out.replaceAll(basePath, path), text);
-  return base.map((violation) => ({ ...violation, message: rewrite(violation.message) }));
+  const moves = files.filter((f) => f.basePath && f.basePath !== f.path);
+  const rename = (text) =>
+    moves.reduce((out, f) => out.replaceAll(f.basePath, f.path), text);
+  return base.map((v) => ({ ...v, message: rename(v.message) }));
 }
 
 /**
