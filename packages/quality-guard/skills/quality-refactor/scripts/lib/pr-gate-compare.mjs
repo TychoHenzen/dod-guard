@@ -1,4 +1,5 @@
-// Compares the quality findings of the files a pull request changes with the same files at the merge base.
+// Compares the quality findings of the files a pull request changes with
+// the same files at the merge base.
 
 import { GENERATED_PATHS, isGenerated, normalizePath } from "./pr-gate-paths.mjs";
 

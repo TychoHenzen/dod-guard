@@ -78,7 +78,7 @@ test("a renamed file keeps its pre-existing findings through the old path", () =
   assert.equal(result.existing.length, 1);
 });
 
-test("renamed files keep duplicate-block findings that name their paths", () => {
+test("renamed files keep duplicate-block findings naming their paths", () => {
   const pair = (dir) =>
     ["A", "B"].map((name) =>
       finding({
