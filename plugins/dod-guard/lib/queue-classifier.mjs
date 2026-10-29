@@ -238,13 +238,16 @@ function unmergedDecision(records, context, evidence) {
 
 // A closed umbrella parent is delivered by its children, not by one pull request of its own. It is
 // complete when its root has children, every record of the group is settled (closed as completed, and
-// Done where it is a Project item), and no pull request of the group is still open. Closed issues are
-// not asked for a checkpoint marker, because handoffs older than the marker cannot carry one.
+// Done where it is a Project item), and no pull request of the group is still open. A closed issue is
+// not asked for an explicit false checkpoint, because handoffs older than the marker cannot carry one,
+// but an explicitly active checkpoint or a relationship hold still stops the shortcut.
 function settledUmbrella(records) {
   const root = records.find(({ parentIssueNumber }) => parentIssueNumber === null);
   if (!root?.hasChildren) return false;
   if (root.settled !== true) return false;
   if (!records.every(({ settledSub }) => settledSub === true)) return false;
+  // Relationship, parent, and checkpoint evidence still holds: only the merged-delivery rules are relaxed.
+  if (recordReasons(records).reasons.length > 0) return false;
   return !records.some(({ pullRequests }) => pullRequests.some((pull) => pullRequestState(pull) === "OPEN"));
 }
 

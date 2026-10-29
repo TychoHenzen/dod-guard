@@ -98,3 +98,17 @@ test("a merged-delivery parent with a missing checkpoint on an open child is sti
   Object.assign(findIssue(input, 241), { state: "open", state_reason: null, activeCheckpoint: null });
   assertHold(input, UMBRELLA, "active checkpoint for issue #241 is not explicitly false");
 });
+
+test("a closed umbrella with an explicitly active checkpoint is held", () => {
+  const input = closedUmbrella();
+  findIssue(input, 241).activeCheckpoint = true;
+  assertHold(input, UMBRELLA, "active implementation checkpoint remains");
+});
+
+test("a closed umbrella linking a pull request of another repository is held", () => {
+  const input = closedUmbrella();
+  input.items[0] = item(UMBRELLA, "Done");
+  const field = input.items[0].fields.find(({ name }) => name === "Linked pull requests");
+  field.value = [{ repository: "other/repo", number: 5 }];
+  assert.notEqual(decisionOf(input, UMBRELLA).kind, "complete");
+});
