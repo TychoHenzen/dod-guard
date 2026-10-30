@@ -17,6 +17,8 @@ const SEVERITY_RANK = { low: 1, medium: 2, high: 3 };
 
 // Glob syntax to regular expression; any other character is matched literally.
 const GLOB_TOKENS = [
+  // "**/" also matches zero directories, so [**/*.cs] covers a root file.
+  ["**/", "(?:.*/)?"],
   ["**", ".*"],
   ["*", "[^/]*"],
   ["?", "[^/]"],
@@ -83,6 +85,8 @@ function gateSteps(workflow) {
   const text = workflow
     .split(/\r?\n/)
     .filter((line) => !line.trim().startsWith("#"))
+    // A " #" starts a YAML or shell comment, so a flag after it is never passed.
+    .map((line) => line.replace(/\s#.*$/, ""))
     .join("\n");
   const steps = [];
   let start = text.indexOf("quality-pr-gate.mjs");

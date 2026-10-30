@@ -80,12 +80,16 @@ test("editorconfigWidths lets the last matching section win and honours off", ()
   assert.equal(widthFor("docs/readme.md"), null);
   assert.equal(widthFor("src/Game/a.cs"), 140);
   assert.equal(widthFor("tests/a.cs"), 100);
+  assert.equal(editorconfigWidths("[**/*.cs]\nmax_line_length = 120\n")("Wide.cs"), 120);
+  assert.equal(editorconfigWidths("[src/**/*.cs]\nmax_line_length = 120\n")("src/a.cs"), 120);
   assert.equal(editorconfigWidths("[*.cs]\nindent_size = 4\n")("a.cs"), undefined);
 });
 
 test("gateRuleFloors reads only the gate step and skips comment lines", () => {
   assert.deepEqual(gateRuleFloors([WORKFLOW]), { "line-length": "high", "file-length": "high" });
   assert.deepEqual(gateRuleFloors(["steps:\n  - run: npm test --rule-block-on=x:high\n"]), {});
+  const trailing = "  - run: node quality-pr-gate.mjs --root=. # --rule-block-on=complexity:high\n";
+  assert.deepEqual(gateRuleFloors([trailing]), {});
 });
 
 test("a line-length finding at a formatter width is left alone", () => {
