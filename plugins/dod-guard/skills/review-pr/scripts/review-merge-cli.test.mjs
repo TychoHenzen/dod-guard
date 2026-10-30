@@ -21,7 +21,7 @@ const REFUSED = /The merge pass output is refused; do not post: .*missing J id J
 const MERGED_PROBLEM = /^\*\*MAJOR\*\* The parse-error case asserts the whole result/;
 const BOTH_LENSES = /Requirement: AC-1 \(review-pr-feature, review-pr-hygiene\)$/;
 const DROPPED_BLOCK = /Dropped scanner findings \(1\)/;
-const DROPPED_LINE = /S1 line \d+ \(rule-misfire, D1/;
+const DROPPED_LINE = /\(rule-misfire, D1\) x1: S1/;
 
 const dirs = [];
 after(() => {

@@ -8,6 +8,7 @@ import process from "node:process";
 import { parseArgs } from "../../../lib/args.mjs";
 import { candidates, json, pbiInputs, violations } from "./lib/candidate-commands.mjs";
 import { ignoredPaths, scanArguments } from "./lib/ignored-paths.mjs";
+import { applyRepoLimits, repoLimits } from "./lib/repo-limits.mjs";
 import { buildReview, existingReview, postedFindings } from "./lib/review-findings.mjs";
 import { reviewSlots } from "./lib/review-slots.mjs";
 import { scannerPath } from "./lib/scanner-location.mjs";
@@ -48,7 +49,8 @@ function slotCounts(slots) {
 }
 
 // The whole-repository report runs to megabytes, so it goes straight to a file
-// instead of through a pipe.
+// instead of through a pipe. The repository's limits are read from --root, so
+// the gate's own flags are never passed here.
 function scan(args) {
   const scanner = scannerPath(args.client, json(args.registry));
   if (!existsSync(scanner)) {
@@ -64,10 +66,20 @@ function scan(args) {
   if (result.error || result.status !== 0) {
     throw new Error(`quality-scan failed (${result.status}): ${result.error?.message ?? result.stderr}`);
   }
+  // The repository's own limits replace the scanner's defaults before any
+  // later command numbers the violations.
+  const limits = repoLimits(args.root);
+  const limited = applyRepoLimits(json(args.out), limits);
+  writeFileSync(
+    args.out,
+    JSON.stringify({ ...limited.scan, repoLimits: { floors: limits.floors, removed: limited.removed } }),
+  );
   return {
     scanner,
     out: args.out,
-    violations: json(args.out).violations.length,
+    violations: limited.scan.violations.length,
+    ruleFloors: limits.floors,
+    removedByRepoLimits: limited.removed,
   };
 }
 
