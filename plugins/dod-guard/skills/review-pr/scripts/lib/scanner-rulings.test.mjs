@@ -46,7 +46,7 @@ test("a file whose only high is dropped and a medium kept posts MINOR", () => {
   assert.ok(!payload.body.includes("line 72: line is 132 chars"), payload.body);
 });
 
-test("dropped violations are listed by file and rule inside a details block", () => {
+test("dropped violations are counted by file, rule, and cited answer inside a details block", () => {
   const { body } = build([KEEP, ...DROPS]).payload;
   const block = [
     "<details>",
@@ -54,11 +54,11 @@ test("dropped violations are listed by file and rule inside a details block", ()
     "",
     `**${UNICODE}**`,
     "",
-    "- `file-length`: S1 line 1 (rule-misfire, R1): file is 600 lines",
+    "- `file-length` (rule-misfire, R1) x1: S1",
     "",
     `**${FIX}**`,
     "",
-    "- `line-length`: S3 line 72 (rule-misfire, D1): line is 132 chars",
+    "- `line-length` (rule-misfire, D1) x1: S3",
     "",
     "**Cited questions**",
     "",
@@ -73,12 +73,12 @@ test("dropped violations are listed by file and rule inside a details block", ()
 const buildWith = (scanOverride, plan, rulings) =>
   review([], { scan: scanOverride, plan, merge: { groups: [], scanner: rulings } }).payload.body;
 
-test("a dropped message is escaped so it cannot close the details block", () => {
+test("a dropped message stays out of the block, so its HTML cannot close it", () => {
   const violations = scan.violations.map((violation) =>
     violation.line === 72 ? { ...violation, message: "<b>x</b> 132 chars" } : violation,
   );
   const body = buildWith({ violations }, SCANNER_PLAN, [KEEP, ...DROPS]);
-  assert.ok(body.includes("(rule-misfire, D1): &lt;b&gt;x&lt;/b&gt; 132 chars"), body);
+  assert.ok(body.includes("(rule-misfire, D1) x1: S3"), body);
   assert.ok(!body.includes("<b>x</b>"), body);
 });
 
