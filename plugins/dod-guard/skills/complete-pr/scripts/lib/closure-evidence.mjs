@@ -96,7 +96,7 @@ function hierarchyReasons(context, number, seen = new Set([number])) {
 
 function rootEvidence(context, roots) {
   const judged = roots.map((root) => [root, context.delivery(root)]);
-  if (roots.length === 1 && judged[0][1].status === "verified") return { verified: true };
+  if (judged.every(([, value]) => value.status === "verified")) return { verified: true };
   return {
     verified: false,
     missing: judged.flatMap(([root, value]) => prefixed(value).map((reason) => `root #${root} ${reason}`)),
