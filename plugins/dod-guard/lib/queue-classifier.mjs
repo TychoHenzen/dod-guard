@@ -241,10 +241,13 @@ function unmergedDecision(records, context, evidence) {
 // Done where it is a Project item), and no pull request of the group is still open. A closed issue is
 // not asked for an explicit false checkpoint, because handoffs older than the marker cannot carry one,
 // but an explicitly active checkpoint or a relationship hold still stops the shortcut.
+// A root closed as not planned and Done, with every sub-issue settled, is retired on purpose: it is
+// complete with or without children, because no delivery was ever owed for it.
 function settledUmbrella(records) {
   const root = records.find(({ parentIssueNumber }) => parentIssueNumber === null);
-  if (!root?.hasChildren) return false;
-  if (root.settled !== true) return false;
+  const delivered = root?.hasChildren === true && root.settled === true;
+  const retired = root?.retired === true && doneStatus(root.projectStatus);
+  if (!delivered && !retired) return false;
   if (!records.every(({ settledSub }) => settledSub === true)) return false;
   // Relationship, parent, and checkpoint evidence still holds: only the merged-delivery rules are relaxed.
   if (recordReasons(records).reasons.length > 0) return false;
@@ -356,6 +359,7 @@ function missingEvidenceOf(index, number, item, issue, parentIssueFieldObserved)
 // issue with no recorded reason) is not settled.
 const COMPLETED = new Set(["completed"]);
 const SETTLED_SUB_ISSUE_REASONS = new Set(["completed", "not_planned"]);
+const NOT_PLANNED = new Set(["not_planned"]);
 
 function settledWith(reasons, index, number, path) {
   const issue = issueFor(index, number);
@@ -373,6 +377,7 @@ function settledWith(reasons, index, number, path) {
 
 const settledIssue = (index, number) => settledWith(COMPLETED, index, number, []);
 const settledSubIssue = (index, number) => settledWith(SETTLED_SUB_ISSUE_REASONS, index, number, []);
+const retiredIssue = (index, number) => settledWith(NOT_PLANNED, index, number, []);
 
 // The Project's Parent issue field decides the parent whenever it is present, even when null, so an
 // issue whose own parent disagrees with the field is held instead of read under either parent.
@@ -391,6 +396,7 @@ function recordFor(index, number, overlay) {
     projectStatus: itemStatus(item),
     settled: settledIssue(index, number),
     settledSub: settledSubIssue(index, number),
+    retired: retiredIssue(index, number),
     hasChildren: Array.isArray(issue?.children) && issue.children.length > 0,
     issue: issue === null ? null : issueRecord(number, issue, overlay),
     pullRequests: pullRequestRecords(index, item, overlay),

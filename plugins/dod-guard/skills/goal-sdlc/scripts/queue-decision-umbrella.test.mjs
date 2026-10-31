@@ -60,10 +60,10 @@ test("a child closed with no recorded reason holds a closed umbrella", () => {
   assertHold(input, UMBRELLA);
 });
 
-test("an umbrella that was itself closed as not planned is held", () => {
+test("an umbrella that was itself closed as not planned with every child Done is complete", () => {
   const input = closedUmbrella();
   findIssue(input, UMBRELLA).state_reason = "not_planned";
-  assertHold(input, UMBRELLA);
+  assert.equal(decisionOf(input, UMBRELLA).kind, "complete");
 });
 
 test("a closed umbrella with an open pull request is held", () => {
