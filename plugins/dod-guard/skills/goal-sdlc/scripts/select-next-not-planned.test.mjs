@@ -23,5 +23,8 @@ test("select-next reports a parent closed as not planned and Done as complete", 
 test("select-next holds a parent closed as not planned that is not Done", async () => {
   const result = await selectNext(retired("In Progress"));
   assert.equal(result.groups[0].kind, "hold");
+  assert.deepEqual(result.groups[0].reasons, [
+    "issue #376 is closed as not planned but its Project status is In Progress, not Done",
+  ]);
   assert.equal(result.queueState, "held");
 });

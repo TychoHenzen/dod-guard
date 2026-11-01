@@ -84,8 +84,10 @@ snapshot reads only non-archived Project items, so a verified root archived befo
 or parent leaves a `readback missing` hold instead of a parent close. An
 owner's `not_planned` hand close with no `supersedes` root, completion record,
 or closure evidence is not reported; a `completed` hand close without evidence
-still is. A parent that needs a user answer or is externally blocked stays in
-place while the queue moves on. Each stage runs in one fresh subagent on a
+still is. `select-next` never holds a closed `not_planned` issue as missing a
+delivery: it holds one only while its Project status is not Done or its group
+is not settled, and the reason says which. A parent that needs a user answer or
+is externally blocked stays in place while the queue moves on. Each stage runs in one fresh subagent on a
 model tier from
 `standards/model-routing.md`, by one rule: haiku for anything that needs a lot
 of effort but low intelligence, sonnet only for tasks that need the added
