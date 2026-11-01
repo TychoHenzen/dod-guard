@@ -79,7 +79,7 @@ function build({ body, evidence, headSha, previousHandoff = "" }) {
   const rows = planned.map((row) => matrixRow(row, evidence.rows[row.id], headSha));
   const entries = new Map(evidence.tasks.map((entry) => [entry.id, entry]));
   const bullets = input.tasks.map((task) => taskBullet(task, entries.get(task.id)));
-  const carriedText = carried.section ? `\n${carried.section}` : "";
+  const carriedText = (carried.section && `\n${carried.section}`) || "";
   return { text: `${commentText(bullets, rows)}${carriedText}` };
 }
 

@@ -214,7 +214,8 @@ test("usage", () => {
   assert.ok(err.includes("--previous-handoff-file=<handoff.md> needs a value"), err);
 });
 
-const OLD_HEAD = "a".repeat(40);
+const SHA_LENGTH = 40;
+const OLD_HEAD = "a".repeat(SHA_LENGTH);
 const previousHandoff = () => withCheckpoint("## Implementation handoff\n\n- old bullet\n", checkpointRows(OLD_HEAD));
 
 test("carries the previous Preflight checkpoint section unchanged", async () => {
