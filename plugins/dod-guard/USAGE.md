@@ -332,8 +332,9 @@ defect in one file and keeps or drops each scanner finding, citing a verified
 answer for every drop, and the build checks its output. The build refuses a
 plan or a set of rulings that leaves a slot empty. It posts one comment-only
 review, with every slot and its questions in a collapsed block. Each `BLOCKER`
-or `MAJOR` finding gets its own inline comment with a `GH-<id>`; kept scanner
-findings are grouped into one comment per changed file. `MINOR` findings are
+or `MAJOR` finding gets its own inline comment, edited after the post to end with
+its `GH-<id>`; kept scanner findings are grouped into one comment per changed
+file. `MINOR` findings are
 listed under "Minor notes" in the review body, with no `GH-<id>` and no reply
 needed. The recommendation is `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES`
 for any `MAJOR`, and `APPROVE` when only `MINOR` findings or none remain.

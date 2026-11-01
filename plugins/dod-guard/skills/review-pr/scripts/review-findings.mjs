@@ -25,6 +25,7 @@ import { buildReview, existingReview, postedFindings } from "./lib/review-findin
 import { reviewSlots } from "./lib/review-slots.mjs";
 import { scannerPath } from "./lib/scanner-location.mjs";
 import { parseChangedLines } from "./lib/unified-diff.mjs";
+import { visibleIdEdits } from "./lib/visible-ids.mjs";
 
 const USAGE = [
   "Usage:",
@@ -42,6 +43,7 @@ const USAGE = [
   "    --pbi=<issue.json> --sub-issues=<sub-issues.json> --plan=<plan.json>",
   "    --results=<results.json> --merge=<merge.json> --out=<payload.json>",
   "    --scanner-comments-out=<scanner-comments.json>",
+  "  review-findings.mjs label --review-id=<id> --comments=<review-comments.json> --out=<edits.json>",
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
 ].join("\n");
 
@@ -141,6 +143,11 @@ const COMMANDS = {
       payload: args.out,
     };
   },
+  label: (args) => {
+    const edits = visibleIdEdits(Number(args["review-id"]), flatJson(args.comments));
+    writeFileSync(args.out, JSON.stringify(edits));
+    return { edits: edits.length, out: args.out };
+  },
   report: (args) => postedFindings(Number(args["review-id"]), flatJson(args.comments)),
 };
 
@@ -151,6 +158,7 @@ const REQUIRED = {
   violations: ["scan", "diff", "out"],
   candidates: ["scan", "diff", "pbi", "sub-issues", "plan", "results", "out"],
   build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "merge", "out", "scanner-comments-out"],
+  label: ["review-id", "comments", "out"],
   report: ["review-id", "comments"],
 };
 const FULL_SHA = /^[0-9a-f]{40}$/;
