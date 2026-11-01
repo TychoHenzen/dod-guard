@@ -46,6 +46,16 @@ child in the foreground (`run_in_background: false`) or wait for its
 completion notification before you reply; a child that is still running means
 keep waiting, not return.
 
+While a stage runs longer than 15 minutes, send your dispatcher one progress
+note every 15 minutes with SendMessage (to "main" when you were dispatched by
+the main thread). A note is one line: the stage, what is running now, and the
+minutes elapsed. Read the clock with `date +%H:%M` (Bash) or
+`Get-Date -Format HH:mm` (PowerShell) when the stage starts, and again after
+every wait or long command returns; send the note when 15 minutes have passed
+since the last one. A note is not a stage report: keep working, and return
+only at a terminal result. In Codex, which has no SendMessage, print the note
+as a plain output line.
+
 Finish every named proof in the foreground before you return: run the
 validations the stage requires in the foreground and wait for them to finish.
 Do not create a branch or worktree that the owning skill does not create. Use only the branch it creates.

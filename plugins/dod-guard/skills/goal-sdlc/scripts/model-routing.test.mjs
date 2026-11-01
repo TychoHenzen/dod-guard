@@ -97,3 +97,18 @@ test(ALLOWLIST_TITLE, async () => {
     assert.match(await agentText(name), line("tools", tools, ": "), name);
   }
 });
+
+for (const agent of ["stage-standard", "stage-cheap-skill"]) {
+  test(`${agent} sends a progress note every 15 minutes`, async () => {
+    const text = await agentText(agent);
+    assert.match(text, /one\s+progress\s+note\s+every\s+15\s+minutes\s+with\s+SendMessage/);
+    assert.match(text, /date\s+\+%H:%M/);
+    assert.match(text, /Get-Date\s+-Format\s+HH:mm/);
+    assert.match(text, /a\s+plain\s+output\s+line/);
+    assert.match(text, /A\s+note\s+is\s+not\s+a\s+stage\s+report/);
+  });
+}
+
+test("stage-cheap has no progress-note rule because it has no SendMessage", async () => {
+  assert.doesNotMatch(await agentText("stage-cheap"), /progress\s+note/);
+});
