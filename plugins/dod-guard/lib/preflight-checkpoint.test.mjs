@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { checkpointRemainder, readPreflightCheckpoint } from "./preflight-checkpoint.mjs";
+import { checkpointRemainder, checkpointSection, readPreflightCheckpoint } from "./preflight-checkpoint.mjs";
 
 const HEAD = "abc1234";
 const OTHER = "deadbee";
@@ -102,4 +102,31 @@ test("reports a malformed row", () => {
 
 test("reports an empty list", () => {
   assert.deepEqual(checkpointRemainder([], HEAD), ["preflight checkpoint has no required context row"]);
+});
+
+const SECTION = `## Preflight checkpoint\n\nBase main at abc1234.\n\n\`\`\`json\n${JSON.stringify([row("build-test", "present")])}\n\`\`\`\n`;
+
+test("checkpointSection reports no record as absent", () => {
+  assert.deepEqual(checkpointSection("## Implementation handoff\n\nNo record here.\n"), { absent: true });
+});
+
+test("checkpointSection returns the heading, prose and block up to the next heading", () => {
+  const handoff = `## Implementation handoff\n\nbullets\n\n${SECTION}\n## Later\n\nignored\n`;
+
+  assert.deepEqual(checkpointSection(handoff), { section: SECTION });
+});
+
+test("checkpointSection keeps a section that ends the text", () => {
+  assert.deepEqual(checkpointSection(`## Implementation handoff\n\n${SECTION}`), { section: SECTION });
+});
+
+test("checkpointSection passes on the reader's error", () => {
+  assert.equal(
+    checkpointSection("## Preflight checkpoint\n\nNo block.\n").error,
+    "preflight checkpoint has no JSON block",
+  );
+  assert.equal(
+    checkpointSection(`${SECTION}\n${SECTION}`).error,
+    "handoff has more than one ## Preflight checkpoint section",
+  );
 });
