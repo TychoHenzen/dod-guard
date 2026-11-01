@@ -62,7 +62,7 @@ function anchor(finding, changedLines, fallback) {
   if (lines?.has(finding.line)) {
     return { ...finding, anchored: { path: finding.file, line: finding.line } };
   }
-  const cited = `\n\nCited location: \`${finding.file}:${finding.line}\`, which this PR does not change.`;
+  const cited = `\n\nCited location: \`${finding.file}:${finding.line}\`, which is outside the lines this PR changes.`;
   if (lines?.size > 0) {
     return {
       ...finding,
