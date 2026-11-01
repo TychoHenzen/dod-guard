@@ -386,7 +386,9 @@ without verified evidence is reported as `unverified-closed` and is never
 reopened or edited. An owner's hand close as `not_planned` (an abandon or a
 fold) claims no delivery and is not reported when no `supersedes` record names
 the issue and it carries no completion record, valid or malformed, and no
-closure evidence comment. `apply` sets the Project item of any issue closed as `not_planned` to Done when it reads as anything else, because that close owes no delivery; the repair rechecks the live issue and stops if it is no longer closed as `not_planned`. A `completed` hand close without evidence is still
+closure evidence comment. `apply` sets the Project item of any issue closed as `not_planned` to Done when it reads as
+anything else, because that close owes no delivery; the repair rechecks the live issue and stops if it is no longer
+closed as `not_planned`. A `completed` hand close without evidence is still
 reported. A parent still waits on such a sub-issue as before.
 
 `refine-backlog-item` closes a pure hierarchy record as `not_planned`: an issue
