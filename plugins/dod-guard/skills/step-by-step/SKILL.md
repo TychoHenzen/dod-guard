@@ -27,6 +27,8 @@ An active command-session handle, in dispatch or proof, is in-progress state. Wa
 
 Retry only after explicit cancellation or confirmed session failure. Record the exact command and handle first. Cancel only the process or session you own, and confirm it stopped.
 
+Wait on every helper synchronously, in the foreground or by its completion notification. Never wait on a loop whose exit depends on a process being absent, such as a shell loop that ends when no `dotnet` process runs: stray long-lived processes keep it alive and stall the step.
+
 ## Execute one step
 
 1. Record a checkpoint: step number, bounded objective, expected proof, current branch, prior completed steps.
