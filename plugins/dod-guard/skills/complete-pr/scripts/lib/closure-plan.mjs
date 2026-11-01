@@ -118,14 +118,27 @@ function helperMadeVerifiedClose(context, number, issue) {
 // that stops after the close but before Done leaves a closed issue that no plan closes again,
 // so a fresh snapshot must surface it here for apply to finish the Done write. The evidence
 // comment is the proof that this helper made the close; without it the close came from a
-// completion record or by hand, and complete-pr finalization owns it.
+// completion record or by hand, and complete-pr finalization owns it. The one exception is a
+// close as not_planned: it owes no delivery, so its Project item reads Done whoever closed it
+// and whatever evidence or unverified root it carries (the report stays), and the repair
+// records the reason apply must still find live.
+function repairKind(context, number, issue) {
+  if (issue.state_reason === "not_planned") {
+    return { stateReason: "not_planned" };
+  }
+  if (helperMadeVerifiedClose(context, number, issue)) {
+    return {};
+  }
+  return null;
+}
+
 function statusRepairs(context) {
   const repairs = [];
   for (const number of context.index.order) {
     const target = repairTarget(context, number);
-    if (!(target && helperMadeVerifiedClose(context, number, target.issue))) continue;
-    if (admitWrite(context, number, "Project Done repair refused: issue is held")) {
-      repairs.push({ issue: number, itemId: target.item.id, status: target.status });
+    const kind = target && repairKind(context, number, target.issue);
+    if (kind && admitWrite(context, number, "Project Done repair refused: issue is held")) {
+      repairs.push({ issue: number, itemId: target.item.id, status: target.status, ...kind });
     }
   }
   return repairs;

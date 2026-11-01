@@ -146,6 +146,25 @@ function stopWithProgress(error, issue, progress) {
   return new ClosureStop(error.message, { ...(error.state ?? { issue }), ...progress });
 }
 
+// The snapshot may be stale, so Done is written only onto an issue that is still closed.
+function assertStillClosed(live, repair) {
+  if (live?.state !== "closed") {
+    const state = { issue: repair.issue, state: live?.state ?? null };
+    throw new ClosureStop(`issue #${repair.issue} is no longer closed`, state);
+  }
+  if (repair.stateReason !== undefined && live.state_reason !== repair.stateReason) {
+    const state = { issue: repair.issue, state: live.state, stateReason: live.state_reason ?? null };
+    throw new ClosureStop(`issue #${repair.issue} is no longer closed as ${repair.stateReason}`, state);
+  }
+}
+
+function repairDone({ runner, repository, project, steps }, repair) {
+  const live = readIssue(runner, repository, repair.issue);
+  steps.push({ issue: repair.issue, step: "read" });
+  assertStillClosed(live, repair);
+  writeDone(runner, project, repair, steps);
+}
+
 function applyClosures(snapshot, { runner, ...options }) {
   const plan = planClosures(snapshot, options);
   const steps = [];
@@ -165,16 +184,10 @@ function applyClosures(snapshot, { runner, ...options }) {
     }
     applied.push(close.issue);
   }
+  const writer = { runner, repository: plan.repository, project, steps };
   for (const repair of plan.statusRepairs) {
     try {
-      // The snapshot may be stale, so Done is written only onto an issue that is still closed.
-      const live = readIssue(runner, plan.repository, repair.issue);
-      steps.push({ issue: repair.issue, step: "read" });
-      if (live?.state !== "closed") {
-        const state = { issue: repair.issue, state: live?.state ?? null };
-        throw new ClosureStop(`issue #${repair.issue} is no longer closed`, state);
-      }
-      writeDone(runner, project, repair, steps);
+      repairDone(writer, repair);
     } catch (error) {
       throw stopWithProgress(error, repair.issue, progress);
     }

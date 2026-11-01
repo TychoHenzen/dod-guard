@@ -3,7 +3,10 @@
 // proof, expected and evidence ids come from the planned acceptance matrix, and
 // each task bullet's id, functional slice and evidence ids come from the task
 // list. The evidence entry owns only what was observed.
+// A previous handoff's ## Preflight checkpoint section is copied through, so a rebuild never drops it.
+
 import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
+import { checkpointSection } from "../../../lib/preflight-checkpoint.mjs";
 import { evidenceValues } from "./convergence-core.mjs";
 import { rowSetProblems, taskProblems } from "./handoff-evidence-problems.mjs";
 
@@ -57,20 +60,27 @@ function commentText(bullets, rows) {
 
 // Returns { text } when every planned task and row has a well-formed entry and no
 // entry is extra or repeated, else { errors } naming each mismatch, with nothing built.
-function build({ body, evidence, headSha }) {
+// A previousHandoff that carries a ## Preflight checkpoint section has it copied unchanged to the
+// end of the text; one whose section the reader refuses builds nothing.
+function build({ body, evidence, headSha, previousHandoff = "" }) {
   const { input, errors } = parseIssueBodyRecords(body);
   if (errors.length > 0) {
     return { errors };
   }
   const planned = input.plannedAcceptanceMatrix;
   const problems = [...taskProblems(input.tasks, evidence.tasks), ...rowSetProblems(planned, evidence.rows)];
+  const carried = checkpointSection(previousHandoff);
+  if (carried.error) {
+    problems.push(carried.error);
+  }
   if (problems.length > 0) {
     return { errors: problems };
   }
   const rows = planned.map((row) => matrixRow(row, evidence.rows[row.id], headSha));
   const entries = new Map(evidence.tasks.map((entry) => [entry.id, entry]));
   const bullets = input.tasks.map((task) => taskBullet(task, entries.get(task.id)));
-  return { text: commentText(bullets, rows) };
+  const carriedText = (carried.section && `\n${carried.section}`) || "";
+  return { text: `${commentText(bullets, rows)}${carriedText}` };
 }
 
 export { build };

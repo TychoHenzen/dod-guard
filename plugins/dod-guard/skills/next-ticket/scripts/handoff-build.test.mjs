@@ -5,8 +5,17 @@ import { test } from "node:test";
 import { ACCEPTANCE_MATRIX_FIELDS } from "../../../lib/acceptance-matrix.mjs";
 import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
 import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
+import { checkpointSection, readPreflightCheckpoint } from "../../../lib/preflight-checkpoint.mjs";
 import { runCli } from "./handoff-build.mjs";
-import { BODY_TEXT, gate, HEAD_904, ROWS_904, withFiles } from "./testing/handoff-proof-harness.mjs";
+import {
+  BODY_TEXT,
+  checkpointRows,
+  gate,
+  HEAD_904,
+  ROWS_904,
+  withCheckpoint,
+  withFiles,
+} from "./testing/handoff-proof-harness.mjs";
 
 const TASK_IDS = ["T1", "T2", "T3", "T4"];
 
@@ -28,7 +37,8 @@ function evidenceFor(overrides = {}) {
   };
 }
 
-async function build(evidence, body = BODY_TEXT) {
+// previous is the text of the handoff being rebuilt, or null to omit the option.
+async function build(evidence, body = BODY_TEXT, previous = null) {
   let out = "";
   let err = "";
   const io = {
@@ -43,14 +53,20 @@ async function build(evidence, body = BODY_TEXT) {
       },
     },
   };
-  const code = await withFiles(
-    [
-      ["body.md", body],
-      ["evidence.json", JSON.stringify(evidence)],
-    ],
-    ([bodyFile, evidenceFile]) =>
-      runCli([`--body-file=${bodyFile}`, `--evidence-file=${evidenceFile}`, `--head-sha=${HEAD_904}`], io),
-  );
+  const files = [
+    ["body.md", body],
+    ["evidence.json", JSON.stringify(evidence)],
+  ];
+  if (previous !== null) {
+    files.push(["previous.md", previous]);
+  }
+  const code = await withFiles(files, ([bodyFile, evidenceFile, previousFile]) => {
+    const args = [`--body-file=${bodyFile}`, `--evidence-file=${evidenceFile}`, `--head-sha=${HEAD_904}`];
+    if (previousFile !== undefined) {
+      args.push(`--previous-handoff-file=${previousFile}`);
+    }
+    return runCli(args, io);
+  });
   return { code, out, err };
 }
 
@@ -189,4 +205,56 @@ test("usage", () => {
   err = "";
   const bare = runCli(["--head-sha"], { stdout: discard, stderr });
   assert.equal(bare, 2);
+  err = "";
+  const bareOption = runCli(["--body-file=a", "--evidence-file=b", "--head-sha=c", "--previous-handoff-file"], {
+    stdout: discard,
+    stderr,
+  });
+  assert.equal(bareOption, 2);
+  assert.ok(err.includes("--previous-handoff-file=<handoff.md> needs a value"), err);
+});
+
+const SHA_LENGTH = 40;
+const OLD_HEAD = "a".repeat(SHA_LENGTH);
+const previousHandoff = () => withCheckpoint("## Implementation handoff\n\n- old bullet\n", checkpointRows(OLD_HEAD));
+
+test("carries the previous Preflight checkpoint section unchanged", async () => {
+  const { code, out } = await build(evidenceFor(), BODY_TEXT, previousHandoff());
+  assert.equal(code, 0);
+  assert.deepEqual(readPreflightCheckpoint(out), { rows: checkpointRows(OLD_HEAD) });
+  assert.ok(out.endsWith(checkpointSection(previousHandoff()).section), out);
+});
+
+test("a carried checkpoint is reported as bound to the old head, never as missing", async () => {
+  const { out } = await build(evidenceFor(), BODY_TEXT, previousHandoff());
+  const result = await gate("finalization", { handoff: out, checkpoint: null });
+  assert.equal(result.status, 1);
+  assert.ok(
+    result.json.remainder.includes(`required context build-test is bound to ${OLD_HEAD}, expected ${HEAD_904}`),
+    JSON.stringify(result.json),
+  );
+  assert.equal(result.json.remainder.includes("handoff has no ## Preflight checkpoint section"), false);
+});
+
+test("without a previous checkpoint the output is unchanged", async () => {
+  const plain = await build(evidenceFor());
+  const none = await build(evidenceFor(), BODY_TEXT, "## Implementation handoff\n\n- old bullet\n");
+  assert.equal(none.code, 0);
+  assert.equal(none.out, plain.out);
+});
+
+test("refuses a previous handoff with two checkpoint sections and builds nothing", async () => {
+  const twice = `${previousHandoff()}\n${previousHandoff()}`;
+  const { code, out, err } = await build(evidenceFor(), BODY_TEXT, twice);
+  assert.equal(code, 1);
+  assert.equal(out, "");
+  assert.ok(err.includes("handoff has more than one ## Preflight checkpoint section"), err);
+});
+
+test("the rebuilt handoff passes finalization once the carried rows are rewritten at the new head", async () => {
+  const { out } = await build(evidenceFor(), BODY_TEXT, previousHandoff());
+  const rewritten = out.replace(JSON.stringify(checkpointRows(OLD_HEAD)), JSON.stringify(checkpointRows(HEAD_904)));
+  assert.notEqual(rewritten, out);
+  const result = await gate("finalization", { handoff: rewritten, checkpoint: null });
+  assert.deepEqual(result, { status: 0, json: { outcome: "verified", remainder: [] } });
 });

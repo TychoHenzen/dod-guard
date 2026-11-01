@@ -104,7 +104,7 @@ hand-written. The body owns every identity field: a row's `id`, `contract`,
 `path`, `proof`, `expected` and `evidence` id come from the planned matrix, and
 a task bullet's id, functional slice and evidence ids come from the task list.
 The evidence file supplies only `observed`, `status` and `reason` per row and
-`commit`, `files` and `result` per task, and the builder rejects any other field.
+`commit`, `files` and `result` per task, and the builder rejects any other field. When the handoff already carries a `## Preflight checkpoint`, a rebuild passes the old comment with `--previous-handoff-file=<handoff.md>` and the builder copies that section, rows unchanged, to the end of the new comment; the rows stay bound to their old head until they are rewritten.
 
 The same handoff also carries one `## Preflight checkpoint` record for the
 selected pull request once its branch exists. It records the exact branch and
@@ -386,8 +386,11 @@ without verified evidence is reported as `unverified-closed` and is never
 reopened or edited. An owner's hand close as `not_planned` (an abandon or a
 fold) claims no delivery and is not reported when no `supersedes` record names
 the issue and it carries no completion record, valid or malformed, and no
-closure evidence comment. A `completed` hand close without evidence is still
-reported. A parent still waits on such a sub-issue as before.
+closure evidence comment. `apply` sets the Project item of any issue closed as
+`not_planned` to Done when it reads as anything else, because that close owes no
+delivery. The repair rechecks the live issue and stops if it is no longer closed
+as `not_planned`. A `completed` hand close without evidence is still reported.
+A parent still waits on such a sub-issue as before.
 
 `refine-backlog-item` closes a pure hierarchy record as `not_planned`: an issue
 with no linked pull request, no unchecked criterion outside its sub-issues, and

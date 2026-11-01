@@ -66,7 +66,7 @@ Reply to or resolve a fixed finding only after its fix commit is pushed. Record 
 
 Stop with expected and observed SHAs on branch drift, fork ownership, a missing or malformed ref, a provider read failure, a merge-parent mismatch, or timeout. Until convergence resolves, make no push, no `refs/pull` write, no update-branch, no resolution and no other provider mutation.
 
-For a structured parent, rerun post-push at the converged pushed head (`node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`). Rows touched by the fix need re-observation at the new head and an update of the handoff matrix block. Report an exit-1 remainder with the stale row ids, and do not resolve fixed threads until it is clear. On exit 2 (a body or handoff that cannot be read or parsed), stop the same way and report the printed error. Make no edit of the parent issue body.
+For a structured parent, rerun post-push at the converged pushed head (`node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`). Rows touched by the fix need re-observation at the new head and an update of the handoff matrix block (step 1 of "Rebind the handoff"). Report an exit-1 remainder with the stale row ids, and do not resolve fixed threads until it is clear. On exit 2 (a body or handoff that cannot be read or parsed), stop the same way and report the printed error. Make no edit of the parent issue body.
 
 Skip a thread that also holds a declined item. The decline path owns its single reply and resolve.
 
@@ -93,6 +93,20 @@ Reply through the same endpoint and shape as a fix reply. The body states the cl
 
 On rerun, read the thread first and never post a duplicate. A resolved thread is a no-op. If an open thread already holds a decline reply from this skill on its root comment, post no second reply and go to readback and resolve. The head stop does not apply to that reply: accept the head SHA its body names if `git merge-base --is-ancestor <named-sha> <current-head>` exits 0. A non-zero exit or a failed lookup (unknown object) counts as not an ancestor. If not, re-verify the evidence against the current head; resolve without a new reply if it holds, else stop with expected and observed SHAs.
 
+## Rebind the handoff
+
+Apply this section only when a fix was pushed and the parent is structured. A run that pushed nothing leaves the handoff comment as it is. Step 1 is the handoff matrix update that "Update proven findings" requires before any thread is resolved. Steps 2 to 4 run after the fixed threads are replied to and resolved, so no thread waits on CI.
+
+1. Save the current `## Implementation handoff` comment as the previous handoff. Build <evidence.json> from that comment: keep every task and row entry, replace only the rows the fix touched with their values observed at the pushed head, and set `commit` to the pushed SHA for each task the fix touched. Rebuild the comment for the converged pushed head with `node <plugin-root>/skills/next-ticket/scripts/handoff-build.mjs --body-file=<issue-body.md> --evidence-file=<evidence.json> --head-sha=<sha> --previous-handoff-file=<previous.md>`. The option copies the previous `## Preflight checkpoint` section into the new comment, so the rebuilt comment never loses it. Exit 0 prints the rebuilt comment. Exit 1 prints the unmet evidence and exit 2 a usage error; stop on either, report the printed text, and leave the existing comment as it is. Update the one existing comment with `gh api --method PATCH repos/{owner}/{repo}/issues/comments/<comment-id> --input <file>` and read it back. Never post a second handoff comment.
+2. The carried rows are bound to the old head. Wait until every required context at the converged head has a terminal state with `gh pr checks <pull-request> --watch --required`: exit 0 and 1 are terminal, 8 is not.
+3. Rewrite the checkpoint rows at the converged head by following steps 1, 2 and 4 of "Early preflight checkpoint" in `skills/submit-draft-pr/SKILL.md`, update the same comment and read it back.
+4. Run `node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs finalization --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`. The expected result is exit 0 with `{"outcome": "verified", "remainder": []}`, and the rebound comment keeps its `## Preflight checkpoint` with every row at the converged head. Any other result is a stop branch:
+   - Exit 1 (`actionable remainder`, for example a failed or stale context row): report the printed remainder as the stage remainder and claim no verified handoff.
+   - Exit 2 (a body or handoff that cannot be read or parsed): report the printed error and claim no verified handoff.
+   - A checkpoint section missing from the rebuilt comment, or a `gh pr checks` timeout or non-terminal exit: stop, report it, and leave the comment as last read back.
+
+   Do not resubmit the draft pull request.
+
 ## Report
 
-Report the PBI, original and pushed heads (the revalidated head if nothing was pushed), fixed IDs, declined IDs with classification and evidence, other skipped IDs with reasons, resolved thread IDs, changed files, commit, checks and provider updates. Confirm the parent PBI remains open.
+Report the PBI, original and pushed heads (the revalidated head if nothing was pushed), fixed IDs, declined IDs with classification and evidence, other skipped IDs with reasons, resolved thread IDs, changed files, commit, checks, provider updates and the finalization result of the rebound handoff. Confirm the parent PBI remains open.
