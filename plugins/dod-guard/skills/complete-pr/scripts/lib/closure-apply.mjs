@@ -174,6 +174,10 @@ function applyClosures(snapshot, { runner, ...options }) {
         const state = { issue: repair.issue, state: live?.state ?? null };
         throw new ClosureStop(`issue #${repair.issue} is no longer closed`, state);
       }
+      if (repair.stateReason !== undefined && live.state_reason !== repair.stateReason) {
+        const state = { issue: repair.issue, state: live.state, stateReason: live.state_reason ?? null };
+        throw new ClosureStop(`issue #${repair.issue} is no longer closed as ${repair.stateReason}`, state);
+      }
       writeDone(runner, project, repair, steps);
     } catch (error) {
       throw stopWithProgress(error, repair.issue, progress);

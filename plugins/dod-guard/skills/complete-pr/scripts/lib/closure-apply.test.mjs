@@ -4,6 +4,8 @@ import {
   completionComment,
   DELIVERIES,
   fakeGitHub,
+  issue,
+  item,
   mergeResult,
   mutating,
   patchesTo,
@@ -141,6 +143,38 @@ test("a status repair stops when the issue was reopened", () => {
   const mark = github.calls.length;
   assert.throws(() => applyClosures(after, { runner: github.runner }), /issue #777 is no longer closed/);
   assert.deepEqual(github.calls.slice(mark).filter(mutating), []);
+});
+
+// disc-golf #60 shape: roots [840] keeps the usual close of #777 in the plan, and #2001 is an owner
+// hand close as not_planned on an In Progress Project item.
+function withHandClosed() {
+  const snapshot = recordedSnapshot({ roots: [840] });
+  snapshot.items.push(item(2001, "In Progress"));
+  snapshot.issues.push(Object.assign(issue(2001), { state: "closed", state_reason: "not_planned" }));
+  return snapshot;
+}
+
+test("apply sets Done for a not_planned hand close and a replan lists no repair", () => {
+  const snapshot = withHandClosed();
+  const github = fakeGitHub(snapshot);
+  const result = applyClosures(snapshot, { runner: github.runner });
+  assert.deepEqual(result.applied, [777]);
+  assert.deepEqual(result.repaired, [2001]);
+  assert.equal(github.state.statuses.get("PVTI_2001"), "Done");
+  assert.equal(github.state.issues.get(2001).state_reason, "not_planned");
+  assert.equal(evidenceCount(github, 2001), 0);
+  assert.deepEqual(planClosures(snapshotAfter(snapshot, github)).statusRepairs, []);
+});
+
+test("a not_planned repair stops when the live issue is no longer closed as not_planned", () => {
+  const snapshot = withHandClosed();
+  const github = fakeGitHub(snapshot);
+  github.state.issues.get(2001).state_reason = "completed";
+  assert.throws(
+    () => applyClosures(snapshot, { runner: github.runner }),
+    /issue #2001 is no longer closed as not_planned/,
+  );
+  assert.notEqual(github.state.statuses.get("PVTI_2001"), "Done");
 });
 
 test("a readback that disagrees stops with the actual state and no further mutation", () => {
