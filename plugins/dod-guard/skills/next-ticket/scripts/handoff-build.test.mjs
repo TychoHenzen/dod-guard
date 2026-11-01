@@ -253,3 +253,11 @@ test("refuses a previous handoff with two checkpoint sections and builds nothing
   assert.equal(out, "");
   assert.ok(err.includes("handoff has more than one ## Preflight checkpoint section"), err);
 });
+
+test("the rebuilt handoff passes finalization once the carried rows are rewritten at the new head", async () => {
+  const { out } = await build(evidenceFor(), BODY_TEXT, previousHandoff());
+  const rewritten = out.replace(JSON.stringify(checkpointRows(OLD_HEAD)), JSON.stringify(checkpointRows(HEAD_904)));
+  assert.notEqual(rewritten, out);
+  const result = await gate("finalization", { handoff: rewritten, checkpoint: null });
+  assert.deepEqual(result, { status: 0, json: { outcome: "verified", remainder: [] } });
+});
