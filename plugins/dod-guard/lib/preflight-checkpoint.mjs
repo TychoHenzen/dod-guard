@@ -37,6 +37,14 @@ function readPreflightCheckpoint(text) {
   return { rows: block.value };
 }
 
+function untilNextHeading(entries) {
+  const end = entries.findIndex((line) => !line.fenced && line.text.startsWith("## "));
+  if (end < 0) {
+    return entries;
+  }
+  return entries.slice(0, end);
+}
+
 // Returns { absent: true } when the handoff has no record, { error } for a record the reader refuses,
 // else { section } with the heading line and everything under it up to the next level-two heading
 // outside a fence, trailing blank lines dropped, ending in one newline. handoff-build copies it.
@@ -50,9 +58,7 @@ function checkpointSection(text) {
   }
   const marked = markedLines(text);
   const start = marked.findIndex((line) => !line.fenced && line.text.trimEnd() === CHECKPOINT_HEADING);
-  const rest = marked.slice(start + 1);
-  const end = rest.findIndex((line) => !line.fenced && line.text.startsWith("## "));
-  const body = (end < 0 ? rest : rest.slice(0, end)).map((line) => line.text);
+  const body = untilNextHeading(marked.slice(start + 1)).map((line) => line.text);
   return { section: `${[CHECKPOINT_HEADING, ...body].join("\n").trimEnd()}\n` };
 }
 

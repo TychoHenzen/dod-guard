@@ -60,17 +60,13 @@ async function build(evidence, body = BODY_TEXT, previous = null) {
   if (previous !== null) {
     files.push(["previous.md", previous]);
   }
-  const code = await withFiles(files, ([bodyFile, evidenceFile, previousFile]) =>
-    runCli(
-      [
-        `--body-file=${bodyFile}`,
-        `--evidence-file=${evidenceFile}`,
-        `--head-sha=${HEAD_904}`,
-        ...(previousFile === undefined ? [] : [`--previous-handoff-file=${previousFile}`]),
-      ],
-      io,
-    ),
-  );
+  const code = await withFiles(files, ([bodyFile, evidenceFile, previousFile]) => {
+    const args = [`--body-file=${bodyFile}`, `--evidence-file=${evidenceFile}`, `--head-sha=${HEAD_904}`];
+    if (previousFile !== undefined) {
+      args.push(`--previous-handoff-file=${previousFile}`);
+    }
+    return runCli(args, io);
+  });
   return { code, out, err };
 }
 

@@ -63,7 +63,10 @@ function optionsFrom(argv) {
 // The previous handoff is optional; an absent option reads as a handoff with no checkpoint.
 function previousHandoffText(options) {
   const file = options["previous-handoff-file"];
-  return file === undefined ? "" : readText(file, "previous-handoff-file");
+  if (file === undefined) {
+    return "";
+  }
+  return readText(file, "previous-handoff-file");
 }
 
 function readEvidence(file) {

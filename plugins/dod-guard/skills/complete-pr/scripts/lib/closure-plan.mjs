@@ -120,11 +120,16 @@ function helperMadeVerifiedClose(context, number, issue) {
 // comment is the proof that this helper made the close; without it the close came from a
 // completion record or by hand, and complete-pr finalization owns it. The one exception is a
 // close as not_planned: it owes no delivery, so its Project item reads Done whoever closed it
-// and whatever evidence or unverified root it carries (the report stays), and the repair records the reason apply must
-// still find live.
+// and whatever evidence or unverified root it carries (the report stays), and the repair
+// records the reason apply must still find live.
 function repairKind(context, number, issue) {
-  if (issue.state_reason === "not_planned") return { stateReason: "not_planned" };
-  return helperMadeVerifiedClose(context, number, issue) ? {} : null;
+  if (issue.state_reason === "not_planned") {
+    return { stateReason: "not_planned" };
+  }
+  if (helperMadeVerifiedClose(context, number, issue)) {
+    return {};
+  }
+  return null;
 }
 
 function statusRepairs(context) {
@@ -132,8 +137,7 @@ function statusRepairs(context) {
   for (const number of context.index.order) {
     const target = repairTarget(context, number);
     const kind = target && repairKind(context, number, target.issue);
-    if (!kind) continue;
-    if (admitWrite(context, number, "Project Done repair refused: issue is held")) {
+    if (kind && admitWrite(context, number, "Project Done repair refused: issue is held")) {
       repairs.push({ issue: number, itemId: target.item.id, status: target.status, ...kind });
     }
   }

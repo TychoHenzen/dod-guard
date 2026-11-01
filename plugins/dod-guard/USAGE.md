@@ -83,14 +83,15 @@ snapshot reads only non-archived Project items, so a verified root archived befo
 `apply` no longer closes its `supersedes` originals, and an archived sub-issue
 or parent leaves a `readback missing` hold instead of a parent close. An
 owner's `not_planned` hand close with no `supersedes` root, completion record,
-or closure evidence is not reported, and `closure.mjs apply` sets its Project item to Done when the item reads as
-anything else, because a close as not planned owes no delivery. A `completed` hand close without evidence is still
-reported, and its Project status is left to `complete-pr` finalization. `select-next` never holds a closed `not_planned`
-issue as missing a
-delivery: it holds one only while its Project status is not Done or its group
+or closure evidence is not reported. `closure.mjs apply` sets the Project item
+of such an issue to Done when the item reads as anything else, because a close
+as not planned owes no delivery. A `completed` hand close without evidence is
+still reported, and its Project status is left to `complete-pr` finalization.
+`select-next` never holds a closed `not_planned` issue as missing a delivery.
+It holds such an issue only while its Project status is not Done or its group
 is not settled, and the reason says which. A parent that needs a user answer or
-is externally blocked stays in place while the queue moves on. Each stage runs in one fresh subagent on a
-model tier from
+is externally blocked stays in place while the queue moves on. Each stage runs
+in one fresh subagent on a model tier from
 `standards/model-routing.md`, by one rule: haiku for anything that needs a lot
 of effort but low intelligence, sonnet only for tasks that need the added
 intelligence, and opus only when sonnet or haiku cannot figure it out. The

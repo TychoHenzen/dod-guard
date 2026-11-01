@@ -104,7 +104,17 @@ test("reports an empty list", () => {
   assert.deepEqual(checkpointRemainder([], HEAD), ["preflight checkpoint has no required context row"]);
 });
 
-const SECTION = `## Preflight checkpoint\n\nBase main at abc1234.\n\n\`\`\`json\n${JSON.stringify([row("build-test", "present")])}\n\`\`\`\n`;
+const FENCE = "```";
+const SECTION = [
+  "## Preflight checkpoint",
+  "",
+  "Base main at abc1234.",
+  "",
+  `${FENCE}json`,
+  JSON.stringify([row("build-test", "present")]),
+  FENCE,
+  "",
+].join("\n");
 
 test("checkpointSection reports no record as absent", () => {
   assert.deepEqual(checkpointSection("## Implementation handoff\n\nNo record here.\n"), { absent: true });
