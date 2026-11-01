@@ -226,7 +226,13 @@ their place.
   merge helper trusted, which moves after a base update), `requiredChecks`, and
   `pendingRows`: every acceptance-matrix row whose status is neither `pass` nor
   `inapplicable`. A record with pending rows is `merged-pending`, not verified.
-  Recording again updates the same comment in place.
+  Recording again updates the same comment in place. `closure.mjs record-legacy`
+  posts the same record for a closed ticket that predates the structured handoff,
+  with `pendingRows` empty and `legacy` set to `true` in the JSON block. The field
+  is informational: the delivery judgement reads the record and the live pull
+  request exactly as for any record. The command refuses a ticket whose body holds
+  any of the seven records or that carries an `## Implementation handoff` comment,
+  so a structured ticket always keeps the matrix.
 
 Each caller builds one closure snapshot with
 `node <plugin-root>/skills/complete-pr/scripts/closure.mjs snapshot --repository=<owner/name> --output=<file>`.
