@@ -6,12 +6,15 @@ import { readHandoffMatrix } from "../../../../lib/handoff-matrix.mjs";
 import { REPOSITORY_NAME } from "../../../../lib/repository-identity.mjs";
 import { applyClosures, recordCompletion } from "./closure-apply.mjs";
 import { annotateSnapshot } from "./closure-delivery.mjs";
-import { childList, given, snapshotOptions } from "./closure-options.mjs";
+import { recordLegacyDelivery } from "./closure-legacy.mjs";
+import { childList, given, positiveInteger, snapshotOptions } from "./closure-options.mjs";
 import { planClosures } from "./closure-plan.mjs";
 import { buildClosureSnapshot, writeClosureSnapshot } from "./closure-snapshot.mjs";
 import { runGh } from "./gh-runner.mjs";
 
 const RECORD_FILE_OPTIONS = ["repository", "result", "handoff-file"];
+// The options only the structured record path takes; record-legacy refuses any of them.
+const STRUCTURED_ONLY_OPTIONS = ["children", "matrix", "result", "handoff-file"];
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -77,6 +80,20 @@ function record(args, runner = runGh) {
   });
 }
 
-const COMMANDS = { plan, apply, annotate, snapshot, record };
+function recordLegacy(args, runner = runGh) {
+  const pull = positiveInteger(args.pull);
+  const issue = positiveInteger(args.issue);
+  const usable =
+    REPOSITORY_NAME.test(args.repository ?? "") &&
+    pull !== false &&
+    issue !== false &&
+    STRUCTURED_ONLY_OPTIONS.every((name) => args[name] === undefined);
+  if (!usable) {
+    return false;
+  }
+  return recordLegacyDelivery({ repository: args.repository, pull, issue, runner });
+}
+
+const COMMANDS = { plan, apply, annotate, snapshot, record, "record-legacy": recordLegacy };
 
 export { COMMANDS };

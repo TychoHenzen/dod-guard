@@ -593,4 +593,4 @@ function classifyQueue(snapshot, { today }) {
   return { groups, selected, counts, missingEvidence };
 }
 
-export { buildQueueRecords, classifyDelivery, classifyQueue };
+export { buildQueueRecords, classifyDelivery, classifyQueue, requiredChecksComplete };

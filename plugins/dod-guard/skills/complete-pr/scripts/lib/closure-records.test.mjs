@@ -144,3 +144,19 @@ test("counts every matrix row that is neither pass nor inapplicable as pending",
   });
   assert.deepEqual(parseCompletionRecord([{ id: 5, body: record }]).record.pendingRows, ["AC-03", "AC-04"]);
 });
+
+test("render and parse keep the legacy flag only when set", () => {
+  const fields = {
+    pullRequest: DELIVERIES[840].pull,
+    mergeCommit: DELIVERIES[840].merge,
+    trustedHeadSha: DELIVERIES[840].head,
+    requiredChecks: "pass",
+    pendingRows: [],
+  };
+  const plain = renderCompletionRecord(fields);
+  assert.equal(plain.includes("legacy"), false);
+  const legacy = renderCompletionRecord({ ...fields, legacy: true });
+  assert.equal(parseCompletionRecord([{ id: 6, body: legacy }]).record.legacy, true);
+  const stringFlag = plain.replace('"pendingRows": []', '"pendingRows": [],\n  "legacy": "yes"');
+  assert.equal("legacy" in parseCompletionRecord([{ id: 7, body: stringFlag }]).record, false);
+});
