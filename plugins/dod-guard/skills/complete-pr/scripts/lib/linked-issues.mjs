@@ -25,6 +25,11 @@ function collectClosingReferences(references, text, defaultRepository) {
   }
 }
 
+// The issue references text names after a closing keyword, with the default repository filled in.
+export function closingReferences(text, defaultRepository) {
+  return [...closingMatches(text)].map((match) => referenceOf(match, defaultRepository));
+}
+
 export function readLinkedIssues(repository, pullNumber, commandRunner) {
   const pullEndpoint = `repos/${repository}/pulls/${pullNumber}`;
   const { data: pull } = ghJson(["api", pullEndpoint], [0], commandRunner);
