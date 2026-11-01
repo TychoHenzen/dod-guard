@@ -35,7 +35,12 @@ test("a parent closed as not planned and Done is complete", () => {
 test("a parent closed as not planned is held while its Project status is not Done", () => {
   const input = retiredParent();
   setStatus(input, PARENT, "In Progress");
-  assertHold(input, PARENT);
+  assertHold(input, PARENT, "issue #376 is closed as not planned but its Project status is In Progress, not Done");
+  const reasons = decisionOf(input, PARENT).reasons;
+  assert.equal(
+    reasons.some((reason) => reason.includes("without a verified merged delivery")),
+    false,
+  );
 });
 
 test("a parent closed as not planned with every child closed and Done is complete", () => {
@@ -51,7 +56,7 @@ test("a parent closed as not planned with a child that is not Done is held", () 
 test("a parent closed as not planned with an open child is held", () => {
   const input = retiredWithChild();
   Object.assign(findIssue(input, CHILD), { state: "open", state_reason: null });
-  assertHold(input, PARENT);
+  assertHold(input, PARENT, "issue #376 is closed as not planned, but its group is not settled");
 });
 
 test("a parent closed as not planned with an open pull request is held", () => {

@@ -198,12 +198,24 @@ function groupEvidence(records, context) {
   return { reasons, uniqueStatuses, merged };
 }
 
+function notPlannedReason(issueNumber, projectStatus) {
+  if (doneStatus(projectStatus)) return `issue #${issueNumber} is closed as not planned, but its group is not settled`;
+  const status = normalizedStatus(projectStatus) ?? "missing";
+  return `issue #${issueNumber} is closed as not planned but its Project status is ${status}, not Done`;
+}
+
+// A close as not planned owes no delivery, so its hold names what is still wrong instead of a missing
+// delivery: a Project status that is not Done, or a group that is not settled.
+function closedReason({ issueNumber, issue, projectStatus }) {
+  const reason = String(issue?.stateReason ?? "").toLowerCase();
+  if (NOT_PLANNED.has(reason)) return notPlannedReason(issueNumber, projectStatus);
+  return `issue #${issueNumber} is closed without a verified merged delivery`;
+}
+
 // A closed issue with no verified merged delivery holds its group. A friction log still collecting entries
 // is named first, so the reason order stays what it has always been.
 function closedIssueDecision(records, reasons, context) {
-  const closed = records
-    .filter((record) => issueState(record.issue) === "CLOSED")
-    .map((record) => `issue #${record.issueNumber} is closed without a verified merged delivery`);
+  const closed = records.filter((record) => issueState(record.issue) === "CLOSED").map(closedReason);
   if (closed.length === 0) return null;
   const collecting = typeof context.today === "string" && collectingFrictionLog(records, context.today);
   return hold([...reasons, ...(collecting ? ["friction log still collecting entries"] : []), ...closed]);

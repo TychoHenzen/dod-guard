@@ -75,3 +75,4 @@ destructive action.
   Restore every saved protection setting immediately and keep all required
   checks. Other users remain subject to branch rules. These defaults do not
   permit unrelated external mutation or an unverified success claim.
+- Never clone a repository to read files from another commit. Use `git show <rev>:<path>` for one file, or `git archive <rev> <path>... | tar -x -C <scratch-dir>` for several, into the scratchpad or a temporary directory outside the repository. A clone left under a short root such as `C:\dg*` can be undeletable from the sandbox.

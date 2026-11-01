@@ -84,8 +84,10 @@ snapshot reads only non-archived Project items, so a verified root archived befo
 or parent leaves a `readback missing` hold instead of a parent close. An
 owner's `not_planned` hand close with no `supersedes` root, completion record,
 or closure evidence is not reported; a `completed` hand close without evidence
-still is. A parent that needs a user answer or is externally blocked stays in
-place while the queue moves on. Each stage runs in one fresh subagent on a
+still is. `select-next` never holds a closed `not_planned` issue as missing a
+delivery: it holds one only while its Project status is not Done or its group
+is not settled, and the reason says which. A parent that needs a user answer or
+is externally blocked stays in place while the queue moves on. Each stage runs in one fresh subagent on a
 model tier from
 `standards/model-routing.md`, by one rule: haiku for anything that needs a lot
 of effort but low intelligence, sonnet only for tasks that need the added
@@ -330,8 +332,9 @@ defect in one file and keeps or drops each scanner finding, citing a verified
 answer for every drop, and the build checks its output. The build refuses a
 plan or a set of rulings that leaves a slot empty. It posts one comment-only
 review, with every slot and its questions in a collapsed block. Each `BLOCKER`
-or `MAJOR` finding gets its own inline comment with a `GH-<id>`; kept scanner
-findings are grouped into one comment per changed file. `MINOR` findings are
+or `MAJOR` finding gets its own inline comment, edited after the post to end with
+its `GH-<id>`; kept scanner findings are grouped into one comment per changed
+file. `MINOR` findings are
 listed under "Minor notes" in the review body, with no `GH-<id>` and no reply
 needed. The recommendation is `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES`
 for any `MAJOR`, and `APPROVE` when only `MINOR` findings or none remain.
