@@ -5,8 +5,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ClosureStop } from "./closure-apply.mjs";
 import { COMMANDS } from "./closure-commands.mjs";
+import { HEAD, ISSUE, MERGE, PULL, REPO } from "./closure-legacy.fake-gh.mjs";
 import { recordLegacyDelivery } from "./closure-legacy.mjs";
-import { fixture, HEAD, ISSUE, legacyOf, MERGE, PULL, REPO } from "./closure-legacy.test-support.mjs";
+import { fixture, legacyOf } from "./closure-legacy.test-support.mjs";
 import { parseCompletionRecord } from "./closure-records.mjs";
 
 const SHA_LENGTH = 40;

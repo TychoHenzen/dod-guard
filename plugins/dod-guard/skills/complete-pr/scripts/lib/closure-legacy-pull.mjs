@@ -7,8 +7,12 @@ function sameRepository(left, right) {
   return String(left ?? "").toLowerCase() === String(right ?? "").toLowerCase();
 }
 
+function isFullSha(value) {
+  return FULL_SHA.test(value ?? "");
+}
+
 function lacksMergeEvidence({ pull }) {
-  return !(FULL_SHA.test(pull.merge_commit_sha ?? "") && FULL_SHA.test(pull.head?.sha ?? ""));
+  return !(isFullSha(pull.merge_commit_sha) && isFullSha(pull.head?.sha));
 }
 
 function lacksClosingKeyword({ pull, repository, issueNumber }) {
