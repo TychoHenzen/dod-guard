@@ -43,7 +43,7 @@ function readLive(runner, repository, pull, issue) {
   const issueRecord = gh(runner, ["api", `repos/${repository}/issues/${issue}`]);
   const comments = readComments(runner, repository, issue);
   let checks = null;
-  if (pullRecord?.merged_at) {
+  if (pullRecord?.merged_at && FULL_SHA.test(pullRecord.head?.sha ?? "")) {
     checks = readMergedRequiredChecks(
       repository,
       { baseBranch: pullRecord.base?.ref, headSha: pullRecord.head?.sha },

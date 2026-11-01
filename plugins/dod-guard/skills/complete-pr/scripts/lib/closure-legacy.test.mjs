@@ -187,6 +187,16 @@ const REFUSALS = [
     reason: "pull request #62 body has no closing keyword for #61",
   },
   {
+    name: "a missing merge commit",
+    change: (fx) => set(fx.state.pull, "merge_commit_sha", null),
+    reason: "pull request #62 merge commit or head is missing",
+  },
+  {
+    name: "a missing head sha",
+    change: (fx) => set(fx.state.pull.head, "sha", ""),
+    reason: "pull request #62 merge commit or head is missing",
+  },
+  {
     name: "an incomplete required check",
     change: (fx) => set(fx.state, "checkConclusion", "failure"),
     reason: CHECK_REASON,
