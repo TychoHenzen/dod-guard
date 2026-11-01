@@ -123,6 +123,14 @@ Prefer numeric REST ids: a `PVTI_` id comes only from the items list, which can 
 
 After readback shows the delivered issues `Done`, save the helper's JSON result and the `## Implementation handoff` comment text to files. Record evidence on each linked closing issue and finalized child, in the `## Completion evidence` format from `standards/project-workflow.md`. Recording is safe to rerun. The acceptance matrix is read from the handoff comment file: its `## Acceptance matrix` section holds one fenced `json` block with a JSON array of rows, each with at least `id` and `status`. The command takes no separate matrix file and rejects `--matrix`; the full row shape is in `standards/project-workflow.md`.
 
+**Legacy delivery.** A closed ticket that predates the structured handoff (none of the seven records in its body, no `## Implementation handoff` comment) may record its merged pull request, accepted head and merge commit alone with the command below. The owner allowed this evidence in TychoHenzen/dod-guard#1116. The command refuses, naming the reason and writing nothing, for a structured ticket, an open issue, an unmerged or wrong-base pull request, a body with no closing keyword for the issue, incomplete required checks, or an existing non-legacy completion record. It never covers children.
+
+```text
+node <skill-dir>/scripts/closure.mjs record-legacy --repository=<owner/repository> --pull=<n> --issue=<n>
+```
+
+After it, run the snapshot, plan and apply commands below; the legacy record is judged by the same live readback as any other.
+
 ```text
 node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --result=<helper-result.json> --handoff-file=<handoff-comment.md> --children=<child-number>,...
 node <skill-dir>/scripts/closure.mjs snapshot --repository=<owner/repository> --output=<file>

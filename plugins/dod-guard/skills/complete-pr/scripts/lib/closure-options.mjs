@@ -32,4 +32,13 @@ function snapshotOptions(args) {
   return given(args.snapshot) && hierarchy !== false && { hierarchy };
 }
 
-export { childList, given, snapshotOptions };
+// A positive integer option such as --pull or --issue; false marks a value that is not one.
+function positiveInteger(value) {
+  const number = Number(value);
+  if (isIssueNumber(number)) {
+    return number;
+  }
+  return false;
+}
+
+export { childList, given, positiveInteger, snapshotOptions };

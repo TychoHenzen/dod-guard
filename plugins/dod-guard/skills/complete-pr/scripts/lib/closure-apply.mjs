@@ -243,4 +243,4 @@ function recordCompletion({ repository, result, matrix, children = [], runner })
   return { records: issues.map((number) => upsertRecord(runner, repository, number, body)) };
 }
 
-export { applyClosures, recordCompletion };
+export { applyClosures, ClosureStop, FULL_SHA, gh, readComments, recordCompletion, upsertRecord };

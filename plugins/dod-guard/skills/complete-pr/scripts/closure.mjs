@@ -14,6 +14,7 @@ const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issu
        closure.mjs apply --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs record --repository=<owner/name> --result=<complete-pr.json>
                           --handoff-file=<handoff-comment.md> [--children=<n,...>]
+       closure.mjs record-legacy --repository=<owner/name> --pull=<n> --issue=<n>
        closure.mjs annotate --snapshot=<file.json> [--output=<file.json>]
        closure.mjs snapshot --repository=<owner/name> --output=<file.json>
 
@@ -33,6 +34,9 @@ one-object summary; without it the snapshot prints to stdout.
 record reads the acceptance matrix from the json block under ## Acceptance
 matrix in the handoff comment file; --children= with no value means no extra
 children.
+record-legacy records PR, head and merge only, for a closed ticket delivered before
+the structured handoff existed. It refuses any ticket that has a structured handoff,
+and any ticket or pull request that does not verify, and it writes nothing on a refusal.
 snapshot builds that closure snapshot for one repository from GitHub REST GET
 requests and the one read-only GraphQL read that resolves the explicitly linked
 Project, as linked-project.mjs does. The command removes any earlier output
