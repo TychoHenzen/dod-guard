@@ -134,12 +134,20 @@ For each sub-issue, in order:
 1. Make the smallest coherent change.
 2. Run the behavior tests and a fresh scoped scan.
 3. Check that the scan no longer shows the finding, or record why it stays.
-4. stage only its files, then refresh the report evidence
+4. Run `git status --porcelain`, stage only its files by explicit path (see "Never"), then refresh the report evidence
 5. Commit and push on the issue branch.
 6. Comment on the sub-issue with the commit and close it.
 
 Re-scan after each structural wave, because one change can move or expose
 others.
+
+## Never
+
+- Never `git add -A` or `git add .`. Stage explicit paths after `git status --porcelain` and account for every `??` line.
+- Never stage `.quality/` outputs unless `git ls-files .quality` shows the repository already tracks them.
+- Never force-push.
+- Never edit a scanner threshold or ignore list to clear a finding. Fix the code or record why the finding stays. This extends "Never rewrite configuration or evidence to improve a score" in "## Defaults and evidence".
+- Never close the parent issue or merge the pull request. "## Finish" leaves both open for human review.
 
 ## Finish
 
