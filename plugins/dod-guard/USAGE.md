@@ -54,6 +54,14 @@ creates one issue.
 Backlog items are real issues, not drafts, so the Project Repository field
 stays populated. The result maps every identified feature to its issue URL.
 
+When you invoke the skill directly and your text leaves a feature's outcome
+or the split unclear, it asks one batched round: every question at once, 3 or
+4 options each with the recommended one first, a risk label, and a reply
+format. Your answers are kept word for word in the issue's `## Context`.
+
+When another skill such as `quick-pbi` invokes it, or no user is present, it
+asks nothing and records open points under `## Open questions`.
+
 Run the complete lifecycle without intermediate confirmation:
 
 ```text
