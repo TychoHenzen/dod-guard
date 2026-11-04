@@ -88,3 +88,6 @@ plugins/dod-guard/skills/test-fixture-*/
 
 # Acceptance-matrix scratch files that /complete-pr runs write to the repo root
 .tmp-complete-pr-*.json
+
+# quality-pr-gate.mjs --report output: written to the repo root in the quality-guard CI job, uploaded as an artifact by path
+quality-gate-report.md
