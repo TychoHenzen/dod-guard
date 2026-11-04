@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { classifyChanges, severityRank } from "./lib/pr-gate-compare.mjs";
 import { evaluateGate } from "./lib/pr-gate-evaluate.mjs";
 import { GENERATED_PATHS, baseRoots, parseNameStatus } from "./lib/pr-gate-paths.mjs";
-import { quotaText, renderComment, renderReport } from "./lib/pr-gate-report.mjs";
+import { quotaText, removedLines, renderComment, renderReport } from "./lib/pr-gate-report.mjs";
 
 const SCAN = fileURLToPath(new URL("./quality-scan.mjs", import.meta.url));
 const DEFAULTS = { blockOn: "medium", fixMediumHigh: 1, fixLow: 3 };
@@ -130,7 +130,11 @@ function writeOutputs(options, summary) {
   if (options.comment) writeFileSync(options.comment, renderComment({ ...summary, link: options.reportLink }));
 }
 
-function reportToConsole(gate, err, out) {
+function reportToConsole(gate, classified, err, out) {
+  if (classified.resolved.length > 0) {
+    out.write(`quality-pr-gate: removed ${classified.resolved.length} pre-existing finding(s):\n`);
+    out.write(`${removedLines(classified.resolved).join("\n")}\n`);
+  }
   for (const finding of gate.blocking) {
     err.write(`${finding.file}:${finding.line} ${finding.rule}: ${finding.message}\n`);
   }
@@ -158,7 +162,7 @@ function main(argv, { cwd = process.cwd(), out = process.stdout, err = process.s
     const classified = classifyChanges({ files, head, base: base.violations, excludes: options.excludes });
     const gate = evaluateGate(classified, options);
     writeOutputs(options, { gate, classified, mergeBase: base.mergeBase.slice(0, 7), changedCount: files.length });
-    reportToConsole(gate, err, out);
+    reportToConsole(gate, classified, err, out);
     return gate.passed ? 0 : 1;
   } catch (error) {
     err.write(`quality-pr-gate: ${error instanceof Error ? error.message : String(error)}\n`);

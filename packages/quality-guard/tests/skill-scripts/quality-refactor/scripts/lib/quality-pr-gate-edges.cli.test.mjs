@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { lineOf } from "./formatter-width-test-support.mjs";
 import {
@@ -39,6 +39,28 @@ test("deleting a file that carried a finding pays the cleanup quota", (t) => {
   const result = runGate(repo);
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /quota met/);
+  assert.match(result.stdout, /removed 1 pre-existing finding/);
+  assert.match(result.stdout, /a\.js:1` line-length/);
+  assert.match(
+    readFileSync(result.comment, "utf8"),
+    /Pre-existing findings removed by this pull request \(1\)/,
+  );
+});
+
+test("a long line added elsewhere is new even when a deleted file carried one", (t) => {
+  const repo = pullRequest(t, {
+    base: { "src/a.js": `${LONG}\n` },
+    head: {
+      "src/a.js": `${LONG}\n`,
+      "src/b.js": `x(${"b".repeat(LONG.length - 4)});\n`,
+    },
+  });
+  git(repo, "rm", "-q", "src/a.js");
+  git(repo, "commit", "-q", "-m", "move");
+  const result = runGate(repo);
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /b\.js:1 line-length/);
+  assert.match(result.stderr, /block this pull request/);
 });
 
 test("renaming the source dir does not make its findings new", (t) => {

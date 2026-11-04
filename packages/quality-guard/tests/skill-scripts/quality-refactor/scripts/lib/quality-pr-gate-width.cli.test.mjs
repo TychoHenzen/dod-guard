@@ -73,3 +73,18 @@ test("an unparseable biome.json falls back instead of failing", (t) => {
     /line-length \(medium\): line is 90 chars \(width 80\)/,
   );
 });
+
+// The base already holds a 100-char line, so a base worktree judged at the
+// fixed 80 width would list a line-length finding in the report.
+test("a 100-char .cs line under .editorconfig 120 passes the gate", (t) => {
+  const repo = pullRequest(t, {
+    base: {
+      ".editorconfig": "[*.cs]\nmax_line_length = 120\n",
+      "src/a.cs": `${lineOf(100)}\n`,
+    },
+    head: { "src/a.cs": `${lineOf(100)}\n${SHORT}\n` },
+  });
+  const result = runGate(repo);
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(readFileSync(result.report, "utf8"), /line-length/);
+});

@@ -54,11 +54,14 @@ function compareFindings(head, base) {
   return result;
 }
 
+// line-length and file-length messages carry only a measure, so equal keys say nothing about identity.
+const SUBJECTLESS_RULES = new Set(["line-length", "file-length"]);
+
 // A finding that left one changed file and appeared in another with the same key is moved code, not new debt.
 function absorbMoves(total) {
   const pool = groupBy(total.resolved, findingKey);
   // pop() both tests for a leftover fixed finding with this key and uses it.
-  const isMoved = (finding) => pool.get(findingKey(finding))?.pop() !== undefined;
+  const isMoved = (finding) => !SUBJECTLESS_RULES.has(finding.rule) && pool.get(findingKey(finding))?.pop() !== undefined;
   const fresh = [];
   const moved = [];
   for (const finding of total.fresh) (isMoved(finding) ? moved : fresh).push(finding);

@@ -136,3 +136,28 @@ test("findings in unchanged files and in generated output are ignored", () => {
   });
   assert.equal(result.fresh.length, 0);
 });
+
+test("a long line in another file is not absorbed as a move of a deleted file's long line", () => {
+  const base = [finding({ file: "gone.cs" })];
+  const head = [finding({ file: "new.cs" })];
+  const result = classify(head, base, [
+    modified("gone.cs"),
+    modified("new.cs"),
+  ]);
+  assert.equal(result.fresh.length, 1);
+  assert.equal(result.moved.length, 0);
+  assert.equal(result.resolved.length, 1);
+});
+
+test("a file-length finding in another file is not absorbed as a move of a deleted file's finding", () => {
+  const measure = { rule: "file-length", message: "file is 150 lines", metric: 150 };
+  const base = [finding({ ...measure, file: "gone.cs" })];
+  const head = [finding({ ...measure, file: "new.cs" })];
+  const result = classify(head, base, [
+    modified("gone.cs"),
+    modified("new.cs"),
+  ]);
+  assert.equal(result.fresh.length, 1);
+  assert.equal(result.moved.length, 0);
+  assert.equal(result.resolved.length, 1);
+});

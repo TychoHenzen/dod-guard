@@ -68,6 +68,9 @@ below). Entry-point files (`index`, `main`, `mod`, `lib`, `cli`, `program`,
 that only its own module uses is therefore not reported: it is live code that
 happens to be exported, not dead code.
 
+A public C# type marked `[GlobalClass]` counts as engine registration, so it is
+not reported.
+
 **Uses inside its own module.** In the file that declares the symbol, a whole-word
 occurrence of its name (in code, or in a string interpolation capture) counts
 as a production use unless it is one of these self-references or shadowed
@@ -226,7 +229,8 @@ That is a real pattern. Note it and keep it.
 
 **Detects:** identical windows of six consecutive non-trivial lines, compared
 after whitespace normalization, across all scanned files. Comment lines are
-ignored; a window needs at least four distinct lines so that repetitive data
+ignored, as are C# `using` directives (`using var` and `using (...)` statements
+are not); a window needs at least four distinct lines so that repetitive data
 tables do not register.
 
 **Why this is a diagnostic signal:** the second occurrence is where duplication
@@ -714,9 +718,10 @@ Biome), following the layering Biome 2.5.3 was observed to use:
 - A config that applies but sets no width gives W = 80, Biome's default, with
   that config as the `widthSource`.
 
-**Fallback.** Every other language, and any JS/TS file the resolver cannot
-judge, uses medium above 80 and high above 120, with `widthSource` `default`
-and `(width 80)` in the message. A JS/TS file falls back when:
+**Fallback.** Every other language without an .editorconfig max_line_length,
+and any JS/TS file the resolver cannot judge, uses medium above 80 and high
+above 120, with `widthSource` `default` and `(width 80)` in the message. A
+JS/TS file falls back when:
 
 - no Biome config sits at or below `--root` on its path, or the file is
   outside `--root`;
@@ -753,9 +758,14 @@ Past 120, wrapping is often unavoidable somewhere. Both still point to review
 rather than proving that a line is incorrect or that reformatting alone is
 useful.
 
-**Not width sources:** `pyproject.toml` (ruff, black), rustfmt,
-`.editorconfig` and prettier configs are not read; those files use the
-fallback.
+**`.editorconfig` width.** An `.editorconfig` `max_line_length` is a width
+source. Precedence: the Biome formatter width for a file Biome formats (above);
+otherwise the nearest `.editorconfig` that sets `max_line_length` for the file;
+otherwise the 80/120 default. A value of `off` or an invalid value falls back to
+the next level. Biome's own `formatter.useEditorconfig` option is not consulted.
+
+**Not width sources:** `pyproject.toml` (ruff, black), rustfmt and prettier
+configs are not read; those files use the fallback.
 
 **Fix:** *Extract Variable* for a long expression - the name is documentation.
 Break long parameter lists one per line. Never fix this by reformatting alone

@@ -73,6 +73,11 @@ export function renderReport({ gate, classified, mergeBase, changedCount }) {
   ].join("\n");
 }
 
+// Bullet lines for removed pre-existing findings, in the same order and format the full log uses.
+export function removedLines(resolved) {
+  return sortFindings(resolved).map(bullet);
+}
+
 export function renderComment({ gate, classified, link }) {
   const log = link ? `[full log](${link})` : "the quality-gate-report build artifact";
   // Moved findings are still open debt; they just changed files.
@@ -88,5 +93,6 @@ export function renderComment({ gate, classified, link }) {
       "need individual fixes.",
     "",
     ...section("New findings that block", gate.blocking, MAX_COMMENT_FINDINGS),
+    ...section("Pre-existing findings removed by this pull request", classified.resolved, MAX_COMMENT_FINDINGS),
   ].join("\n");
 }

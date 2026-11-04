@@ -4,11 +4,19 @@ import { suggestionFor } from "./rule-suggestions.mjs";
 const TRIVIAL_LINE = /^[\s{}()[\];,]*$/;
 const COMMENT_LINE = /^\s*(\/\/|#|\*|\/\*)/;
 const IMPORT_LINE = /^\s*(import|export)\b[^;]*\bfrom\b/;
+// Only directive forms match; "using var x = ..." and "using (...)" are statements and fail the single-name-then-semicolon shape.
+const CS_USING = /^\s*(?:global\s+)?using\s+(?:static\s+)?(?:\w+\s*=\s*)?[\w.:]+(?:<[^>]*>)?\s*;\s*$/;
 const MIN_DISTINCT_LINES = 4;
 
 function normalizeLines(file) {
   return file.lines.map((line) => {
-    if (COMMENT_LINE.test(line) || IMPORT_LINE.test(line)) return "";
+    if (
+      COMMENT_LINE.test(line) ||
+      IMPORT_LINE.test(line) ||
+      (file.lang === "cs" && CS_USING.test(line))
+    ) {
+      return "";
+    }
     return line.trim().replace(/\s+/g, " ");
   });
 }
