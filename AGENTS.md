@@ -1,6 +1,6 @@
 # dod-guard monorepo
 
-npm workspaces monorepo with three MCP plugins, one CLI workspace, and two
+npm workspaces monorepo with three MCP plugins, one CLI workspace, and three
 code-free plugins.
 
 | Path | Purpose |
@@ -11,6 +11,7 @@ code-free plugins.
 | `packages/fossil` | Git-history and workspace-debris CLI. |
 | `plugins/dod-guard` | GitHub issue delivery and repository-maintenance skills. |
 | `plugins/natural-output-style` | Natural and Neurodivergent output styles. |
+| `plugins/readability-gate` | Stop hook that checks each final message reads on its own. |
 | `tools/openspec-dashboard` | Compatibility path for the read-only quality-report dashboard. |
 
 Read a package's own `AGENTS.md` before changing it.
