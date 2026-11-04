@@ -157,7 +157,9 @@ During the run, goal-sdlc applies `standards/goal-stop.md`. It shows this
 template when the condition has no user-stop exit, and gives the grader the
 evidence each exit needs. When the goal keeps firing after the final report,
 it says once that only `/goal clear` ends it, then waits on a bounded
-background sound command to get your attention.
+background sound command to get your attention. That command keeps its PID
+record in `.dod-guard/goal-stop.pid` under your home directory, so other local
+users cannot plant or redirect it.
 
 ## Structured work
 

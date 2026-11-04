@@ -1,16 +1,14 @@
 #!/usr/bin/env node
 // Sounds a reminder every five minutes for up to two hours and records its own
 // PID so a later turn, or a session that restarted, can stop it.
-import { rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { rmSync } from "node:fs";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { isBeepProcess, readCommandLine } from "./goal-stop-beep-identity.mjs";
-import { readRecord } from "./goal-stop-beep-record.mjs";
+import { defaultRecordFile, readRecord, writeRecord } from "./goal-stop-beep-record.mjs";
 import { playSound } from "./goal-stop-beep-sound.mjs";
 
-export const PID_FILE = join(tmpdir(), "dod-guard-goal-stop.pid");
+export const PID_FILE = defaultRecordFile();
 export const BEEPS = 24;
 export const INTERVAL_SECONDS = 300;
 // The reminder ends by itself after BEEPS intervals. A record older than that
@@ -58,7 +56,7 @@ export async function startBeeping({
   commandLineOf,
 } = {}) {
   stopRecorded({ pidFile, now: now(), kill, commandLineOf });
-  writeFileSync(pidFile, JSON.stringify({ pid, startedAt: now() }));
+  writeRecord(pidFile, { pid, startedAt: now() });
   try {
     for (let index = 0; index < beeps; index += 1) {
       beep();

@@ -39,8 +39,9 @@ turns. Then:
 1. Say once that only `/goal clear` ends the goal.
 2. Start the reminder as one background shell task, then end the turn without
    starting work. It sounds every five minutes for up to two hours, records its
-   own PID in `dod-guard-goal-stop.pid` in the system temp directory, and ends
-   by itself:
+   own PID in `goal-stop.pid` inside `.dod-guard` in the user's home directory
+   (an owner-only directory, never the shared temp directory), and ends by
+   itself:
 
    ```text
    node <plugin-root>/skills/goal-sdlc/scripts/goal-stop-beep.mjs start
