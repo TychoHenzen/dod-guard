@@ -150,3 +150,11 @@ Read `Success`, `Stage`, `DeleteAttempted`, `Restored`, and `RestoreAttempts` fr
 - A failure before the DELETE leaves protection untouched and reports `DeleteAttempted` false. That with `Restored` false is not a protection incident.
 - If `master` advances, protection is restored. Stop without pulling, merging, or retrying the push, and keep the checkpoint. A later run reclassifies pending paths, rebuilds from the new head, and reruns all gates.
 - A hard kill between DELETE and cleanup cannot restore protection. Exposure is limited to the push.
+
+### Return the checkout
+
+The maintenance path detaches HEAD, so after `Invoke-MaintenancePublish` returns, whatever its result, return to the state item 2 of the list above recorded.
+
+- Run `git switch <starting-branch>`. If item 2 recorded a detached HEAD, run `git switch --detach <starting-HEAD>` instead. If Git refuses the switch, report the refusal and the current HEAD, leave the checkout as it is, and stop.
+- Only when `Success` is true, the tree is clean, and the branch is behind `origin/master`, run `git merge --ff-only origin/master`. The push has already moved `origin/master`, so no fetch is needed. When `Success` is false, or `master` advanced during the run, run no merge, pull, or fetch (the stop rule above stays in force).
+- Never reset.
