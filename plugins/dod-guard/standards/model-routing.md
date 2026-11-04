@@ -51,6 +51,25 @@ plans, reads, or judges uses the read-only agent, or the stage owner's own
 agent when it has one. The one exception is a review-pr investigator batch,
 which runs on the write-capable cheap agent so it writes its own answers file.
 
+## Tool sets
+
+Each tier agent's `tools` line is its whole tool set, and
+`skills/goal-sdlc/scripts/model-routing.test.mjs` pins every line. A brief names
+only a tool its receiving agent holds.
+
+| Agent | Tools |
+|---|---|
+| `dod-guard:stage-standard`, `dod-guard:stage-cheap-skill` | Read, Grep, Glob, Bash, PowerShell, Edit, Write, Agent, Skill, SendMessage, WebSearch, WebFetch |
+| `dod-guard:stage-cheap` | Read, Grep, Glob, Bash, Edit, Write (no PowerShell, Skill, or Agent) |
+| `dod-guard:read-cheap`, `dod-guard:read-standard` | Read, Grep, Glob, Bash (no Edit or Write) |
+
+No tier agent holds an MCP tool, so `mcp__ccd_turn__update_plan` and every other
+`mcp__` tool belong to the dispatcher, which holds the session's own tools. A
+strong-tier row runs on `dod-guard:stage-standard`, so it holds the same tools
+as the standard row and no MCP tool either. A step that needs a tool its agent
+lacks is misrouted: the worker stops and reports the exact call, and the
+dispatcher makes the call or reroutes the step.
+
 ## Applying a tier
 
 The two runtimes resolve a requested model differently:
@@ -178,6 +197,13 @@ shape and no other:
    stage starts from, and the attribution line when the stage commits.
 3. The evidence to return, as the skill's own result section names it.
 
+4. This closing sentence, verbatim, so every worker receives the rules that
+   cost a failed run when missing: "Run every build and test to completion with
+   its output redirected to a file, and never pipe it into head, tail, or
+   Select-Object -First. Wait for each command's terminal state and wrap none in
+   a deadline. Return no interim statement: your report is complete only when
+   it carries every section named above."
+
 A brief never restates, summarizes, shortens, or replaces any part of a skill,
 and the skill file is the only procedure. A thread never writes a template, a
 checklist, a rules file, or a note that stands in for a skill, and never reads
@@ -196,6 +222,14 @@ starts its report with the line `Skill loaded: dod-guard:<name>`, or
 that line is a failed check. A read-only agent and `dod-guard:stage-cheap` hold
 no Skill tool, so their brief is the one the owning skill defines, and they
 return their output as that skill says.
+
+A report that ends in an interim statement such as "waiting for the worker", or
+that lacks a section the brief requested, is a failed check under the two
+verification sections below. The dispatcher does not accept it as a return: it
+sends the stage back once with the exact gap, under the failed-check rule in
+those sections. A validation that ran inside a wrapper with a local deadline, or
+through a pipe that truncates its output, is also a failed check, and its proof
+is run again.
 
 ## Plan, investigate, judge
 
