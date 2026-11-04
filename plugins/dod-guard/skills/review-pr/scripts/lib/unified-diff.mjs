@@ -1,3 +1,4 @@
+import { isGeneratedPath } from "./generated-paths.mjs";
 // Git writes a path containing non-ASCII bytes, quotes, or control characters
 // as
 // a C-style quoted string ("b/docs/\303\274.md"), and ends `---`/`+++` lines
@@ -115,6 +116,11 @@ function parseChangedLines(diff) {
   const state = { file: undefined, finalLine: 0, oldLeft: 0, newLeft: 0 };
   for (const line of diff.split(NEWLINE)) {
     recordDiffLine(state, line, changed);
+  }
+  for (const path of [...changed.keys()]) {
+    if (isGeneratedPath(path)) {
+      changed.delete(path);
+    }
   }
   return changed;
 }

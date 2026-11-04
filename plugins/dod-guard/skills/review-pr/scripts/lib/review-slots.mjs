@@ -72,7 +72,7 @@ function subIssueList(value, source) {
 function reviewSlots({ changedLines, pbi, subIssues }) {
   // Approving a review that saw no changed file would be false.
   if (changedLines.size === 0) {
-    throw new Error("The diff names no changed files");
+    throw new Error("The diff names no changed files (generated files and sidecars are skipped)");
   }
   const criteria = acceptanceCriteria(pbi.body);
   if (criteria.length === 0) {

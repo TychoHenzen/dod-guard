@@ -139,6 +139,26 @@ test("an empty diff stops slot generation", () => {
   assert.throws(() => slotsFor(""), /The diff names no changed files/);
 });
 
+test("stops when every changed file is generated", () => {
+  const DIST_ONLY = [
+    "diff --git a/packages/a/dist/bundle.js b/packages/a/dist/bundle.js",
+    "--- a/packages/a/dist/bundle.js",
+    "+++ b/packages/a/dist/bundle.js",
+    "@@ -0,0 +1 @@",
+    "+built",
+    "",
+  ].join("\n");
+  assert.throws(
+    () =>
+      reviewSlots({
+        changedLines: parseChangedLines(DIST_ONLY),
+        pbi: pbiIssue(PBI_JSON, "pbi.json"),
+        subIssues: [],
+      }),
+    /The diff names no changed files/,
+  );
+});
+
 const SLOTS = [
   { slot: "file:src/a.mjs", kind: "file", text: "src/a.mjs" },
   {

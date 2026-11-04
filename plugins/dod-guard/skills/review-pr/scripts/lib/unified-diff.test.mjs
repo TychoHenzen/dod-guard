@@ -75,3 +75,25 @@ test("records final-state lines for special-character paths", () => {
   assert.deepEqual([...changed.get("sp ace.md")], [3]);
   assert.equal(changed.has("gone.md"), false);
 });
+
+test("skips generated paths and sidecars", () => {
+  const diff = [
+    "diff --git a/packages/a/src/x.mjs b/packages/a/src/x.mjs",
+    "--- a/packages/a/src/x.mjs",
+    "+++ b/packages/a/src/x.mjs",
+    "@@ -0,0 +1 @@",
+    "+src",
+    "diff --git a/packages/a/dist/bundle.js b/packages/a/dist/bundle.js",
+    "--- a/packages/a/dist/bundle.js",
+    "+++ b/packages/a/dist/bundle.js",
+    "@@ -0,0 +1 @@",
+    "+built",
+    "diff --git a/Scripts/Foo.cs.uid b/Scripts/Foo.cs.uid",
+    "--- a/Scripts/Foo.cs.uid",
+    "+++ b/Scripts/Foo.cs.uid",
+    "@@ -0,0 +1 @@",
+    "+uid",
+  ].join("\n");
+
+  assert.deepEqual([...parseChangedLines(diff).keys()], ["packages/a/src/x.mjs"]);
+});
