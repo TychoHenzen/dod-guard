@@ -127,7 +127,7 @@ The rows are one fenced `json` array under that heading, with fields `context`, 
 For a structured PBI, keep these records in the issue's `## Implementation
 notes`. The exact prose can vary, but the names and meaning stay stable:
 
-- `requirements`: observable user stories, constraints, and non-goals.
+- `requirements`: observable user stories, constraints, and non-goals. Each requirement is a bullet that opens with an id token (`R-1`, `R-2`, and so on). Each `## Acceptance criteria` checkbox cites, after its `AC-n` id, the ids it proves, as in `- [ ] AC-1 (R-1, R-2) ...`. The refinement proof reports a requirement that no criterion cites, a cited id that is not a requirement, and a repeated id. Ids match as whole tokens, so `R-1` never matches `R-10`. The post-push and finalization proofs do not apply this check.
 - `clarifications`: resolved decisions and their evidence. Keep
   `unresolved-decision` entries when a decision is not safe to invent.
 - `implementation-plan`: affected owners, approach, and verification approach.

@@ -66,9 +66,13 @@ function jsonRecord(notes, name, errors) {
 }
 
 // A checkbox opens with its criterion id, such as "AC-1" in "- [ ] AC-1 ...".
+function criterionLabel(text) {
+  return /^[*_`]*([^\s*_`:]+)/.exec(text)?.[1];
+}
+
 function checkboxIds(body) {
   return acceptanceCriteria(body)
-    .map((criterion) => /^[*_`]*([^\s*_`:]+)/.exec(criterion.text)?.[1])
+    .map((criterion) => criterionLabel(criterion.text))
     .filter(Boolean);
 }
 
@@ -86,6 +90,40 @@ function acceptanceIdRemainder(body, acceptance) {
   ];
 }
 
+// The requirement ids of the requirements record, in order. A repeated id
+// stays in the list so that requirementIdRemainder can report it.
+function requirementIds(requirements) {
+  return markedLines(requirements ?? "")
+    .filter((line) => !line.fenced)
+    .map((line) => /^\s*[-*] +[*_`]*(R-\d+)(?!\d)/.exec(line.text)?.[1])
+    .filter(Boolean);
+}
+
+// Whole-token match: "R-1" never matches inside "R-10" or "XR-1".
+function citedRequirementIds(text) {
+  return [...text.matchAll(/(?<![\w-])R-\d+(?!\d)/g)].map((match) => match[0]);
+}
+
+function requirementIdRemainder(body, requirements) {
+  const ids = requirementIds(requirements);
+  if (ids.length === 0) return ["requirements record has no R-n requirement"];
+  const distinct = [...new Set(ids)];
+  const criteria = acceptanceCriteria(body);
+  const citedPerCriterion = criteria.map((criterion) => [...new Set(citedRequirementIds(criterion.text))]);
+  const cited = new Set(citedPerCriterion.flat());
+  return [
+    ...distinct
+      .filter((id) => ids.filter((other) => other === id).length > 1)
+      .map((id) => `${id} requirement id is repeated`),
+    ...distinct.filter((id) => !cited.has(id)).map((id) => `${id} requirement is cited by no acceptance criterion`),
+    ...criteria.flatMap((criterion, index) =>
+      citedPerCriterion[index]
+        .filter((id) => !ids.includes(id))
+        .map((id) => `${criterionLabel(criterion.text)} cites ${id} which is not a requirement`),
+    ),
+  ];
+}
+
 // The refinement proof runs before push, so the input has no observed matrix
 // or head. Linked children live outside the body, so callers supply them.
 function evaluatorInput(records) {
@@ -100,9 +138,11 @@ function evaluatorInput(records) {
   };
 }
 
-// Returns { input, errors, remainder }: the evaluateConvergence input, one
-// error per record that cannot be read, and one remainder entry per
-// acceptance-evidence id that disagrees with the Acceptance criteria checkboxes.
+// Returns { input, errors, remainder, requirementRemainder }: the
+// evaluateConvergence input, one error per record that cannot be read, one
+// remainder entry per acceptance-evidence id that disagrees with the Acceptance
+// criteria checkboxes, and one requirementRemainder entry per requirement-id
+// disagreement, applied by the refinement proof only.
 function parseIssueBodyRecords(body) {
   const text = lines(body);
   const notes = markdownSection(text, "Implementation notes");
@@ -115,6 +155,7 @@ function parseIssueBodyRecords(body) {
     input: evaluatorInput(records),
     errors,
     remainder: acceptance ? acceptanceIdRemainder(text, acceptance) : [],
+    requirementRemainder: records.requirements ? requirementIdRemainder(text, records.requirements) : [],
   };
 }
 

@@ -8,8 +8,8 @@ This is the corrected form: T1 declares the recovery row R9, and the reliability
 
 ### requirements
 
-- Archived Project items stay out of the closure snapshot.
-- Unclaimed owner closes are not reported as unverified.
+- R-1 Archived Project items stay out of the closure snapshot.
+- R-2 Unclaimed owner closes are not reported as unverified.
 
 ### clarifications
 
@@ -68,6 +68,6 @@ This is the corrected form: T1 declares the recovery row R9, and the reliability
 
 ## Acceptance criteria
 
-- [ ] AC-1 The closure snapshot leaves archived Project items out.
-- [ ] AC-2 An owner's unclaimed not_planned close is not reported as unverified.
+- [ ] AC-1 (R-1) The closure snapshot leaves archived Project items out.
+- [ ] AC-2 (R-2) An owner's unclaimed not_planned close is not reported as unverified.
 - [ ] AC-3 The supersedes records are backfilled and the report scope is documented.
