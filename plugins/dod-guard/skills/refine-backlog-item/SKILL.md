@@ -100,6 +100,8 @@ Write one comment per task on the parent, headed `## Step plan: <task-id>`, with
 
 Per step, give the file, the edit (symbol and intent), the test to add or change (name and assertion), the validation command, and the expected result. Use fenced code blocks only, never indented ones, and keep each batch small. The plan carries every design decision, so a cheap model chooses nothing. A control run is a proof an acceptance criterion depends on, such as a baseline or a negative control that must fail or differ before the change. Write each one as its own step with its own command and expected result, never folded into another step's validation.
 
+Before posting, check every target the plan names with Grep or Glob in the checkout: each file path exists or is marked as created by that step, each test file sits beside the code it covers, and each symbol is found in the file named. Correct a plan whose target is missing or misplaced, and list the targets checked in the final report.
+
 Post as the authenticated user. Write a plan for every task lacking a comment that the step-plan rule in `standards/project-workflow.md` accepts. On re-refinement, replace a changed task's comment only. Read every comment back with its author before the Status changes, or before you report when Status stays.
 
 ## Apply labels and verify
