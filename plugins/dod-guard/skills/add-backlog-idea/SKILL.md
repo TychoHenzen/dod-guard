@@ -59,7 +59,7 @@ Give each feature a concise title.
 
 When splitting, map every substantive supplied detail to that feature, every relevant feature, or an explicit unresolved remainder. That covers rationale, examples, constraints, decisions, and open questions. Put shared context with each feature that needs it.
 
-Do not silently omit, collapse, or paraphrase a concrete detail into a vague outcome. If some text fits no feature, show it to the user as the explicit unresolved remainder and ask where it belongs.
+Do not silently omit, collapse, or paraphrase a concrete detail into a vague outcome. If some text fits no feature, it is the explicit unresolved remainder. When a user is present, ask where it belongs inside the round described in "Ask one batched round when a user is present". Otherwise report it as the unresolved remainder and let the caller decide.
 
 Do not derive, resolve, or organize new requirements, decisions, plans, or tasks, and retain any supplied decision verbatim as `## Context`.
 
@@ -68,6 +68,22 @@ Write each issue body with these parts:
 - `## Idea`: the requested outcome, in the user's terms.
 - `## Context`: every mapped fact, rationale, example, constraint, and decision for this feature.
 - `## Open questions`: include this only when decisions are still unresolved.
+
+## Ask one batched round when a user is present
+
+Run this round only when a person invoked this skill directly in an interactive session and the supplied text does not let you state a feature's outcome or the split. The unresolved remainder from "Place every detail" joins this round.
+
+Skip the round, and ask nothing, in every other case: the text is already clear, another skill such as `dod-guard:quick-pbi` or `dod-guard:goal-sdlc` invoked this skill, or no user is present (a non-interactive or active goal run). In a skipped run, put each open point under `## Open questions`.
+
+When the round runs, ask once, in ordinary conversation, and never through a provider-specific question tool:
+
+- Put every open question in one turn. Do not defer a known question to a later turn.
+- Give each question 3 or 4 mutually exclusive options. Put the recommended option first and mark it `(Recommended)`. Add one short effect to every option. Always allow `Other: ...`.
+- Label each question Low, Medium, or High by what a wrong answer costs. Low is absorbed cheaply. High files the wrong issue or the wrong split. Order the set from High to Low.
+- End with a compact reply format, such as `Reply with 1A, 2C, plus any custom details.`
+- Ground every question in the supplied text only. Do not read the codebase.
+
+After the reply, keep each answer word for word under `## Context` of the feature it settles. Put each point still unanswered under `## Open questions`. Never run a second round, and never add requirements, decisions, plans, or tasks of your own.
 
 ## Create and file each issue
 
