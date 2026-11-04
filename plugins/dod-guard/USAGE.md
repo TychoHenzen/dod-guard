@@ -352,9 +352,12 @@ Fix selected GitHub review findings:
 ```
 
 The skill reloads the parent PBI and linked subtasks, then rechecks each
-finding against the current head. It skips resolved or unsupported findings,
-and rechecks outdated ones instead of skipping them. It pushes the smallest
-verified fix before replying to or resolving GitHub threads.
+finding against the current head. It skips findings whose thread is already
+resolved, declines unsupported, already-fixed and stale ones with an evidence
+reply and resolves their threads, routes partly fixed or out-of-slice ones to
+an existing destination issue before resolving, and rechecks outdated ones
+instead of skipping them. It pushes the smallest verified fix before replying
+to or resolving GitHub threads.
 
 After review, explicitly accept and complete the current pull request:
 

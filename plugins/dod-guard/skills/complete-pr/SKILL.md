@@ -39,7 +39,7 @@ After the head converges and before any mutation, read every review thread. Ever
 
 - Unresolved threads stop the run with `unresolved-review-threads`. Name each thread's URL and path.
 - A failed, malformed, or incompletely paginated read stops with `review-threads-unavailable` before ready, auto-merge, CI dispatch, or merge.
-- The remedy is `dod-guard:fix-pr-review` or resolving the thread, then rerunning this skill.
+- The remedy is `dod-guard:fix-pr-review` or resolving the thread, then rerunning this skill. A thread that fix-pr-review reported as `unrouted` has no destination issue yet: name an open one and rerun fix-pr-review, or resolve the thread by hand.
 
 Reread them before each merge request and stop the same way.
 
