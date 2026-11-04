@@ -33,16 +33,26 @@ Nothing in this skill writes the target. Phases 4 to 8 use `.skill-migrate/work/
 
 ## Phases
 
-**0. Inventory.** Read the target, then run:
-
-```bash
-node "<skill-dir>/scripts/migration-check.mjs" <path-to-target> --save=.skill-migrate/baseline.json
-```
-
-Exit 3 with a message that names `.claude/plugins/` means the target is a copy in an installed plugin cache. Stop, change nothing, and tell the caller to run the migration on the skill's source checkout (`standards/working-defaults.md`). Otherwise copy the target to `.skill-migrate/work/` (same file name) and record the digest of the target in the inventory:
+**0. Inventory.** Read the target, then run the gate, which also gives the digest of the target for the inventory:
 
 ```bash
 node "<skill-dir>/scripts/migration-check.mjs" <path-to-target> --sha256
+```
+
+Exit 3 with a message that names `.claude/plugins/` means the target is a copy in an installed plugin cache. Stop, change nothing, and tell the caller to run the migration on the skill's source checkout (`standards/working-defaults.md`). Otherwise keep scratch out of git before the first write. Run this block from the repository root. `migration-check.mjs --save` does not create its directory, so the block makes `.skill-migrate/`. It appends the entry only inside a git work tree and only when `.gitignore` lacks the line, so a rerun adds nothing. It reads `.gitignore` itself instead of calling `git check-ignore`, because a global or local exclude file can hide the directory on one machine while the shared repository still lacks the entry:
+
+```bash
+mkdir -p .skill-migrate
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1 && ! grep -qxF '.skill-migrate/' .gitignore 2>/dev/null; then
+  [ -z "$(tail -c1 .gitignore 2>/dev/null)" ] || echo >> .gitignore
+  printf '%s\n' '# skill-migrate scratch: baseline, work copy, quarantine, migrated draft' '.skill-migrate/' >> .gitignore
+fi
+```
+
+Then save the baseline and copy the target to `.skill-migrate/work/` (same file name):
+
+```bash
+node "<skill-dir>/scripts/migration-check.mjs" <path-to-target> --save=.skill-migrate/baseline.json
 ```
 
 It prints the kind (`skill`, `agent`, `claude-md`, `memory`, `instinct`); override with `--kind=<k>`. Pass the kind to every agent. Trace by kind: skill, each `subagent_type` and script call to its file; agent, its dispatching skills and the report format its caller parses; CLAUDE.md, the commands, paths, and gates named; memory or instinct, whether each fact still holds. Write an inventory: one-sentence goal, trace, dispatches with return shapes, script exit codes, rules.
@@ -92,4 +102,4 @@ Exit 0 passes. Exit 1 means a previously passing check now fails; fix every one.
 
 All four gates (claim coverage, overlap, gap audit, regression) must pass before the report ships.
 
-**9. Deliver.** Run the target integrity check. Summarize before and after numbers, append the migration-check output, then the full diff of the target against the result (`git diff --no-index -- <path-to-target> .skill-migrate/migrated.md`, which exits 1 when the files differ and is not a failure). Say that the caller lands the result in the skill's source checkout. Stop.
+**9. Deliver.** Run the target integrity check. Then check for leaks: run `git status --porcelain` and account for every line. The only expected change is the `.gitignore` entry from phase 0, because the target stays byte-identical; name any other `??` or modified line in the report as a leak. When `.github/quality/` exists, run `git diff .github/quality/`; a diff there means a quality baseline changed, so name it. Revert only what this run wrote, and leave every other change as found. Summarize before and after numbers, append the migration-check output, then `git diff -- .gitignore` and the full diff of the target against the result (`git diff --no-index -- <path-to-target> .skill-migrate/migrated.md`, which exits 1 when the files differ and is not a failure). Say that the caller lands the result in the skill's source checkout. Stop.
