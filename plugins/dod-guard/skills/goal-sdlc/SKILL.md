@@ -38,7 +38,7 @@ At the start of every iteration, before step 1, read `version` from `.claude-plu
    - In this skill's directory, run `node scripts/select-next.mjs --snapshot=<annotated-file>`. Report its holds. `queueState: held` is not exhaustion.
    - For each group of kind `needs-refinement`, run `refine-backlog-item` on its root as one stage with the Status left at Todo, then take a fresh snapshot and select again, because the snapshot holds the old body.
 3. Follow `dod-guard:quick-pbi` steps 2 to 6 and run the owner whose condition the parent meets. On `step-plan-missing`, refine, then rerun next-ticket. If refinement needs a user answer, leave the parent in Backlog with the questions recorded and move on.
-4. On `conflict-triaged`, go to submit-draft-pr for the new head. Otherwise, if any parent or child status is not Done, return to the completion owner. If all are Done, go to step 1.
+4. On `conflict-triaged`, go to submit-draft-pr in update mode for the new head. After `dod-guard:fix-pr-review` pushed a fix, its "Rebind the handoff" section has already rewritten the checkpoint at the new head, so run no submit-draft-pr for it. Otherwise, if any parent or child status is not Done, return to the completion owner. If all are Done, go to step 1.
 
 ## Delegation
 
@@ -55,7 +55,7 @@ Agent names take the `dod-guard:` prefix.
 
 | Stage | Tier | Agent | Runs |
 |---|---|---|---|
-| Queue snapshot read | cheap | read-cheap | Follows Loop step 2, dispatched twice: first only `closure.mjs snapshot` and `plan`, returns plan. After the closes, only fresh `snapshot`, `annotate`, `select-next.mjs`, returns selection. Close delegation stays on main thread |
+| Queue snapshot read | cheap | stage-cheap | Follows Loop step 2, dispatched twice: first only `closure.mjs snapshot` and `plan`, returns plan. After the closes, only fresh `snapshot`, `annotate`, `select-next.mjs`, returns selection. Close delegation stays on main thread |
 | Refinement owner thread | standard | stage-standard | Skill `dod-guard:refine-backlog-item <issue>` |
 | Refinement plan research questions | standard | read-standard | "Research and discovery triage" in refine-backlog-item |
 | Refinement investigate code, callers, tests | cheap | read-cheap | Same section |

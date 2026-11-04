@@ -107,7 +107,8 @@ The evidence file supplies only `observed`, `status` and `reason` per row and
 `commit`, `files` and `result` per task, and the builder rejects any other field. When the handoff already carries a `## Preflight checkpoint`, a rebuild passes the old comment with `--previous-handoff-file=<handoff.md>` and the builder copies that section, rows unchanged, to the end of the new comment; the rows stay bound to their old head until they are rewritten.
 
 The same handoff also carries one `## Preflight checkpoint` record for the
-selected pull request once its branch exists. It records the exact branch and
+selected pull request. `submit-draft-pr` writes it once the draft exists and
+rewrites it in update mode; `next-ticket` writes none. It records the exact branch and
 PR head, base ref and SHA, mergeability, and one row for every required
 provider context. Each context row records its provider, workflow, run ID, ref,
 head SHA, and one of `present`, `pending`, `failed`, `skipped`, or

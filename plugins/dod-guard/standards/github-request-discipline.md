@@ -176,6 +176,14 @@ from an earlier run.
   a comment, read the comments back and confirm exactly one carries the posted
   heading before any retry. With zero, repost once and read again. With two or
   more, keep the earliest, report the duplicates, and post nothing more.
+- To edit a comment, first save its text: `gh api repos/<owner>/<repo>/issues/comments/<id> --jq .body`
+  written to a UTF-8 file (from Windows PowerShell 5.1 use the Write tool or `Out-File -Encoding utf8`,
+  never `>`). Without `--jq .body` the response is the JSON object, and sending that file back
+  replaces the comment with the object. Never send a file read without `--jq .body`: check that
+  its first line is the comment heading and not `{`, change the file, send it with
+  `--method PATCH -F body=@<file>` (no `--jq` on the write; `--input` sends the file as the raw
+  request body, so it is for a JSON body only), then read the comment back with `--jq .body` and
+  confirm the heading and the change.
 - Re-read only the mutated resource for safety. Do not rebuild the whole
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.
