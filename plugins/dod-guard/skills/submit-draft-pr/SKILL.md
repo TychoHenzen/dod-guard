@@ -47,7 +47,7 @@ For a structured PBI:
 
 ## Early preflight checkpoint
 
-After the draft exists, before `dod-guard:review-pr` or guarded `complete-pr`, consume the one `## Preflight checkpoint` record in the handoff. Never create a local ledger.
+After the draft exists, before `dod-guard:review-pr` or guarded `complete-pr`, write the one `## Preflight checkpoint` record into the `## Implementation handoff` comment, as `standards/project-workflow.md` defines it. A handoff without one is the normal input, because `dod-guard:next-ticket` writes none. If the handoff already holds one, replace it and never add a second. Edit the comment as `standards/github-request-discipline.md` says: read it with `--jq .body`, check that the first line is the heading, send it with `-F body=@<file>`, and read it back. Never create a local ledger.
 
 1. Run head convergence at one exact pushed SHA.
 2. Record base ref, base SHA, mergeability, and one row per required context: name, provider, workflow, run ID, branch ref, exact head SHA, and state (`present`, `pending`, `failed`, `skipped`, `unavailable`). Write the rows as one fenced `json` array. Missing, malformed, stale, duplicate, forked, or provider-mismatched evidence stops.
@@ -74,3 +74,11 @@ The PR body always names the parent with `Closes #<issue-number>`. Never write "
 Replace `none` with each failed context, one per line, when a row did not pass.
 
 Leave the Project item `In Progress`. Report the PR URL, head commit, and verification evidence, then stop.
+
+## Update mode
+
+Run this skill again on an existing draft whose head moved, for example after conflict triage. Create nothing: find the open PR for the head branch, then:
+
+1. Run head convergence at the new pushed SHA, then the post-push proof from "Structured-work convergence" at that head. An exit-1 remainder stops and names the stale row ids.
+2. Rewrite the `## Preflight checkpoint` for the new head by following "Early preflight checkpoint", replacing the record in the same comment.
+3. Update the PR title and body as "Create or update the draft" says, with the Convergence block naming the new head. Report the PR URL, the new head, and the checkpoint head, then stop.
