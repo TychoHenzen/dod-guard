@@ -1,4 +1,5 @@
 import { isGeneratedPath } from "./generated-paths.mjs";
+
 // Git writes a path containing non-ASCII bytes, quotes, or control characters
 // as
 // a C-style quoted string ("b/docs/\303\274.md"), and ends `---`/`+++` lines
