@@ -38,7 +38,7 @@ Wait on every helper synchronously, in the foreground or by its completion notif
 5. Tell the worker to revert every temporary probe or mutation the step added, keeping pre-existing and unrelated work.
 6. Read the result and inspect the changed state.
 7. Run the named proof yourself before marking the step complete.
-8. If the plan asks for a commit per step and the step changed tracked files, commit the verified changes and read the commit back before the next step. A step that changes no tracked file records its evidence instead.
+8. If the plan asks for a commit per step and the step changed tracked files, stage only the paths the step checkpoint names, never `git add -A`, `git add .`, a glob, or the root. Run `git status --porcelain` and account for every `??` line (already ignored, newly ignored, or source the step meant to add) before the commit. Then commit the verified changes and read the commit back before the next step. A step that changes no tracked file records its evidence instead.
 9. Record result, evidence, and next step in the checkpoint.
 
 When the caller routes steps by tier, send the single "Stage brief" from `standards/model-routing.md` instead of steps 2 to 5, to the agent the caller's table names. The skill or standard named on its first line carries the branch, PR, and worktree rules.
