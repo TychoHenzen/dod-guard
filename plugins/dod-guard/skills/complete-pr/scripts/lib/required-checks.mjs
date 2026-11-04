@@ -58,7 +58,7 @@ export function readRequiredChecks(repository, pullRequest, commandRunner) {
     commandRunner,
   );
   const statuses = readCommitStatuses(repository, pullRequest.headSha, commandRunner);
-  return normalizeRequiredChecks(protection, checkRuns, statuses, pullRequest.headSha);
+  return normalizeRequiredChecks(protection, { checkRuns, statuses, headSha: pullRequest.headSha });
 }
 
 // Judges a merged pull request. Branch protection keeps no history, so the required set read here is

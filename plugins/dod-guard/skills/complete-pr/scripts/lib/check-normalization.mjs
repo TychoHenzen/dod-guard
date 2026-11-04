@@ -16,48 +16,52 @@ function normalizeState(value) {
   return value?.toUpperCase() ?? null;
 }
 
-function normalizeCheckRun(run, headSha) {
-  let state = normalizeState(run.conclusion ?? run.status);
-  let bucket = "unknown";
-
-  if (run.head_sha !== headSha) {
-    state = "STALE_HEAD";
-  } else if (normalizeState(run.status) !== "COMPLETED") {
-    if (PENDING_CHECK_STATUSES.has(normalizeState(run.status))) {
-      bucket = "pending";
-    }
-  } else if (PASSING_CHECK_CONCLUSIONS.has(state)) {
-    bucket = "pass";
-  } else if (FAILED_CHECK_CONCLUSIONS.has(state)) {
-    bucket = "fail";
+function checkRunBucket(run, state) {
+  const status = normalizeState(run.status);
+  if (status !== "COMPLETED") {
+    return PENDING_CHECK_STATUSES.has(status) ? "pending" : "unknown";
   }
+  if (PASSING_CHECK_CONCLUSIONS.has(state)) {
+    return "pass";
+  }
+  return FAILED_CHECK_CONCLUSIONS.has(state) ? "fail" : "unknown";
+}
 
-  return { bucket, name: run.name, state };
+function normalizeCheckRun(run, headSha) {
+  if (run.head_sha !== headSha) {
+    return staleResult(run.name);
+  }
+  const state = normalizeState(run.conclusion ?? run.status);
+  return { bucket: checkRunBucket(run, state), name: run.name, state };
+}
+
+function commitStatusBucket(state) {
+  if (PASSING_STATUS_STATES.has(state)) {
+    return "pass";
+  }
+  if (PENDING_STATUS_STATES.has(state)) {
+    return "pending";
+  }
+  return FAILED_STATUS_STATES.has(state) ? "fail" : "unknown";
 }
 
 function normalizeCommitStatus(status, headSha) {
-  const state = normalizeState(status.state);
-  let bucket = "unknown";
-
   if (status.sha !== headSha) {
-    return { bucket, name: status.context, state: "STALE_HEAD" };
+    return staleResult(status.context);
   }
-  if (PASSING_STATUS_STATES.has(state)) {
-    bucket = "pass";
-  } else if (PENDING_STATUS_STATES.has(state)) {
-    bucket = "pending";
-  } else if (FAILED_STATUS_STATES.has(state)) {
-    bucket = "fail";
-  }
-
-  return { bucket, name: status.context, state };
+  const state = normalizeState(status.state);
+  return { bucket: commitStatusBucket(state), name: status.context, state };
 }
 
-function requiredCheckDefinitions(protection) {
-  if (Array.isArray(protection.checks) && protection.checks.length > 0) {
-    return protection.checks.map((check) => ({ name: check.context, appId: check.app_id ?? null }));
+function requiredCheckDefinition(check) {
+  return { name: check.context, appId: check.app_id ?? null };
+}
+
+function requiredCheckDefinitions({ checks, contexts }) {
+  if (Array.isArray(checks) && checks.length > 0) {
+    return checks.map(requiredCheckDefinition);
   }
-  return (protection.contexts ?? []).map((name) => ({ name, appId: null }));
+  return (contexts ?? []).map((name) => ({ name, appId: null }));
 }
 
 function duplicateResult(name) {
@@ -111,31 +115,45 @@ function providerConflictResult(name) {
   return { bucket: "unknown", name, state: "PROVIDER_CONFLICT" };
 }
 
-function providerRuns(definition, namedRuns, exactRuns, headSha) {
-  if (definition.appId === null || definition.appId === -1) {
-    if (exactRuns.length === 0 && namedRuns.length > 0) {
-      return { result: staleResult(definition.name) };
-    }
-    if (exactRuns.length > 1 && !oneProvider(exactRuns)) {
-      return { result: providerConflictResult(definition.name) };
-    }
-    return settleRepeatedRuns(definition.name, exactRuns, headSha);
-  }
+// A requirement that names no app, or the any-app id -1, accepts a run from any one provider.
+function acceptsAnyProvider(definition) {
+  return definition.appId === null || definition.appId === -1;
+}
 
-  const matches = exactRuns.filter((run) => String(run.app?.id) === String(definition.appId));
-  if (matches.length > 0 && exactRuns.length > matches.length) {
+// runs is { named, exact, headSha }: the check runs carrying the requirement's name, the subset on
+// the head being judged, and that head.
+function anyProviderRuns(name, { named, exact, headSha }) {
+  if (exact.length === 0 && named.length > 0) {
+    return { result: staleResult(name) };
+  }
+  if (exact.length > 1 && !oneProvider(exact)) {
+    return { result: providerConflictResult(name) };
+  }
+  return settleRepeatedRuns(name, exact, headSha);
+}
+
+function unmatchedProviderResult(name, { named, exact }) {
+  if (exact.length > 0) {
+    return { bucket: "unknown", name, state: "PROVIDER_MISMATCH" };
+  }
+  return named.length > 0 ? staleResult(name) : { bucket: "unknown", name, state: "MISSING" };
+}
+
+function expectedProviderRuns(definition, runs) {
+  const matches = runs.exact.filter((run) => String(run.app?.id) === String(definition.appId));
+  if (matches.length > 0 && runs.exact.length > matches.length) {
     return { result: providerConflictResult(definition.name) };
   }
   if (matches.length === 0) {
-    if (exactRuns.length > 0) {
-      return { result: { bucket: "unknown", name: definition.name, state: "PROVIDER_MISMATCH" } };
-    }
-    if (namedRuns.length > 0) {
-      return { result: staleResult(definition.name) };
-    }
-    return { result: { bucket: "unknown", name: definition.name, state: "MISSING" } };
+    return { result: unmatchedProviderResult(definition.name, runs) };
   }
-  return settleRepeatedRuns(definition.name, matches, headSha);
+  return settleRepeatedRuns(definition.name, matches, runs.headSha);
+}
+
+function providerRuns(definition, runs) {
+  return acceptsAnyProvider(definition)
+    ? anyProviderRuns(definition.name, runs)
+    : expectedProviderRuns(definition, runs);
 }
 
 function statusResults(name, namedStatuses, exactStatuses) {
@@ -167,12 +185,13 @@ function summarizeResults(name, results) {
   return { bucket: "pass", name, state: results[0].state };
 }
 
-function requiredCheckResult(definition, checkRuns, statuses, headSha) {
-  const namedRuns = checkRuns.filter((run) => run.name === definition.name);
-  const exactRuns = namedRuns.filter((run) => run.head_sha === headSha);
+// evidence is { checkRuns, statuses, headSha }: everything read for the one head being judged.
+function requiredCheckResult(definition, { checkRuns, statuses, headSha }) {
+  const named = checkRuns.filter((run) => run.name === definition.name);
+  const exact = named.filter((run) => run.head_sha === headSha);
   const namedStatuses = statuses.filter((status) => status.context === definition.name);
   const exactStatuses = namedStatuses.filter((status) => status.sha === headSha);
-  const runResult = providerRuns(definition, namedRuns, exactRuns, headSha);
+  const runResult = providerRuns(definition, { named, exact, headSha });
   if (runResult.result) {
     return runResult.result;
   }
@@ -181,7 +200,7 @@ function requiredCheckResult(definition, checkRuns, statuses, headSha) {
     return statusResult.result;
   }
   if (runResult.runs.length > 0 && statusResult.statuses.length > 0) {
-    return { bucket: "unknown", name: definition.name, state: "DUPLICATE" };
+    return duplicateResult(definition.name);
   }
   const results = [
     ...runResult.runs.map((run) => normalizeCheckRun(run, headSha)),
@@ -190,10 +209,8 @@ function requiredCheckResult(definition, checkRuns, statuses, headSha) {
   return summarizeResults(definition.name, results);
 }
 
-function normalizeRequiredChecks(protection, checkRuns, statuses, headSha) {
-  return requiredCheckDefinitions(protection).map((definition) =>
-    requiredCheckResult(definition, checkRuns, statuses, headSha),
-  );
+function normalizeRequiredChecks(protection, evidence) {
+  return requiredCheckDefinitions(protection).map((definition) => requiredCheckResult(definition, evidence));
 }
 
 export { normalizeCheckRun, normalizeRequiredChecks };

@@ -6,6 +6,16 @@ import { normalizeCheckRun, normalizeRequiredChecks } from "./check-normalizatio
 import { GitHubClient } from "./github-client.mjs";
 import { headShaField } from "./github-client.test-support.mjs";
 
+function protectedRun(id, conclusion, { status = "completed", appId = 15_368 } = {}) {
+  const run = { app: { id: appId }, conclusion, head_sha: "head-1", name: "build-test", status };
+  return id === undefined ? run : { id, ...run };
+}
+
+// Normalizes the requirement against the evidence read for head-1.
+function settle(protection, checkRuns, statuses = []) {
+  return normalizeRequiredChecks(protection, { checkRuns, statuses, headSha: "head-1" });
+}
+
 test("normalizes workflow run status with the same exact-head check rules", () => {
   const queuedRun = {
     conclusion: null,
@@ -32,7 +42,7 @@ test("normalizes workflow run status with the same exact-head check rules", () =
 
 test("normalizes exact-head provider checks and GitHub's passing conclusions", () => {
   assert.deepEqual(
-    normalizeRequiredChecks(
+    settle(
       {
         checks: [
           { context: "success", app_id: 15_368 },
@@ -46,7 +56,6 @@ test("normalizes exact-head provider checks and GitHub's passing conclusions", (
         { app: { id: 15_368 }, conclusion: "skipped", head_sha: "head-1", name: "skipped", status: "completed" },
       ],
       [],
-      "head-1",
     ),
     [
       { bucket: "pass", name: "success", state: "SUCCESS" },
@@ -59,42 +68,26 @@ test("normalizes exact-head provider checks and GitHub's passing conclusions", (
 test("fails closed for wrong providers, stale heads, and failed statuses", () => {
   const protection = { checks: [{ context: "build-test", app_id: 15_368 }] };
   assert.deepEqual(
-    normalizeRequiredChecks(
+    settle(
       protection,
       [{ app: { id: 57_789 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" }],
       [],
-      "head-1",
     ),
     [{ bucket: "unknown", name: "build-test", state: "PROVIDER_MISMATCH" }],
   );
   assert.deepEqual(
-    normalizeRequiredChecks(
+    settle(
       protection,
       [{ app: { id: 15_368 }, conclusion: "success", head_sha: "old-head", name: "build-test", status: "completed" }],
       [],
-      "head-1",
     ),
     [{ bucket: "unknown", name: "build-test", state: "STALE_HEAD" }],
   );
   assert.deepEqual(
-    normalizeRequiredChecks(
-      { contexts: ["build-test"] },
-      [],
-      [{ context: "build-test", sha: "head-1", state: "failure" }],
-      "head-1",
-    ),
+    settle({ contexts: ["build-test"] }, [], [{ context: "build-test", sha: "head-1", state: "failure" }]),
     [{ bucket: "fail", name: "build-test", state: "FAILURE" }],
   );
 });
-
-function protectedRun(id, conclusion, status = "completed", appId = 15_368) {
-  const run = { app: { id: appId }, conclusion, head_sha: "head-1", name: "build-test", status };
-  return id === undefined ? run : { id, ...run };
-}
-
-function settle(protection, runs, statuses = []) {
-  return normalizeRequiredChecks(protection, runs, statuses, "head-1");
-}
 
 test("settles repeated exact-head runs of one required check by the newest check-run id", () => {
   const expectedApp = { checks: [{ context: "build-test", app_id: 15_368 }] };
@@ -107,9 +100,10 @@ test("settles repeated exact-head runs of one required check by the newest check
   assert.deepEqual(settle(expectedApp, [protectedRun(101, "success"), protectedRun(102, "failure")]), [
     { bucket: "fail", name: "build-test", state: "FAILURE" },
   ]);
-  assert.deepEqual(settle(expectedApp, [protectedRun(101, "success"), protectedRun(102, null, "in_progress")]), [
-    { bucket: "pending", name: "build-test", state: "IN_PROGRESS" },
-  ]);
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(101, "success"), protectedRun(102, null, { status: "in_progress" })]),
+    [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }],
+  );
   assert.deepEqual(settle(expectedApp, [protectedRun(202, "success"), protectedRun(201, "failure")]), [
     { bucket: "pass", name: "build-test", state: "SUCCESS" },
   ]);
@@ -135,13 +129,13 @@ test("settles unordered repeated runs only when they agree", () => {
 test("keeps provider, stale-head, and status verdicts ahead of the newest-run rule", () => {
   const expectedApp = { checks: [{ context: "build-test", app_id: 15_368 }] };
   assert.deepEqual(
-    settle(expectedApp, [protectedRun(101, "success"), protectedRun(102, "success", "completed", 57_789)]),
+    settle(expectedApp, [protectedRun(101, "success"), protectedRun(102, "success", { appId: 57_789 })]),
     [{ bucket: "unknown", name: "build-test", state: "PROVIDER_CONFLICT" }],
   );
   assert.deepEqual(
     settle(expectedApp, [
-      protectedRun(101, "success", "completed", 57_789),
-      protectedRun(102, "success", "completed", 57_789),
+      protectedRun(101, "success", { appId: 57_789 }),
+      protectedRun(102, "success", { appId: 57_789 }),
     ]),
     [{ bucket: "unknown", name: "build-test", state: "PROVIDER_MISMATCH" }],
   );
@@ -156,7 +150,7 @@ test("keeps provider, stale-head, and status verdicts ahead of the newest-run ru
   assert.deepEqual(settle(anyApp, [protectedRun(101, "failure"), protectedRun(102, "success")]), [
     { bucket: "pass", name: "build-test", state: "SUCCESS" },
   ]);
-  assert.deepEqual(settle(anyApp, [protectedRun(101, "success"), protectedRun(102, "success", "completed", 57_789)]), [
+  assert.deepEqual(settle(anyApp, [protectedRun(101, "success"), protectedRun(102, "success", { appId: 57_789 })]), [
     { bucket: "unknown", name: "build-test", state: "PROVIDER_CONFLICT" },
   ]);
   const contextsOnly = { contexts: ["build-test"] };
@@ -190,45 +184,39 @@ test("keeps provider, stale-head, and status verdicts ahead of the newest-run ru
 
 test("covers missing, pending, provider-conflict, duplicate-source, and terminal boundaries", () => {
   const protectedCheck = { checks: [{ context: "build-test", app_id: 15_368 }] };
-  assert.deepEqual(normalizeRequiredChecks(protectedCheck, [], [], "head-1"), [
-    { bucket: "unknown", name: "build-test", state: "MISSING" },
-  ]);
+  assert.deepEqual(settle(protectedCheck, [], []), [{ bucket: "unknown", name: "build-test", state: "MISSING" }]);
   assert.deepEqual(
-    normalizeRequiredChecks(
+    settle(
       protectedCheck,
       [{ app: { id: 15_368 }, head_sha: "head-1", name: "build-test", status: "in_progress" }],
       [],
-      "head-1",
     ),
     [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }],
   );
   assert.deepEqual(
-    normalizeRequiredChecks(
+    settle(
       protectedCheck,
       [
         { app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
         { app: { id: 57_789 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
       ],
       [],
-      "head-1",
     ),
     [{ bucket: "unknown", name: "build-test", state: "PROVIDER_CONFLICT" }],
   );
   assert.deepEqual(
-    normalizeRequiredChecks(
+    settle(
       { contexts: ["build-test"] },
       [{ conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" }],
       [{ context: "build-test", sha: "head-1", state: "success" }],
-      "head-1",
     ),
     [{ bucket: "unknown", name: "build-test", state: "DUPLICATE" }],
   );
   assert.deepEqual(
-    normalizeRequiredChecks(
+    settle(
       { checks: [{ context: "build-test", app_id: -1 }] },
       [{ app: { id: 57_789 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" }],
       [],
-      "head-1",
     ),
     [{ bucket: "pass", name: "build-test", state: "SUCCESS" }],
   );
@@ -243,11 +231,10 @@ test("covers missing, pending, provider-conflict, duplicate-source, and terminal
   ];
   for (const [conclusion, bucket] of terminalCases) {
     assert.equal(
-      normalizeRequiredChecks(
+      settle(
         protectedCheck,
         [{ app: { id: 15_368 }, conclusion, head_sha: "head-1", name: "build-test", status: "completed" }],
         [],
-        "head-1",
       )[0].bucket,
       bucket,
     );

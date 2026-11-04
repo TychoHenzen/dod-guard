@@ -18,7 +18,8 @@ const READY_MUTATION = [
   "}",
 ].join(" ");
 
-function readMergeAfterFailure(repository, pullNumber, expectedHead, error, commandRunner) {
+// A guardedPull names one pull request and the head SHA the caller trusts: { repository, pullNumber, expectedHead }.
+function readMergeAfterFailure({ repository, pullNumber, expectedHead }, error, commandRunner) {
   let pullRequest;
   try {
     pullRequest = readPullRequest(repository, pullNumber, commandRunner);
@@ -50,23 +51,32 @@ function normalizePullRequestRefs(data, pullNumber, endpoint) {
   const prefix = `refs/pull/${pullNumber}/`;
   const seen = new Set();
   return data.map((ref) => {
-    if (!ref || typeof ref.ref !== "string" || !ref.ref.startsWith(prefix)) {
-      throw githubResponseContractError(endpoint, "well-formed pull-request refs");
-    }
-    const kind = ref.ref.slice(prefix.length);
-    if (!PULL_REQUEST_REF_KINDS.has(kind)) {
-      throw githubResponseContractError(endpoint, "only head and merge pull-request refs");
-    }
+    const kind = pullRequestRefKind(ref, prefix, endpoint);
     if (seen.has(ref.ref)) {
       throw githubResponseContractError(endpoint, "unique pull-request refs");
     }
     seen.add(ref.ref);
-    const sha = ref.object?.sha;
-    if (typeof sha !== "string" || sha.trim().length === 0) {
-      throw githubResponseContractError(endpoint, "pull-request refs with commit SHAs");
-    }
-    return { kind, ref: ref.ref, sha };
+    return { kind, ref: ref.ref, sha: pullRequestRefSha(ref, endpoint) };
   });
+}
+
+function pullRequestRefKind(ref, prefix, endpoint) {
+  if (!ref || typeof ref.ref !== "string" || !ref.ref.startsWith(prefix)) {
+    throw githubResponseContractError(endpoint, "well-formed pull-request refs");
+  }
+  const kind = ref.ref.slice(prefix.length);
+  if (!PULL_REQUEST_REF_KINDS.has(kind)) {
+    throw githubResponseContractError(endpoint, "only head and merge pull-request refs");
+  }
+  return kind;
+}
+
+function pullRequestRefSha(ref, endpoint) {
+  const sha = ref.object?.sha;
+  if (typeof sha !== "string" || sha.trim().length === 0) {
+    throw githubResponseContractError(endpoint, "pull-request refs with commit SHAs");
+  }
+  return sha;
 }
 
 function pullRequestRefsEndpoint(repository, pullNumber) {
@@ -84,22 +94,33 @@ function pullRequestState(data) {
   if (data.merged_at) {
     return "MERGED";
   }
-  return data.state?.toUpperCase() ?? null;
+  return upperOrNull(data.state);
+}
+
+// Reads the branch, repository, and SHA of a pull request's base or head ref, with null for each absent value.
+function refFields(ref) {
+  const { ref: branch = null, repo, sha = null } = ref ?? {};
+  return { branch, repository: repo?.full_name ?? null, sha };
+}
+
+function upperOrNull(value) {
+  return value?.toUpperCase() ?? null;
 }
 
 export function normalizePullRequest(data, repository) {
-  const headRepository = data.head?.repo?.full_name ?? null;
+  const base = refFields(data.base);
+  const head = refFields(data.head);
 
   return {
-    baseBranch: data.base?.ref ?? null,
-    baseSha: data.base?.sha ?? null,
-    headBranch: data.head?.ref ?? null,
-    headRepository,
-    headSha: data.head?.sha ?? null,
-    isCrossRepository: headRepository !== repository,
+    baseBranch: base.branch,
+    baseSha: base.sha,
+    headBranch: head.branch,
+    headRepository: head.repository,
+    headSha: head.sha,
+    isCrossRepository: head.repository !== repository,
     isDraft: data.draft === true,
     mergeCommitSha: data.merge_commit_sha ?? null,
-    mergeState: data.mergeable_state?.toUpperCase() ?? null,
+    mergeState: upperOrNull(data.mergeable_state),
     mergeable: mergeableName(data.mergeable),
     number: data.number,
     state: pullRequestState(data),
@@ -143,7 +164,8 @@ export function markReady(repository, pullNumber, commandRunner) {
   }
 }
 
-export function mergePullRequest(repository, pullNumber, expectedHead, commandRunner) {
+export function mergePullRequest(guardedPull, commandRunner) {
+  const { repository, pullNumber, expectedHead } = guardedPull;
   let data;
   try {
     ({ data } = ghJson(
@@ -161,7 +183,7 @@ export function mergePullRequest(repository, pullNumber, expectedHead, commandRu
       commandRunner,
     ));
   } catch (error) {
-    return readMergeAfterFailure(repository, pullNumber, expectedHead, error, commandRunner);
+    return readMergeAfterFailure(guardedPull, error, commandRunner);
   }
 
   if (data?.merged !== true) {
@@ -171,7 +193,7 @@ export function mergePullRequest(repository, pullNumber, expectedHead, commandRu
   return data;
 }
 
-export function updateBranch(repository, pullNumber, expectedHead, commandRunner) {
+export function updateBranch({ repository, pullNumber, expectedHead }, commandRunner) {
   commandRunner([
     "api",
     "--method",
