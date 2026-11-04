@@ -15,19 +15,18 @@ const DIFF = [...hunk(PROOF, 90), ...hunk(SOURCE, 12)].join("\n");
 const PLAN = [
   {
     slot: `file:${PROOF}`,
-    questions: [
-      question("F1", "review-pr-feature"),
-      question("R1", "review-pr-reliability"),
-      question("H1", "review-pr-hygiene"),
-    ],
+    questions: [question("F1", "review-pr-feature"), question("H1", "review-pr-hygiene")],
   },
-  { slot: `file:${SOURCE}`, questions: [question("D1", "review-pr-design")] },
+  {
+    slot: `file:${SOURCE}`,
+    questions: [question("D1", "review-pr-design"), question("R1", "review-pr-reliability")],
+  },
   { slot: "criterion:1", questions: [question("F2", "review-pr-feature")] },
 ];
 const ASSIGNED = new Map([
   ["review-pr-feature", new Set([`file:${PROOF}`, "criterion:1"])],
   ["review-pr-design", new Set([`file:${SOURCE}`])],
-  ["review-pr-reliability", new Set([`file:${PROOF}`])],
+  ["review-pr-reliability", new Set([`file:${SOURCE}`])],
   ["review-pr-hygiene", new Set([`file:${PROOF}`])],
 ]);
 const FEATURE = judgment(PROOF, {

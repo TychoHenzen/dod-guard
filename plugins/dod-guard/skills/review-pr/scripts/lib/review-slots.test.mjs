@@ -140,7 +140,7 @@ test("an empty diff stops slot generation", () => {
 });
 
 test("stops when every changed file is generated", () => {
-  const DIST_ONLY = [
+  const DistOnly = [
     "diff --git a/packages/a/dist/bundle.js b/packages/a/dist/bundle.js",
     "--- a/packages/a/dist/bundle.js",
     "+++ b/packages/a/dist/bundle.js",
@@ -151,7 +151,7 @@ test("stops when every changed file is generated", () => {
   assert.throws(
     () =>
       reviewSlots({
-        changedLines: parseChangedLines(DIST_ONLY),
+        changedLines: parseChangedLines(DistOnly),
         pbi: pbiIssue(PBI_JSON, "pbi.json"),
         subIssues: [],
       }),
@@ -292,6 +292,28 @@ test("a lens with no question or exclusion is refused", () => {
   const plan = PLAN();
   plan[2].excluded.lens = "review-pr-design";
   assert.throws(() => requirePlan(plan, SLOTS), /No question or exclusion for review-pr-hygiene/);
+});
+
+test("a slot with three questions is refused and names the limit", () => {
+  const plan = PLAN();
+  plan[0].questions.push(q("F3", "review-pr-style"));
+  assert.throws(() => requirePlan(plan, SLOTS), /Slot file:src\/a\.mjs has 3 questions; the limit is 2/);
+});
+
+test("a slot with two questions is accepted", () => {
+  assert.doesNotThrow(() => requirePlan(PLAN(), SLOTS));
+});
+
+test("a question of 241 characters is refused and names the limit", () => {
+  const plan = PLAN();
+  plan[1].questions[0].question = "x".repeat(241);
+  assert.throws(() => requirePlan(plan, SLOTS), /is 241 characters; the limit is 240/);
+});
+
+test("a question of 240 characters is accepted", () => {
+  const plan = PLAN();
+  plan[1].questions[0].question = "x".repeat(240);
+  assert.doesNotThrow(() => requirePlan(plan, SLOTS));
 });
 
 test("slotsBlock lists every slot with its questions or exclusion, escaped", () => {

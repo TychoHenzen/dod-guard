@@ -100,6 +100,11 @@ function reviewSlots({ changedLines, pbi, subIssues }) {
 // answerable from the repository.
 const STATUSES = Object.freeze(["verified", "repaired", "unanswered"]);
 
+// A slot holds at most two questions, and each question fits one 240-character
+// line of the review body.
+const MAX_QUESTIONS_PER_SLOT = 2;
+const MAX_QUESTION_CHARS = 240;
+
 function oneLine(value) {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
 }
@@ -158,6 +163,10 @@ function requireQuestion(question, slot, ids) {
     );
   }
   const id = oneLine(question.id);
+  const length = oneLine(question.question).length;
+  if (length > MAX_QUESTION_CHARS) {
+    throw new Error(`Question ${id} in slot ${slot} is ${length} characters; the limit is ${MAX_QUESTION_CHARS}`);
+  }
   if (ids.has(id)) {
     throw new Error(`Question ${id} appears more than once`);
   }
@@ -183,6 +192,9 @@ function requirePlanEntries(plan, generated) {
     }
     planned.add(slot);
     requireEntryShape(entry);
+    if (Array.isArray(entry.questions) && entry.questions.length > MAX_QUESTIONS_PER_SLOT) {
+      throw new Error(`Slot ${slot} has ${entry.questions.length} questions; the limit is ${MAX_QUESTIONS_PER_SLOT}`);
+    }
     for (const question of entry.questions ?? []) {
       requireQuestion(question, slot, ids);
     }
@@ -253,4 +265,13 @@ function slotsByLens(plan) {
   return byLens;
 }
 
-export { pbiIssue, requirePlan, reviewSlots, slotsBlock, slotsByLens, subIssueList };
+export {
+  MAX_QUESTION_CHARS,
+  MAX_QUESTIONS_PER_SLOT,
+  pbiIssue,
+  requirePlan,
+  reviewSlots,
+  slotsBlock,
+  slotsByLens,
+  subIssueList,
+};

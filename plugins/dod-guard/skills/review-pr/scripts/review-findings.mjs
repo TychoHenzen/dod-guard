@@ -11,6 +11,7 @@ import { parseArgs } from "../../../lib/args.mjs";
 import { readJsonFile, readTextFile } from "../../../lib/read-text.mjs";
 import { candidates, pbiInputs, violations } from "./lib/candidate-commands.mjs";
 import { ignoredPaths, scanArguments } from "./lib/ignored-paths.mjs";
+import { checkPlan } from "./lib/plan-check.mjs";
 import { applyRepoLimits, repoLimits } from "./lib/repo-limits.mjs";
 import { buildReview, existingReview, postedFindings } from "./lib/review-findings.mjs";
 import { reviewSlots } from "./lib/review-slots.mjs";
@@ -30,6 +31,8 @@ const USAGE = [
   "  review-findings.mjs candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<issue.json>",
   "    --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json>",
   "    --out=<candidates.json>",
+  "  review-findings.mjs check-plan --slots=<slots.json> --violations=<violations.json>",
+  "    --plan=<plan.json>",
   "  review-findings.mjs build --head=<sha> --scan=<scan.json> --diff=<unified0.diff>",
   "    --pbi=<issue.json> --sub-issues=<sub-issues.json> --plan=<plan.json>",
   "    --results=<results.json> --merge=<merge.json> --out=<payload.json>",
@@ -113,6 +116,7 @@ const COMMANDS = {
   },
   violations,
   candidates,
+  "check-plan": checkPlan,
   build: (args) => {
     const review = buildReview({
       headSha: args.head,
@@ -147,6 +151,7 @@ const REQUIRED = {
   slots: ["diff", "pbi", "sub-issues", "out"],
   violations: ["scan", "diff", "out"],
   candidates: ["scan", "diff", "pbi", "sub-issues", "plan", "results", "out"],
+  "check-plan": ["slots", "violations", "plan"],
   build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "merge", "out", "scanner-comments-out"],
   label: ["review-id", "comments", "out"],
   report: ["review-id", "comments"],

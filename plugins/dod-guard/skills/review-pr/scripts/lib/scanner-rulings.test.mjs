@@ -8,11 +8,11 @@ const { FIX, UNICODE, PLAN, scan, review, refuses } = findingsFixture;
 
 // The fixture scan gives three in-scope violations, numbered by file then line:
 // S1 file-length (medium) in the docs file, S2 complexity (medium) and S3
-// line-length (high) in FIX. Each DROP rests on a question asked about its own
-// file: D1 (FIX slot) for S3, R1 (docs slot) for S1.
+// line-length (high) in FIX. Each file asks one scanner question naming all of
+// its S ids: D1 (FIX slot) for S2 and S3, R1 (docs slot) for S1. Each DROP rests
+// on the question asked about its own file.
 const ANSWERS = {
-  D1: { status: "verified", scanner: ["S3"] },
-  F1: { status: "verified", scanner: ["S2"] },
+  D1: { status: "verified", scanner: ["S2", "S3"] },
   R1: { status: "verified", scanner: ["S1"] },
 };
 function changeQuestions(plan, change) {

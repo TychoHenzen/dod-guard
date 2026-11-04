@@ -263,6 +263,31 @@ test("build names a missing PBI file", () => {
   });
 });
 
+test("check-plan without --plan prints usage", () => {
+  withDir((dir) => {
+    const slots = write(dir, "slots.json", []);
+    const violations = write(dir, "violations.json", []);
+    const result = run(["check-plan", `--slots=${slots}`, `--violations=${violations}`]);
+    assert.equal(result.status, 3);
+    assert.ok(result.stderr.includes("check-plan"), result.stderr);
+  });
+});
+
+test("build refuses an over-limit plan", () => {
+  withDir((dir) => {
+    const first = PLAN[0];
+    const crowded = [
+      { ...first, questions: [...first.questions, question("F3", "review-pr-feature")] },
+      ...PLAN.slice(1),
+    ];
+    const paths = { ...buildFlags(dir), plan: write(dir, "crowded-plan.json", crowded) };
+    const result = run(["build", ...buildArgs(paths)]);
+    assert.notEqual(result.status, 0);
+    assert.ok(result.stderr.includes("the limit is 2"), result.stderr);
+    assert.equal(existsSync(paths.out), false);
+  });
+});
+
 test("build refuses a flag it does not take", () => {
   withDir((dir) => {
     const result = run(["build", ...buildArgs(buildFlags(dir)), "--extra=1"]);

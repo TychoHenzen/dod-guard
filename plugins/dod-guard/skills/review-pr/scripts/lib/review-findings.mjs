@@ -248,4 +248,4 @@ function postedFindings(reviewId, reviewComments) {
     }));
 }
 
-export { buildReview, existingReview, postedFindings };
+export { buildReview, existingReview, postedFindings, requirePostableBody };

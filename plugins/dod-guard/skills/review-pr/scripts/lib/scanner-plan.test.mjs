@@ -52,6 +52,34 @@ test("an S id in another file than the slot is refused with both file names", ()
   );
 });
 
+test("two scanner questions in one file slot are refused", () => {
+  const scanner = [...SCANNER, { id: "S3", file: "a.mjs" }];
+  const two = plan([
+    { id: "D1", scanner: ["S1", "S3"] },
+    { id: "D2", scanner: ["S1", "S3"] },
+  ]);
+  assert.throws(
+    () => requireScannerQuestions(two, scanner),
+    refuses("slot file:a.mjs has 2 scanner questions; ask one per file"),
+  );
+});
+
+test("a scanner question that omits an S id of its file is refused", () => {
+  const scanner = [...SCANNER, { id: "S3", file: "a.mjs" }];
+  const partial = plan([{ id: "D1", scanner: ["S1"] }]);
+  assert.throws(() => requireScannerQuestions(partial, scanner), refuses("question D1 omits S3 from a.mjs"));
+});
+
+test("one scanner question naming every S id of its file passes", () => {
+  const scanner = [...SCANNER, { id: "S3", file: "a.mjs" }];
+  const full = plan([{ id: "D1", scanner: ["S3", "S1"] }]);
+  assert.doesNotThrow(() => requireScannerQuestions(full, scanner));
+});
+
+test("a file with violations and no scanner question passes", () => {
+  assert.doesNotThrow(() => requireScannerQuestions(plan([{ id: "D1" }]), SCANNER));
+});
+
 test("two problems are named in one message", () => {
   const two = plan([
     { id: "D1", scanner: ["S2"] },
