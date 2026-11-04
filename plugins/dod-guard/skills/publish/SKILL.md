@@ -109,11 +109,8 @@ Run it from the repo root. It checks that package, Claude, Codex, and adapter ve
     Codex: codex plugin marketplace upgrade dod-guard-monorepo
     Codex: codex plugin add dod-guard@dod-guard-monorepo
     ```
-    If the machine runs the shared MCP host, restart only these two apps, and only after both refreshes succeed. A machine without those apps does nothing, and no other PM2 process restarts.
-    ```text
-    pm2 restart dod-guard-quality-guard dod-guard-knowledge-base --update-env
-    ```
-11. On Windows PowerShell, after the refreshes and any restart, run the read-only verification. It checks heads, protection, the four checks on the published SHA, and both client registrations against `ExpectedVersion`, and fails closed on missing, stale, or mismatched evidence.
+    `quality-guard` and `knowledge-base` start over stdio from each client's plugin manifest, so `/reload-plugins` or a client restart picks up the new bundle and no process restart is needed.
+11. On Windows PowerShell, after the refreshes, run the read-only verification. It checks heads, protection, the four checks on the published SHA, and both client registrations against `ExpectedVersion`, and fails closed on missing, stale, or mismatched evidence.
     ```powershell
     . "<skill-dir>/scripts/release-verification.ps1"
     $verification = Invoke-ReleaseVerification `
