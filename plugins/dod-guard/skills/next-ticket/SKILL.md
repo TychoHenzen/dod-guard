@@ -13,7 +13,7 @@ Resolve the plugin root from this skill's directory. Before editing, read `stand
 
 - The current directory must be inside a Git worktree.
 - Run `git worktree list --porcelain`. Work in the first entry, the main checkout, when it can safely create the branch from the fetched default. If it is locked, unavailable, active, or unsafe and user-owned, stop and report the reason, the checkout, and the recovery path.
-- "Unsafe and user-owned" means pending paths that cannot be classified as in scope, or a checkout whose HEAD is not on the default branch and holds unpushed commits.
+- "Unsafe and user-owned" means pending paths that cannot be classified as in scope, or a checkout whose HEAD is not on the default branch and holds unpushed commits. A resumed ticket's own `codex/<issue-number>-<slug>` branch, checked out under "Resume", and its own unpushed commits are not unsafe. Any other branch or unpushed commit stays unsafe.
 - Never create a worktree.
 - Run `git status --short --branch` and classify every pending path. A dirty tree alone is not a blocker.
 - Ordinary changes that clearly belong to the work stay uncommitted until the ticket branch exists, then are committed there. Never commit them on the current or default branch to clear status.
