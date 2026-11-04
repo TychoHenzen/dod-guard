@@ -37,16 +37,17 @@ After the final report, a goal whose condition is not met keeps starting
 turns. Then:
 
 1. Say once that only `/goal clear` ends the goal.
-2. Start one bounded sound command as a background shell task, then end the
-   turn without starting work. Each command plays a sound every five minutes
-   for up to two hours:
+2. Start the reminder as one background shell task, then end the turn without
+   starting work. It sounds every five minutes for up to two hours, records its
+   own PID in `dod-guard-goal-stop.pid` in the system temp directory, and ends
+   by itself:
 
    ```text
-   Windows PowerShell: 1..24 | ForEach-Object { [console]::beep(880,400); Start-Sleep -Seconds 300 }
-   macOS:              for i in $(seq 24); do afplay /System/Library/Sounds/Ping.aiff; sleep 300; done
-   Linux:              for i in $(seq 24); do paplay /usr/share/sounds/freedesktop/stereo/bell.oga; sleep 300; done
+   node <plugin-root>/skills/goal-sdlc/scripts/goal-stop-beep.mjs start
    ```
 
+   Resolve `<plugin-root>` from the loaded skill's base directory. The process
+   survives a Claude Code restart, so the PID file is the only handle on it.
 3. Claude Code skips the goal check for a turn that ends while that command
    runs, but an idle check-in still starts a turn after 30 minutes, then
    after one and two more hours, at most three between user prompts. In such
@@ -55,5 +56,15 @@ turns. Then:
 4. When the command finishes before the user returns, do not restart it. End
    each later turn in one line without tool use; after several such turns,
    Claude Code returns control to the user with the goal still set.
-5. When the user next speaks, stop that sound command and confirm it stopped
-   before acting on their message.
+5. Stop the reminder first, before any other work, in each of these cases: the
+   user next speaks, and any new turn or session of a goal run that starts with
+   no reminder task of its own (a restart leaves the old process running). Run
+   the stop command and read its output before acting on the message:
+
+   ```text
+   node <plugin-root>/skills/goal-sdlc/scripts/goal-stop-beep.mjs stop
+   ```
+
+   It prints `stopped`, `gone`, `stale`, `unreadable`, or `none`. A record older
+   than two hours and five minutes is deleted without killing anything, because
+   its PID may belong to another process by then.
