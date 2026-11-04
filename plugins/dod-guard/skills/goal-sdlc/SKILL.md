@@ -64,7 +64,7 @@ Agent names take the `dod-guard:` prefix.
 | submit-draft-pr | cheap | stage-cheap-skill | Skill `dod-guard:submit-draft-pr <issue>` |
 | review-pr owner thread | cheap | stage-cheap-skill | Skill `dod-guard:review-pr <pull-request>` |
 | review-pr plan | standard | read-standard | Step 5 "Plan" |
-| review-pr investigate | cheap | read-cheap | Step 5 "Investigate" |
+| review-pr investigate | cheap | stage-cheap | Step 5 "Investigate" and "Investigator batch" |
 | review-pr judge and merge pass | standard | review-pr-feature, review-pr-design, review-pr-reliability, review-pr-hygiene; merge pass on read-standard | Step 5 "Judge" and "Merge" |
 | fix-pr-review owner thread | standard | stage-standard | Skill `dod-guard:fix-pr-review <pull-request> <finding-ids>` |
 | fix-pr-review apply written per-finding fix | cheap | stage-cheap | Follow fix plan in <scratch file>, saved unchanged |
