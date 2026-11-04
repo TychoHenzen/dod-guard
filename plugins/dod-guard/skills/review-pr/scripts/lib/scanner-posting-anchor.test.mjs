@@ -42,7 +42,7 @@ test("a MAJOR scanner group on a file with added lines moves to that file's near
     payload.comments.map((comment) => [comment.path, comment.line]),
     [[ADDED, 10]],
   );
-  const cited = `Cited location: \`${ADDED}:600\`, which this PR does not change\\.`;
+  const cited = `Cited location: \`${ADDED}:600\`, which is outside the lines this PR changes\\.`;
   assert.match(payload.comments[0].body, new RegExp(cited));
   assert.ok(payload.comments.every((comment) => comment.path !== REMOVED));
   const unanchored = `\`${ADDED}:600\` (no added line to anchor on)`;

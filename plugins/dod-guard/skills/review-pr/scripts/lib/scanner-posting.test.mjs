@@ -52,3 +52,20 @@ test("370 dropped violations across 14 files build a body under 65536 characters
   assert.ok(payload.body.includes("<summary>Dropped scanner findings (370)</summary>"));
   assert.ok(payload.body.length < 65_536, `body is ${payload.body.length} characters`);
 });
+
+// Past PR 48 scale: there the dropped block alone was 70713 characters and the
+// 98334-character body was refused. Each file's question cites its own S ids.
+test("5000 dropped violations across 200 files still build a postable body", () => {
+  const files = Array.from({ length: 200 }, (_, index) => `src/Game/Model/Some/Long/Path/Component-${index}.cs`);
+  const violations = Array.from({ length: 5000 }, (_, index) => ({
+    file: files[index % files.length],
+    line: 100 + index,
+    rule: RULES[index % RULES.length],
+    severity: "medium",
+    message: `component${index} is too long for the default limit`,
+  }));
+  const drop = (ids, index) => ({ ids, status: "DROP", reason: "rule-misfire", answer: `Q${index + 1}` });
+  const { payload } = scannerReview({ files, line: 10, violations, rule: drop });
+  assert.ok(payload.body.includes("<summary>Dropped scanner findings (5000)</summary>"));
+  assert.ok(payload.body.length < 65_536, `body is ${payload.body.length} characters`);
+});

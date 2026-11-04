@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { createNativeBackendInspector } from "../../src/semantic/adapters/native-backend-inspector.js";
+import {
+  createNativeBackendInspector,
+} from "../../src/semantic/adapters/native-backend-inspector.js";
 
 it("does not authorize a backend from a \
 project or ambient-PATH-like executable", () => {
@@ -23,7 +25,7 @@ it("resolves Roslyn from the pinned dotnet tool-store payload only", () => {
   );
   assert.ok(
     identity?.canonical_path?.includes(
-      "\\.store\\roslyn-language-server\\5.11.0-1.26380.4\\",
+      "\\.store\\roslyn-language-server\\5.13.0-1.26514.10\\",
     ),
   );
   assert.equal(

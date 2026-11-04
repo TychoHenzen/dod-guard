@@ -69,6 +69,8 @@ test("scan reads a plugin list saved with a UTF-8 byte-order mark or as marked U
         scanner: `${dir.replaceAll("\\", "/")}/skills/quality-refactor/scripts/quality-scan.mjs`,
         out,
         violations: 0,
+        ruleFloors: {},
+        removedByRepoLimits: {},
       });
     });
   }

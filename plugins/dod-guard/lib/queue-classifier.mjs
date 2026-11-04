@@ -198,12 +198,24 @@ function groupEvidence(records, context) {
   return { reasons, uniqueStatuses, merged };
 }
 
+function notPlannedReason(issueNumber, projectStatus) {
+  if (doneStatus(projectStatus)) return `issue #${issueNumber} is closed as not planned, but its group is not settled`;
+  const status = normalizedStatus(projectStatus) ?? "missing";
+  return `issue #${issueNumber} is closed as not planned but its Project status is ${status}, not Done`;
+}
+
+// A close as not planned owes no delivery, so its hold names what is still wrong instead of a missing
+// delivery: a Project status that is not Done, or a group that is not settled.
+function closedReason({ issueNumber, issue, projectStatus }) {
+  const reason = String(issue?.stateReason ?? "").toLowerCase();
+  if (NOT_PLANNED.has(reason)) return notPlannedReason(issueNumber, projectStatus);
+  return `issue #${issueNumber} is closed without a verified merged delivery`;
+}
+
 // A closed issue with no verified merged delivery holds its group. A friction log still collecting entries
 // is named first, so the reason order stays what it has always been.
 function closedIssueDecision(records, reasons, context) {
-  const closed = records
-    .filter((record) => issueState(record.issue) === "CLOSED")
-    .map((record) => `issue #${record.issueNumber} is closed without a verified merged delivery`);
+  const closed = records.filter((record) => issueState(record.issue) === "CLOSED").map(closedReason);
   if (closed.length === 0) return null;
   const collecting = typeof context.today === "string" && collectingFrictionLog(records, context.today);
   return hold([...reasons, ...(collecting ? ["friction log still collecting entries"] : []), ...closed]);
@@ -236,10 +248,29 @@ function unmergedDecision(records, context, evidence) {
   ]);
 }
 
+// A closed umbrella parent is delivered by its children, not by one pull request of its own. It is
+// complete when its root has children, every record of the group is settled (closed as completed, and
+// Done where it is a Project item), and no pull request of the group is still open. A closed issue is
+// not asked for an explicit false checkpoint, because handoffs older than the marker cannot carry one,
+// but an explicitly active checkpoint or a relationship hold still stops the shortcut.
+// A root closed as not planned and Done, with every sub-issue settled, is retired on purpose: it is
+// complete with or without children, because no delivery was ever owed for it.
+function settledUmbrella(records) {
+  const root = records.find(({ parentIssueNumber }) => parentIssueNumber === null);
+  const delivered = root?.hasChildren === true && root.settled === true;
+  const retired = root?.retired === true && doneStatus(root.projectStatus);
+  if (!delivered && !retired) return false;
+  if (!records.every(({ settledSub }) => settledSub === true)) return false;
+  // Relationship, parent, and checkpoint evidence still holds: only the merged-delivery rules are relaxed.
+  if (recordReasons(records).reasons.length > 0) return false;
+  return !records.some(({ pullRequests }) => pullRequests.some((pull) => pullRequestState(pull) === "OPEN"));
+}
+
 // A merged delivery is judged by its completion evidence alone, so it is either complete or held and
 // is never queued as work.
 function decideGroup(records, context) {
   if (!Array.isArray(records) || records.length === 0) return hold(["delivery record missing"]);
+  if (settledUmbrella(records)) return mergedDecision([]);
   const evidence = groupEvidence(records, context);
   return evidence.merged.length > 0 ? mergedDecision(evidence.reasons) : unmergedDecision(records, context, evidence);
 }
@@ -265,6 +296,7 @@ function issueRecord(number, issue, overlay) {
     number,
     state: issue.state,
     title: issue.title ?? null,
+    stateReason: stringOrNull(issue.state_reason ?? issue.stateReason),
     activeCheckpoint: booleanOrNull(overlay ? overlay.checkpoints.get(number) : issue.activeCheckpoint),
     blockedBy: listOrNull(issue.blockedBy),
     body: stringOrNull(issue.body),
@@ -322,13 +354,42 @@ function missingEvidenceOf(index, number, item, issue, parentIssueFieldObserved)
   ) {
     entries.push(`contradictory parent for issue #${number}`);
   }
-  if (issue !== null && Array.isArray(issue.children)) {
+  // A settled subtree needs no Project item per sub-issue: each was read and found closed as completed.
+  if (issue !== null && Array.isArray(issue.children) && !settledSubIssue(index, number)) {
     for (const child of issue.children.filter((reference) => isTargetReference(reference, index.target))) {
       if (itemFor(index, numberOf(child)) === null) entries.push(`child issue #${numberOf(child)} Project item`);
     }
   }
   return [...new Set(entries)];
 }
+
+// An issue is settled when it is closed with a recorded reason, is Done when it is a Project item, and
+// every sub-issue it lists is a target-repository issue that is settled too. The top issue must have
+// been closed as completed; a sub-issue may also be closed as not planned, which is how a superseded
+// child is retired. A sub-issue that is not a Project item is judged by its closed state alone.
+// Anything unread (no issue, no child list, a sub-issue of another repository, a cycle, a closed
+// issue with no recorded reason) is not settled.
+const COMPLETED = new Set(["completed"]);
+const SETTLED_SUB_ISSUE_REASONS = new Set(["completed", "not_planned"]);
+const NOT_PLANNED = new Set(["not_planned"]);
+
+function settledWith(reasons, index, number, path) {
+  const issue = issueFor(index, number);
+  if (issue === null || path.includes(number)) return false;
+  if (issueState(issue) !== "CLOSED" || !reasons.has(issue.state_reason ?? issue.stateReason)) return false;
+  const item = itemFor(index, number);
+  if (item !== null && !doneStatus(itemStatus(item))) return false;
+  if (!Array.isArray(issue.children)) return false;
+  return issue.children.every(
+    (child) =>
+      isTargetReference(child, index.target) &&
+      settledWith(SETTLED_SUB_ISSUE_REASONS, index, numberOf(child), [...path, number]),
+  );
+}
+
+const settledIssue = (index, number) => settledWith(COMPLETED, index, number, []);
+const settledSubIssue = (index, number) => settledWith(SETTLED_SUB_ISSUE_REASONS, index, number, []);
+const retiredIssue = (index, number) => settledWith(NOT_PLANNED, index, number, []);
 
 // The Project's Parent issue field decides the parent whenever it is present, even when null, so an
 // issue whose own parent disagrees with the field is held instead of read under either parent.
@@ -345,6 +406,10 @@ function recordFor(index, number, overlay) {
     parentIssueNumber,
     parentItemMissing: parentIssueNumber !== null && itemFor(index, parentIssueNumber) === null,
     projectStatus: itemStatus(item),
+    settled: settledIssue(index, number),
+    settledSub: settledSubIssue(index, number),
+    retired: retiredIssue(index, number),
+    hasChildren: Array.isArray(issue?.children) && issue.children.length > 0,
     issue: issue === null ? null : issueRecord(number, issue, overlay),
     pullRequests: pullRequestRecords(index, item, overlay),
     relationHolds: relationReasons(index, number),
@@ -528,4 +593,4 @@ function classifyQueue(snapshot, { today }) {
   return { groups, selected, counts, missingEvidence };
 }
 
-export { buildQueueRecords, classifyDelivery, classifyQueue };
+export { buildQueueRecords, classifyDelivery, classifyQueue, requiredChecksComplete };

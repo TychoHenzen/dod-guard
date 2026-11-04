@@ -55,6 +55,8 @@ node "<skill-dir>/scripts/review-findings.mjs" violations --scan=<scan.json> --d
 
 Save the client's plugin list and check its exit status. Write it from a POSIX shell (`claude plugin list --json > plugins.json`), or in PowerShell with `claude plugin list --json | Out-File -Encoding utf8 plugins.json`. `scan` also reads the UTF-8 BOM and UTF-16 BOM that Windows PowerShell 5.1 `>` writes, and refuses any other encoding with the file path in its message. `scan` finds the installed quality-guard from it. Stop if quality-guard is missing or the scan fails. When the Claude list shows it installed but disabled, the scan error names `claude plugin enable <id>`: report that command and stop; never enable the plugin yourself. Never guess a cache path. The scan covers the whole repository, since a changed-files-only scan would call every export dead. It skips the checkout's gitignored paths, so build output such as `dist-test/` is never judged.
 
+`scan` then applies the repository's own limits in place of the scanner's defaults (width 80, file length 100), and prints what it removed. A `line-length` finding on a file with no formatter width is rejudged at the width the root `.editorconfig` `max_line_length` sets for that file (`off` removes it). Each `--rule-block-on=<rule>:<severity>` flag that a `.github/workflows/*.yml` step running `quality-pr-gate.mjs` passes removes that rule's findings below the severity; comment lines are ignored. The gate's global `--block-on` and its `--root` scopes are not applied. Never pass gate flags to `scan`: it takes only `--client`, `--registry`, `--root` (the repository), and `--out`, and reads the rest from the repository.
+
 Structural rules cover each whole changed file, including pre-PR content. Line-level rules (`line-length`, comment rules) cover only added lines. `violations` numbers the in-scope ones S1..Sn.
 
 ## 5. Plan, investigate, verify, judge, merge
@@ -113,21 +115,44 @@ With no finding and no violation, write `{ "groups": [], "scanner": [] }` and sk
 ## 6. Build and post
 
 ```
-node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --out=<payload.json>
+node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --out=<payload.json> --scanner-comments-out=<scanner-comments.json>
 gh api --method POST "repos/{owner}/{repo}/pulls/{n}/reviews" --input <payload.json>
 ```
 
-`build` regenerates ids and slots from its own inputs, validates the plan, results, and merge file, and prints the recommendation and severity counts. If the body would pass 65536 characters, it refuses: shorten question text in the saved plan and rebuild.
+`build` regenerates ids and slots from its own inputs, validates the plan, results, and merge file, and prints the recommendation and severity counts. Scanner findings are summarized per file in the body and inline comments (counts by severity and rule, the first five by line), under a fixed budget. When anything was summarized, `build` also writes the full kept-violation list to `<scanner-comments.json>`, a JSON array of `{ "body": ... }` parts that each start with a `<!-- dod-guard:review-pr-scanner head=<sha> part=<i>/<n> -->` marker; an empty array means nothing was summarized. Dropped scanner findings are listed in a collapsed block as counts and S id ranges per file, rule, and cited answer, with cited question text shortened, under a fixed 12000-character budget; files past it are counted in one overflow line. If the body would still pass 65536 characters, it refuses: shorten question text in the saved plan and rebuild.
 
-BLOCKER and MAJOR findings are inline comments, each with a `GH-<id>`. MINOR findings go in "Minor notes" in the body. A file's scanner findings are MAJOR when any is `high`, else MINOR. Any BLOCKER gives `BLOCK`, else any MAJOR gives `REQUEST_CHANGES`, else `APPROVE`. The body carries the marker `<!-- dod-guard:review-pr head=<sha> recommendation=<REC> -->` that step 2 detects.
+BLOCKER and MAJOR findings are inline comments, each with a `GH-<id>` that the label step appends to the comment body after the post. MINOR findings go in "Minor notes" in the body. A file's scanner findings are MAJOR when any is `high`, else MINOR. Any BLOCKER gives `BLOCK`, else any MAJOR gives `REQUEST_CHANGES`, else `APPROVE`. The body carries the marker `<!-- dod-guard:review-pr head=<sha> recommendation=<REC> -->` that step 2 detects.
 
 Reread the PR head and stop if it moved. Post the payload as one review with event `COMMENT`. A post is ambiguous when it returns a 5xx status, times out, or returns a body you cannot read, because the review may exist even though the call failed. After any failed or ambiguous post, rerun step 2 before any retry and act on its result:
 
 - `found: false`: post the same payload once more.
-- `found: true` with `headSha` equal to the reviewed head: that review is the one you posted. Do not post. Continue at step 7 with its `reviewId`.
+- `found: true` with `headSha` equal to the reviewed head: that review is the one you posted. Do not post. Continue at "Post the scanner comment parts" below with its `reviewId`, then step 7.
 - `found: true` with any other `headSha`: stop, as step 2 says.
 
 Never post a second review.
+
+### Post the scanner comment parts
+
+Run this after every path that ends with a posted review: a fresh post and the `found: true` retry above. It does nothing when `<scanner-comments.json>` is an empty array. If the file is gone, rerun `build` with the same inputs; the parts depend only on those inputs and the head.
+
+```
+gh api --paginate --slurp "repos/{owner}/{repo}/issues/{n}/comments?per_page=100"
+gh api --method POST "repos/{owner}/{repo}/issues/{n}/comments" --input <part.json>
+```
+
+Save the listing, then post each part of `<scanner-comments.json>` in order as its own comment, where `<part.json>` holds one `{ "body": ... }` element. Skip a part whose `head` and `part` marker already appears in a listed comment, so no part is posted twice. After a failed or ambiguous part post, list the comments again and post only the parts still missing. If a part still fails, stop and report the missing part numbers: the review stands, and the body names comments that are not yet posted.
+
+### Label the posted comments
+
+Run this after every path that ends with a posted review, after the scanner comment parts: a fresh post and the `found: true` retry above. A comment's `GH-<id>` is its own id, which exists only after the post, so each inline comment is edited to end with it and the id that step 7 reports is also visible on GitHub.
+
+```
+gh api --paginate --slurp "repos/{owner}/{repo}/pulls/{n}/comments?per_page=100"
+node "<skill-dir>/scripts/review-findings.mjs" label --review-id=<posted id> --comments=<comments.json> --out=<edits.json>
+gh api --method PATCH "repos/{owner}/{repo}/pulls/comments/{id}" --input <edit.json>
+```
+
+Save the listing, run `label`, then PATCH each element of `<edits.json>`, where `<edit.json>` holds that element's `{ "body": ... }` and `{id}` is its `id`. The command skips a reply, a comment of another review, and a comment that already ends with its own id, so after a failed or ambiguous PATCH, list the comments again and run `label` again: it returns only the edits still missing. If a PATCH still fails, stop and report the comment ids that lack the visible id: the review stands.
 
 ## 7. Report
 

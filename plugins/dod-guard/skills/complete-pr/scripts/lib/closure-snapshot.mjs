@@ -16,6 +16,7 @@ import { readShapedItems } from "./snapshot-items.mjs";
 import { itemsEndpoint, projectRecord, readRepository, snapshotProject } from "./snapshot-project.mjs";
 import { pullRequestRecords } from "./snapshot-pulls.mjs";
 import { guardedRunner } from "./snapshot-runner.mjs";
+import { followSubIssues } from "./snapshot-subissues.mjs";
 
 const JSON_INDENT = 2;
 
@@ -28,11 +29,12 @@ export function buildClosureSnapshot({ repository, runner }) {
   const endpoint = itemsEndpoint(basePath, project.number, fields.fieldIds);
   const shaped = readShapedItems(read, endpoint, fields.fieldIds);
   const targets = shaped.filter(({ item }) => sameRepository(item.repository, repo.fullName));
-  const issues = targets
+  const projectIssues = targets
     .filter(({ item }) => item.contentType === "Issue")
     // ASSUMPTION: the Project item's content carries the issue fields the snapshot keeps, so no
-    // per-issue read is made.
+    // per-issue read is made for a Project item.
     .map(({ content }) => issueRecord(content, repo.fullName, read));
+  const issues = followSubIssues({ issues: projectIssues, repository: repo.fullName, read });
   return {
     repository: repo.fullName,
     defaultBranch: repo.defaultBranch,

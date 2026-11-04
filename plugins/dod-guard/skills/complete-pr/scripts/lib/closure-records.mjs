@@ -98,9 +98,18 @@ function parseCompletionRecord(comments) {
   const problem = completionFieldsError(block.value);
   if (problem) return { error: `completion evidence record ${problem}` };
   const { pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows } = block.value;
-  return {
-    record: { commentId: marked[0].id ?? null, pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows },
+  const record = {
+    commentId: marked[0].id ?? null,
+    pullRequest,
+    mergeCommit,
+    trustedHeadSha,
+    requiredChecks,
+    pendingRows,
   };
+  if (block.value.legacy === true) {
+    record.legacy = true;
+  }
+  return { record };
 }
 
 function pendingMatrixRows(matrix) {
@@ -110,8 +119,11 @@ function pendingMatrixRows(matrix) {
     .map((row) => String(row?.id));
 }
 
-function renderCompletionRecord({ pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows }) {
+function renderCompletionRecord({ pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows, legacy }) {
   const fields = { pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows };
+  if (legacy === true) {
+    fields.legacy = true;
+  }
   return [recordPrefix(kindOf("completion")), "", "```json", JSON.stringify(fields, null, 2), "```"].join("\n");
 }
 

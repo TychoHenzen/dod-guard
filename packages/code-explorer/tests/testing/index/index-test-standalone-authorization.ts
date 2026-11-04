@@ -10,11 +10,11 @@ export function roslynStorePath(root: string): string {
   const storeSegments = [
     ".store",
     "roslyn-language-server",
-    "5.11.0-1.26380.4",
+    "5.13.0-1.26514.10",
   ];
   const runtimeSegments = [
     "roslyn-language-server.win-x64",
-    "5.11.0-1.26380.4",
+    "5.13.0-1.26514.10",
     "tools",
     "net10.0",
     "win-x64",

@@ -14,14 +14,14 @@ const FILE = "plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mj
 const HEAD = "0909".repeat(10);
 const SLOT_INPUTS = ["unified0.diff", "pbi.json", "sub-issues.json"];
 const INPUTS = ["scan.json", ...SLOT_INPUTS, "plan.json", "results.json"];
-const OUTPUTS = ["violations.json", "candidates.json", "payload.json"];
+const OUTPUTS = ["violations.json", "candidates.json", "payload.json", "scanner-comments.json"];
 const PLACEHOLDER = /<[^>]+>/;
 const FLAG_START = / (?=--)/;
 const REFUSED = /The merge pass output is refused; do not post: .*missing J id J2/;
 const MERGED_PROBLEM = /^\*\*MAJOR\*\* The parse-error case asserts the whole result/;
 const BOTH_LENSES = /Requirement: AC-1 \(review-pr-feature, review-pr-hygiene\)$/;
 const DROPPED_BLOCK = /Dropped scanner findings \(1\)/;
-const DROPPED_LINE = /S1 line \d+ \(rule-misfire, D1/;
+const DROPPED_LINE = /\(rule-misfire, D1\) x1: S1/;
 
 const dirs = [];
 after(() => {

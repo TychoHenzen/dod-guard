@@ -4,12 +4,14 @@
 // by JSON.stringify and never hand-written.
 //
 // Usage: node handoff-build.mjs --body-file=<issue-body.md> --evidence-file=<evidence.json> --head-sha=<sha>
+//        [--previous-handoff-file=<handoff.md>]
 //
 // handoff-comment.mjs builds the text and handoff-evidence-problems.mjs defines
-// the evidence file. stdout is the comment text, which post-push reads as the
-// handoff file. stderr lists each problem, one per line, and nothing is printed
-// on stdout then. Exit status: 0 built, 1 problems in the body or evidence, 2
-// usage error.
+// the evidence file.
+// --previous-handoff-file copies that handoff's ## Preflight checkpoint section into the new comment.
+// stdout is the comment text, which post-push reads as the handoff file. stderr
+// lists each problem, one per line, and nothing is printed on stdout then. Exit
+// status: 0 built, 1 problems in the body or evidence, 2 usage error.
 // biome-ignore lint/correctness/noNodejsModules: This CLI runs under Node.js.
 import path from "node:path";
 // biome-ignore lint/correctness/noNodejsModules: This CLI runs under Node.js.
@@ -22,9 +24,15 @@ import { isPlainObject } from "./handoff-evidence-problems.mjs";
 import { readText, UsageError } from "./handoff-proof-cli.mjs";
 
 const USAGE =
-  "usage: node handoff-build.mjs --body-file=<issue-body.md> --evidence-file=<evidence.json> --head-sha=<sha>\n";
+  "usage: node handoff-build.mjs --body-file=<issue-body.md> --evidence-file=<evidence.json> --head-sha=<sha>" +
+  " [--previous-handoff-file=<handoff.md>]\n";
 
 const OPTIONS = Object.freeze({ "body-file": "issue-body.md", "evidence-file": "evidence.json", "head-sha": "sha" });
+const OPTIONAL = Object.freeze({ "previous-handoff-file": "handoff.md" });
+
+function isKnown(name) {
+  return Object.hasOwn(OPTIONS, name) || Object.hasOwn(OPTIONAL, name);
+}
 
 // An option given without a value parses as "true" or "", and neither names a
 // file or a head.
@@ -37,7 +45,7 @@ function optionsFrom(argv) {
   if (options === null) {
     throw new UsageError("options must be --name=value flags");
   }
-  const unknown = Object.keys(options).find((name) => !Object.hasOwn(OPTIONS, name));
+  const unknown = Object.keys(options).find((name) => !isKnown(name));
   if (unknown) {
     throw new UsageError(`unknown option --${unknown}`);
   }
@@ -45,7 +53,20 @@ function optionsFrom(argv) {
   if (missing) {
     throw new UsageError(`--${missing[0]}=<${missing[1]}> is required`);
   }
+  const bare = Object.keys(OPTIONAL).find((name) => Object.hasOwn(options, name) && !hasValue(options, name));
+  if (bare) {
+    throw new UsageError(`--${bare}=<${OPTIONAL[bare]}> needs a value`);
+  }
   return options;
+}
+
+// The previous handoff is optional; an absent option reads as a handoff with no checkpoint.
+function previousHandoffText(options) {
+  const file = options["previous-handoff-file"];
+  if (file === undefined) {
+    return "";
+  }
+  return readText(file, "previous-handoff-file");
 }
 
 function readEvidence(file) {
@@ -70,7 +91,7 @@ function runCli(argv, { stdout = process.stdout, stderr = process.stderr } = {})
     const options = optionsFrom(argv);
     const body = readText(options["body-file"], "body-file");
     const evidence = readEvidence(options["evidence-file"]);
-    result = build({ body, evidence, headSha: options["head-sha"] });
+    result = build({ body, evidence, headSha: options["head-sha"], previousHandoff: previousHandoffText(options) });
   } catch (error) {
     if (!(error instanceof UsageError)) {
       throw error;
