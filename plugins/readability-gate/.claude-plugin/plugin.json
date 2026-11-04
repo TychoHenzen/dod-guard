@@ -1,0 +1,23 @@
+{
+  "name": "readability-gate",
+  "version": "1.0.0",
+  "description": "A Stop hook that checks the final message of each turn reads on its own for an owner who reads nothing else: no restating recent final messages, no hard-to-read phrasing, and no names or numbers left unexplained. A failing message goes back for a rewrite, at most twice per turn. Fails open with a visible warning. Claude Code only. No MCP server, no skills.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/readability-gate.py\"",
+            "timeout": 120,
+            "statusMessage": "Checking the reply reads without context..."
+          }
+        ]
+      }
+    ]
+  }
+}
