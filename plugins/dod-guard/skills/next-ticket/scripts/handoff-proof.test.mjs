@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
-import { issue855Shape } from "./structured-workflow-fixtures.mjs";
+import { issue855Shape } from "./issue855-shape.mjs";
 import { BODY_904, fixture, gate, run, withTempFile } from "./testing/handoff-proof-harness.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
