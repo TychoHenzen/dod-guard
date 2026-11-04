@@ -18,7 +18,7 @@ All must hold, in order, before any PR write.
 3. Run `git status --short` and classify pending paths. A dirty worktree alone is not a blocker. Leave in-scope ordinary changes uncommitted until branch, PBI, and acceptance evidence are verified. Stop for secrets, destructive intent, unrelated changes, or inseparable work.
 4. Confirm the branch is the PBI's `codex/<issue>-<slug>`, has an `origin` upstream, and has pushed commits ahead of the default branch.
 5. Read the PBI and its linked sub-issues. Stop if a required acceptance criterion lacks evidence or a code-backed closed sub-issue lacks a pushed implementation commit.
-6. If in-scope changes were pending, stage only reviewed paths, commit, push, reread the head, and rerun required checks.
+6. If in-scope changes were pending, run `git status --porcelain` and account for every `??` line, stage only reviewed paths by explicit path (never `git add -A` or `git add .`), commit, push, reread the head, and rerun required checks.
 
 ## Checks
 
