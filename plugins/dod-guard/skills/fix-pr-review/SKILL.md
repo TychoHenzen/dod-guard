@@ -49,8 +49,12 @@ Fetch the provider head without switching branches. Stop if it differs from the 
 - `stale`: resolved thread, or the location is gone after searching for moved code.
 - `already-fixed`: current code disproves the claim.
 - `unsupported`: it conflicts with the PBI or lacks evidence.
+- `partial`: the claim holds, but this batch fixes only a bounded part of it. Fix that part with the batch.
+- `out-of-slice`: the claim holds, but the fix is outside the PBI's acceptance criteria and belongs to another open issue. Make no edit for it.
 
 Record exact evidence for each non-actionable finding, make no edit for it, and decline it.
+
+A `partial` or `out-of-slice` finding is not declined: it follows "Route a partial or out-of-slice finding".
 
 ## Implement and verify
 
@@ -68,7 +72,7 @@ Stop with expected and observed SHAs on branch drift, fork ownership, a missing 
 
 For a structured parent, rerun post-push at the converged pushed head (`node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`). Rows touched by the fix need re-observation at the new head and an update of the handoff matrix block (step 1 of "Rebind the handoff"). Report an exit-1 remainder with the stale row ids, and do not resolve fixed threads until it is clear. On exit 2 (a body or handoff that cannot be read or parsed), stop the same way and report the printed error. Make no edit of the parent issue body.
 
-Skip a thread that also holds a declined item. The decline path owns its single reply and resolve.
+Skip a thread that also holds a declined, partial or out-of-slice item. The decline or routing path owns its single reply and resolve.
 
 Reply and resolve through connector operations when available. Otherwise `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments` with `body` and `in_reply_to` (root comment database ID). GitHub ignores `commit_id` on a reply and pins the reply to the root comment's commit, so send none and never key a readback on it. The body gives the head SHA and verification command. A new inline comment uses `body`, `commit_id`, `path` and `position`, with no `line` and no `subject_type`. Never use `POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies`.
 
@@ -83,6 +87,8 @@ Budget: one thread read, at most one mutation and one readback per thread; do no
 ## Decline non-actionable findings
 
 Decline every `unsupported`, `already-fixed` or `stale` selection whose thread is still open: reply with evidence, then resolve. Owner decision, 2026-10-11: this skill closes declined threads itself, with no per-PR confirmation. A decline needs no push. A stale selection whose thread is already resolved is a no-op. Never resolve here an actionable finding with an unpushed fix, or a thread that could not be read back.
+
+`dod-guard:complete-pr` reads only whether each review thread is resolved and stops with `unresolved-review-threads` on any open one. It never reads reply text. This reply-then-resolve path, and the routing path below, are how a finding that will not be fixed in this PR stops blocking that merge.
 
 Choose the head SHA to name in the reply body:
 
@@ -107,6 +113,25 @@ Apply this section only when a fix was pushed and the parent is structured. A ru
 
    Do not resubmit the draft pull request.
 
+## Route a partial or out-of-slice finding
+
+A `partial` or `out-of-slice` finding leaves work this PR does not deliver. Its thread closes only after that remainder sits on another issue.
+
+The destination is an existing open issue in this repository. It is not a pull request, not the parent PBI, and not any issue this PR closes through a closing keyword. The caller names it. Without a named one, collect every open sibling sub-issue of the parent and every open Backlog issue whose body covers the remainder. Exactly one match is the destination. Sibling and Backlog issues carry no precedence over each other: a sibling and a Backlog issue that both match, or two of either kind, are no unique match. Read the destination's state and type before the first write. A closed issue, a pull request, another repository, an issue this PR closes, or no unique match leaves the finding unrouted. This skill never creates an issue.
+
+Do not route a thread that is already resolved. For each other thread, under the budget and stops of "Update proven findings":
+
+1. For `partial`, push the fix commit and complete the convergence wait first. Reply nothing before that.
+2. Look in the destination's comments for the marker line `<!-- fix-pr-review: GH-<id> -->`. If absent, post one comment that holds the marker, the finding id, the thread URL, path and line, the claim, what remains, and the head SHA. Read it back.
+3. Look in the thread for a reply holding the same marker. If absent, reply to the root comment with the marker, the destination comment link and the head SHA. For `partial`, also list the fixed part with its commit and verification command, and the remainder. For `out-of-slice`, name the acceptance criteria it falls outside and say whether the caller or the hierarchy named the destination. Read the reply back by root and body.
+4. Run the readback and resolve steps from "Update proven findings".
+
+A rerun that finds the marker in either place skips that write and goes on to the next step. Never post a second comment or reply. The marker's `GH-<id>` is the review comment's own database ID, unique within the repository, and the destination is in this repository, so the marker needs no PR scope. The closed-destination check applies only before the first write: a destination that already holds the marker comment stays valid on rerun even if it closed since, because the remainder is recorded there. Then post only the missing thread reply, and read back and resolve.
+
+Unrouted: push the fixed part of a `partial` finding, leave the thread open, post no destination comment, and report `unrouted: GH-<id>`. The caller then names an open destination and reruns this skill, or a person resolves the thread by hand. `dod-guard:complete-pr` stops with `unresolved-review-threads` until one of those happens. An unrouted finding is a finding with no landed fix, and the thread stays open for the same reason.
+
 ## Report
 
-Report the PBI, original and pushed heads (the revalidated head if nothing was pushed), fixed IDs, declined IDs with classification and evidence, other skipped IDs with reasons, resolved thread IDs, changed files, commit, checks, provider updates and the finalization result of the rebound handoff. Confirm the parent PBI remains open.
+Report the PBI, original and pushed heads (the revalidated head if nothing was pushed), fixed IDs, declined IDs with classification and evidence, routed IDs with the destination issue link, `unrouted: GH-<id>` entries, other skipped IDs with reasons, resolved thread IDs, changed files, commit, checks, provider updates and the finalization result of the rebound handoff. Confirm the parent PBI remains open.
+
+Regression checks use [the fix-pr-review fixtures](fixtures.md).

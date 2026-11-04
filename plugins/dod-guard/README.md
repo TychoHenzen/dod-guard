@@ -108,7 +108,10 @@ stops with `unresolved-review-threads` while any review thread is open, whoever
 opened it.
 `/fix-pr-review` revalidates selected review findings before that acceptance.
 It fixes the actionable ones and declines the rest with evidence, resolving the
-thread of each, so a declined finding leaves no open thread behind.
+thread of each, so a declined finding leaves no open thread behind. A partly
+fixed or out-of-slice finding is routed to an existing destination issue by
+comment and thread reply before its thread resolves. With no valid destination
+the thread stays open and the run reports it.
 Each delivery skill resolves the current repository and requires exactly one
 open GitHub Project explicitly linked to it.
 
