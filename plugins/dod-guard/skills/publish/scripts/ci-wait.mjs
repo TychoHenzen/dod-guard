@@ -2,12 +2,22 @@
 // Waits for the check runs of one commit by attempt count. An attempt count
 // ends a call, never a CI run, so the helper imposes no deadline on CI itself.
 import { execFile } from "node:child_process";
+import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
+import { parseArguments, USAGE } from "./ci-wait-args.mjs";
 
 const run = promisify(execFile);
 const PASSING = new Set(["success", "skipped", "neutral"]);
 export const EXIT = { passed: 0, failed: 1, pending: 2, usage: 3 };
+
+const PENDING_NOTE =
+  "PENDING: still running. Run the same command again to keep waiting; an exhausted attempt count is not a failure.";
+const SUMMARY = {
+  failed: (verdict) => `FAILED: ${verdict.failed.join(", ")}`,
+  pending: () => PENDING_NOTE,
+  passed: () => "PASSED",
+};
 
 // A re-run adds a check run with the same name; the highest id is the newest.
 export function newestPerName(checkRuns) {
@@ -19,15 +29,21 @@ export function newestPerName(checkRuns) {
   return [...byName.values()];
 }
 
+const isFinished = (checkRun) => checkRun.status === "completed";
+const isFailed = (checkRun) => isFinished(checkRun) && !PASSING.has(checkRun.conclusion);
+const describe = (checkRun) => `${checkRun.name}: ${isFinished(checkRun) ? checkRun.conclusion : checkRun.status}`;
+
+function stateOf(latest, missing) {
+  if (latest.some(isFailed)) return "failed";
+  const waiting = latest.length === 0 || missing.length > 0 || !latest.every(isFinished);
+  return waiting ? "pending" : "passed";
+}
+
 export function judge(checkRuns, required = []) {
   const latest = newestPerName(checkRuns);
-  const lines = latest.map((c) => `${c.name}: ${c.status === "completed" ? c.conclusion : c.status}`);
-  const failed = latest.filter((c) => c.status === "completed" && !PASSING.has(c.conclusion)).map((c) => c.name);
   const missing = required.filter((name) => !latest.some((c) => c.name === name));
-  for (const name of missing) lines.push(`${name}: not started`);
-  if (failed.length > 0) return { state: "failed", lines, failed };
-  const waiting = latest.some((c) => c.status !== "completed") || missing.length > 0 || latest.length === 0;
-  return { state: waiting ? "pending" : "passed", lines, failed };
+  const lines = [...latest.map(describe), ...missing.map((name) => `${name}: not started`)];
+  return { state: stateOf(latest, missing), lines, failed: latest.filter(isFailed).map((c) => c.name) };
 }
 
 export async function waitForChecks({ repository, sha, required, attempts, intervalSeconds, gh, sleep, print }) {
@@ -43,33 +59,12 @@ export async function waitForChecks({ repository, sha, required, attempts, inter
   return verdict;
 }
 
-export function parseArguments(argv) {
-  const options = { attempts: 5, intervalSeconds: 15, required: [] };
-  for (const argument of argv) {
-    const [key, value = ""] = argument.split(/=(.*)/s, 2);
-    if (key === "--repository") options.repository = value;
-    else if (key === "--sha") options.sha = value;
-    else if (key === "--attempts") options.attempts = Number(value);
-    else if (key === "--interval") options.intervalSeconds = Number(value);
-    else if (key === "--require") options.required = value.split(",").filter(Boolean);
-    else throw new Error(`unknown argument ${argument}`);
-  }
-  if (!/^[^/\s]+\/[^/\s]+$/.test(options.repository ?? "")) throw new Error("--repository=<owner/name> is required");
-  if (!/^[0-9a-f]{40}$/.test(options.sha ?? "")) throw new Error("--sha=<40 hex characters> is required");
-  if (!Number.isInteger(options.attempts) || options.attempts < 1)
-    throw new Error("--attempts must be a positive integer");
-  if (!(options.intervalSeconds >= 0)) throw new Error("--interval must be a number of seconds");
-  return options;
-}
-
 export async function main(argv, io) {
   let options;
   try {
     options = parseArguments(argv);
   } catch (error) {
-    io.print(
-      `usage: node ci-wait.mjs --repository=<owner/name> --sha=<sha> [--require=a,b] [--attempts=5] [--interval=15]\n${error.message}`,
-    );
+    io.print(`${USAGE}\n${error.message}`);
     return EXIT.usage;
   }
   let verdict;
@@ -79,12 +74,7 @@ export async function main(argv, io) {
     io.print(`read failed: ${error.message}`);
     return EXIT.usage;
   }
-  if (verdict.state === "failed") io.print(`FAILED: ${verdict.failed.join(", ")}`);
-  if (verdict.state === "pending")
-    io.print(
-      "PENDING: still running. Run the same command again to keep waiting; an exhausted attempt count is not a failure.",
-    );
-  if (verdict.state === "passed") io.print("PASSED");
+  io.print(SUMMARY[verdict.state](verdict));
   return EXIT[verdict.state];
 }
 

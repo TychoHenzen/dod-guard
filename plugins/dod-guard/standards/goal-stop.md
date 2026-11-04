@@ -65,6 +65,9 @@ turns. Then:
    node <plugin-root>/skills/goal-sdlc/scripts/goal-stop-beep.mjs stop
    ```
 
-   It prints `stopped`, `gone`, `stale`, `unreadable`, or `none`. A record older
-   than two hours and five minutes is deleted without killing anything, because
-   its PID may belong to another process by then.
+   It prints `stopped`, `gone`, `foreign`, `stale`, `unreadable`, or `none`. A
+   record older than two hours and five minutes is deleted without killing
+   anything, because its PID may belong to another process by then. A newer
+   record is killed only after the process behind its PID is confirmed to run
+   `goal-stop-beep.mjs`; otherwise the record is deleted, nothing is killed, and
+   the command prints `foreign`.
