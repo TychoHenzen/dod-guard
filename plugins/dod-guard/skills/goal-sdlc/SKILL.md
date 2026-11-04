@@ -55,7 +55,7 @@ Agent names take the `dod-guard:` prefix.
 
 | Stage | Tier | Agent | Runs |
 |---|---|---|---|
-| Queue snapshot read | cheap | read-cheap | Follows Loop step 2, dispatched twice: first only `closure.mjs snapshot` and `plan`, returns plan. After the closes, only fresh `snapshot`, `annotate`, `select-next.mjs`, returns selection. Close delegation stays on main thread |
+| Queue snapshot read | cheap | stage-cheap | Follows Loop step 2, dispatched twice: first only `closure.mjs snapshot` and `plan`, returns plan. After the closes, only fresh `snapshot`, `annotate`, `select-next.mjs`, returns selection. Close delegation stays on main thread |
 | Refinement owner thread | standard | stage-standard | Skill `dod-guard:refine-backlog-item <issue>` |
 | Refinement plan research questions | standard | read-standard | "Research and discovery triage" in refine-backlog-item |
 | Refinement investigate code, callers, tests | cheap | read-cheap | Same section |
