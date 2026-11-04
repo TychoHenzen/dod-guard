@@ -150,7 +150,11 @@ test("a long line in another file is not absorbed as a move of a deleted file's 
 });
 
 test("a file-length finding in another file is not absorbed as a move of a deleted file's finding", () => {
-  const measure = { rule: "file-length", message: "file is 150 lines", metric: 150 };
+  const measure = {
+    rule: "file-length",
+    message: "file is 150 lines",
+    metric: 150,
+  };
   const base = [finding({ ...measure, file: "gone.cs" })];
   const head = [finding({ ...measure, file: "new.cs" })];
   const result = classify(head, base, [

@@ -25,7 +25,13 @@ test("the comment lists at most 25 removed findings and counts the rest", () => 
     worsened: [],
   };
   const text = renderComment({ gate, classified });
-  assert.match(text, /Pre-existing findings removed by this pull request \(30\)/);
+  assert.match(
+    text,
+    /Pre-existing findings removed by this pull request \(30\)/,
+  );
   assert.match(text, /and 5 more/);
-  assert.equal(text.split("\n").filter((line) => line.startsWith("- `f")).length, 25);
+  assert.equal(
+    text.split("\n").filter((line) => line.startsWith("- `f")).length,
+    25,
+  );
 });
