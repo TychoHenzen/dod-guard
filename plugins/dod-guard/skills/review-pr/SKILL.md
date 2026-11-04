@@ -12,7 +12,7 @@ Review the files a PR changes, adding what the scanner cannot judge: correctness
 
 - Read `standards/working-defaults.md` and `standards/github-request-discipline.md`. Stricter rules here win. Resolve the repository per "Resolve the repository and Project" in the second one.
 - Pass every script flag as its own native argument, per the [command-composition contract](../../docs/command-composition.md).
-- Create one empty scratch directory outside the repository (under the session scratchpad, else the OS temp directory) and save every file this review writes in it: reviews, slots, scan, violations, plan, results, merge, payload, comments. Dispatched read-only agents create no file, so the main thread writes each of these from their returned text. After posting, delete only the files this review wrote in that directory and then the directory, and never delete a path outside it or a file the review did not write. Leave any other file in place and name it in the report.
+- Create one empty scratch directory outside the repository (under the session scratchpad, else the OS temp directory) and save every file this review writes in it: reviews, slots, scan, violations, plan, batches, answers, results, merge, payload, comments. The planner, the four lens judges and the merge pass are read-only and create no file, so the main thread writes the plan, results and merge files from their returned text. Only an investigator batch writes a file: the one answers file its brief names, in the answers directory. After posting, delete only the files this review wrote in that directory and then the directory, and never delete a path outside it or a file the review did not write. Leave any other file in place and name it in the report.
 - `<skill-dir>` is `${CLAUDE_PLUGIN_ROOT}/skills/review-pr` in Claude Code and this file's directory in Codex.
 - "Stop" means: post nothing, name the cause, and report to the dispatcher, which does not rerun the review stage.
 
@@ -70,23 +70,43 @@ Every stage gets one brief: PR number and URL, base and head SHAs, slots file, d
 One `dod-guard:read-standard` planner returns a JSON array with one entry per slot, copying slot ids exactly. Each entry has `slot` and either `questions` or `excluded`, never both.
 
 - A question has `id` (unique across lenses), `lens`, `question`, `files`, and the targeted risk.
+- A question is neutral. It asks what the code, test or document shows and names no suspected defect, expected answer or verdict. The targeted risk names the failure the question probes, never a conclusion about it.
 - An exclusion has `lens` and `reason`.
 - The lenses are `dod-guard:review-pr-feature` (F), `dod-guard:review-pr-design` (D), `dod-guard:review-pr-reliability` (R), and `dod-guard:review-pr-hygiene` (H). Each gets at least one question or exclusion.
 - For a file slot with in-scope violations, add scanner check questions with a `scanner` array of the S ids covered. They ask whether the violation shows at the reviewed head, whether the path is generated or excluded, and whether the rule's own condition holds. List only S ids from that slot's file. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file.
 
 ### Investigate
 
-`dod-guard:read-cheap` investigators answer every question, batched by slot, at most eight per investigator and a report under 20 KB, as "Plan, investigate, judge" in `standards/model-routing.md` says. Dispatch all batches in one message so they run in parallel. Skip exclusions. Each answer gives slot, question id, cited path and line, and the fact found.
+Cut the saved plan into batch files:
+
+```
+node "<skill-dir>/scripts/review-findings.mjs" batches --plan=<plan.json> --head=<full 40-character head SHA> --out-dir=<batches-dir>
+```
+
+The command skips exclusions, keeps each slot's questions together, caps a batch at eight questions, and stamps every batch file with the plan hash and the head. Run one `dod-guard:stage-cheap` investigator per batch (`dod_guard_stage_cheap` in Codex) and dispatch all of them in one message so they run in parallel. Investigators write their own files because the main thread would otherwise retype every answer. Each brief follows "Stage brief" in `standards/model-routing.md`: its first line is `Read <plugin-root>/skills/review-pr/SKILL.md, then follow only #### Investigator batch.`, then it names the batch file, the answers file `<answers-dir>/<batch>.json`, the head SHA and the checkout path, and asks for the answers file path and the answer counts as the evidence to return.
+
+#### Investigator batch
+
+Read the batch file. For each question, read the files it names and whatever else you need. Write one file, the answers file your brief names, and no other file. Edit nothing in the checkout, make no Git or provider change, and run no command that writes. The file is a JSON object with `planHash`, `headSha` and `batch` copied from the batch file and an `answers` array with one entry per question: `{ "slot", "id", "status": "answered", "path", "line", "fact" }` with the path and line you read and the fact found there, or `{ "slot", "id", "status": "unanswered", "searched" }` when the repository does not answer it, naming what you searched. Give no verdict, severity or fix. Return the answers file path and the counts of answered and unanswered entries, and nothing else.
 
 ### Verify
 
-Before judging, check every answer under the cheap-output rule in `standards/model-routing.md`, with the reviewed head as accepted head. Send a failed batch back once with the exact gap. On a second failure, rerun it once on `dod-guard:read-standard` with the failure record, per "Escalation". On a third failure of the same check, stop and name the batch.
+Merge and check the answers files, then check the checkout:
 
-Save the plan with a status per question: `verified`, `repaired` (verified after the one repair), or `unanswered` (the repo does not answer it).
+```
+node "<skill-dir>/scripts/review-findings.mjs" answers --plan=<plan.json> --head=<full 40-character head SHA> --answers-dir=<answers-dir> --out=<answers.json>
+git status --porcelain
+```
+
+`answers` refuses a missing, unreadable, stale or incomplete file and lists every problem. `git status --porcelain` must print nothing, and the answers directory must hold only the batch answers files. Otherwise stop and name the path, because an investigator wrote outside its file.
+
+Then check every answer under the cheap-output rule in `standards/model-routing.md`, with the reviewed head as accepted head. Send a failed batch back once to the same agent with the exact gap and the same batch and answers paths, and rerun `answers`. On a second failure, rerun it once on `dod-guard:stage-standard` with the failure record, per "Escalation". On a third failure of the same check, stop and name the batch. When the plan changes, its hash changes: cut new batches and rerun the investigators, because `answers` refuses every old file.
+
+Save the plan with a status per question: `verified`, `repaired` (verified after the one repair), or `unanswered` (the repo does not answer it). Saving statuses does not change the plan hash.
 
 ### Judge
 
-Dispatch the four lens reviewers at once. Each gets the brief plus its lens's slots with questions, answers, statuses, or exclusions, and judges from that evidence. A slot belongs to a lens when it has a question or exclusion naming it.
+Dispatch the four lens reviewers at once. Each judge brief is the shared brief plus, for each slot assigned to its lens, only the slot id, each question's id, text and status or the exclusion's lens and reason, and the path of `<answers.json>`, which the judge reads. A slot belongs to a lens when it has a question or exclusion naming it. The brief holds no owner conclusion, suspected defect, severity guess, earlier finding or other reviewer's output. A judge that returns one of those as a finding gets the one correction request below.
 
 - Each returns `{ reviewer, rulings, findings }`: one ruling `{ slot, status, evidence }` per assigned
   slot, status `VERIFIED` or `FINDING`, and findings with severity `BLOCKER`, `MAJOR`, or `MINOR`. Each
@@ -101,7 +121,7 @@ Save the four results as one JSON array.
 ### Merge
 
 ```
-node "<skill-dir>/scripts/review-findings.mjs" candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --out=<candidates.json>
+node "<skill-dir>/scripts/review-findings.mjs" candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --answers=<answers.json> --out=<candidates.json>
 ```
 
 `candidates` numbers judged findings J1..Jn. One `dod-guard:read-standard` pass (`dod_guard_read_standard` in Codex) reads that file and the plan and returns the merge JSON: `{ "groups": [{ "members": ["J1"], "representative": "J1" }], "scanner": [{ "ids": ["S1"], "status": "KEEP" }] }`.
@@ -115,7 +135,7 @@ With no finding and no violation, write `{ "groups": [], "scanner": [] }` and sk
 ## 6. Build and post
 
 ```
-node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --out=<payload.json> --scanner-comments-out=<scanner-comments.json>
+node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --answers=<answers.json> --out=<payload.json> --scanner-comments-out=<scanner-comments.json>
 gh api --method POST "repos/{owner}/{repo}/pulls/{n}/reviews" --input <payload.json>
 ```
 

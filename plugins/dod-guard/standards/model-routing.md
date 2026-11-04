@@ -48,7 +48,8 @@ in the table, passed on the Agent call.
 
 A stage that changes files uses the write-capable agent. A stage that only
 plans, reads, or judges uses the read-only agent, or the stage owner's own
-agent when it has one.
+agent when it has one. The one exception is a review-pr investigator batch,
+which runs on the write-capable cheap agent so it writes its own answers file.
 
 ## Applying a tier
 
@@ -207,16 +208,22 @@ A judgement step that needs a large read volume runs in three parts:
 3. After the main thread verifies the answers, a standard judge turns them into
    findings or decisions.
 
+The default shapes live in the agent definitions. The planner returns { "id", "question", "files", "risk" } entries and an investigator returns { "id", "status", "path", "line", "fact" } or { "id", "status": "unanswered", "searched" } entries. A skill's brief may name another format, and the brief wins.
+
 Read-only agents return their output as text. The main thread writes any
 handoff file, such as a questions or decisions file, from that text. Read-only
 agents create and delete no file; the dispatching main thread owns every
-scratch file and removes only the files it wrote.
+scratch file and removes only the files it wrote. One exception is allowed when
+a skill names it: a stage that already runs on the write-capable agent and
+writes one named file, as the review-pr investigator batches do. The main
+thread still owns the scratch directory, checks that the checkout is unchanged,
+and deletes the files it wrote.
 
 Cap each investigator at eight questions and ask for a report under 20 KB.
 When a stage has more questions, split them into batches by slot or file. If a
 report comes back over the cap, split that batch and rerun it; never accept the
 long report. Dispatch independent batches in one message (in Codex, in one
-turn) so they run in parallel: investigators are read-only and share no state.
+turn) so they run in parallel: investigators share no state and each returns or writes only its own batch.
 
 ## Verify cheap-tier output
 
@@ -310,7 +317,7 @@ A stalled stage proceeds in this order:
 2. Before the strong rung only, ask `/codex-advisor` one question, as
    `standards/working-defaults.md` requires for a confirmed blocker. When its
    advice names a repair, apply it at the standard tier and verify. The
-   cheap-to-standard rung and the rerun of a read-only review batch skip this
+   cheap-to-standard rung and the rerun of a review investigator batch skip this
    step.
 3. Run the stage again one rung up, with the failure record in the brief: the
    attempts, the errors, the files touched, and the advisor's advice when step 2
@@ -339,9 +346,9 @@ advice that names a repair at the standard tier, and otherwise runs the stage on
 `model: opus` with the strong effort. A failure on the opus run stops the stage
 as a blocker.
 
-Dispatching a read-only row one rung up is not carrying out a failed row. The
+Dispatching a review investigator batch one rung up is not carrying out a failed row. The
 `dod-guard:review-pr` owner reruns a failed investigator batch once on
-`dod-guard:read-standard`, as its skill says. When that rerun fails the same
+`dod-guard:stage-standard`, because the batch writes its answers file, as its skill says. When that rerun fails the same
 check, the owner stops without posting and reports the stop to its dispatcher.
 That is the batch rule's own stop, so the dispatcher does not rerun the review
 stage on sonnet or opus.

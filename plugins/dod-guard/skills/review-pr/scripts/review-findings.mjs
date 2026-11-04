@@ -9,9 +9,11 @@ import { closeSync, existsSync, fstatSync, ftruncateSync, openSync, readSync, wr
 import process from "node:process";
 import { parseArgs } from "../../../lib/args.mjs";
 import { readJsonFile, readTextFile } from "../../../lib/read-text.mjs";
+import { answers, batches } from "./lib/batch-commands.mjs";
 import { candidates, pbiInputs, violations } from "./lib/candidate-commands.mjs";
 import { ignoredPaths, scanArguments } from "./lib/ignored-paths.mjs";
 import { applyRepoLimits, repoLimits } from "./lib/repo-limits.mjs";
+import { requireFreshAnswers } from "./lib/review-batches.mjs";
 import { buildReview, existingReview, postedFindings } from "./lib/review-findings.mjs";
 import { reviewSlots } from "./lib/review-slots.mjs";
 import { scannerPath } from "./lib/scanner-location.mjs";
@@ -27,12 +29,15 @@ const USAGE = [
   "    --sub-issues=<sub-issues.json> --out=<slots.json>",
   "  review-findings.mjs violations --scan=<scan.json> --diff=<unified0.diff>",
   "    --out=<violations.json>",
+  "  review-findings.mjs batches --plan=<plan.json> --head=<sha> --out-dir=<batches-dir>",
+  "  review-findings.mjs answers --plan=<plan.json> --head=<sha> --answers-dir=<answers-dir>",
+  "    --out=<answers.json>",
   "  review-findings.mjs candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<issue.json>",
-  "    --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json>",
+  "    --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --answers=<answers.json>",
   "    --out=<candidates.json>",
   "  review-findings.mjs build --head=<sha> --scan=<scan.json> --diff=<unified0.diff>",
   "    --pbi=<issue.json> --sub-issues=<sub-issues.json> --plan=<plan.json>",
-  "    --results=<results.json> --merge=<merge.json> --out=<payload.json>",
+  "    --results=<results.json> --merge=<merge.json> --answers=<answers.json> --out=<payload.json>",
   "    --scanner-comments-out=<scanner-comments.json>",
   "  review-findings.mjs label --review-id=<id> --comments=<review-comments.json> --out=<edits.json>",
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
@@ -111,9 +116,12 @@ const COMMANDS = {
     writeFileSync(args.out, `${JSON.stringify(slots, null, 2)}\n`);
     return { out: args.out, slots: slots.length, ...slotCounts(slots) };
   },
+  batches,
+  answers,
   violations,
   candidates,
   build: (args) => {
+    requireFreshAnswers(readJsonFile(args.answers), readJsonFile(args.plan), args.head);
     const review = buildReview({
       headSha: args.head,
       scan: readJsonFile(args.scan),
@@ -146,8 +154,22 @@ const REQUIRED = {
   existing: ["reviews"],
   slots: ["diff", "pbi", "sub-issues", "out"],
   violations: ["scan", "diff", "out"],
-  candidates: ["scan", "diff", "pbi", "sub-issues", "plan", "results", "out"],
-  build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "merge", "out", "scanner-comments-out"],
+  batches: ["plan", "head", "out-dir"],
+  answers: ["plan", "head", "answers-dir", "out"],
+  candidates: ["scan", "diff", "pbi", "sub-issues", "plan", "results", "answers", "out"],
+  build: [
+    "head",
+    "scan",
+    "diff",
+    "pbi",
+    "sub-issues",
+    "plan",
+    "results",
+    "merge",
+    "answers",
+    "out",
+    "scanner-comments-out",
+  ],
   label: ["review-id", "comments", "out"],
   report: ["review-id", "comments"],
 };
@@ -167,8 +189,9 @@ function validArgs(command, args) {
     return false;
   }
   // The marker reader only accepts a hex head, so a build with anything else
-  // would post an undetectable review.
-  return command !== "build" || FULL_SHA.test(args.head);
+  // would post an undetectable review. batches and answers stamp or compare the
+  // head, so they take the same full-SHA check.
+  return !["build", "batches", "answers"].includes(command) || FULL_SHA.test(args.head);
 }
 
 const [command, ...rest] = process.argv.slice(2);

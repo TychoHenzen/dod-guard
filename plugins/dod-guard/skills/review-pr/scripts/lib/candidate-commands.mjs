@@ -3,6 +3,7 @@ import { writeFileSync } from "node:fs";
 import { readJsonFile, readTextFile } from "../../../../lib/read-text.mjs";
 import { scannerCandidates } from "./finding-ids.mjs";
 import { regenerate } from "./regenerated-inputs.mjs";
+import { requireFreshAnswers } from "./review-batches.mjs";
 import { pbiIssue, subIssueList } from "./review-slots.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
@@ -36,11 +37,13 @@ function violations(args) {
 // The merge pass reads this file, but the build never does: it regenerates
 // both id sets from the same inputs, so an edited file cannot move an id.
 function candidates(args) {
+  const plan = readJsonFile(args.plan);
+  requireFreshAnswers(readJsonFile(args.answers), plan);
   const { judged, scanner } = regenerate({
     scan: readJsonFile(args.scan),
     diff: readTextFile(args.diff),
     ...pbiInputs(args),
-    plan: readJsonFile(args.plan),
+    plan,
     results: readJsonFile(args.results),
   });
   writeJson(args.out, { judged, scanner });

@@ -13,7 +13,7 @@ const FIXTURE = fileURLToPath(new URL("fixtures/pr-909/", import.meta.url));
 const FILE = "plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs";
 const HEAD = "0909".repeat(10);
 const SLOT_INPUTS = ["unified0.diff", "pbi.json", "sub-issues.json"];
-const INPUTS = ["scan.json", ...SLOT_INPUTS, "plan.json", "results.json"];
+const INPUTS = ["scan.json", ...SLOT_INPUTS, "plan.json", "results.json", "answers.json"];
 const OUTPUTS = ["violations.json", "candidates.json", "payload.json", "scanner-comments.json"];
 const PLACEHOLDER = /<[^>]+>/;
 const FLAG_START = / (?=--)/;
@@ -100,6 +100,16 @@ test("R10: the documented build line posts a review whose block lists a dropped 
   const { body } = readJson(values.get("<payload.json>"));
   assert.match(body, DROPPED_BLOCK);
   assert.match(body, DROPPED_LINE);
+});
+
+test("a stale answers file stops the documented candidates line", () => {
+  const { dir, values } = scratch();
+  const stale = path.join(dir, "stale-answers.json");
+  const fresh = readJson(path.join(FIXTURE, "answers.json"));
+  writeFileSync(stale, JSON.stringify({ ...fresh, planHash: "0".repeat(16) }));
+  const result = documented("candidates", new Map([...values, ["<answers.json>", stale]]));
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Answers file is stale/);
 });
 
 // The candidates file is the merge pass's input only; the build regenerates

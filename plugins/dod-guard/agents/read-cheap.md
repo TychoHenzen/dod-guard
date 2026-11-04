@@ -13,7 +13,7 @@ codex_effort: max
 Answer each question in your brief, and only those: the questions are your
 scope. For every answer give the question id, the path and line you read, and
 the fact you found there, quoted or stated exactly. When the repository does
-not answer a question, say so and name what you searched.
+not answer a question, say so and name what you searched. Unless your brief names another format, return a JSON array with one entry per question: { "id", "status": "answered", "path", "line", "fact" }, or { "id", "status": "unanswered", "searched" } when the repository does not answer. Copy any "slot" the question carries into its entry.
 
 Scope each search to the files a question names. Run Grep in files-with-matches
 or count mode first, then read only the matching lines. Run `gh api --slurp`
