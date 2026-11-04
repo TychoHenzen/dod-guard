@@ -13,6 +13,7 @@ Resolve the plugin root from this skill's directory. Before editing, read `stand
 
 - The current directory must be inside a Git worktree.
 - Run `git worktree list --porcelain`. Work in the first entry, the main checkout, when it can safely create the branch from the fetched default. If it is locked, unavailable, active, or unsafe and user-owned, stop and report the reason, the checkout, and the recovery path.
+- "Unsafe and user-owned" means pending paths that cannot be classified as in scope, or a checkout whose HEAD is not on the default branch and holds unpushed commits.
 - Never create a worktree.
 - Run `git status --short --branch` and classify every pending path. A dirty tree alone is not a blocker.
 - Ordinary changes that clearly belong to the work stay uncommitted until the ticket branch exists, then are committed there. Never commit them on the current or default branch to clear status.
@@ -25,7 +26,7 @@ Resolve the plugin root from this skill's directory. Before editing, read `stand
 
 Run `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`. Stop on outcome `none`, outcome `several`, or exit 2. Never pick a Project by title similarity or from a remembered owner. Report the Project owner, number, and title, then use it for lookup.
 
-For a user-supplied issue number run `node <plugin-root>/skills/complete-pr/scripts/ticket-preconditions.mjs --repository=<owner/name> --issue=<n> --expect-status=Todo`. Stop on exit 1 and report its `check` and `detail`; exit 2 is a read failure to report. It replaces checking repository membership, Project membership and Status by hand. Without one, list open Project items from this repository, keep unassigned issues with Status exactly `Todo`, drop pull requests, and show number, title, assignee, status. Select a lone result automatically. Otherwise the user chooses.
+For a user-supplied issue number run `node <plugin-root>/skills/complete-pr/scripts/ticket-preconditions.mjs --repository=<owner/name> --issue=<n> --expect-status=Todo`. For a resume under "Resume" in "Prepare and start", pass `--expect-status="In Progress"` instead. Stop on exit 1 and report its `check` and `detail`; exit 2 is a read failure to report. It replaces checking repository membership, Project membership and Status by hand. Without one, list open Project items from this repository, keep unassigned issues with Status exactly `Todo`, drop pull requests, and show number, title, assignee, status. Select a lone result automatically. Otherwise the user chooses.
 
 ## Readiness
 
@@ -41,13 +42,13 @@ Before the branch exists, save the issue body as read back from GitHub to a UTF-
 
 `node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]`
 
-Pass `--children` as a JSON array of linked functional-slice children (slice id plus evidence) when any exist. It prints `{outcome, remainder}`: exit 0 is `verified`, exit 1 an actionable remainder, exit 2 a usage or parse error. Stop on 1 or 2. It reads UTF-8, UTF-8 with a BOM, and UTF-16 with a BOM (what PowerShell 5.1 `>` writes), and rejects any other non-UTF-8 file with exit 2. After the handoff is pushed, rerun it with the exact head and matrix and require freshness. Implementation evidence must be pushed before commit or PR handoff, not before execution.
+Pass `--children` as a JSON array of linked functional-slice children (slice id plus evidence) when any exist. It prints `{outcome, remainder}`: exit 0 is `verified`, exit 1 an actionable remainder, exit 2 a usage or parse error. On exit 1, stop and report the `remainder` entries verbatim to the dispatcher for `dod-guard:refine-backlog-item`. On exit 2, re-save the body as UTF-8 and rerun once; if it exits 2 again, stop and report the `remainder` message. It reads UTF-8, UTF-8 with a BOM, and UTF-16 with a BOM (what PowerShell 5.1 `>` writes), and rejects any other non-UTF-8 file with exit 2. After the handoff is pushed, rerun it with the exact head and matrix and require freshness. Implementation evidence must be pushed before commit or PR handoff, not before execution.
 
 ## Prepare and start
 
-Fetch the remote default branch first. Name the branch `codex/<issue-number>-<slug>`, under 64 characters. The slug is lowercase ASCII from the title (letters, digits, single hyphens, none leading or trailing). Shorten only the slug. The branch must not exist locally or on `origin`. Never create or switch to an existing branch.
+Fetch the remote default branch first. Name the branch `codex/<issue-number>-<slug>`, under 64 characters. The slug is lowercase ASCII from the title (letters, digits, single hyphens, none leading or trailing). Shorten only the slug. Except under "Resume" below, the branch must not exist locally or on `origin`, and you never create or switch to an existing branch.
 
-The issue must currently be `Todo`. Resolve the project item id, numeric project number, live Status field id, and `In Progress` option id. Stop before any mutation if a value is missing or ambiguous. Never hardcode ids from an earlier run. Selecting the ticket authorizes the branch, assignment, and status changes, so ask no further confirmation. In order:
+Except under "Resume" below, the issue must currently be `Todo`. Resolve the project item id, numeric project number, live Status field id, and `In Progress` option id. Stop before any mutation if a value is missing or ambiguous. Never hardcode ids from an earlier run. Selecting the ticket authorizes the branch, assignment, and status changes, so ask no further confirmation. In order:
 
 1. Create the local branch from the fetched remote default, keeping the classified in-scope pending changes. If Git cannot do that without losing them, stop. Do not stash, discard, or commit elsewhere.
 2. Push with upstream tracking to the same-named branch on `origin`.
@@ -56,6 +57,10 @@ The issue must currently be `Todo`. Resolve the project item id, numeric project
 5. Start-state check: the assignee readback holds the authenticated login, the Project Status readback is `In Progress`, and `git branch --show-current` equals the issue branch. Stop before implementing on any mismatch, naming the field, the value read and the value expected. Put the three values on the first line of the `## Implementation handoff` entry for the first task.
 
 After a failed, timed-out, or ambiguous action, read back the local and remote branch, assignee, and Project status, then resume only the missing action. Never create a second branch or repeat a mutation before its readback. Report which actions completed and keep the branch and remote state. Do not roll back.
+
+### Resume
+
+An explicit request for an `In Progress` issue resumes instead of starting; `dod-guard:goal-sdlc` lists this skill as the owner of an `In Progress` issue with no pushed handoff. When the issue is `In Progress`, assigned to the current user, and `codex/<issue-number>-<slug>` exists locally or on `origin`, read back the local and remote branch, the assignee, and the Project status, skip every start action that is already complete, and run only the missing ones. Switch to that branch (fetch it from `origin` first when it is not local) only when the tree is clean or every pending path is classified in scope. Never create a second branch. When the branch exists nowhere, or another user is assigned, the `Todo` and no-existing-branch rules above apply unchanged.
 
 ## Implement
 
@@ -76,7 +81,7 @@ Dispatch every task, including a one-task PBI's single task, to `dod-guard:stage
 Use the repository's documented build, test, lint, and format commands: focused checks while working, then every pre-PR gate. Commands that cross PowerShell, native executables, or a POSIX shell follow [command composition](../../docs/command-composition.md).
 
 - When refinement recorded a repository PR gate command in the Implementation notes or a step plan, this thread runs that exact command on the committed head after it commits each task, and lists new highs in that task's report. A gate that diffs a base against HEAD sees only committed work, so never run it on a dirty tree. Run it again before the first push that carries commits; the empty-branch push in "Prepare and start" carries none and needs no gate. Stop, naming the finding, only where the repository's required gate would block (its own block-on setting); report every other finding in the task report. When no command was recorded, say so in the report and continue. Never choose a command, flag or patch here.
-- Confirm the test glob includes every new test or fixture before calling a suite green.
+- Confirm the test glob includes every new test or fixture before calling a suite green. Expand the glob to separate paths (see [command composition](../../docs/command-composition.md)), then run `node --test --test-reporter=spec --test-name-pattern=__no_such_test__ <path> [<path>...]` and confirm each new test file path prints. The pattern matches no test name, so no named test runs. Node has no list mode, and `--test-name-pattern=.` runs every test. A fixture is confirmed by a listed test file that reads it. This relies on the spec reporter printing one line per test file on Node 22; recheck it if the runner changes.
 - Do not rerun an unchanged full suite. A suite consuming a changed or added fixture, scene, seed, or shared test data is not unchanged: run every consumer before push.
 - A consumer suite that cannot run locally is named in the handoff as pending exact-head CI outside the acceptance matrix, and carried into the PR body. That alone does not stop PR handoff, but its exact-head CI must pass before review, with the run ID in the Preflight checkpoint (or the handoff if none).
 - When CI must run again on a head, rerun the existing run with `gh run rerun <run-id> --failed`; never dispatch a second workflow run for the same head.
