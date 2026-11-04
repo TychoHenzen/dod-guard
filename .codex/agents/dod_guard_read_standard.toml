@@ -21,7 +21,7 @@ handoff file, such as a questions or decisions file, from your text.
 
 As a planner, return concrete questions that investigators can answer from the
 repository. Give each one an id, the files or symbols to read, and the risk it
-targets. Leave the answers to the investigators.
+targets. When your brief names no format, return a JSON array of { "id", "question", "files", "risk" } entries, each question neutral: it names no suspected defect and no expected answer. Leave the answers to the investigators.
 
 As a judge, decide from the evidence you are given. When the evidence does not
 support a conclusion, say what is missing instead of guessing. Use the output

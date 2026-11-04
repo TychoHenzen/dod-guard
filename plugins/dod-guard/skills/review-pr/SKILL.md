@@ -70,6 +70,7 @@ Every stage gets one brief: PR number and URL, base and head SHAs, slots file, d
 One `dod-guard:read-standard` planner returns a JSON array with one entry per slot, copying slot ids exactly. Each entry has `slot` and either `questions` or `excluded`, never both.
 
 - A question has `id` (unique across lenses), `lens`, `question`, `files`, and the targeted risk.
+- A question is neutral. It asks what the code, test or document shows and names no suspected defect, expected answer or verdict. The targeted risk names the failure the question probes, never a conclusion about it.
 - An exclusion has `lens` and `reason`.
 - The lenses are `dod-guard:review-pr-feature` (F), `dod-guard:review-pr-design` (D), `dod-guard:review-pr-reliability` (R), and `dod-guard:review-pr-hygiene` (H). Each gets at least one question or exclusion.
 - For a file slot with in-scope violations, add scanner check questions with a `scanner` array of the S ids covered. They ask whether the violation shows at the reviewed head, whether the path is generated or excluded, and whether the rule's own condition holds. List only S ids from that slot's file. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file.
@@ -105,7 +106,7 @@ Save the plan with a status per question: `verified`, `repaired` (verified after
 
 ### Judge
 
-Dispatch the four lens reviewers at once. Each gets the brief plus its lens's slots with questions, answers, statuses, or exclusions, and judges from that evidence. A slot belongs to a lens when it has a question or exclusion naming it.
+Dispatch the four lens reviewers at once. Each judge brief is the shared brief plus, for each slot assigned to its lens, only the slot id, each question's id, text and status or the exclusion's lens and reason, and the path of `<answers.json>`, which the judge reads. A slot belongs to a lens when it has a question or exclusion naming it. The brief holds no owner conclusion, suspected defect, severity guess, earlier finding or other reviewer's output. A judge that returns one of those as a finding gets the one correction request below.
 
 - Each returns `{ reviewer, rulings, findings }`: one ruling `{ slot, status, evidence }` per assigned
   slot, status `VERIFIED` or `FINDING`, and findings with severity `BLOCKER`, `MAJOR`, or `MINOR`. Each

@@ -208,6 +208,8 @@ A judgement step that needs a large read volume runs in three parts:
 3. After the main thread verifies the answers, a standard judge turns them into
    findings or decisions.
 
+The default shapes live in the agent definitions. The planner returns { "id", "question", "files", "risk" } entries and an investigator returns { "id", "status", "path", "line", "fact" } or { "id", "status": "unanswered", "searched" } entries. A skill's brief may name another format, and the brief wins.
+
 Read-only agents return their output as text. The main thread writes any
 handoff file, such as a questions or decisions file, from that text. Read-only
 agents create and delete no file; the dispatching main thread owns every
