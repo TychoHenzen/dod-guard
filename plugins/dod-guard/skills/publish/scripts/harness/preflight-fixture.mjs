@@ -19,11 +19,16 @@ const COPIED_ENTRIES = [
 ];
 
 const sourceDirectory = fileURLToPath(new URL("../", import.meta.url));
+const SHARED_READER = fileURLToPath(new URL("../../../../lib/read-text.mjs", import.meta.url));
 
 export async function copyPreflightHelper(destinationDirectory) {
   for (const name of COPIED_ENTRIES) {
     await cp(join(sourceDirectory, name), join(destinationDirectory, name), { recursive: true });
   }
+  // registry-input.mjs imports the shared reader from <plugin root>/lib, three levels above scripts/.
+  const libDirectory = join(destinationDirectory, "..", "..", "..", "lib");
+  await mkdir(libDirectory, { recursive: true });
+  await cp(SHARED_READER, join(libDirectory, "read-text.mjs"));
 }
 
 export async function createInstall(t, client) {

@@ -33,7 +33,7 @@ function withDir(body) {
 
 function write(dir, name, value) {
   const path = join(dir, name);
-  writeFileSync(path, typeof value === "string" ? value : JSON.stringify(value));
+  writeFileSync(path, typeof value === "string" || Buffer.isBuffer(value) ? value : JSON.stringify(value));
   return path;
 }
 

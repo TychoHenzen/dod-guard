@@ -170,8 +170,10 @@ node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --bod
 ```
 
 It exits 0 on `verified`, 1 on an actionable remainder, and 2 on a usage or
-parse error. Save both files as UTF-8; a UTF-8 byte-order mark is accepted,
-and UTF-16, which a Windows PowerShell 5.1 `>` redirect writes, exits 2.
+parse error. Save both files as UTF-8. A UTF-8 byte-order mark and UTF-16
+with a byte-order mark, which a Windows PowerShell 5.1 `>` redirect writes,
+are also read. Any other non-UTF-8 file, including UTF-16 without a
+byte-order mark, exits 2.
 `refine-backlog-item` runs it before `Todo`, and `next-ticket` runs it before
 the branch exists.
 
