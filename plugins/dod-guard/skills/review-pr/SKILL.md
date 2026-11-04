@@ -14,12 +14,14 @@ Review the files a PR changes, adding what the scanner cannot judge: correctness
 - Pass every script flag as its own native argument, per the [command-composition contract](../../docs/command-composition.md).
 - Create one empty scratch directory outside the repository (under the session scratchpad, else the OS temp directory) and save every file this review writes in it: reviews, slots, scan, violations, plan, batches, answers, results, merge, payload, comments. The planner, the four lens judges and the merge pass are read-only and create no file, so the main thread writes the plan, results and merge files from their returned text. Only an investigator batch writes a file: the one answers file its brief names, in the answers directory. After posting, delete only the files this review wrote in that directory and then the directory, and never delete a path outside it or a file the review did not write. Leave any other file in place and name it in the report.
 - `<skill-dir>` is `${CLAUDE_PLUGIN_ROOT}/skills/review-pr` in Claude Code and this file's directory in Codex.
-- "Stop" means: post nothing, name the cause, and report to the dispatcher, which does not rerun the review stage.
+- "Stop" means: post nothing, name the cause, name the one next action for the user or dispatcher when this skill gives one, and report to the dispatcher, which does not rerun the review stage. Never run that action yourself; a new review runs only when the user asks.
 
 ## 1. Resolve the PR and PBI
 
 1. Take a PR URL or number. With none, use the open PR whose head is the current branch. Stop if there is none.
-2. Require local HEAD to equal the PR head SHA and `git status --porcelain` to print nothing, because the scanner and reviewers read the working tree. Otherwise stop and name the SHAs or pending paths. Never switch branches, stash, or create a worktree.
+2. Require local HEAD to equal the PR head SHA and `git status --porcelain` to print nothing, because the scanner and reviewers read the working tree. Never switch branches, stash, or create a worktree. Otherwise stop:
+   - HEAD differs: name both SHAs and report `gh pr checkout <n>` (the PR number) for the user to run from a clean tree.
+   - Pending paths: list them and report that the user must commit or discard them first; suggest no stash.
 3. Load the parent PBI, with its acceptance criteria and sub-issues, from the PR's closing issue or the issue in the branch name `codex/<issue>-<slug>`. Stop and name the missing PBI if none resolves.
 
 ## 2. One review per PR
@@ -113,7 +115,7 @@ Dispatch the four lens reviewers at once. Each judge brief is the shared brief p
   finding names its `slot`, one assigned to that lens and ruled `FINDING`. Every `FINDING` ruling has at
   least one finding naming its slot. Build refuses a finding that names no slot, an unassigned slot, or a
   slot ruled `VERIFIED`, and a `FINDING` ruling no finding names.
-- Settle each `unanswered` question from the files it names, or report the gap as a finding. Never count one as passing. Report an exclusion as a finding when its reason fails.
+- Settle each `unanswered` question only from the files it names, and read no other file for it. Record the answer in that slot's ruling evidence, or report the gap as a finding. Never count one as passing, and change no plan status after dispatch. Report an exclusion as a finding when its reason fails.
 - On malformed JSON, send one correction request in the exact format. On a second failure, stop and name the reviewer. Never escalate a format failure to another tier: the review posts once, so a missing angle cannot be added later.
 
 Save the four results as one JSON array.
@@ -143,7 +145,7 @@ gh api --method POST "repos/{owner}/{repo}/pulls/{n}/reviews" --input <payload.j
 
 BLOCKER and MAJOR findings are inline comments, each with a `GH-<id>` that the label step appends to the comment body after the post. MINOR findings go in "Minor notes" in the body. A file's scanner findings are MAJOR when any is `high`, else MINOR. Any BLOCKER gives `BLOCK`, else any MAJOR gives `REQUEST_CHANGES`, else `APPROVE`. The body carries the marker `<!-- dod-guard:review-pr head=<sha> recommendation=<REC> -->` that step 2 detects.
 
-Reread the PR head with `gh pr view <number> --json headRefOid` (no `--jq`) and stop if it differs from the PR head SHA of step 1. Post the payload as one review with event `COMMENT`. A post is ambiguous when it returns a 5xx status, times out, or returns a body you cannot read, because the review may exist even though the call failed. After any failed or ambiguous post, rerun step 2 before any retry and act on its result:
+Reread the PR head with `gh pr view <number> --json headRefOid` (no `--jq`). If it differs from the PR head SHA of step 1, stop and name both SHAs; report that the user can ask for a review of the new head. Post the payload as one review with event `COMMENT`. A post is ambiguous when it returns a 5xx status, times out, or returns a body you cannot read, because the review may exist even though the call failed. After any failed or ambiguous post, rerun step 2 before any retry and act on its result:
 
 - `found: false`: post the same payload once more.
 - `found: true` with `headSha` equal to the reviewed head: that review is the one you posted. Do not post. Continue at "Post the scanner comment parts" below with its `reviewId`, then step 7.
