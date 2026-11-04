@@ -17,6 +17,30 @@ test("the #933 line-length violation ruled KEEP posts MAJOR under the unchanged 
   assert.deepEqual(payload.comments, [{ path: file, line: 140, side: "RIGHT", body }]);
 });
 
+// The path is repository data, not scanner text, so it is never folded: the
+// body can still name a non-ASCII path, and the comment path must match it.
+function postedWithDashMessage(file) {
+  const [dash, open, close, arrow] = [0x2014, 0x201c, 0x201d, 0x2192].map((code) => String.fromCodePoint(code));
+  const message = `too long ${dash} see ${open}docs${close} ${arrow} x`;
+  const violations = [{ file, line: 140, rule: "line-length", severity: "high", message }];
+  const keep = (ids) => ({ ids, status: "KEEP" });
+  return scannerReview({ files: [file], line: 140, violations, rule: keep }).payload;
+}
+
+test("posted review is ASCII when the scanner message is not", () => {
+  const payload = postedWithDashMessage("src/cafe.mjs");
+  const nonAscii = [...payload.body].filter((char) => char.charCodeAt(0) > 0x7f);
+  assert.deepEqual(nonAscii, []);
+  assert.ok(payload.comments[0].body.includes('too long - see "docs" -> x'), payload.comments[0].body);
+});
+
+test("a non-ASCII path keeps its characters in the comment path", () => {
+  const file = `src/caf${String.fromCodePoint(0xe9)}.mjs`;
+  const payload = postedWithDashMessage(file);
+  assert.equal(payload.comments[0].path, file);
+  assert.ok(payload.comments[0].body.includes('too long - see "docs" -> x'), payload.comments[0].body);
+});
+
 const REASONS = ["not-at-head", "excluded-path", "rule-misfire"];
 const RULES = ["function-length", "complexity", "duplicate-block", "dead-export", "file-length"];
 const SKILLS = ["setup-repository", "next-ticket", "fix-pr-review", "goal-sdlc", "complete-pr"];

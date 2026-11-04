@@ -4,7 +4,7 @@ import { complete, findingsFixture } from "./review-pr.test-support.mjs";
 import { slotsByLens } from "./review-slots.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
-const { REVIEWERS, HEAD, PBI, question, hunk } = findingsFixture;
+const { HEAD, PBI, question, hunk } = findingsFixture;
 
 // A diff that only deletes two lines, so the file gets no added line.
 const removalHunk = (file) => [
@@ -24,7 +24,8 @@ function fileHunk(file, line, removed) {
 }
 
 // One added line per file, one scanner check question per file slot listing
-// that file's S ids, and every lens asked about the criterion so no judge idles.
+// that file's S ids, and the four lenses spread over the first file slot and the
+// criterion so no judge idles.
 // Files listed in `removed` only delete lines, so they get no added line and
 // no `file:` plan slot; the slot generator emits file slots only for added lines.
 function scannerReview({ files, line, violations, rule, removed = [] }) {

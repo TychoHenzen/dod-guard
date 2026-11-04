@@ -29,6 +29,13 @@ const SCAN = {
   ],
 };
 
+test("folds a scanner message to ASCII", () => {
+  const message = `too long ${String.fromCodePoint(0x2014)} see ${String.fromCodePoint(0x201c)}docs${String.fromCodePoint(0x201d)}`;
+  const scan = { violations: [violation({ file: A, line: 3, rule: "line-length", message })] };
+  const [item] = scannerCandidates(scan, CHANGED);
+  assert.equal(item.message, 'too long - see "docs"');
+});
+
 test("S ids follow file, line, rule, and message order and skip out-of-scope violations", () => {
   const ids = scannerCandidates(SCAN, CHANGED).map(({ id, file, line, rule, message }) => [
     id,

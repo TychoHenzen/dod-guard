@@ -1,3 +1,4 @@
+import { asciiText } from "./ascii-text.mjs";
 import { judgedFindings } from "./reviewer-results.mjs";
 import { ruleScope } from "./rule-scope.mjs";
 import { slashPath } from "./slash-path.mjs";
@@ -44,7 +45,7 @@ function byLocation(left, right) {
 // the five a merge pass and a posted group need.
 function candidate(violation) {
   const { file, line, rule, severity, message } = violation;
-  return { file: slashPath(file), line, rule, severity, message };
+  return { file: slashPath(file), line, rule, severity, message: asciiText(message) };
 }
 
 // Cross-file rules only hold on a whole-repository scan, so the scan covers
