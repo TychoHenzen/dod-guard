@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { scoreOverlap } from "./overlap-scan.mjs";
+import { scoreOverlap } from "./overlap-metrics.mjs";
 
 const words = (count, prefix) => Array.from({ length: count }, (_, index) => `${prefix}${index % 9}`).join(" ");
 const proseA = `Alpha beta gamma. Delta epsilon zeta! ${words(60, "w")}. Closing sentence here.`;
