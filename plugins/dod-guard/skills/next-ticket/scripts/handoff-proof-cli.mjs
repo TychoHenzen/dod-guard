@@ -2,6 +2,7 @@
 // fix is a UsageError, which the entry point reports as exit 2.
 import { readFileSync } from "node:fs";
 import { parseArgs } from "../../../lib/args.mjs";
+import { decodeText, NOT_UTF8, TextEncodingError } from "../../../lib/read-text.mjs";
 
 class UsageError extends Error {}
 
@@ -53,12 +54,10 @@ function optionsFrom(argv) {
   return { subcommand, options };
 }
 
-// Windows PowerShell 5.1 `>` writes UTF-16, which would read as text full of
-// NUL characters and report records that are present as missing, so a file
-// that is not UTF-8 is refused by name. The decoder drops a UTF-8 byte-order
-// mark, which `Out-File -Encoding utf8` writes.
-const UTF8 = new TextDecoder("utf-8", { fatal: true });
-
+// Windows PowerShell 5.1 `>` writes UTF-16 with a byte-order mark; the shared
+// decoder reads that and a UTF-8 mark. A file it cannot decode, such as UTF-16
+// without a mark or Latin-1, is refused by name rather than read as text full
+// of NUL characters that report present records as missing.
 function readText(file, option) {
   let bytes;
   try {
@@ -66,12 +65,13 @@ function readText(file, option) {
   } catch {
     throw new UsageError(`cannot read --${option} ${file}`);
   }
-  const notUtf8 = new UsageError(`--${option} ${file} is not UTF-8 text; save it as UTF-8`);
-  if (bytes.includes(0)) throw notUtf8;
   try {
-    return UTF8.decode(bytes);
-  } catch {
-    throw notUtf8;
+    return decodeText(bytes);
+  } catch (error) {
+    if (error instanceof TextEncodingError) {
+      throw new UsageError(`--${option} ${file} ${NOT_UTF8}`);
+    }
+    throw error;
   }
 }
 

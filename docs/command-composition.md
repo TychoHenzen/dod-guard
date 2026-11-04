@@ -11,6 +11,16 @@ handoff commands. The focused proof is
   `Test-Path`, and `Select-Object` in PowerShell. Invoke native programs with
   explicit arguments, capture their exit status, and do not rely on POSIX
   operators such as `head`, `&&`, or `$(...)`.
+- **Redirected files:** In Windows PowerShell 5.1, `>`, `>>`, and `1>` write
+  UTF-16 with a byte-order mark, and `Out-File` does too unless it is given
+  `-Encoding`. Write a file that a later command reads with
+  `Out-File -Encoding utf8`, or from a selected POSIX shell. The dod-guard
+  skill scripts read UTF-8, UTF-8 with a byte-order mark, and UTF-16 with a
+  byte-order mark, and refuse any other encoding with the file path in the
+  message.
+- **Chained commands:** Run commands that depend on each other one at a time
+  and check each exit status before the next. A command that reads a file an
+  earlier command writes must not run after that earlier command failed.
 - **Native executable:** Treat `rtk`, `node`, `npm`, `npx`, `git`, and client
   launchers as executables, not as shell scripts. Use an explicit argument for
   each path or positional value. A successful process exit and the expected

@@ -4,21 +4,12 @@ import { Buffer } from "node:buffer";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper starts the quality-guard scanner.
 import { spawnSync } from "node:child_process";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import {
-  closeSync,
-  existsSync,
-  fstatSync,
-  ftruncateSync,
-  openSync,
-  readFileSync,
-  readSync,
-  writeFileSync,
-  writeSync,
-} from "node:fs";
+import { closeSync, existsSync, fstatSync, ftruncateSync, openSync, readSync, writeFileSync, writeSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import process from "node:process";
 import { parseArgs } from "../../../lib/args.mjs";
-import { candidates, json, pbiInputs, violations } from "./lib/candidate-commands.mjs";
+import { readJsonFile, readTextFile } from "../../../lib/read-text.mjs";
+import { candidates, pbiInputs, violations } from "./lib/candidate-commands.mjs";
 import { ignoredPaths, scanArguments } from "./lib/ignored-paths.mjs";
 import { applyRepoLimits, repoLimits } from "./lib/repo-limits.mjs";
 import { buildReview, existingReview, postedFindings } from "./lib/review-findings.mjs";
@@ -47,10 +38,9 @@ const USAGE = [
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
 ].join("\n");
 
-// `gh api --paginate --slurp` writes an array of pages; a plain read writes one
-// array.
+// `gh api --paginate --slurp` writes an array of pages; a plain read writes one array.
 function flatJson(path) {
-  return json(path).flat();
+  return readJsonFile(path).flat();
 }
 
 function slotCounts(slots) {
@@ -90,7 +80,7 @@ function limitReport(fd, root) {
 // instead of through a pipe. The repository's limits are read from --root, so
 // the gate's own flags are never passed here.
 function scan(args) {
-  const scanner = scannerPath(args.client, json(args.registry));
+  const scanner = scannerPath(args.client, readJsonFile(args.registry));
   if (!existsSync(scanner)) {
     throw new Error(`quality-guard scanner not found at ${scanner}`);
   }
@@ -115,7 +105,7 @@ const COMMANDS = {
   existing: (args) => existingReview(flatJson(args.reviews)),
   slots: (args) => {
     const slots = reviewSlots({
-      changedLines: parseChangedLines(readFileSync(args.diff, "utf8")),
+      changedLines: parseChangedLines(readTextFile(args.diff)),
       ...pbiInputs(args),
     });
     writeFileSync(args.out, `${JSON.stringify(slots, null, 2)}\n`);
@@ -126,11 +116,11 @@ const COMMANDS = {
   build: (args) => {
     const review = buildReview({
       headSha: args.head,
-      scan: json(args.scan),
-      diff: readFileSync(args.diff, "utf8"),
-      results: json(args.results),
-      plan: json(args.plan),
-      merge: json(args.merge),
+      scan: readJsonFile(args.scan),
+      diff: readTextFile(args.diff),
+      results: readJsonFile(args.results),
+      plan: readJsonFile(args.plan),
+      merge: readJsonFile(args.merge),
       ...pbiInputs(args),
     });
     writeFileSync(args.out, JSON.stringify(review.payload));

@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import { readFileSync } from "node:fs";
-// biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import process from "node:process";
 import { parseArgs } from "../../../lib/args.mjs";
+import { readJsonFile } from "../../../lib/read-text.mjs";
 import { normalizeGitHubHierarchy, normalizeGitHubReviewThreads, redactSecrets } from "./lib/fix-support.mjs";
 
 const SELECTION_SEPARATOR = /[\s,]+/;
@@ -14,10 +13,6 @@ const USAGE = [
   "  fix-support.mjs redact-context --input=<context.json>",
 ].join("\n");
 
-function readJson(path) {
-  return JSON.parse(readFileSync(path, "utf8"));
-}
-
 function selectedIds(value = "") {
   return value
     .split(SELECTION_SEPARATOR)
@@ -26,9 +21,10 @@ function selectedIds(value = "") {
 }
 
 const COMMANDS = {
-  "normalize-github-comments": (args) => normalizeGitHubReviewThreads(readJson(args.input), selectedIds(args.selected)),
-  "normalize-github-hierarchy": (args) => normalizeGitHubHierarchy(readJson(args.input)),
-  "redact-context": (args) => redactSecrets(readJson(args.input)),
+  "normalize-github-comments": (args) =>
+    normalizeGitHubReviewThreads(readJsonFile(args.input), selectedIds(args.selected)),
+  "normalize-github-hierarchy": (args) => normalizeGitHubHierarchy(readJsonFile(args.input)),
+  "redact-context": (args) => redactSecrets(readJsonFile(args.input)),
 };
 
 const [command, ...rest] = process.argv.slice(2);

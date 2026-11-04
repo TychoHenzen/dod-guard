@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { scoreOverlap } from "./overlap-scan.mjs";
+import { scoreOverlap } from "./overlap-metrics.mjs";
 
 test("overlap gate rejects a renamed skeleton", () => {
   const original = Array.from({ length: 20 }, (_, index) => `const value${index} = input${index};`).join("\n");

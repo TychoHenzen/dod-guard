@@ -3,12 +3,12 @@
 // standards/github-request-discipline.md) and saves the result as JSON; this
 // script classifies it through the shared queue classifier, so it makes no
 // provider calls and no mutations.
-import { readFile } from "node:fs/promises";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
 import { localDate } from "../../../lib/friction-log.mjs";
 import { classifyQueue } from "../../../lib/queue-classifier.mjs";
+import { readJsonFile } from "../../../lib/read-text.mjs";
 import { USAGE } from "./select-next-usage.mjs";
 
 const EMPTY_SNAPSHOT = { items: [], issues: [], pullRequests: [] };
@@ -43,14 +43,14 @@ function selectNext(input, today) {
   };
 }
 
-async function main() {
+function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args?.snapshot || args.snapshot === "true") {
     process.stderr.write(`${USAGE}\n`);
     process.exitCode = 2;
     return;
   }
-  const snapshot = JSON.parse(await readFile(args.snapshot, "utf8"));
+  const snapshot = readJsonFile(args.snapshot);
   // The only clock read. The classifier takes the date as data, so it stays a pure function.
   const today = snapshot?.today ?? localDate(new Date());
   const result = selectNext(snapshot, today);
@@ -58,4 +58,4 @@ async function main() {
 }
 
 const invoked = process.argv[1] && pathToFileURL(process.argv[1]).href;
-if (import.meta.url === invoked) await main();
+if (import.meta.url === invoked) main();
