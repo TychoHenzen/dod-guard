@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import process from "node:process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { frontmatterValue, line, pluginRoot, repositoryRoot, TIER_AGENTS } from "./model-routing.test-support.mjs";
 
 const EFFORT_LEVELS = new Set(["low", "medium", "high", "xhigh", "max"]);
@@ -83,8 +86,12 @@ function agentText(name) {
 
 // Tool allowlists are the permission boundary: stage-cheap edits but holds no
 // Skill or Agent, and the read agents hold no Write or Edit, which also keeps
-// their Codex sandbox read-only.
+// their Codex sandbox read-only. The two skill-capable workers hold PowerShell
+// and the dispatch tools (Agent, Skill, SendMessage, and the web tools).
 const TOOLS_LINES = {
+  "stage-standard": "Read, Grep, Glob, Bash, PowerShell, Edit, Write, Agent, Skill, SendMessage, WebSearch, WebFetch",
+  "stage-cheap-skill":
+    "Read, Grep, Glob, Bash, PowerShell, Edit, Write, Agent, Skill, SendMessage, WebSearch, WebFetch",
   "stage-cheap": "Read, Grep, Glob, Bash, Edit, Write",
   "read-cheap": "Read, Grep, Glob, Bash",
   "read-standard": "Read, Grep, Glob, Bash",
@@ -118,4 +125,38 @@ for (const agent of ["stage-standard", "stage-cheap-skill"]) {
 
 test("stage-cheap has no progress-note rule because it has no SendMessage", async () => {
   assert.doesNotMatch(await agentText("stage-cheap"), PROGRESS_NOTE);
+});
+
+const SHELL_AGENTS = ["stage-standard", "stage-cheap-skill", "stage-cheap", "read-cheap", "read-standard"];
+const SHELL_RULES_START = "<!-- shell-rules:start -->";
+const SHELL_RULES_END = "<!-- shell-rules:end -->";
+
+function shellRulesBlock(source) {
+  const start = source.indexOf(SHELL_RULES_START);
+  const end = source.indexOf(SHELL_RULES_END);
+  assert.ok(start >= 0 && end > start, "shell rules markers");
+  return source.slice(start, end + SHELL_RULES_END.length);
+}
+
+test("every agent that runs a shell embeds the shared shell rules verbatim", async () => {
+  const standard = await readFile(new URL("standards/shell-rules.md", pluginRoot), "utf8");
+  const block = shellRulesBlock(standard);
+  for (const name of SHELL_AGENTS) {
+    assert.equal(shellRulesBlock(await agentText(name)), block, name);
+  }
+});
+
+test("the generated Codex agents match their Claude sources", () => {
+  const converter = fileURLToPath(new URL("skills/codex-migrate/scripts/convert-claude-agents.mjs", pluginRoot));
+  const result = spawnSync(
+    process.execPath,
+    [
+      converter,
+      `--source=${fileURLToPath(new URL("agents", pluginRoot))}`,
+      `--output=${fileURLToPath(new URL(".codex/agents", repositoryRoot))}`,
+      "--check",
+    ],
+    { encoding: "utf8" },
+  );
+  assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
 });

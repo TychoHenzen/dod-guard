@@ -25,7 +25,9 @@ Before the first Loop step, read the client's plugin list once (`claude plugin l
 
 ## Loop
 
-Repeat until a stop condition holds. Take one parent at a time, in the current checkout, on one branch and one PR. Never create or use a Git worktree.
+Repeat until a stop condition holds. Take one parent at a time, in the current checkout, on one branch and one PR. Never create or use a Git worktree. Other worktrees in `git worktree list --porcelain` belong to the owner's other sessions: leave them alone, never treat one as a blocker or its absence as a requirement, and never remove, reset, or inspect them for changes.
+
+At the start of every iteration, before step 1, read `version` from `.claude-plugin/plugin.json` (Codex: `.codex-plugin/plugin.json`) under the plugin root, which is two directories above this skill's base directory, and compare it with the `dod-guard <version>` recorded in your last progress message. When they differ, a release refreshed the plugin during the run: reload this skill (the Skill tool in Claude Code, a read of its SKILL.md in Codex), re-read `standards/model-routing.md` from the new root, and use the new root for every brief and script path from then on. Begin the first progress message of every iteration with `dod-guard <version>`. Resolve every plugin path from the loaded skill's base directory each time, and never reuse a cache path with a version in it from an earlier message or note.
 
 1. Resume first. A dirty tree or in-progress branch usually means a delivery is underway: match its paths, branch, issue, children, and PR, then resume at the latest checkpoint. If nothing matches, capture it with `dod-guard:add-backlog-idea`, refine it, then resume it. Never discard, stash, or fold dirty work into an unrelated PBI. A queue group the selector reports as `unfinished delivery branch` (a pushed `codex/<issue>-*` branch with no open pull request) is such a delivery: the selector starts no Todo or Backlog parent while one exists. Report it to the user and wait. Never resume it automatically and never delete the branch to clear the hold.
 2. Clean the queue, then select.

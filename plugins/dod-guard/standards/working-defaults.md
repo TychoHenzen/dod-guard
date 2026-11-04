@@ -50,6 +50,9 @@ destructive action.
   unavailable, or holds an active or unsafe user-owned branch, stop and report
   the reason, affected checkout, and recovery path. Never create, switch to, or
   remove a Git worktree.
+  A worktree other than the first entry belongs to someone else. A check for
+  worktrees reads `git worktree list --porcelain` and never fails because
+  another one exists, and nothing touches it.
   The maintenance-only `/publish` route stays in the existing primary checkout
   and never runs a Git worktree command. Classify every pending path first and
   continue only when all paths are clearly release-scoped. Stop and preserve
