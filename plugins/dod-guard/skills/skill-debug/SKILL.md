@@ -29,7 +29,7 @@ Read `standards/working-defaults.md` from the plugin root. Stricter boundaries i
 
 ## Tools
 
-Set `<skill-dir>` first. In Claude it is `${CLAUDE_PLUGIN_ROOT}/skills/skill-debug`. In Codex it is the directory holding the loaded SKILL.md. Check that `<skill-dir>/scripts/find-runs.mjs` exists. If the path does not resolve, end the turn and name the missing path.
+Set `<skill-dir>` first. In Claude it is `${CLAUDE_PLUGIN_ROOT}/skills/skill-debug`. In Codex it is the directory holding the loaded SKILL.md. Check that `<skill-dir>/scripts/find-runs.mjs` exists. If the path does not resolve, end the turn and name the missing path. In Claude `<skill-dir>` is the installed plugin cache, so this skill only reads from it and never edits there (`standards/working-defaults.md`).
 
 Facts come from session transcripts only, through these scripts. Never ask a model to recount a past run.
 
@@ -104,6 +104,6 @@ Give the report to the user and wait. Changing a shipped skill is their call. Do
 
 ## After acceptance
 
-Apply accepted findings one at a time, one edit each, in the file that holds the fault (SKILL.md or an agent brief). Touch only the failing text. Leave neighbors alone and fold in no unrelated rewriting. Leave rejected findings unchanged.
+Apply accepted findings one at a time, one edit each, in the file that holds the fault (SKILL.md or an agent brief), as it exists in the skill's source checkout. Find the checkout by the rule in `standards/working-defaults.md`, map the cached path to the same relative path inside it, and edit and commit only there. Refuse any edit whose path has a `.claude/plugins/` segment. When no source checkout exists, make no edit: report the paths you looked for and the accepted findings left unapplied. Touch only the failing text. Leave neighbors alone and fold in no unrelated rewriting. Leave rejected findings unchanged.
 
 When done, say what the next run should show if the fix holds.

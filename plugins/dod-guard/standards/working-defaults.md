@@ -63,8 +63,12 @@ destructive action.
   gate is not deferred as "pre-existing". Fix it, or record evidence that it
   is unrelated together with a recovery decision.
 - Never edit an installed plugin cache, such as `~/.claude/plugins/` or a
-  Codex plugin install; an update overwrites it. Fix a defective dod-guard
-  skill in its source repository.
+  Codex plugin install; an update overwrites it. Fix a defective skill in its
+  source checkout, and edit and commit only there. Find the checkout in this
+  order: the current repository when its `.claude-plugin/marketplace.json`
+  lists the plugin, then `~/mcp-servers/dod-guard` for a dod-guard skill, then
+  the skill's own source repository. When none exists, make no edit and report
+  the paths you looked for.
 - When a clear contract and a test disagree, update the stale expectation and
   rerun it. Fix the implementation when it violates the contract. Never
   weaken or delete a test only to make it pass.
