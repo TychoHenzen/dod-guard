@@ -4,7 +4,7 @@
 // Every function is pure; reading and writing GitHub belongs to the callers.
 import { lines, markdownSection } from "../../../../lib/acceptance-criteria.mjs";
 import { isRecordComment, recordPrefix } from "../../../../lib/comment-record.mjs";
-import { jsonBlock, subsections } from "../../../../lib/issue-body-records.mjs";
+import { jsonBlock, subsections } from "../../../../lib/record-readers.mjs";
 
 const COMPLETION_HEADING = "## Completion evidence";
 const COMPLETION_MARKER = "<!-- dod-guard-completion-evidence -->";

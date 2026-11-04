@@ -1,8 +1,8 @@
 // Every reason record-legacy refuses a delivery, judged from the live read before any write. An empty
 // list means the delivery may be recorded.
 import { markdownSection } from "../../../../lib/acceptance-criteria.mjs";
-import { subsections } from "../../../../lib/issue-body-records.mjs";
 import { requiredChecksComplete } from "../../../../lib/queue-classifier.mjs";
+import { subsections } from "../../../../lib/record-readers.mjs";
 import { pullReasons } from "./closure-legacy-pull.mjs";
 import { parseCompletionRecord } from "./closure-records.mjs";
 

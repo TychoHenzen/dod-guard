@@ -4,7 +4,8 @@
 // required context that is not present or skipped at the head; post-push checks
 // the rows only when the record exists.
 import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
-import { parseIssueBodyRecords, postPushInput } from "../../../lib/issue-body-records.mjs";
+import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
+import { postPushInput } from "../../../lib/post-push-input.mjs";
 import { checkpointRemainder, readPreflightCheckpoint } from "../../../lib/preflight-checkpoint.mjs";
 import { evaluateStructuredFinalization } from "../../complete-pr/scripts/finalization-gate.mjs";
 import { evaluateConvergence } from "./structured-workflow-proof.mjs";

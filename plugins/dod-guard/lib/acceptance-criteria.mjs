@@ -1,6 +1,6 @@
 // Reads the `## Acceptance criteria` checklist of an issue body. complete-pr
 // closure and review-pr slots both read criteria, so one parser owns the rule.
-// issue-body-records and closure-records share its line and fence readers.
+// issue-body-records, record-readers, and closure-records share its line and fence readers.
 // Every function is pure.
 
 function lines(text) {

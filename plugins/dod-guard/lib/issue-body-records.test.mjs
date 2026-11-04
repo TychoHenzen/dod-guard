@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { jsonBlock, parseIssueBodyRecords, postPushInput, subsections } from "./issue-body-records.mjs";
+import { parseIssueBodyRecords } from "./issue-body-records.mjs";
+import { postPushInput } from "./post-push-input.mjs";
+import { jsonBlock, subsections } from "./record-readers.mjs";
 
 const body904 = await readFile(new URL("./fixtures/issue-904-body.md", import.meta.url), "utf8");
 // The same #904 records, taken from the live body when the fixture was made.
@@ -101,6 +103,7 @@ test("subsections and jsonBlock read the first JSON block under each named headi
   );
   assert.deepEqual(jsonBlock(subsections(notes, "b")[0]), { error: "is not valid JSON" });
   assert.deepEqual(jsonBlock("no block"), { error: "has no JSON block" });
+  assert.deepEqual(subsections("before\n### a\nx\n### b\ny\n### a\nz\n", "a"), ["x", "z\n"]);
 });
 
 test("a heading inside a fenced example stays in the record around it", () => {
