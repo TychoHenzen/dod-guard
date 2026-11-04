@@ -102,7 +102,7 @@ Run it from the repo root. It checks that package, Claude, Codex, and adapter ve
 6. If a gate generates tracked changes, reclassify, rerun the inspector, and rerun the affected gates before committing.
 7. Maintenance-only: follow the next section. Functional: go to step 8.
 8. Functional: once the release commit is on the issue branch, invoke `dod-guard:submit-draft-pr` with the parent PBI number. Do not create or update the PR yourself, and never approve, mark ready, merge, or close it.
-9. After a direct maintenance push or a human-merged functional release, inspect CI on the exact published commit. All four checks must pass: `build-test`, `plugin-config`, `static-analysis`, `package-integrity`. Until then the release is not complete.
+9. After a direct maintenance push or a human-merged functional release, wait for CI on the exact published commit. Run `node <plugin-root>/skills/publish/scripts/ci-wait.mjs --repository=<owner/name> --sha=<published sha> --require=build-test,plugin-config,static-analysis,package-integrity,quality-guard`. It prints one line per check run. Exit 0 means all five passed. Exit 1 names the failed checks: stop and report them. Exit 2 means a check is still running: run the same command again, never `gh run watch` or `gh pr checks`. Exit 3 is a usage or read error: report it. Until exit 0 the release is not complete.
 10. After green CI, refresh both clients and confirm `codex plugin list` shows the released version. Never copy files into a client cache by hand.
     ```text
     Claude Code: /plugin marketplace update dod-guard, then /reload-plugins
