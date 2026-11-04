@@ -21,7 +21,7 @@ Read `standards/working-defaults.md` and `standards/github-request-discipline.md
 
 The code-navigation and knowledge MCP servers (code-explorer, quality-guard, knowledge-base, serena, code-review-graph) start over stdio with the client. If one is missing from the tool list or fails to connect, do not wait for it or retry it. Use `gh`, Grep, and Read instead, and name that fallback in the first progress message of the run.
 
-Before the first Loop step, read the client's plugin list once (`claude plugin list --json` in Claude Code, `codex plugin list --json` in Codex) and require one enabled `quality-guard@` entry, because `review-pr` cannot scan without it. If Claude lists one installed but disabled, report `claude plugin enable <id>` as the one fix and stop before claiming a parent; never enable it yourself.
+Before the first Loop step, read the client's plugin list once (`claude plugin list --json` in Claude Code, `codex plugin list --json` in Codex) and require one enabled `quality-guard@` entry (Claude: an array item whose `id` starts with `quality-guard@` and whose `enabled` is true; Codex: an `installed` item whose `pluginId` starts with `quality-guard@` and whose `enabled` is true), because `review-pr` cannot scan without it. If the list command exits non-zero, including a client binary that cannot be found, or no `quality-guard@` entry exists, stop before claiming a parent and report the exact command, its exit code, and the missing entry as separate facts. If Claude lists one installed but disabled, report `claude plugin enable <id>` as the one fix and stop before claiming a parent; never enable it yourself. These stops come before any parent exists, so the Blockers rule does not apply to them.
 
 ## Loop
 
@@ -38,7 +38,7 @@ At the start of every iteration, before step 1, read `version` from `.claude-plu
    - In this skill's directory, run `node scripts/select-next.mjs --snapshot=<annotated-file>`. Report its holds. `queueState: held` is not exhaustion.
    - For each group of kind `needs-refinement`, run `refine-backlog-item` on its root as one stage with the Status left at Todo, then take a fresh snapshot and select again, because the snapshot holds the old body.
 3. Follow `dod-guard:quick-pbi` steps 2 to 6 and run the owner whose condition the parent meets. On `step-plan-missing`, refine, then rerun next-ticket. If refinement needs a user answer, leave the parent in Backlog with the questions recorded and move on.
-4. On `conflict-triaged`, go to submit-draft-pr in update mode for the new head. After `dod-guard:fix-pr-review` pushed a fix, its "Rebind the handoff" section has already rewritten the checkpoint at the new head, so run no submit-draft-pr for it. Otherwise, if any parent or child status is not Done, return to the completion owner. If all are Done, go to step 1.
+4. On `conflict-triaged`, go to submit-draft-pr in update mode for the new head. After `dod-guard:fix-pr-review` pushed a fix, its "Rebind the handoff" section has already rewritten the checkpoint at the new head, so run no submit-draft-pr for it. Otherwise, if any parent or child status is not Done, re-evaluate the Owners table against the parent's current PR and review state and run the owner whose condition it now meets, as in step 3; never assume complete-pr. If no owner's condition matches, record the parent as a blocker under Blockers. If all are Done, go to step 1.
 
 ## Delegation
 
@@ -48,8 +48,8 @@ The main thread sequences and checks. Subagents are Agent-tool subagents in Clau
 - A stage report naming a live child, a pending named proof, or a still-applied temporary probe is incomplete. Resume that stage at its checkpoint. Launch no replacement.
 - Read back the commit of any stage that changed tracked files before the next stage.
 - A cheap complete-pr run stops at `merge_conflict`. The main thread then runs conflict triage.
-- Retire a subagent near 100,000 tokens of context. Brief a fresh one with the compact checkpoint.
-- Before claiming a parent, look for another active goal or agent run on its repository, parent, branch, and stage. If one exists, mutate nothing: wait, or fail closed and name it as owner if its head or handoff disagrees. PR, issues, and handoff comments are the only ownership record; create no lock file or local ledger.
+- Retire a subagent near 100,000 tokens of context. Brief a fresh one with the compact checkpoint: the parent issue number, the branch, the last pushed SHA, the stage, the completed task ids, the pending named proofs, and the one next command. Put nothing else in it.
+- Before claiming a parent, look for another active goal or agent run on its repository, parent, branch, and stage. PR, issues, and handoff comments are the only ownership record; create no lock file or local ledger. If one exists, mutate nothing on that parent, name the other run as its owner, and select a different parent meanwhile. Date the other run's last checkpoint with `gh api` as the later of the `updated_at` of the parent's `## Implementation handoff` comment and the committer date of the remote branch head. Under 1 hour old, wait: recheck the parent only after the other eligible parents are worked or held. At 1 hour or older, when neither value can be read, or when its head or handoff disagrees, fail closed: leave the parent untouched and report the other owner.
 
 Agent names take the `dod-guard:` prefix.
 
@@ -107,6 +107,6 @@ When every remaining parent is blocked, send one short message starting with `Bl
 
 ## Stop condition
 
-Stop only when no eligible parent remains after verified holds, a user stop condition is met, the user ends the run, or every remaining parent stays blocked by the same external cause across three evidence-backed attempts.
+Stop only when no eligible parent remains after verified holds, a user stop condition is met, the user ends the run, every remaining parent stays blocked by the same external cause across three evidence-backed attempts, or the plugin check in Tool availability fails.
 
 Finishing one PBI, an empty Todo column with a non-empty Backlog, and an empty selection from selector defects or missing evidence are not reasons to stop. Recheck the checkout for in-progress work before reporting an exhausted queue.
