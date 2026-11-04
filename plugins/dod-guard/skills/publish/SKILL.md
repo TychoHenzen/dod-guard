@@ -103,17 +103,18 @@ Run it from the repo root. It checks that package, Claude, Codex, and adapter ve
 7. Maintenance-only: follow the next section. Functional: go to step 8.
 8. Functional: once the release commit is on the issue branch, invoke `dod-guard:submit-draft-pr` with the parent PBI number. Do not create or update the PR yourself, and never approve, mark ready, merge, or close it.
 9. After a direct maintenance push or a human-merged functional release, wait for CI on the exact published commit. Run `node <plugin-root>/skills/publish/scripts/ci-wait.mjs --repository=<owner/name> --sha=<published sha> --require=build-test,plugin-config,static-analysis,package-integrity,quality-guard`. It prints one line per check run. Exit 0 means all five passed. Exit 1 names the failed checks: stop and report them. Exit 2 means a check is still running: run the same command again, never `gh run watch` or `gh pr checks`. Exit 3 is a usage or read error: report it. Until exit 0 the release is not complete.
+    On exit 1 `master` already holds the published commit: a maintenance push put it there, and a human merge put the functional one there. Do not revert, do not force-push, and skip steps 10 and 11. Report each failing check with its run URL from this read-only command, using the full 40-character SHA (an abbreviation returns no rows), then fix forward through a release PBI and a version-bump pull request.
+    ```text
+    gh run list --repo <owner>/<repo> --commit <published-sha> --json name,conclusion,status,url
+    ```
 10. After green CI, refresh both clients and confirm `codex plugin list` shows the released version. Never copy files into a client cache by hand.
     ```text
     Claude Code: /plugin marketplace update dod-guard, then /reload-plugins
     Codex: codex plugin marketplace upgrade dod-guard-monorepo
     Codex: codex plugin add dod-guard@dod-guard-monorepo
     ```
-    If the machine runs the shared MCP host, restart only these two apps, and only after both refreshes succeed. A machine without those apps does nothing, and no other PM2 process restarts.
-    ```text
-    pm2 restart dod-guard-quality-guard dod-guard-knowledge-base --update-env
-    ```
-11. On Windows PowerShell, after the refreshes and any restart, run the read-only verification. It checks heads, protection, the four checks on the published SHA, and both client registrations against `ExpectedVersion`, and fails closed on missing, stale, or mismatched evidence.
+    `quality-guard` and `knowledge-base` start over stdio from each client's plugin manifest, so `/reload-plugins` or a client restart picks up the new bundle and no process restart is needed.
+11. On Windows PowerShell, after the refreshes, run the read-only verification. It checks heads, protection, the four checks on the published SHA, and both client registrations against `ExpectedVersion`, and fails closed on missing, stale, or mismatched evidence.
     ```powershell
     . "<skill-dir>/scripts/release-verification.ps1"
     $verification = Invoke-ReleaseVerification `
@@ -149,3 +150,11 @@ Read `Success`, `Stage`, `DeleteAttempted`, `Restored`, and `RestoreAttempts` fr
 - A failure before the DELETE leaves protection untouched and reports `DeleteAttempted` false. That with `Restored` false is not a protection incident.
 - If `master` advances, protection is restored. Stop without pulling, merging, or retrying the push, and keep the checkpoint. A later run reclassifies pending paths, rebuilds from the new head, and reruns all gates.
 - A hard kill between DELETE and cleanup cannot restore protection. Exposure is limited to the push.
+
+### Return the checkout
+
+The maintenance path detaches HEAD, so after `Invoke-MaintenancePublish` returns, whatever its result, return to the state item 2 of the list above recorded.
+
+- Run `git switch <starting-branch>`. If item 2 recorded a detached HEAD, run `git switch --detach <starting-HEAD>` instead. If Git refuses the switch, report the refusal and the current HEAD, leave the checkout as it is, and stop.
+- Only when `Success` is true, the tree is clean, and the branch is behind `origin/master`, run `git merge --ff-only origin/master`. The push has already moved `origin/master`, so no fetch is needed. When `Success` is false, or `master` advanced during the run, run no merge, pull, or fetch (the stop rule above stays in force).
+- Never reset.
