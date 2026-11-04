@@ -9,7 +9,7 @@ This skill captures ideas. It does not refine, design, or build them.
 
 Read `standards/working-defaults.md` and `standards/github-request-discipline.md` from the plugin root before you start. Where this skill is stricter, this skill wins.
 
-Callers pass the whole request in one invocation. Stop once every idea is in the backlog.
+Callers pass the whole request in one invocation; the only exception is the single batched round in "Ask one batched round when a user is present". Stop once every idea is in the backlog.
 
 ## What an issue is here
 
@@ -73,7 +73,7 @@ Write each issue body with these parts:
 
 Run this round only when a person invoked this skill directly in an interactive session and the supplied text does not let you state a feature's outcome or the split. The unresolved remainder from "Place every detail" joins this round.
 
-Skip the round, and ask nothing, in every other case: the text is already clear, another skill such as `dod-guard:quick-pbi` or `dod-guard:goal-sdlc` invoked this skill, or no user is present (a non-interactive or active goal run). In a skipped run, put each open point under `## Open questions`.
+Skip the round, and ask nothing, in every other case: the text is already clear, another skill such as `dod-guard:quick-pbi` or `dod-guard:goal-sdlc` invoked this skill, or no user is present (a non-interactive or active goal run). If it is not clear that a person invoked this skill directly in an interactive session, skip the round. In a skipped run, put each open point under `## Open questions`. Text that fits no feature is not an open point: report it as the unresolved remainder in the final report, as "Place every detail" says.
 
 When the round runs, ask once, in ordinary conversation, and never through a provider-specific question tool:
 
@@ -83,7 +83,7 @@ When the round runs, ask once, in ordinary conversation, and never through a pro
 - End with a compact reply format, such as `Reply with 1A, 2C, plus any custom details.`
 - Ground every question in the supplied text only. Do not read the codebase.
 
-After the reply, keep each answer word for word under `## Context` of the feature it settles. Put each point still unanswered under `## Open questions`. Never run a second round, and never add requirements, decisions, plans, or tasks of your own.
+After the reply, keep each answer word for word under `## Context` of the feature it settles. Put each point still unanswered under `## Open questions`. Never run a second round. The capture-only rules above still apply.
 
 ## Create and file each issue
 
