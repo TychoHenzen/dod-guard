@@ -19,5 +19,11 @@ The PR has parent PBI #10, sibling sub-issue #12 (open) and Backlog issue #20 (o
 | 7 | destination closed by this PR | GH-7 names parent #10, which the PR closes. | Rejected as a destination, finding unrouted, thread left open. |
 | 8 | rerun after a partial write | GH-4 comment on #12 exists with the marker but the thread reply failed. | The marker search finds the comment, no second comment is posted, the thread reply is posted once, then readback and resolve. |
 | 9 | partial without destination | GH-8 holds, this batch fixes part, no destination is named or unique. | The fixed part is pushed, the thread stays open, report `unrouted: GH-8`. |
+| 10 | rerun with both writes present, thread resolved | GH-4 comment on #12 and the thread reply both exist with the marker, and the thread is already resolved. | No-op: no comment, no reply, no mutation. |
+| 11 | rerun with both writes present, thread open | GH-4 comment on #12 and the thread reply both exist with the marker, and the thread is open. | The marker is found in both places, so neither write is repeated. Readback, then one resolveReviewThread and a readback. |
+| 12 | rerun after the destination closed | GH-4 comment on #12 exists with the marker, the thread reply failed, and #12 has since closed. | #12 holds the marker comment, so it stays valid. No second comment, the thread reply is posted once, then readback and resolve. |
+| 13 | closed destination before any write | GH-5 names #12, which is closed, and no marker comment exists on it. | Rejected as a destination before the first write, finding unrouted, thread left open. |
+| 14 | thread resolved between writes | GH-4 comment on #12 exists with the marker and the thread was resolved by hand before the reply. | The thread is resolved, so it is a no-op: no thread reply and no mutation. The existing destination comment stays. |
+| 15 | sibling and Backlog both match | GH-6 holds, the caller names nothing, and sibling #12 and Backlog #20 both cover the remainder. | Neither has precedence, so no unique match: unrouted, thread left open. |
 
 Each case follows the budget and stops of 'Update proven findings' in SKILL.md.

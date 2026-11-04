@@ -117,7 +117,7 @@ Apply this section only when a fix was pushed and the parent is structured. A ru
 
 A `partial` or `out-of-slice` finding leaves work this PR does not deliver. Its thread closes only after that remainder sits on another issue.
 
-The destination is an existing open issue in this repository. It is not a pull request, not the parent PBI, and not any issue this PR closes through a closing keyword. The caller names it. Without a named one, use the single open sibling sub-issue of the parent, or the single Backlog issue, whose body covers the remainder. Read the destination's state and type before the first write. A closed issue, a pull request, another repository, an issue this PR closes, or no unique match leaves the finding unrouted. This skill never creates an issue.
+The destination is an existing open issue in this repository. It is not a pull request, not the parent PBI, and not any issue this PR closes through a closing keyword. The caller names it. Without a named one, collect every open sibling sub-issue of the parent and every open Backlog issue whose body covers the remainder. Exactly one match is the destination. Sibling and Backlog issues carry no precedence over each other: a sibling and a Backlog issue that both match, or two of either kind, are no unique match. Read the destination's state and type before the first write. A closed issue, a pull request, another repository, an issue this PR closes, or no unique match leaves the finding unrouted. This skill never creates an issue.
 
 Do not route a thread that is already resolved. For each other thread, under the budget and stops of "Update proven findings":
 
@@ -126,7 +126,7 @@ Do not route a thread that is already resolved. For each other thread, under the
 3. Look in the thread for a reply holding the same marker. If absent, reply to the root comment with the marker, the destination comment link and the head SHA. For `partial`, also list the fixed part with its commit and verification command, and the remainder. For `out-of-slice`, name the acceptance criteria it falls outside and say whether the caller or the hierarchy named the destination. Read the reply back by root and body.
 4. Run the readback and resolve steps from "Update proven findings".
 
-A rerun that finds the marker in either place skips that write and goes on to the next step. Never post a second comment or reply.
+A rerun that finds the marker in either place skips that write and goes on to the next step. Never post a second comment or reply. The marker's `GH-<id>` is the review comment's own database ID, unique within the repository, and the destination is in this repository, so the marker needs no PR scope. The closed-destination check applies only before the first write: a destination that already holds the marker comment stays valid on rerun even if it closed since, because the remainder is recorded there. Then post only the missing thread reply, and read back and resolve.
 
 Unrouted: push the fixed part of a `partial` finding, leave the thread open, post no destination comment, and report `unrouted: GH-<id>`. The caller then names an open destination and reruns this skill, or a person resolves the thread by hand. `dod-guard:complete-pr` stops with `unresolved-review-threads` until one of those happens. An unrouted finding is a finding with no landed fix, and the thread stays open for the same reason.
 
