@@ -72,8 +72,8 @@ One `dod-guard:read-standard` planner returns a JSON array with one entry per sl
 - A question has `id` (unique across lenses), `lens`, `question`, `files`, and the targeted risk.
 - A question is neutral. It asks what the code, test or document shows and names no suspected defect, expected answer or verdict. The targeted risk names the failure the question probes, never a conclusion about it.
 - An exclusion has `lens` and `reason`.
-- The lenses are `dod-guard:review-pr-feature` (F), `dod-guard:review-pr-design` (D), `dod-guard:review-pr-reliability` (R), and `dod-guard:review-pr-hygiene` (H). Each gets at least one question or exclusion.
-- For a file slot with in-scope violations, add scanner check questions with a `scanner` array of the S ids covered. They ask whether the violation shows at the reviewed head, whether the path is generated or excluded, and whether the rule's own condition holds. List only S ids from that slot's file. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file.
+- The lenses are `review-pr-feature` (F), `review-pr-design` (D), `review-pr-reliability` (R), and `review-pr-hygiene` (H). Write each in `lens` exactly as shown, without the `dod-guard:` prefix the Agent tool takes: the build refuses a prefixed lens. Each gets at least one question or exclusion.
+- For a file slot with in-scope violations, add scanner check questions with a `scanner` array of the S ids covered. They ask whether the violation shows at the reviewed head, whether the path is generated or excluded, and whether the rule's own condition holds. List only S ids from that slot's file. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file. Put each covered violation's rule, line, and message text in the question itself, so an investigator never needs the scanner output.
 
 ### Investigate
 
@@ -83,7 +83,7 @@ Cut the saved plan into batch files:
 node "<skill-dir>/scripts/review-findings.mjs" batches --plan=<plan.json> --head=<full 40-character head SHA> --out-dir=<batches-dir>
 ```
 
-The command skips exclusions, keeps each slot's questions together, caps a batch at eight questions, and stamps every batch file with the plan hash and the head. Run one `dod-guard:stage-cheap` investigator per batch (`dod_guard_stage_cheap` in Codex) and dispatch all of them in one message so they run in parallel. Investigators write their own files because the main thread would otherwise retype every answer. Each brief follows "Stage brief" in `standards/model-routing.md`: its first line is `Read <plugin-root>/skills/review-pr/SKILL.md, then follow only #### Investigator batch.`, then it names the batch file, the answers file `<answers-dir>/<batch>.json`, the head SHA and the checkout path, and asks for the answers file path and the answer counts as the evidence to return.
+The command skips exclusions, keeps each slot's questions together, caps a batch at eight questions, and stamps every batch file with the plan hash and the head. Run one `dod-guard:stage-cheap` investigator per batch (`dod_guard_stage_cheap` in Codex) and dispatch all of them in one message so they run in parallel. Dispatch them in the foreground and wait for every report; never in the background. Investigators write their own files because the main thread would otherwise retype every answer. Each brief follows "Stage brief" in `standards/model-routing.md`: its first line is `Read <plugin-root>/skills/review-pr/SKILL.md, then follow only #### Investigator batch.`, then it names the batch file, the answers file `<answers-dir>/<batch>.json`, the head SHA and the checkout path, and asks for the answers file path and the answer counts as the evidence to return.
 
 #### Investigator batch
 
@@ -143,7 +143,7 @@ gh api --method POST "repos/{owner}/{repo}/pulls/{n}/reviews" --input <payload.j
 
 BLOCKER and MAJOR findings are inline comments, each with a `GH-<id>` that the label step appends to the comment body after the post. MINOR findings go in "Minor notes" in the body. A file's scanner findings are MAJOR when any is `high`, else MINOR. Any BLOCKER gives `BLOCK`, else any MAJOR gives `REQUEST_CHANGES`, else `APPROVE`. The body carries the marker `<!-- dod-guard:review-pr head=<sha> recommendation=<REC> -->` that step 2 detects.
 
-Reread the PR head and stop if it moved. Post the payload as one review with event `COMMENT`. A post is ambiguous when it returns a 5xx status, times out, or returns a body you cannot read, because the review may exist even though the call failed. After any failed or ambiguous post, rerun step 2 before any retry and act on its result:
+Reread the PR head with `gh pr view <number> --json headRefOid` (no `--jq`) and stop if it differs from the PR head SHA of step 1. Post the payload as one review with event `COMMENT`. A post is ambiguous when it returns a 5xx status, times out, or returns a body you cannot read, because the review may exist even though the call failed. After any failed or ambiguous post, rerun step 2 before any retry and act on its result:
 
 - `found: false`: post the same payload once more.
 - `found: true` with `headSha` equal to the reviewed head: that review is the one you posted. Do not post. Continue at "Post the scanner comment parts" below with its `reviewId`, then step 7.
