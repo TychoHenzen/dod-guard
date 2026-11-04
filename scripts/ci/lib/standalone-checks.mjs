@@ -1,9 +1,9 @@
 // Checks for plugins that ship no code: a manifest plus directly loaded
-// output styles, skills, or agents. They are not npm workspaces.
+// output styles, skills, agents, or hooks. They are not npm workspaces.
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { listDir, readFrontmatter } from "./fs-utils.mjs";
+import { listDir, readFrontmatter, walkStrings } from "./fs-utils.mjs";
 
 export function loadStandalonePlugins(root) {
   const dir = join(root, "plugins");
@@ -26,15 +26,22 @@ function checkStyle(file, report) {
   if (!fields.description) report(file, "frontmatter has no description - the picker would show nothing");
 }
 
+/** Returns the number of hook commands the manifest registers. */
 function checkManifest(file, name, report) {
   let declared;
   try {
     declared = JSON.parse(readFileSync(file, "utf8"));
   } catch (err) {
-    return report(file, `not valid JSON: ${err.message}`);
+    report(file, `not valid JSON: ${err.message}`);
+    return 0;
   }
   if (declared.name !== name) report(file, `name "${declared.name}" does not match directory "${name}"`);
   if (!declared.description) report(file, "description missing or empty");
+  let hooks = 0;
+  walkStrings(declared.hooks ?? {}, (_text, path) => {
+    if (path.endsWith("command")) hooks += 1;
+  });
+  return hooks;
 }
 
 function checkNamedContent(file, expectedName, report) {
@@ -45,10 +52,12 @@ function checkNamedContent(file, expectedName, report) {
 }
 
 export function checkStandalonePlugins(plugins, report) {
+  let hookCount = 0;
   for (const plugin of plugins) {
-    checkManifest(join(plugin.dir, ".claude-plugin", "plugin.json"), plugin.name, report);
-    if (plugin.styles.length + plugin.skills.length + plugin.agents.length === 0) {
-      report(plugin.dir, "ships no output style, skill, or agent - nothing here reaches a user");
+    const hooks = checkManifest(join(plugin.dir, ".claude-plugin", "plugin.json"), plugin.name, report);
+    hookCount += hooks;
+    if (plugin.styles.length + plugin.skills.length + plugin.agents.length + hooks === 0) {
+      report(plugin.dir, "ships no output style, skill, agent, or hook - nothing here reaches a user");
     }
     for (const style of plugin.styles) checkStyle(join(plugin.dir, "output-styles", style), report);
     for (const skill of plugin.skills) checkNamedContent(join(plugin.dir, "skills", skill, "SKILL.md"), skill, report);
@@ -60,5 +69,6 @@ export function checkStandalonePlugins(plugins, report) {
     styleCount: plugins.reduce((n, p) => n + p.styles.length, 0),
     skillCount: plugins.reduce((n, p) => n + p.skills.length, 0),
     agentCount: plugins.reduce((n, p) => n + p.agents.length, 0),
+    hookCount,
   };
 }
