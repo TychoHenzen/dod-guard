@@ -11,7 +11,7 @@ Fix selected findings of a GitHub PR review, usually the `GH-<id>` findings `/do
 - Work only on the reviewed branch, in one coherent batch at the code boundary that owns the behavior.
 - Never add compatibility paths, speculative abstractions, or unrelated cleanup.
 - Never approve, mark ready, merge, or close the parent PBI. Never force-push or rewrite commits.
-- A dirty checkout is not a blocker. Classify pending paths without mutating them, and keep clearly in-scope changes, until the PR, head, PBI and findings are validated.
+- A dirty checkout is not a blocker. Classify pending paths without mutating them, and keep in-scope changes, until the PR, head, PBI and findings are validated. A pending path is in scope only if it appears in `git diff --name-only origin/<base.ref>...HEAD` or is a test for such a path; anything else is unrelated, so stop. Take `base.ref` from the PR response that "Resolve input" reads, run `git fetch origin <base.ref>` first, and stop if the fetch fails.
 - Stop on a different head, secrets, destructive intent, unrelated changes, or work that cannot be separated safely.
 
 `<skill-dir>` is `${CLAUDE_PLUGIN_ROOT}/skills/fix-pr-review` in Claude Code, and the directory holding this SKILL.md in Codex.
@@ -64,13 +64,15 @@ Given a written fix plan per finding (file, edit, test, command, expected result
 
 Run focused tests, then the repo's full pre-PR gates, and map each fixed finding to fresh evidence. Inspect the full diff, stage only reviewed files, commit concisely only after fixes and checks pass, and push to the existing upstream. When CI must run again on a head, rerun the existing run with `gh run rerun <run-id> --failed`; never dispatch a second workflow run for the same head.
 
+If a finding's fix fails its focused test or a gate twice, the finding is `unfixed`: revert only your own edits for that finding, push nothing for it, leave its thread open with no reply, and never weaken, skip or delete the test. Before the first edit to a path that already has pending changes, copy the file outside the repo, and record its hash after your edit. Revert a clean path with `git checkout -- <path>` and delete a file you created. Restore a copied path only while its current hash still equals the recorded post-edit hash; if it differs, stop and report. Never stash, reset or check out a path that holds pending changes you did not make. If the failing command cannot be tied to one finding, revert this run's edits to the paths that command covers, leave every affected thread open, list each affected finding as `unfixed`, and stop. Fixes that passed still go through the commit and push steps.
+
 ## Update proven findings
 
-Reply to or resolve a fixed finding only after its fix commit is pushed. Record the pushed SHA, then run a bounded read-only convergence wait before any reply or resolve. The source branch ref, the PR API head and `refs/pull/<number>/head` must equal the pushed SHA. If `refs/pull/<number>/merge` exists, the pushed SHA must be among its parents; never use the merge SHA as the CI target. Retry stale reads only within the wait.
+Reply to or resolve a fixed finding only after its fix commit is pushed. Record the pushed SHA, then run a read-only convergence wait before any reply or resolve: read the three refs named next up to 5 times, one Bash call per read, with no `sleep` of 30 seconds or more (a pause, if any, is one `sleep` of 20 seconds or less inside that read's call); if they still disagree after the fifth read, stop with the expected and observed SHAs. The source branch ref, the PR API head and `refs/pull/<number>/head` must equal the pushed SHA. If `refs/pull/<number>/merge` exists, the pushed SHA must be among its parents; never use the merge SHA as the CI target. Retry stale reads only within the wait.
 
-Stop with expected and observed SHAs on branch drift, fork ownership, a missing or malformed ref, a provider read failure, a merge-parent mismatch, or timeout. Until convergence resolves, make no push, no `refs/pull` write, no update-branch, no resolution and no other provider mutation.
+Stop with expected and observed SHAs on branch drift, fork ownership, a missing or malformed ref, a provider read failure, a merge-parent mismatch, or the fifth read without a match. Until convergence resolves, make no push, no `refs/pull` write, no update-branch, no resolution and no other provider mutation.
 
-For a structured parent, rerun post-push at the converged pushed head (`node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`). Rows touched by the fix need re-observation at the new head and an update of the handoff matrix block (step 1 of "Rebind the handoff"). Report an exit-1 remainder with the stale row ids, and do not resolve fixed threads until it is clear. On exit 2 (a body or handoff that cannot be read or parsed), stop the same way and report the printed error. Make no edit of the parent issue body.
+For a structured parent, rerun post-push at the converged pushed head (`node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`). Rows touched by the fix need re-observation at the new head and an update of the handoff matrix block (step 1 of "Rebind the handoff"). Report an exit-1 remainder with the stale row ids, and do not resolve fixed threads until it is clear. When the proof still exits 1 after the matrix update, stop with the fixed threads open and the pushed SHA recorded, and say the caller runs `dod-guard:submit-draft-pr` in Update mode at the pushed head, then resumes this run at this section with the recorded pushed SHA to reply and resolve. On exit 2 (a body or handoff that cannot be read or parsed), stop the same way and report the printed error. Make no edit of the parent issue body.
 
 Skip a thread that also holds a declined, partial or out-of-slice item. The decline or routing path owns its single reply and resolve.
 
@@ -132,6 +134,6 @@ Unrouted: push the fixed part of a `partial` finding, leave the thread open, pos
 
 ## Report
 
-Report the PBI, original and pushed heads (the revalidated head if nothing was pushed), fixed IDs, declined IDs with classification and evidence, routed IDs with the destination issue link, `unrouted: GH-<id>` entries, other skipped IDs with reasons, resolved thread IDs, changed files, commit, checks, provider updates and the finalization result of the rebound handoff. Confirm the parent PBI remains open.
+Report the PBI, original and pushed heads (the revalidated head if nothing was pushed), fixed IDs, declined IDs with classification and evidence, routed IDs with the destination issue link, `unrouted: GH-<id>` entries, `unfixed: GH-<id> <failing command>` for each reverted finding, other skipped IDs with reasons, resolved thread IDs, changed files, commit, checks, provider updates and the finalization result of the rebound handoff. Confirm the parent PBI remains open.
 
 Regression checks use [the fix-pr-review fixtures](fixtures.md).
