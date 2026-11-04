@@ -19,6 +19,7 @@ test("parses the #904 body into the refinement evaluator input", () => {
 
   assert.deepEqual(errors, []);
   assert.deepEqual(remainder, []);
+  assert.deepEqual(parseIssueBodyRecords(body904).requirementRemainder, []);
   assert.deepEqual(Object.keys(input), [
     "records",
     "tasks",
@@ -128,4 +129,49 @@ test("binds a lens that stores no head to the given head and keeps a stored head
   ]);
   assert.equal(result.headSha, "H");
   assert.equal(result.plannedAcceptanceMatrix, null);
+});
+
+test("reports a requirement that no acceptance criterion cites", () => {
+  const body = replaceOnce(
+    body904,
+    "### clarifications\n",
+    "- R-99 An extra requirement that no criterion cites.\n\n### clarifications\n",
+  );
+  assert.deepEqual(parseIssueBodyRecords(body).requirementRemainder, [
+    "R-99 requirement is cited by no acceptance criterion",
+  ]);
+});
+
+test("reports a cited id that is not a requirement", () => {
+  const body = replaceOnce(body904, "- [ ] AC-1 ", "- [ ] AC-1 (R-98) ");
+  assert.ok(parseIssueBodyRecords(body).requirementRemainder.includes("AC-1 cites R-98 which is not a requirement"));
+});
+
+test("matches requirement ids as whole tokens", () => {
+  const body = replaceOnce(
+    body904,
+    "### clarifications\n",
+    "- R-19 An extra requirement that no criterion cites.\n\n### clarifications\n",
+  );
+  assert.deepEqual(parseIssueBodyRecords(body).requirementRemainder, [
+    "R-19 requirement is cited by no acceptance criterion",
+  ]);
+
+  const citesR19 = replaceOnce(body904, "- [ ] AC-1 ", "- [ ] AC-1 (R-19) ");
+  assert.ok(
+    parseIssueBodyRecords(citesR19).requirementRemainder.includes("AC-1 cites R-19 which is not a requirement"),
+  );
+});
+
+test("reports a repeated requirement id", () => {
+  const body = replaceOnce(body904, "### clarifications\n", "- R-1 A repeated id.\n\n### clarifications\n");
+  assert.ok(parseIssueBodyRecords(body).requirementRemainder.includes("R-1 requirement id is repeated"));
+});
+
+test("reports a requirements record that holds no R-n requirement", () => {
+  const body = body904.replace(
+    /### requirements\n[\s\S]*?(?=### clarifications)/,
+    "### requirements\n\n- A bullet with no id.\n\n",
+  );
+  assert.deepEqual(parseIssueBodyRecords(body).requirementRemainder, ["requirements record has no R-n requirement"]);
 });

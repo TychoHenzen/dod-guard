@@ -39,6 +39,14 @@ Run triage again after every interview, research, advisor, or debate round. Neve
 - Genuine tradeoff: debate one concrete decision, only after facts and user constraints are known. Use three to five named real experts whose documented positions match the competing concerns. Run at least two rounds (position, then challenge to the strongest opposing position), then a synthesis. Record the result as `debate-synthesis`, `accepted-option`, and `rejected-option` notes. Record a new tradeoff the debate exposes and continue the same decision. Keep raw scratch files outside the repository. Never turn expert speculation into a requirement.
 - Unresolved items: keep the issue in Backlog when a material requirement cannot be stated without inventing it. Document the exact gap, fallback, impact, and next step. An unresolved item does not block Todo if the PBI is independently deliverable, outcome, scope, and criteria are coherent, and no requirement was invented.
 
+## Repository gate preflight
+
+When the issue lists owner files, or the work edits files that the repository's PR gate scans, find the gate the repository itself runs. Read the repository instructions (`AGENTS.md`, `CLAUDE.md`) and the CI workflow that holds its required checks. Run the scanner that gate uses over the owner files, with the exact flags CI uses. A gate that diffs a base against HEAD sees only committed changes, so scan the files themselves rather than waiting for a diff. Never write another repository's command, patch or root into a plan.
+
+Record in Implementation notes the exact command, the flags, the result, and any cleanup the gate's quota requires. Carry the command into the step plan of each task that edits an owner file. A finding the required gate would block on is planned cleanup before the item reaches Todo. When the repository documents no PR gate, record that and plan none. When the gate cannot run here, record the reason and the command that would run it.
+
+For extraction or helper-splitting work, state the layer of each planned helper (domain, application, I/O boundary, or the repository's own layering) in Implementation notes.
+
 ## Choose labels
 
 The live label descriptions are the classification contract. Pick exactly one priority and one effort label whose descriptions fit the researched impact, urgency, scope, dependencies, risk, and uncertainty. The scales are independent: never infer urgency from effort, or estimate from the title alone. Use `Prio 6 - Unknown` only when evidence supports no other priority, and say in the notes what information would let you reassess. Pick one or more standard labels, never the whole set. Stop if no label's description supports the classification. Priority and effort are labels in a repository whose Project has no Priority or Effort fields; never create those fields, and read them back as labels.
@@ -47,7 +55,7 @@ The live label descriptions are the classification contract. Pick exactly one pr
 
 Give the parent issue `## Outcome` (the observable result), `## Scope` (included behavior and explicit non-goals), `## Implementation notes`, `## Acceptance criteria` (checkboxes with observable outcomes), and `## Verification` (checks that can prove each criterion).
 
-Implementation notes hold the triage and record summaries (one short entry each, fields per `standards/project-workflow.md`), code, caller, and test evidence, the priority and effort rationale tied to label descriptions, and the standard-label rationale.
+Implementation notes hold the triage and record summaries (one short entry each, fields per `standards/project-workflow.md`), code, caller, and test evidence, the priority and effort rationale tied to label descriptions, and the standard-label rationale. When a version bump is in scope, list its carriers by grepping the exact `"version"` key of the plugin manifests (`plugin.json`, `package.json`), never a bare version string, which also matches dependency ranges and lockfiles.
 
 Ask for direction when a missing choice changes observable behavior, a public interface, data handling, or an acceptance test. Never write a false choice as a requirement.
 
@@ -63,7 +71,7 @@ Ask for direction when a missing choice changes observable behavior, a public in
 
 Every structured PBI assesses four lenses: implementation; wiring and end-to-end usability (proof it is reachable from its intended UI or user-facing surface); refactoring and code quality; and failure and recovery reliability. Attach each lens to the child or parent-level task that owns it, with observable acceptance and verification. Lenses are not child categories. A sub-issue being refined into a PBI gets the same research, sections, and label rules.
 
-**Feature records.** For feature work or material ambiguity, read `standards/project-workflow.md` from the plugin root. Never assume the target checkout has it. Keep these as distinct subsections of Implementation notes, with discovery markers as evidence inside them: `requirements`, `clarifications`, `implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, `planned-acceptance-matrix`. Small, clear fixes need none of them.
+**Feature records.** For feature work or material ambiguity, read `standards/project-workflow.md` from the plugin root. Never assume the target checkout has it. Keep these as distinct subsections of Implementation notes, with discovery markers as evidence inside them: `requirements`, `clarifications`, `implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, `planned-acceptance-matrix`. Small, clear fixes need none of them. Open every `requirements` bullet with an id token (`R-1`, `R-2`, and so on) and cite, in each acceptance checkbox after its `AC-n` id, the ids it proves, as in `- [ ] AC-1 (R-1, R-2) text`. `handoff-proof.mjs refinement` reports a requirement that no criterion cites and a cited id that is not a requirement.
 
 - `acceptance-evidence` gives each acceptance checkbox id its evidence id. `planned-acceptance-matrix` plans every row before any proof runs.
 - The task list names dependencies, marks a task `independent` only if it can be committed and closed separately, keeps order stable, and maps each task to a functional slice or to a parent-level task with `parentLevel: "convergence"`. A task with no sub-issue is never `independent`; the refinement proof reports it.
@@ -90,7 +98,7 @@ If the snapshot exits non-zero, stop and report. Never plan or apply from an old
 
 Write one comment per task on the parent, headed `## Step plan: <task-id>`, with the id from the `task-list` record (`task-1` when there is no task list). Write them on this thread at the standard tier, because `dod-guard:next-ticket` runs cheap and plans nothing.
 
-Per step, give the file, the edit (symbol and intent), the test to add or change (name and assertion), the validation command, and the expected result. Use fenced code blocks only, never indented ones, and keep each batch small. The plan carries every design decision, so a cheap model chooses nothing.
+Per step, give the file, the edit (symbol and intent), the test to add or change (name and assertion), the validation command, and the expected result. Use fenced code blocks only, never indented ones, and keep each batch small. The plan carries every design decision, so a cheap model chooses nothing. A control run is a proof an acceptance criterion depends on, such as a baseline or a negative control that must fail or differ before the change. Write each one as its own step with its own command and expected result, never folded into another step's validation.
 
 Post as the authenticated user. Write a plan for every task lacking a comment that the step-plan rule in `standards/project-workflow.md` accepts. On re-refinement, replace a changed task's comment only. Read every comment back with its author before the Status changes, or before you report when Status stays.
 

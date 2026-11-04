@@ -14,12 +14,13 @@ function outcomeOf(remainder) {
 }
 
 // Parse errors stop before evaluation, and acceptance-id disagreements join the
-// convergence remainder.
+// convergence remainder. Requirement-id disagreements join the remainder in this
+// proof only, so post-push and finalization never see them.
 function refinementProof({ body, children }) {
   const parsed = parseIssueBodyRecords(body);
   if (parsed.errors.length > 0) return { outcome: "parse error", remainder: parsed.errors };
   const convergence = evaluateConvergence({ ...parsed.input, children });
-  return outcomeOf([...parsed.remainder, ...convergence.remainder]);
+  return outcomeOf([...parsed.remainder, ...parsed.requirementRemainder, ...convergence.remainder]);
 }
 
 // The record is written after the draft PR, so post-push passes a handoff with no
