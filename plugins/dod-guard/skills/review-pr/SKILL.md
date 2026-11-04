@@ -42,7 +42,7 @@ node "<skill-dir>/scripts/review-findings.mjs" slots --diff=<unified0.diff> --pb
 
 Diff against the merge base with the PR base branch. The explicit prefixes override user git config. Scripts read changed files and added lines from this diff alone.
 
-Slots are `file:<path>` per changed file with an added line, `criterion:<n>` per checkbox under `## Acceptance criteria` (checked or not), and `sub-issue:<owner/name>#<number>` per linked sub-issue. A PBI without sub-issues is valid. Slots are fixed: the planner cannot add, drop, or rename one. Stop on a script error.
+Slots are `file:<path>` per changed file with an added line, `criterion:<n>` per checkbox under `## Acceptance criteria` (checked or not), and `sub-issue:<owner/name>#<number>` per linked sub-issue. A PBI without sub-issues is valid. Slots are fixed: the planner cannot add, drop, or rename one. Generated files (paths with a `dist`, `dist-test`, or `node_modules` segment) and `.uid` or `.import` sidecars are skipped before slots are numbered; a diff with only such files stops with "The diff names no changed files". Stop on a script error.
 
 ## 4. Scan
 
@@ -69,14 +69,18 @@ Every stage gets one brief: PR number and URL, base and head SHAs, slots file, d
 
 One `dod-guard:read-standard` planner returns a JSON array with one entry per slot, copying slot ids exactly. Each entry has `slot` and either `questions` or `excluded`, never both.
 
-- A question has `id` (unique across lenses), `lens`, `question`, `files`, and the targeted risk.
+- A question has `id` (unique across lenses), `lens`, `question`, `files` (never empty), and the targeted risk.
+- A slot holds at most 2 questions, and a question is at most 240 characters.
+- Sizing: with at most 3 file slots, ask one question per lens in total, placed on the slot that lens most concerns, and give every other slot one exclusion with its reason; otherwise ask at most 2 per slot.
 - An exclusion has `lens` and `reason`.
 - The lenses are `dod-guard:review-pr-feature` (F), `dod-guard:review-pr-design` (D), `dod-guard:review-pr-reliability` (R), and `dod-guard:review-pr-hygiene` (H). Each gets at least one question or exclusion.
-- For a file slot with in-scope violations, add scanner check questions with a `scanner` array of the S ids covered. They ask whether the violation shows at the reviewed head, whether the path is generated or excluded, and whether the rule's own condition holds. List only S ids from that slot's file. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file.
+- For a file slot with in-scope violations, ask exactly one scanner check question, with a `scanner` array naming every S id of that file. It asks whether the violation shows at the reviewed head, whether the repository itself excludes the path, and whether the rule's own condition holds; generated paths are already skipped. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file. It also refuses two scanner questions in one file slot and a question that omits an S id of its file.
+
+After the planner returns, run: `node "<skill-dir>/scripts/review-findings.mjs" check-plan --slots=<slots.json> --violations=<violations.json> --plan=<plan.json>`. On failure, send the exact message back to the planner once for a corrected plan; a second failure stops the review with that message.
 
 ### Investigate
 
-`dod-guard:read-cheap` investigators answer every question, batched by slot, at most eight per investigator and a report under 20 KB, as "Plan, investigate, judge" in `standards/model-routing.md` says. Dispatch all batches in one message so they run in parallel. Skip exclusions. Each answer gives slot, question id, cited path and line, and the fact found.
+`dod-guard:read-cheap` investigators answer every question, batched by slot, at most eight per investigator and a report under 20 KB, as "Plan, investigate, judge" in `standards/model-routing.md` says. Dispatch all batches in one message so they run in parallel. Skip exclusions. Each answer gives slot, question id, cited path and line, and the fact found. Every brief states the scanner's line-length rule: a line is medium above the width N printed in its violation message (width N) and high above the larger of N and 120.
 
 ### Verify
 
