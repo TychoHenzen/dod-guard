@@ -13,6 +13,7 @@ import process from "node:process";
 import test from "node:test";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { fileURLToPath } from "node:url";
+import { planHash } from "./lib/review-batches.mjs";
 import { findingsFixture, pbiJson } from "./lib/review-pr.test-support.mjs";
 
 const SCRIPT = fileURLToPath(new URL("review-findings.mjs", import.meta.url));
@@ -178,6 +179,7 @@ function buildFlags(dir) {
     results: write(dir, "results.json", RESULTS),
     plan: write(dir, "plan.json", PLAN),
     merge: write(dir, "merge.json", { groups: [], scanner: [] }),
+    answers: write(dir, "answers.json", { planHash: planHash(PLAN), headSha: HEAD, answers: [] }),
   };
 }
 
@@ -191,6 +193,7 @@ function buildArgs(paths) {
     `--plan=${paths.plan}`,
     `--results=${paths.results}`,
     `--merge=${paths.merge}`,
+    `--answers=${paths.answers}`,
     `--out=${paths.out}`,
     `--scanner-comments-out=${paths.comments}`,
   ];
@@ -240,6 +243,38 @@ test("build without --merge prints usage", () => {
     const result = run(["build", ...flags]);
     assert.equal(result.status, 3);
     assert.match(result.stderr, /--merge=<merge\.json>/);
+  });
+});
+
+test("build refuses an answers file stamped for another plan and writes nothing", () => {
+  withDir((dir) => {
+    const paths = buildFlags(dir);
+    write(dir, "answers.json", { planHash: "0".repeat(16), headSha: HEAD, answers: [] });
+    const result = run(["build", ...buildArgs(paths)]);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Answers file is stale: planHash/);
+    assert.equal(existsSync(paths.out), false);
+  });
+});
+
+// The stamp differs from HEAD, which the build receives as --head.
+test("build refuses an answers file stamped for another head and writes nothing", () => {
+  withDir((dir) => {
+    const paths = buildFlags(dir);
+    write(dir, "answers.json", { planHash: planHash(PLAN), headSha: "e".repeat(40), answers: [] });
+    const result = run(["build", ...buildArgs(paths)]);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /stale: headSha/);
+    assert.equal(existsSync(paths.out), false);
+  });
+});
+
+test("build without --answers prints usage", () => {
+  withDir((dir) => {
+    const flags = buildArgs(buildFlags(dir)).filter((flag) => !flag.startsWith("--answers="));
+    const result = run(["build", ...flags]);
+    assert.equal(result.status, 3);
+    assert.match(result.stderr, /--answers=<answers\.json>/);
   });
 });
 

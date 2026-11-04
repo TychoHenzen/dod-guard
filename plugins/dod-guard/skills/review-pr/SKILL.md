@@ -101,7 +101,7 @@ Save the four results as one JSON array.
 ### Merge
 
 ```
-node "<skill-dir>/scripts/review-findings.mjs" candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --out=<candidates.json>
+node "<skill-dir>/scripts/review-findings.mjs" candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --answers=<answers.json> --out=<candidates.json>
 ```
 
 `candidates` numbers judged findings J1..Jn. One `dod-guard:read-standard` pass (`dod_guard_read_standard` in Codex) reads that file and the plan and returns the merge JSON: `{ "groups": [{ "members": ["J1"], "representative": "J1" }], "scanner": [{ "ids": ["S1"], "status": "KEEP" }] }`.
@@ -115,7 +115,7 @@ With no finding and no violation, write `{ "groups": [], "scanner": [] }` and sk
 ## 6. Build and post
 
 ```
-node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --out=<payload.json> --scanner-comments-out=<scanner-comments.json>
+node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --answers=<answers.json> --out=<payload.json> --scanner-comments-out=<scanner-comments.json>
 gh api --method POST "repos/{owner}/{repo}/pulls/{n}/reviews" --input <payload.json>
 ```
 
