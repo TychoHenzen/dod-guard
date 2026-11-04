@@ -23,9 +23,9 @@ Apply `standards/working-defaults.md` and `standards/github-request-discipline.m
 
 ## Preflight checkpoint
 
-Read the `## Preflight checkpoint` from the implementation handoff (format in `standards/project-workflow.md`). Before any ready transition, branch update, merge, or cleanup, require the exact head, base ref and SHA, mergeability, and a complete row for every required provider context. Stop with expected and observed values on missing, pending, failed, unavailable, stale, duplicate, forked, or provider-mismatched evidence, never inferred from a passing aggregate. An exact-head `skipped` context counts as passing. `handoff-proof.mjs finalization` applies this row check to the saved handoff before the helper runs.
+Read the `## Preflight checkpoint` from the implementation handoff (format in `standards/project-workflow.md`). Before any ready transition, branch update, merge, or cleanup, require the exact head, base ref and SHA, mergeability, and a complete row for every required provider context. Stop with expected and observed values on missing, pending, failed, unavailable, stale, duplicate, forked, or provider-mismatched evidence, never inferred from a passing aggregate. An exact-head `skipped` context counts as passing. `handoff-proof.mjs finalization` applies this row check to the saved handoff before the helper runs. The helper reads the authoritative list at run time from the base branch's protection. In this repository it is `build-test`, `plugin-config`, `static-analysis`, `package-integrity`, and `quality-guard` (the list in the root `AGENTS.md`), so the handoff needs a row for each, and a context present on only one side is a mismatch.
 
-To recover a draft-skipped workflow, verify draft readiness at the same ref and head, dispatch once through the existing guarded workflow owner, and read back run, workflow, ref, and head before waiting. Never dispatch a second run. If the head already has a failed ci.yml run, rerun it with `gh run rerun <run-id> --failed`.
+To recover a draft-skipped workflow, verify draft readiness at the same ref and head, dispatch once through the existing guarded workflow owner, and read back run, workflow, ref, and head before waiting. Never dispatch a second run. If the head already has a failed ci.yml run, rerun it with `gh run rerun <run-id> --failed`. A dispatched `ci.yml` run does not run `quality-guard`, whose job runs only on a `pull_request` event, so dispatch never recovers that context: report it and end the run.
 
 Compare the merge ref's first parent with the current base branch tip, and record in the checkpoint whether the base advanced after the required checks started. A base advance invalidates the handoff and acceptance matrix. Bounded branch synchronization (the next section) is the only recovery, and it needs fresh acceptance and required-check proof at the final head. On an unresolvable conflict, unexpected branch movement, failed readback, or a second dispatch, stop before any merge, cleanup, force-push, or generated-ref mutation.
 
@@ -72,13 +72,19 @@ Pass the exact pushed head SHA already verified. The helper never adopts a mutab
 - `merge_conflict`: see "Triage a merge conflict".
 - `missing_linked_issue`: the PR closes no issue. The helper stops before any ready, auto-merge, CI, or merge step. Add `Closes #<parent>` to the PR body, or split the undelivered scope into its own issue and narrow the parent so this PR delivers all of it, then rerun. There is no partial-delivery mode: a PR closes its parent.
 - `duplicate_ci_workflow_run`: follow the printed recovery (rerun the failed run), then rerun this skill.
-- Every other stop, including `missing_required_checks` and `base_branch_missing`: report it and end the run.
+- `missing_required_checks`: the base branch reports no required checks at all (branch protection absent or empty), so no head can satisfy it and waiting on the head cannot help. Report it and end the run. Repairing protection is the owner's decision; this skill never weakens it.
+- `unknown_check_state`: a required context returned no run or an unsupported state on the exact head. If the workflow was draft-skipped, use the dispatch recovery in "Preflight checkpoint" once, read back run, workflow, ref, and head, and rerun this skill. Otherwise report it and end the run.
+- `base_branch_missing`: the pull request is behind and the default branch has no remote ref to guard the update. The helper takes no base argument and requires the pull request base to be the default branch, so read the default branch's remote ref, report what you observe, and end the run.
+- `linked_issue_open`: the PR merged but a linked closing issue is still open after the helper's bounded poll (GitHub did not auto-close it). Never rerun the helper. Read the live pull request and require MERGED, then close the issue by hand as `completed` with a completion-evidence comment, only when a standing user instruction or the repository instructions in force allow closing issues and the run can cite that source in the comment. Otherwise report the stop and ask the user. After a hand close, run "Finalize the parent unit" so the Project reads `Done`, then run the "Recover a merged PR" dry run and recovery. The closure plan does not cover this: it closes an open issue only under its own rules (see `lib/closure-plan.mjs` and `lib/closure-walk.mjs`), and a completion record alone is not one of them.
+- Every other stop, including `required_check_failed` and `merge_timeout`: report it and end the run.
 
 Never use `--admin`, force-push, weaken repository protections, or delete a ref whose SHA differs from the merged PR head.
 
 ## Recover a merged PR
 
 Use recovery when a prior run merged the PR but stopped before cleanup; check live state first. It accepts only a merged PR with complete required checks, closed linked issues, and `Done` Project status. It deletes the remote head only if it still points at the merged head.
+
+If the helper exits unexpectedly after the merge step (stderr `complete-pr failed [<code>]`, or no result), never rerun it. Read the live pull request state. If it is not MERGED, report the observed state and restart from "Resolve the pull request". If it is MERGED, run "Finalize the parent unit" first, because recovery requires every linked issue closed and `Done` in the Project and the helper sets no Project status, then run the dry run below, then the real recovery.
 
 ```text
 node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --recover-merged --dry-run
@@ -118,6 +124,8 @@ The fifth argument (`Done` here) is the Status name to set and the readback targ
 Prefer numeric REST ids: a `PVTI_` id comes only from the items list, which can lag. The runner refuses two IDs for one item.
 
 7. If a parent or child is still Backlog, Todo, or In Progress, repair it and read it back before reporting completion.
+
+Never set `Done` on a parent or child whose pushed commit is not in the merged head, and never close a child before step 5's check. No code enforces step 5, so this check is the only gate.
 
 ## Record completion and close replaced issues
 
