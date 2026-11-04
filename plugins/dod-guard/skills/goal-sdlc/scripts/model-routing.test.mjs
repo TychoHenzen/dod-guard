@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import test from "node:test";
 import { spawnSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import process from "node:process";
+import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { frontmatterValue, line, pluginRoot, repositoryRoot, TIER_AGENTS } from "./model-routing.test-support.mjs";
 
@@ -89,7 +90,8 @@ function agentText(name) {
 // and the dispatch tools (Agent, Skill, SendMessage, and the web tools).
 const TOOLS_LINES = {
   "stage-standard": "Read, Grep, Glob, Bash, PowerShell, Edit, Write, Agent, Skill, SendMessage, WebSearch, WebFetch",
-  "stage-cheap-skill": "Read, Grep, Glob, Bash, PowerShell, Edit, Write, Agent, Skill, SendMessage, WebSearch, WebFetch",
+  "stage-cheap-skill":
+    "Read, Grep, Glob, Bash, PowerShell, Edit, Write, Agent, Skill, SendMessage, WebSearch, WebFetch",
   "stage-cheap": "Read, Grep, Glob, Bash, Edit, Write",
   "read-cheap": "Read, Grep, Glob, Bash",
   "read-standard": "Read, Grep, Glob, Bash",
