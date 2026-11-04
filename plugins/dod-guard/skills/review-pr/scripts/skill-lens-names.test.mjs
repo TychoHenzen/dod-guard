@@ -1,5 +1,8 @@
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import assert from "node:assert/strict";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { readFileSync } from "node:fs";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { REVIEWERS } from "./lib/reviewer-results.mjs";
 
