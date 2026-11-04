@@ -13,7 +13,7 @@ description: >-
 
 # Skill migrate
 
-Migrate one artifact per call; batching is out of scope. Run phases 0 to 9 in order. Read and apply `standards/working-defaults.md`; stricter rules here win. Never apply the result: the migration ends at the diff, and the caller decides whether to land it. A migration that grows the artifact has failed; shorter is success.
+Migrate one artifact per call; batching is out of scope. Run phases 0 to 9 in order. Read and apply `standards/working-defaults.md`; stricter rules here win. Never apply the result: the migration ends at the diff, and the caller (the session that invoked this skill) decides whether to land it, in the skill's source checkout and never in an installed plugin cache. The target stays byte-identical throughout; see "Target integrity". A migration that grows the artifact has failed; shorter is success.
 
 ## Paths and agents
 
@@ -27,12 +27,22 @@ Spend at most four dispatches: `dod-guard:blind-prose-contract-extractor`, `dod-
 
 On Codex, inspect the active agent list and reuse a related agent where practical. Size each wave to free slots, wait, record all results, then close finished agents (interrupt unneeded ones if close is unavailable). A returned result does not prove a slot is free: if full, release unneeded agents and retry once, else reuse an agent by follow-up.
 
+## Target integrity
+
+Nothing in this skill writes the target. Phases 4 to 8 use `.skill-migrate/work/` and `.skill-migrate/migrated.md`. On every stop, including a failed gate or a failed dispatch, and again in phase 9, run `node "<skill-dir>/scripts/migration-check.mjs" <path-to-target> --sha256` and compare the digest with the one in the inventory. When the target sits in a git repository, also run `git diff --stat -- <path-to-target>` and expect no output. A mismatch is a failed migration: report the path and both digests, then stop. Never repair a mismatch by writing the target; the caller decides.
+
 ## Phases
 
 **0. Inventory.** Read the target, then run:
 
 ```bash
 node "<skill-dir>/scripts/migration-check.mjs" <path-to-target> --save=.skill-migrate/baseline.json
+```
+
+Exit 3 with a message that names `.claude/plugins/` means the target is a copy in an installed plugin cache. Stop, change nothing, and tell the caller to run the migration on the skill's source checkout (`standards/working-defaults.md`). Otherwise copy the target to `.skill-migrate/work/` (same file name) and record the digest of the target in the inventory:
+
+```bash
+node "<skill-dir>/scripts/migration-check.mjs" <path-to-target> --sha256
 ```
 
 It prints the kind (`skill`, `agent`, `claude-md`, `memory`, `instinct`); override with `--kind=<k>`. Pass the kind to every agent. Trace by kind: skill, each `subagent_type` and script call to its file; agent, its dispatching skills and the report format its caller parses; CLAUDE.md, the commands, paths, and gates named; memory or instinct, whether each fact still holds. Write an inventory: one-sentence goal, trace, dispatches with return shapes, script exit codes, rules.
@@ -43,7 +53,7 @@ It prints the kind (`skill`, `agent`, `claude-md`, `memory`, `instinct`); overri
 
 **3. Human confirmation.** The only step that blocks on the user. Show all REQUIRED claims, every tagged OBSERVED claim, and the full SCAFFOLDING list. Ask which SCAFFOLDING to cut, which OBSERVED items are missed requirements, and whether any REQUIRED claim is wrong. Wait for the answers.
 
-**4. Blind rewrite.** Move the source to `.skill-migrate/quarantine/original.md` and clear its body below the frontmatter. Dispatch the writer with the pruned contract (REQUIRED plus approved OBSERVED), inventory, targets below, audience (Claude model in Claude Code), direct technical register, and banned read paths (quarantine directory, plugin-cache copies). Merge the original frontmatter with its output into `.skill-migrate/migrated.md`.
+**4. Blind rewrite.** Copy the work copy in `.skill-migrate/work/` to `.skill-migrate/quarantine/original.md`, then clear the body of the work copy below the frontmatter. The target is never touched. Dispatch the writer with the pruned contract (REQUIRED plus approved OBSERVED), inventory, targets below, audience (Claude model in Claude Code), direct technical register, and banned read paths (quarantine directory, work copy, the target path, plugin-cache copies). Merge the original frontmatter with its output into `.skill-migrate/migrated.md`.
 
 Post-4.6 targets:
 
@@ -82,4 +92,4 @@ Exit 0 passes. Exit 1 means a previously passing check now fails; fix every one.
 
 All four gates (claim coverage, overlap, gap audit, regression) must pass before the report ships.
 
-**9. Deliver.** Summarize before and after numbers, append the migration-check output, then the full diff. Stop.
+**9. Deliver.** Run the target integrity check. Summarize before and after numbers, append the migration-check output, then the full diff of the target against the result (`git diff --no-index -- <path-to-target> .skill-migrate/migrated.md`, which exits 1 when the files differ and is not a failure). Say that the caller lands the result in the skill's source checkout. Stop.
