@@ -42,6 +42,16 @@ Locate the real seam, the tests, any generated copies, build output, bundles, an
 
 ### Extract the contract
 
+Before the first write, keep scratch out of git. Run this block once from the repository root. It appends the entry only inside a git work tree and only when `.gitignore` lacks the line, so a rerun adds nothing. It reads `.gitignore` itself instead of calling `git check-ignore`, because a global or local exclude file can hide the directory on one machine while the shared repository still lacks the entry. Never commit `.blind/`. Only the orchestrator edits `.gitignore`; the writer never does.
+
+```bash
+mkdir -p .blind
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1 && ! grep -qxF '.blind/' .gitignore 2>/dev/null; then
+  [ -z "$(tail -c1 .gitignore 2>/dev/null)" ] || echo >> .gitignore
+  printf '%s\n' '# blind-rewrite scratch: contract and quarantined original' '.blind/' >> .gitignore
+fi
+```
+
 Save the contract at `.blind/contract.md`. It states what the target does, not how:
 
 - behavior, inputs, outputs, and errors
@@ -57,7 +67,7 @@ Copy the exact original to `.blind/quarantine/` and check the copy. Only then re
 
 ### Write blind
 
-Dispatch a writer for the single target. Give it the contract, the seam and context it is allowed to see, and the acceptance evidence. It may read output produced earlier in this run. It must not read `.blind/quarantine/`.
+Dispatch a writer for the single target. Give it the contract, the seam and context it is allowed to see, and the acceptance evidence. It may read output produced earlier in this run. It must not read `.blind/quarantine/`, and it never edits `.gitignore`.
 
 ### Verify
 
@@ -100,8 +110,9 @@ After exit 1, tell the writer `too close` and nothing more. No metrics, no score
 A separate bounded auditor compares the work against the contract. It may read the quarantine, the replacement, and the pruned contract. Fix every real gap the auditor finds and rerun the affected checks before you delete `.blind/` and hand off. Then close out:
 
 1. Delete `.blind/`.
-2. Write into the PBI handoff: the overlap result, the gap verdict, the changed paths, the commands run, and the exact head SHA.
-3. Let the existing review and guarded merge owners take over. Do not start a second branch or PR.
+2. Run `test ! -e .blind` and `git status --porcelain`. No `.blind/` may remain, and every `??` line must be source you meant to add. The `.gitignore` entry stays and is committed with the PBI work.
+3. Write into the PBI handoff: the overlap result, the gap verdict, the changed paths, the commands run, and the exact head SHA.
+4. Let the existing review and guarded merge owners take over. Do not start a second branch or PR.
 
 ## When something breaks
 
