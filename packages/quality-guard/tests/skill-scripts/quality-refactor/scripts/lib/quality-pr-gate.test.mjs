@@ -46,7 +46,10 @@ test("parseNameStatus maps each changed file to where it lived at the merge base
 test("parseArgs requires a base ref and rejects --root", () => {
   assert.match(parseArgs([]).error, /--base/);
   assert.equal(parseArgs(["--base=main"]).error, undefined);
-  assert.match(parseArgs(["--base=main", "--root=packages"]).error, /excludePaths/);
+  assert.match(
+    parseArgs(["--base=main", "--root=packages"]).error,
+    /excludePaths/,
+  );
   assert.match(parseArgs(["--bogus"]).error, /unknown argument/);
 });
 

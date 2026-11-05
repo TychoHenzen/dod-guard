@@ -37,13 +37,21 @@ function tree(t, config, flags = []) {
 
 function reportedFiles(result) {
   assert.equal(result.status, 0, result.stderr);
-  return JSON.parse(result.stdout).violations.map((violation) => violation.file);
+  return JSON.parse(result.stdout).violations.map(
+    (violation) => violation.file,
+  );
 }
 
 test("without a config all three files are reported", (t) => {
   const files = reportedFiles(tree(t));
-  assert.ok(files.some((file) => file.startsWith("src/")), files.join(" "));
-  assert.ok(files.some((file) => file.startsWith("samples/")), files.join(" "));
+  assert.ok(
+    files.some((file) => file.startsWith("src/")),
+    files.join(" "),
+  );
+  assert.ok(
+    files.some((file) => file.startsWith("samples/")),
+    files.join(" "),
+  );
   assert.ok(files.includes("pkg/samples/c.js"), files.join(" "));
 });
 
@@ -56,7 +64,10 @@ test("excludePaths removes a root-level and a nested directory", (t) => {
     false,
     files.join(" "),
   );
-  assert.ok(files.some((file) => file.startsWith("src/")), files.join(" "));
+  assert.ok(
+    files.some((file) => file.startsWith("src/")),
+    files.join(" "),
+  );
 });
 
 test("--no-config ignores the file", (t) => {
