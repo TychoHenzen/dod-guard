@@ -21,6 +21,11 @@ Never search for plan files, infer a plan from a directory, or invent missing st
 
 Before dispatch, restate the ordered steps, each step's verification, and the current repository and branch. Stop if the plan is empty, unordered, ambiguous, or unsafe.
 
+- Empty: the plan has no numbered step.
+- Unordered: a step depends on a later step, or the order is not stated.
+- Ambiguous: a step has no expected proof, or its owned files or responsibility name two possible owners or none.
+- Unsafe: a step needs credentials, edits a path outside the repository, deletes a file or branch the step did not create, or force-pushes, rebases, or rewrites published history. The one exception is the `--force-with-lease` push that `/publish` itself performs, which is not a step of a step-by-step plan.
+
 ## Command handles
 
 An active command-session handle, in dispatch or proof, is in-progress state. Wait or poll that same handle to a terminal result, and keep the exact command and session evidence. Missing intermediate output is not a failure. Never start a second copy or a second step meanwhile.
