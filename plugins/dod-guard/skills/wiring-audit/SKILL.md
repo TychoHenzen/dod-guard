@@ -42,7 +42,7 @@ Classify each relevant surface as `verified`, `missing`, `contradicted`, `unveri
 
 Cite evidence with a precise path and line, heading, symbol, route, command, or configuration key. A vague pointer such as "the docs" does not count.
 
-Before you mark a surface `missing`, run Grep for the feature's identifier (command name, flag, or config key) over the source, `README*`, `docs/`, and the plugin or package manifest. Record every path you searched under `Evidence limits:`. Record a location that does not exist as absent, and never read an empty result from a location you did not search as proof of absence.
+Before you mark a surface `missing`, run Grep for the feature's identifier (command name, flag, or config key) over the source, `README*`, `docs/`, and the plugin or package manifest. Record every path you searched under `Evidence limits:`. Record a location that does not exist as absent, and never read an empty result from a location you did not search as proof of absence. A surface with an absent or unsearchable location is `unverified`, not `missing`.
 
 If a required surface cannot be inspected, mark it `unverified` and name the evidence you lack. An empty search proves nothing until you have checked both the source and the documentation locations.
 
