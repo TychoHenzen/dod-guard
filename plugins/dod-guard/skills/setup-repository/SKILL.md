@@ -19,7 +19,7 @@ Turn the local project into a pushed GitHub repository that works with the six w
 - Never change app behavior, clean existing debt, rewrite history, force-push, weaken protection, install global plugins, or accept a non-GitHub remote.
 - A repository this skill creates is public: send `private: false` explicitly, never infer, omit, or override it, and never ask about visibility. An existing remote keeps its visibility; never make a private repository public.
 - Read state back after every mutation. Never claim an unavailable plan feature worked; stop and report the exact API result.
-- After the first write, keep a mutation ledger. On failure report completed local and GitHub mutations, the failed operation, and leftover state. Never roll back automatically.
+- After the first write, keep a mutation ledger. On failure report completed local and GitHub mutations, the failed operation, and leftover state. Never roll back automatically, except to restore the default-branch protection this run saved in section 9.
 
 ## 1. Inventory
 
@@ -65,7 +65,7 @@ Per applicable category, prefer the project's strict stable native tool, then ex
 - Every skip needs a concrete language, platform, manifest, or tool-conflict reason; "not configured" is invalid. Type check is inapplicable only without a meaningful static check; CodeQL only when GitHub lacks support.
 - One actionlint job covers workflow syntax and embedded shell. Dependency checks use the project's ecosystem and fail on actionable vulnerabilities.
 - Give each job a stable unique name and minimal permissions, raised per job: CodeQL gets `security-events: write`, build and test read-only contents. Exclude generated, fixture, archive, dependency, and vendored paths from analysis.
-- Run each generated command locally first. If a strict check exposes existing debt, stop; never weaken it.
+- Run each generated command locally first. If a strict check exposes existing debt, stop; never weaken it. The one exemption is the `quality-guard` PR gate below, which gates only added findings.
 
 Every repository with maintained source gets a `quality-guard` job. It runs on `pull_request` only, uses `fetch-depth: 0`, checks out dod-guard at a pinned commit beside the project, and runs:
 
@@ -73,7 +73,7 @@ Every repository with maintained source gets a `quality-guard` job. It runs on `
 node <dod-guard-checkout>/packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs --base=<base sha> --root=<source root>
 ```
 
-Options: `--report=<file>`, `--comment=<file>`, `--report-link=<run url>`, `--block-on`, `--rule-block-on=<rule>:<severity>`. The gate fails when the PR adds a medium or high finding, or removes fewer than one medium or high (or three low) of the findings already in the changed files. Upload the report as an artifact. Post the `--comment` file with `quality-pr-gate-comment.mjs --repo=<owner/name> --pr=<number> --body=<file>` to keep one comment per PR; that job needs `pull-requests: write`. Never copy the scanner or register a quality-guard PostToolUse hook. Existing findings do not stop setup. Put the job on the default branch before section 9.
+Options: `--report=<file>`, `--comment=<file>`, `--report-link=<run url>`, `--block-on`, `--rule-block-on=<rule>:<severity>`. The gate fails when the PR adds a medium or high finding, or removes fewer than one medium or high (or three low) of the findings already in the changed files. Upload the report as an artifact. Post the `--comment` file with `quality-pr-gate-comment.mjs --repo=<owner/name> --pr=<number> --body=<file>` to keep one comment per PR; that job needs `pull-requests: write`. Never copy the scanner or register a quality-guard PostToolUse hook. Existing findings do not stop setup: this job is the one exemption from the strict-check stop above, and every other strict check still stops setup. Put the job on the default branch before section 9.
 
 ## 4. Ignore rules and instructions
 
@@ -106,7 +106,7 @@ Labels: read live labels (name, description, color) and `scripts/workflow-labels
 
 ## 7. Commit, push, checks
 
-Make one initial commit if none exists; otherwise commit only reviewed setup changes, using the repository's commit workflow if any. Push without force and set `origin/<default>` as upstream. Verify origin, branch, upstream, remote default branch, last commit, and worktree, which must be clean.
+Make one initial commit if none exists; otherwise commit only reviewed setup changes, using the repository's commit workflow if any. Push without force and set `origin/<default>` as upstream. If the push is rejected as non-fast-forward, run `git fetch origin`, merge `origin/<default>` into the local branch (stop and report on a conflict), rerun the section 6 credential inspector and full diff review on the merged result, stage only reviewed paths for any resulting change, then push again without force. Never force-push or rebase to resolve a rejection. Verify origin, branch, upstream, remote default branch, last commit, and worktree, which must be clean.
 
 Wait for every workflow on the pushed commit, querying workflow runs and check runs. A queued, skipped, cancelled, neutral, stale, or missing required job is not success. On failure report the exact job and stop before protection. Take required check names from this commit's successful check runs, matched to the generated job names.
 
@@ -123,11 +123,13 @@ Use the current REST API. Enable dependency graph, Dependabot alerts and securit
    ```
 
 2. Run `node <skill-dir>/scripts/inspect-repository.mjs --github-snapshot <snapshot.json>`. Proceed only if `readyForProtection` is true. A malformed or incomplete snapshot is a blocker with no payload.
-3. Apply `protectionPayload` unedited to the default branch through the branch protection REST endpoint.
-4. Query again and confirm: PRs required; strict required checks including every observed generated check; admins included; `required_approving_review_count` explicitly `0` for a solo owner; force pushes and deletion disabled.
+3. Save the current protection: `gh api repos/{owner}/{repo}/branches/{default}/protection` into `protection-before.json` in the scratch directory, outside the project. A 404 means no protection exists: write "nothing to restore" in the ledger. Otherwise compare the saved JSON with `protectionPayload`. If applying the payload would lower any existing setting (a higher approval count, code-owner or last-push review required, an existing required context missing from the payload, or an enforced setting the payload turns off), stop and report the setting; never edit the payload.
+4. Apply `protectionPayload` unedited to the default branch through the branch protection REST endpoint.
+5. Query again and confirm: PRs required; strict required checks including every observed generated check; admins included; `required_approving_review_count` explicitly `0` for a solo owner; force pushes and deletion disabled.
+6. If the readback differs from the payload and a save exists, restore it: build a PUT body from `protection-before.json` and send it to the same endpoint. Unwrap each `{ "enabled": ... }` object to its boolean (`enforce_admins`, `required_linear_history`, `allow_force_pushes`, `allow_deletions`, `block_creations`, `required_conversation_resolution`, `lock_branch`, `allow_fork_syncing`). Keep `strict` and `contexts` under `required_status_checks`. Keep only the writable fields of `required_pull_request_reviews`, with its dismissal and bypass lists as login lists. Turn `restrictions` into user, team and app login lists, or `null`. Drop every `url` field. Read it back and compare. A failed restore is reported with the exact API result and not retried. Ledger the save, the apply, each readback and any restore.
 
-The PR-only `quality-guard` job is absent from the default-branch snapshot, so require it by name after a PR has run it green. Zero approvals does not bypass independent review or the exact-current-head check gate. Delete only the temporary snapshot, never the repository or Project.
+The PR-only `quality-guard` job is absent from the default-branch snapshot. After the first PR shows a `quality-guard` check run with conclusion SUCCESS on its current head, run `gh api repos/{owner}/{repo}/branches/{default}/protection/required_status_checks` to read the saved `strict` and contexts, then PATCH the same endpoint with that `strict` and the existing contexts plus `quality-guard` (send the full list, because PATCH may replace it), and read it back: every earlier context and `quality-guard` must be present. Until then, report `quality-guard required-by-name: pending` as a pending step. Zero approvals does not bypass independent review or the exact-current-head check gate. Delete only the temporary snapshot and `protection-before.json`, after a clean readback, never the repository or Project.
 
 ## 10. Report
 
-Report the path, URL, visibility (public if new, preserved if existing), default branch, pushed commit, Project and status options, labels, applicability table with skip reasons, passing checks, security and protection settings (including zero approvals), and clean worktree evidence. State that independent review and exact-current-head checks still gate delivery. On partial failure, lead with the failed operation. Never report complete with proof missing.
+Report the path, URL, visibility (public if new, preserved if existing), default branch, pushed commit, Project and status options, labels, applicability table with skip reasons, passing checks, security and protection settings (including zero approvals), pending steps (the `quality-guard` requirement until applied), and clean worktree evidence. State that independent review and exact-current-head checks still gate delivery. On partial failure, lead with the failed operation. Never report complete with proof missing.
