@@ -27,6 +27,8 @@ Paraphrasing keeps the shape of the original. To get a real replacement, take th
 
 Go in this order: classify and preflight, Extract the contract, Quarantine and delete, Write blind, verify, Run the overlap gate, Gap audit and handoff.
 
+Record progress in `.blind/progress.txt`, one slug per line. Append a slug with `echo <slug> >> .blind/progress.txt` only after its phase's exit condition holds. The slugs, in order, are `contract`, `quarantined`, `written`, `verified`, `gated`, `audited`. Append `audited` once the gap auditor's findings are fixed, before `.blind/` is deleted. A phase without its slug is not done. This file is the only resume state.
+
 ### Classify and preflight
 
 Read the target and choose the shape that fits it.
@@ -63,11 +65,31 @@ Keep out implementation names, declaration order, vocabulary, and any example th
 
 ### Quarantine and delete
 
-Copy the exact original to `.blind/quarantine/` and check the copy. Only then remove the target. The order is fixed: contract first, deletion second.
+Copy the exact original into `.blind/quarantine/`, then prove the copy is byte-identical before anything is removed. Run from the repository root, with `<target>` the path you were given and `<name>` its last path segment:
+
+```bash
+mkdir -p .blind/quarantine
+cp -R "<target>" .blind/quarantine/
+diff -rq "<target>" ".blind/quarantine/<name>"
+```
+
+Require exit 0 from `diff`. On exit 1, recopy once and run it again. A second exit 1 ends the run with nothing deleted. Use `diff -rq`, not `git diff --no-index`: under `core.autocrlf=true` the git command passes a CRLF copy of an LF original.
+
+Then check whether git can restore the target with `git ls-files --error-unmatch -- "<target>"`. When it fails, the target is untracked. If `git check-ignore -q -- "<target>"` exits non-zero, snapshot the target first with a commit limited to that path, and never stash:
+
+```bash
+git add -- "<target>" && git commit -m "chore: snapshot <name> before blind rewrite" -- "<target>"
+```
+
+If `git check-ignore` exits 0, the target is ignored and cannot be committed. The verified copy is then the only backup, so keep `.blind/quarantine/` until handoff.
+
+After the copy check passes and any snapshot is made, run `echo quarantined >> .blind/progress.txt`, then remove the target. The order is fixed: contract first, verified copy second, deletion third.
 
 ### Write blind
 
-Dispatch a writer for the single target. Give it the contract, the seam and context it is allowed to see, and the acceptance evidence. It may read output produced earlier in this run. It must not read `.blind/quarantine/`, and it never edits `.gitignore`.
+Dispatch a writer for the single target. Its prompt holds the contract, the seam and context it is allowed to see, and the acceptance evidence. The prompt holds no path under `.blind/quarantine/` and no text copied from the original, including in an example or an error message. The writer may read output produced earlier in this run. It must not read `.blind/quarantine/`, and it never edits `.gitignore`.
+
+If the writer reports that it saw old text, or its tool log shows a read under `.blind/quarantine/`, delete everything it wrote at the target path and dispatch a fresh writer with the same prompt. The replacement counts as one of the two write/gate cycles. When the output is accepted, run `echo written >> .blind/progress.txt`.
 
 ### Verify
 
