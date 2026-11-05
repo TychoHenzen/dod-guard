@@ -85,9 +85,14 @@ export function parseArgs(argv) {
     ...DEFAULTS,
   };
   for (const arg of argv) applyArg(options, arg);
-  if (!options.error && !options.base) options.error = "--base=<ref> is required";
-  if (!options.error && !isSeverity(options.blockOn)) options.error = "--block-on must be low, medium or high";
+  validateOptions(options);
   return options;
+}
+
+function validateOptions(options) {
+  if (options.error) return;
+  if (!options.base) options.error = "--base=<ref> is required";
+  else if (!isSeverity(options.blockOn)) options.error = "--block-on must be low, medium or high";
 }
 
 function git(args, cwd) {
