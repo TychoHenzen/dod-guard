@@ -191,10 +191,16 @@ shape and no other:
    Every later sentence of the row's cell follows as the next line of the brief.
    The dispatcher writes absolute paths: `<plugin-root>` is the plugin root it
    resolved from the directory of the skill it loaded itself, in Claude Code
-   and in Codex alike.
+   and in Codex alike. In the dod-guard source repository, where
+   `plugins/dod-guard/.claude-plugin/plugin.json` exists in the checkout being
+   worked, `<plugin-root>` is that checkout's absolute `plugins/dod-guard` path
+   and not the installed plugin cache, because a cached copy can lag the
+   checkout (a cached `handoff-proof.mjs` once offered only the `refinement`
+   mode). The worker runs every `node <plugin-root>/...` command from it.
 2. The live facts the worker cannot read from the plugin: the repository, the
    issue, the pull request, the branch, the head SHA, the checkpoint a resumed
-   stage starts from, and the attribution line when the stage commits.
+   stage starts from, the checkout plugin root when the previous paragraph
+   names one, and the attribution line when the stage commits.
 3. The evidence to return, as the skill's own result section names it.
 
 4. This closing sentence, verbatim, so every worker receives the rules that
