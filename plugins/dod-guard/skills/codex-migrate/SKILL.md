@@ -66,4 +66,4 @@ Script failure. If the scanner or the converter exits non-zero, report its stder
 - Install plugins, alter global config, or change permissions without separate approval.
 - Overwrite an existing `AGENTS.md` before moving its unique content into the slice's plan and showing it to the user.
 - Delete `CLAUDE.md`; reduce it to the one-line `@AGENTS.md` import instead.
-- Hand-edit `.codex/agents/*.toml`; regenerate it with the converter (see Inventory item 3).
+- Hand-edit generated agent TOML (see Inventory item 3).
