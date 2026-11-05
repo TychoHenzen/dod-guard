@@ -23,6 +23,7 @@ The issue hands the problem to refinement, so outcome and scope are the problem 
 - Add labels, assignees, acceptance criteria, implementation notes, or subtasks.
 - Open a pull request.
 - Derive new requirements, decisions, plans, or tasks.
+- Edit or close an existing issue. Report it in the final report instead.
 
 Keep any decision the user supplied word for word under `## Context`. Refinement happens later, with `dod-guard:refine-backlog-item`.
 
@@ -52,6 +53,7 @@ Split only on genuinely separate observable outcomes. A feature qualifies when i
 - Prefer one feature when the parts add up to one user-visible capability.
 - Layers, components, steps, tests, and docs are not features.
 - A request that describes one feature stays one issue.
+- When you cannot tell whether parts are separate features, create one issue that holds all of the text.
 
 Give each feature a concise title.
 
@@ -60,6 +62,8 @@ Give each feature a concise title.
 When splitting, map every substantive supplied detail to that feature, every relevant feature, or an explicit unresolved remainder. That covers rationale, examples, constraints, decisions, and open questions. Put shared context with each feature that needs it.
 
 Do not silently omit, collapse, or paraphrase a concrete detail into a vague outcome. If some text fits no feature, it is the explicit unresolved remainder. When a user is present, ask where it belongs inside the round described in "Ask one batched round when a user is present". Otherwise report it as the unresolved remainder and let the caller decide.
+
+A detail that maps to a feature but still has no settled decision after any batched round goes under that issue's `## Open questions`. Never drop it. This does not cover text that fits no feature: that stays the unresolved remainder described above.
 
 Do not derive, resolve, or organize new requirements, decisions, plans, or tasks, and retain any supplied decision verbatim as `## Context`.
 
@@ -87,17 +91,25 @@ After the reply, keep each answer word for word under `## Context` of the featur
 
 ## Create and file each issue
 
+Before step 1 for each feature, look for a duplicate left by an earlier partial run. Run once per feature, using the resolved repository and leaving any double quote out of the title inside the search text:
+
+```text
+gh issue list --repo <owner/name> --search "<title> in:title" --state open --limit 100 --json number,title,url
+```
+
+A match is an open issue whose title equals the intended title after trimming and lowercasing. Ignore every other hit and never judge similarity. On a match, create no second issue and do not edit it. Report it as `existing issue #N` and run steps 2 and 3 for it.
+
 For each feature, work in this order:
 
 1. Create the issue.
 2. Add it to the Project, using the add-item rules under "Write plan" in `standards/github-request-discipline.md`. An item that already exists counts as success.
-3. Set its Status to `Backlog`.
+3. Read its Status. When it has none, set it to `Backlog`. When it has one, change nothing and report it.
 
 Never use GraphQL guidance for routine Project work.
 
 ## When something fails
 
-On a partial failure, report every mapping that completed and name the exact feature that failed. Never retry by creating a duplicate issue.
+On a partial failure, report every mapping that completed and name the exact feature that failed. Never retry by creating a duplicate issue. When step 1 succeeded for a feature and step 2 or 3 failed, keep its issue number, read back its Project membership and Status, and run again only the step that is missing for that issue. Never repeat step 1.
 
 ## Final report
 
