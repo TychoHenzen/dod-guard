@@ -10,6 +10,7 @@ function defaultOptions() {
     excludes: [],
     testPaths: [],
     root: process.cwd(),
+    noConfig: false,
     top: 15,
   };
 }

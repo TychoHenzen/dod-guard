@@ -4,6 +4,7 @@ export interface QualityConfig {
   directTypeLimit: number;
   genericBuckets: string[];
   generatedPaths: string[];
+  excludePaths: string[];
   testPaths: string[];
   lowLevelPathGroups: string[];
   fluentMarkers: string[];
@@ -16,6 +17,7 @@ export const DEFAULT_CONFIG: QualityConfig = {
   directTypeLimit: 12,
   genericBuckets: ["utils", "common", "helpers", "shared", "misc"],
   generatedPaths: [],
+  excludePaths: [],
   testPaths: [],
   lowLevelPathGroups: [],
   fluentMarkers: ["builder", "fluent", "pipeline", "query"],

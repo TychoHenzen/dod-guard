@@ -37,7 +37,8 @@ export function readText(path) {
 function visitEntry({ dir, ctx, onFile, entry }) {
   const full = join(dir, entry.name);
   const rel = toPosix(relative(ctx.root, full));
-  if (ctx.excludes.some((frag) => rel.includes(frag))) return;
+  const anchored = `/${rel}`;
+  if (ctx.excludes.some((frag) => anchored.includes(frag))) return;
   if (entry.isDirectory()) {
     if (!IGNORED_DIRS.has(entry.name)) walkDir(full, ctx, onFile);
     return;
