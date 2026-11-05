@@ -93,13 +93,13 @@ If the writer reports that it saw old text, or its tool log shows a read under `
 
 ### Verify
 
-Run the focused checks, then the full relevant suite one time.
+Take the check commands from the repository's `AGENTS.md`, or from `CLAUDE.md` when there is no `AGENTS.md`: first the focused checks for the target, then the full relevant suite one time. When neither file names a test command, use the repository's documented one (`package.json` scripts, `Makefile`, or the README test section). When none exists, report that Verify could not run and stop. Invent no command.
 
 - Shape A: compare the boundary results against the quarantine.
 - Shape C: walk the census item by item.
 - Shape D: confirm every required claim at its recorded strength.
 
-If something is missing, you fix it. The writer is never shown the old text to close a gap.
+If a check fails or a claim is missing, you fix it yourself from the contract and the rewrite alone. The writer is never shown the old text to close a gap. When every check passes, run `echo verified >> .blind/progress.txt`.
 
 ### Run the overlap gate
 
@@ -125,7 +125,7 @@ Prose mode fails it above any of these:
 
 With fewer than roughly 40 significant tokens the numbers say little. Report the metrics and inspect the text yourself.
 
-After exit 1, tell the writer `too close` and nothing more. No metrics, no scores, no excerpts. The retry writer must be a fresh bounded subagent. Allow at most two write/gate cycles. A second failure ends the run with a report, not a third try.
+After exit 1, tell the writer `too close` and nothing more. No metrics, no scores, no excerpts. The retry writer must be a fresh bounded subagent. Allow at most two write/gate cycles. A second exit 1 ends the run: leave `.blind/` and the last written target in place, restore nothing from the quarantine, and report the result to the user. On exit 0, run `echo gated >> .blind/progress.txt`.
 
 ### Gap audit and handoff
 
@@ -139,3 +139,7 @@ A separate bounded auditor compares the work against the contract. It may read t
 ## When something breaks
 
 A failed or unclear command leaves the checkpoint in place. Preserve the checkpoint. Read back the remote state and classify the failure. If the blocker is confirmed, consult [dod-guard:codex-advisor](../codex-advisor/SKILL.md) before bringing it to the user. Do not throw away unrelated edits, repeat a review that already finished, or let a high overlap score cover for a missing claim.
+
+If `.blind/` exists when the run starts, this is a resume, not a new run. Do not re-extract the contract. Confirm the current branch is the PBI branch and that `git status --porcelain` shows only paths this run or the user changed, and leave unrelated edits alone. Read the last slug with `tail -n 1 .blind/progress.txt` (see the progress paragraph under "The seven phases") and continue at the phase after it: `contract` goes to Quarantine and delete, `quarantined` to Write blind (finish removing the target first if it still exists), `written` to Verify (rerun it and trust no earlier result), `verified` to the overlap gate, `gated` to Gap audit and handoff, `audited` to deleting `.blind/` and handoff. When the file is missing or empty, trust only `.blind/contract.md`: read it, append `contract`, and continue at Quarantine and delete. If `.blind/quarantine/` also exists and the target is gone, stop and report instead of guessing.
+
+If the target is deleted, the writer failed, and no usable rewrite exists in its place, restore the original with `cp -R ".blind/quarantine/<name>" "<target>"`, check it with `diff -rq "<target>" ".blind/quarantine/<name>"`, and report the failure. Never restore over a usable rewrite.
