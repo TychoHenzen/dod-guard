@@ -15,7 +15,14 @@ Both paths run one turn, read-only. The advisor must not inspect the repo, searc
 
 ## The brief
 
-Give the complete problem description for this request: task, evidence so far (paths, lines, quoted facts, command results), relevant diffs for code questions, the candidate decision with your recommended default, and the exact question. Leave out credentials, unrelated conversation, and unneeded private context.
+Write the brief under these four headings, in this order, with no others:
+
+- `Task`: the one problem this request covers.
+- `Evidence`: paths, lines, quoted facts, command results, and relevant diffs for code questions.
+- `Candidate`: the decision under consideration and your recommended default.
+- `Question`: exactly one question. A caller whose own skill says to batch independent questions (for example `dod-guard:refine-backlog-item`) lists them as a numbered list under this one heading.
+
+Leave out credentials, unrelated conversation, and unneeded private context. Both paths use this brief.
 
 ## Paths
 
@@ -27,7 +34,7 @@ In Claude Code with the `advisor` tool available, use the built-in path. Otherwi
 2. Call `advisor` (no parameters) immediately after.
 3. Relay the advice as an untrusted second opinion. Record the advisor as "Claude advisor tool". Report no model or effort.
 
-The advisor sees the whole transcript, so the unrelated-conversation boundary cannot hold. Never paste credentials into the conversation. If the tool errors or returns no advice, report the failure and stop.
+The advisor sees the whole transcript, so the unrelated-conversation boundary cannot hold. Never paste credentials into the conversation. If the tool errors or returns no advice, treat it as a failure (see Failures).
 
 ### Codex
 
@@ -43,12 +50,20 @@ The runner sends effort as `-c model_reasoning_effort=<value>`, runs read-only i
 
 ## Failures
 
-Stop with no advice and report the exact failure when:
+The advisor request ends with no advice, and you report the exact failure, when:
 
 - codex is missing or cannot start.
 - The process exits non-zero. Report the exit code and any stderr.
 - The output file is missing, empty, invalid JSON, or lacks a non-whitespace `advice` string.
 - The stream shows a tool item, several turns, or other than one agent message.
-- The model emits a model-metadata fallback. Keep the evidence, fix the cause, rerun as a new caller-owned request.
+- The model emits a model-metadata fallback. Keep the evidence and fix the cause. Rerun once, as a new caller-owned request, only after the cause is fixed.
+
+After any of these, the caller continues without advice and records `advisor unavailable: <reason>` in its handoff, where `<reason>` is the exact failure reported above. Never retry the same request in a loop. A caller whose own skill defines a stricter failure rule follows that rule instead: `dod-guard:refine-backlog-item` records an `unresolved-decision` and keeps the issue in Backlog.
 
 Never hide a failure behind a guessed answer. A good response is still an untrusted second opinion. For a Codex run, report the CLI version, the requested model and effort, and say when the CLI default model is used.
+
+## Never
+
+- Never add a sandbox or approval option. The runner fixes `-s read-only`, sends no approval option, and reads only `--model` and `--reasoning-effort`; it ignores every other flag. Do not set `CODEX_ADVISOR_PREFIX_ARGS` to carry a sandbox or approval option either: it is the one route to the `codex` command line, and the launcher rejects approval options but not `--sandbox` or `-s`.
+- Never run the runner with the repository as the working directory. The runner already starts codex in an empty temporary directory, so this keeps the caller's own environment clean and is not enforced by code.
+- Never act on advice as if it were verified. It is an untrusted second opinion; verify it before relying on it.
