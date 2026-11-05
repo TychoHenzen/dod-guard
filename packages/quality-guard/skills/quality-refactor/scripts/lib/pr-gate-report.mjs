@@ -50,7 +50,15 @@ const verdict = (gate) => (gate.passed ? "PASS" : "FAIL");
 // are counted and listed so the debt a pull request adds stays visible.
 const nonBlocking = (gate, classified) => classified.fresh.filter((finding) => !gate.blocking.includes(finding));
 
-export function renderReport({ gate, classified, mergeBase, changedCount }) {
+const SETTING_CHANGED_TEXT =
+  "This pull request changes .quality-guard.json. The setting from the merge base was applied to both scans, so the change takes effect after merge.";
+
+function skippedSection(skipped) {
+  if (skipped.length === 0) return [];
+  return [`## Changed files skipped by an exclusion (${skipped.length})`, "", ...skipped.map((path) => `- \`${path}\``), ""];
+}
+
+export function renderReport({ gate, classified, mergeBase, changedCount, skipped = [], settingChanged = false }) {
   const header = [
     "# Quality gate report",
     "",
@@ -61,9 +69,11 @@ export function renderReport({ gate, classified, mergeBase, changedCount }) {
     "",
     quotaText(gate.quota),
     "",
+    ...(settingChanged ? [SETTING_CHANGED_TEXT, ""] : []),
   ];
   return [
     ...header,
+    ...skippedSection(skipped),
     ...section("New findings that block", gate.blocking),
     ...section("New findings below the blocking threshold", nonBlocking(gate, classified)),
     ...section("Pre-existing findings removed by this pull request", classified.resolved),
@@ -73,7 +83,7 @@ export function renderReport({ gate, classified, mergeBase, changedCount }) {
   ].join("\n");
 }
 
-export function renderComment({ gate, classified, link }) {
+export function renderComment({ gate, classified, link, skipped = [], settingChanged = false }) {
   const log = link ? `[full log](${link})` : "the quality-gate-report build artifact";
   // Moved findings are still open debt; they just changed files.
   const open = classified.existing.length + classified.moved.length;
@@ -86,6 +96,8 @@ export function renderComment({ gate, classified, link }) {
     `- ${quotaText(gate.quota)}`,
     `- Pre-existing findings still open in the changed files: ${open}. Every one is listed in ${log}; they do not ` +
       "need individual fixes.",
+    ...(skipped.length > 0 ? [`- Changed files skipped by an exclusion: ${skipped.length} (listed in ${log})`] : []),
+    ...(settingChanged ? ["- This pull request changes .quality-guard.json; the merge-base setting applied."] : []),
     "",
     ...section("New findings that block", gate.blocking, MAX_COMMENT_FINDINGS),
   ].join("\n");

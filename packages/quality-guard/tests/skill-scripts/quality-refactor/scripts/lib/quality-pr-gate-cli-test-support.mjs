@@ -54,7 +54,6 @@ export function runGate(repo, ...extra) {
   const args = [
     GATE,
     "--base=main",
-    "--root=src",
     `--report=${report}`,
     `--comment=${comment}`,
     ...extra,

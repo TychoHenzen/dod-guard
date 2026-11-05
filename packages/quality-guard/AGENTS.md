@@ -15,7 +15,7 @@ not persist a quality decision.
 | Part | Where | Role |
 |------|-------|------|
 | Scanner | `skills/quality-refactor/scripts/` | Zero-dependency structural scanner. The single implementation. |
-| Pull-request gate | `skills/quality-refactor/scripts/quality-pr-gate.mjs` | CI check. Scans changed files at the merge base and at HEAD. Fails on new medium/high findings, or when the pull request removes fewer than one medium/high (or three low) pre-existing findings. Writes one full report and one comment body. Runs in CI, never on writes. |
+| Pull-request gate | `skills/quality-refactor/scripts/quality-pr-gate.mjs` | CI check. Scans the whole checkout at the merge base and at HEAD and compares the changed files. Fails on new medium/high findings, or when the pull request removes fewer than one medium/high (or three low) pre-existing findings. Writes one full report and one comment body. Runs in CI, never on writes. |
 | Gate comment | `skills/quality-refactor/scripts/quality-pr-gate-comment.mjs` | Best-effort: posts the gate's comment body once per pull request and updates it on later pushes. |
 | Script entrypoint | `scripts/quality-guard.mjs` | File-local feedback script. Not registered as a hook. |
 | Reports | `src/` and `scripts/` | Current-state structural, test-quality, and readability evidence. |
@@ -31,7 +31,7 @@ stored acceptance state.
 The supported CLI paths are:
 
 - `skills/quality-refactor/scripts/quality-scan.mjs` for structural diagnostics.
-- `skills/quality-refactor/scripts/quality-pr-gate.mjs --base=<ref> --root=<dir>` for the pull-request gate.
+- `skills/quality-refactor/scripts/quality-pr-gate.mjs --base=<ref>` for the pull-request gate.
 - `quality-guard report` for current-state report evidence.
 - `quality-guard test-quality` for explicit Clean Code test evidence.
 - `quality-guard readability --stdin` for complete plaintext supplied by an
@@ -120,6 +120,10 @@ already applies to rules the repository turned on as errors.
   class, so the scanner still sees a long class after its members are
   moved into another `partial` file. Generated `*.g.cs` and designer files
   are not counted.
+- `.quality-guard.json` `excludePaths` (a substring of "/" plus the
+  repository-relative path) lists code that is not the repository's own. The
+  gate reads it from the merge base for both scans, exits 2 on an invalid file
+  or on a HEAD scan of zero files, and lists changed files it skipped.
 - Point `--root` at the repository, not at the target directory. Manifest
   files such as Godot scenes are collected from the root, and a scene that
   wires a class usually sits above the scanned subdirectory.

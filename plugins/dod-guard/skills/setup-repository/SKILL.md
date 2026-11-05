@@ -70,10 +70,10 @@ Per applicable category, prefer the project's strict stable native tool, then ex
 Every repository with maintained source gets a `quality-guard` job. It runs on `pull_request` only, uses `fetch-depth: 0`, checks out dod-guard at a pinned commit beside the project, and runs:
 
 ```text
-node <dod-guard-checkout>/packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs --base=<base sha> --root=<source root>
+node <dod-guard-checkout>/packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs --base=<base sha>
 ```
 
-Options: `--report=<file>`, `--comment=<file>`, `--report-link=<run url>`, `--block-on`, `--rule-block-on=<rule>:<severity>`. The gate fails when the PR adds a medium or high finding, or removes fewer than one medium or high (or three low) of the findings already in the changed files. Upload the report as an artifact. Post the `--comment` file with `quality-pr-gate-comment.mjs --repo=<owner/name> --pr=<number> --body=<file>` to keep one comment per PR; that job needs `pull-requests: write`. Never copy the scanner or register a quality-guard PostToolUse hook. Existing findings do not stop setup: this job is the one exemption from the strict-check stop above, and every other strict check still stops setup. Put the job on the default branch before section 9.
+Options: `--report=<file>`, `--comment=<file>`, `--report-link=<run url>`, `--block-on`, `--rule-block-on=<rule>:<severity>`. The gate scans the whole checkout. Put code that is not the repository's own (dependencies, generated or vendored code) under excludePaths in a tracked `.quality-guard.json`; the gate reads it from the merge base. The gate fails when the PR adds a medium or high finding, or removes fewer than one medium or high (or three low) of the findings already in the changed files. Upload the report as an artifact. Post the `--comment` file with `quality-pr-gate-comment.mjs --repo=<owner/name> --pr=<number> --body=<file>` to keep one comment per PR; that job needs `pull-requests: write`. Never copy the scanner or register a quality-guard PostToolUse hook. Existing findings do not stop setup: this job is the one exemption from the strict-check stop above, and every other strict check still stops setup. Put the job on the default branch before section 9.
 
 ## 4. Ignore rules and instructions
 
