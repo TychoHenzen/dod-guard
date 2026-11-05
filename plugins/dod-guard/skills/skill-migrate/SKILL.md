@@ -23,7 +23,7 @@ Migrate one artifact per call; batching is out of scope. Run phases 0 to 9 in or
 
 Resolve these and confirm each script exists before running any. If one fails, end the turn naming the path.
 
-Spend at most four dispatches: `dod-guard:blind-prose-contract-extractor`, `dod-guard:migration-analyst`, `dod-guard:blind-prose-writer`, and `dod-guard:blind-gap-auditor`. On Codex use `dod_guard_<name>`. With no registered custom agent, read `<agent-definitions-dir>/<name>.md` and spawn `explorer` (no Write or Edit in its tools) or `worker`, embedding the definition body and briefing. Clean-context, model-separation, dispatch-cap, and return-shape rules still hold.
+Dispatch budget: the four agents run once each (`dod-guard:blind-prose-contract-extractor`, `dod-guard:migration-analyst`, `dod-guard:blind-prose-writer`, `dod-guard:blind-gap-auditor`). Two more allowances exist. An agent that returns nothing usable (empty, unparsable, or a confirmed provider failure) is dispatched once more with the same briefing plus one line naming the missing output; when that second dispatch also fails, end the run, name the agent, and leave `.skill-migrate/` intact. A failed gate in phase 5, 6 or 7 sends the writer back at most twice in total; when a third redispatch would be needed, end the run, name the failing gate, and leave `.skill-migrate/` intact. The contract, the classification and the replacement text come from the agents only. When an agent cannot deliver, the stop above is the way forward, so the orchestrator writes none of them itself. On Codex use `dod_guard_<name>`. With no registered custom agent, read `<agent-definitions-dir>/<name>.md` and spawn `explorer` (no Write or Edit in its tools) or `worker`, embedding the definition body and briefing. Clean-context, model-separation, dispatch-cap, and return-shape rules still hold.
 
 On Codex, inspect the active agent list and reuse a related agent where practical. Size each wave to free slots, wait, record all results, then close finished agents (interrupt unneeded ones if close is unavailable). A returned result does not prove a slot is free: if full, release unneeded agents and retry once, else reuse an agent by follow-up.
 
@@ -57,13 +57,13 @@ node "<skill-dir>/scripts/migration-check.mjs" <path-to-target> --save=.skill-mi
 
 It prints the kind (`skill`, `agent`, `claude-md`, `memory`, `instinct`); override with `--kind=<k>`. Pass the kind to every agent. Trace by kind: skill, each `subagent_type` and script call to its file; agent, its dispatching skills and the report format its caller parses; CLAUDE.md, the commands, paths, and gates named; memory or instinct, whether each fact still holds. Write an inventory: one-sentence goal, trace, dispatches with return shapes, script exit codes, rules.
 
-**1. Contract.** Dispatch the extractor with inventory and kind. It returns REQUIRED claims, OBSERVED claims, verbatim text, a dependency census, and banned vocabulary.
+**1. Contract.** Dispatch the extractor with inventory and kind. It returns REQUIRED claims, OBSERVED claims, verbatim text, a dependency census, and banned vocabulary. Save the returned contract unchanged as `.skill-migrate/contract.md`. Save its Verbatim section, with the leading `- ` removed from each line and one item per line, as `.skill-migrate/verbatim.txt`.
 
 **2. Classification.** Dispatch `migration-analyst` with contract, inventory, and kind. It labels each OBSERVED item ESSENTIAL, SCAFFOLDING (compensates for 4.6 limits), or ACCIDENTAL (phrasing artifact, dropped automatically). Advisory.
 
-**3. Human confirmation.** The only step that blocks on the user. Show all REQUIRED claims, every tagged OBSERVED claim, and the full SCAFFOLDING list. Ask which SCAFFOLDING to cut, which OBSERVED items are missed requirements, and whether any REQUIRED claim is wrong. Wait for the answers.
+**3. Human confirmation.** The only step that blocks on the user. Present the REQUIRED claims, every tagged OBSERVED claim, and the SCAFFOLDING list. For each SCAFFOLDING item and each proposed cut of exact text, state what the migrated artifact does if it is kept and what it does differently if it is cut, in the same words and the same length, with no recommendation before both. Exact text (Verbatim items, code blocks, commands, URLs, flags) is offered only as keep word for word or cut; the user may also edit it. Ask which SCAFFOLDING to cut, which OBSERVED items are missed requirements, and whether any REQUIRED claim is wrong. When the user gives no answer, end the turn with `.skill-migrate/` intact and apply nothing; a later turn resumes at this phase. After the answers, write `.skill-migrate/approvals.json` as `{"approvedCuts":[{"text":"<exact string>","reason":"<the user's words>"}]}`, with an empty list when nothing was cut. A cut of a prose claim uses `"claim"` in place of `"text"`.
 
-**4. Blind rewrite.** Copy the work copy in `.skill-migrate/work/` to `.skill-migrate/quarantine/original.md`, then clear the body of the work copy below the frontmatter. The target is never touched. Dispatch the writer with the pruned contract (REQUIRED plus approved OBSERVED), inventory, targets below, audience (Claude model in Claude Code), direct technical register, and banned read paths (quarantine directory, work copy, the target path, plugin-cache copies). Merge the original frontmatter with its output into `.skill-migrate/migrated.md`.
+**4. Blind rewrite.** Copy the work copy in `.skill-migrate/work/` to `.skill-migrate/quarantine/original.md`, then clear the body of the work copy below the frontmatter. The target is never touched. Dispatch the writer with the contract (REQUIRED, the approved OBSERVED items, and every Verbatim item for every artifact kind), the approved cuts from `approvals.json`, inventory, targets below, audience (Claude model in Claude Code), direct technical register, and banned read paths (quarantine directory, work copy, the target path, plugin-cache copies). Merge the original frontmatter with its output into `.skill-migrate/migrated.md`.
 
 Post-4.6 targets:
 
@@ -78,19 +78,19 @@ Post-4.6 targets:
 9. Resolve contradictions and overlapping directives.
 10. Omit long worked examples that funnel toward one solution.
 
-Memory and instinct files: put every factual assertion (path, number, command, flag, date, name) in Verbatim; the writer reproduces each exactly and rewrites only the framing. A fact is never SCAFFOLDING. In phase 7 every dropped claim is a gap.
+Exact text, for every artifact kind: the writer reproduces each Verbatim item character for character and rewrites only the framing around it. For memory and instinct files every factual assertion (path, number, command, flag, date, name) is a Verbatim item, and a fact is never SCAFFOLDING. In phase 7 every dropped claim that is not an approved cut is a gap.
 
-**5. Claim coverage.** Map each REQUIRED and kept OBSERVED claim to a sentence in `migrated.md`. Name any unmapped claim and send the writer back.
+**5. Claim coverage.** Map each REQUIRED and kept OBSERVED claim to a sentence in `migrated.md`. Name any unmapped claim and send the writer back. Each such return counts toward the two writer redispatches in the dispatch budget.
 
 **6. Overlap.**
 
 ```bash
-node "<dod-guard-skills-dir>/blind-rewrite/scripts/overlap-scan.mjs" --mode=prose --original=.skill-migrate/quarantine/original.md --rewrite=.skill-migrate/migrated.md --contract-file=<path-to-verbatim-file>
+node "<dod-guard-skills-dir>/blind-rewrite/scripts/overlap-scan.mjs" --mode=prose --original=.skill-migrate/quarantine/original.md --rewrite=.skill-migrate/migrated.md --contract-file=.skill-migrate/verbatim.txt --require-contract
 ```
 
-Exit 0 is a genuine rewrite. Exit 1 is cosmetic: redispatch the writer, saying only "too close".
+Exit 0 is a genuine rewrite. Exit 1 is cosmetic: redispatch the writer, saying only "too close"; this counts toward the two writer redispatches. Exit 2 or any other code is a usage or input error: read the message, correct the path or argument, and rerun. An input error is not a pass and does not count as a redispatch. Exact text is already left out of the overlap count, so keep it in the rewrite and keep it in `verbatim.txt`.
 
-**7. Gap audit.** Dispatch `blind-gap-auditor` with both versions and the pruned contract. Repair every dropped claim. For skill, agent, or CLAUDE.md, a SCAFFOLDING or ACCIDENTAL item the user confirmed dropping is no gap.
+**7. Gap audit.** Dispatch `blind-gap-auditor` with both versions, `.skill-migrate/contract.md` and `.skill-migrate/approvals.json`. Save its report as `.skill-migrate/audit.md`. Repair every dropped claim or Verbatim item that is not an approved cut. An approved cut is not a gap; the auditor lists each one under `### Approved cuts`, and phase 9 shows that section to the user.
 
 **8. Regression.**
 
@@ -100,6 +100,12 @@ node "<skill-dir>/scripts/migration-check.mjs" .skill-migrate/migrated.md --befo
 
 Exit 0 passes. Exit 1 means a previously passing check now fails; fix every one. Exit 3 means the baseline is a different kind, so the comparison is refused. The script scores everything else. An agent declares `tools`, or omits it and sets `inheritAllTools: true`; both fails.
 
-All four gates (claim coverage, overlap, gap audit, regression) must pass before the report ships.
+All four gates (claim coverage, overlap, gap audit, regression) pass before the report ships, and the finish check in phase 9 exits 0.
 
-**9. Deliver.** Run the target integrity check. Then check for leaks: run `git status --porcelain` and account for every line. The only expected change is the `.gitignore` entry from phase 0, because the target stays byte-identical; name any other `??` or modified line in the report as a leak. When `.github/quality/` exists, run `git diff .github/quality/`; a diff there means a quality baseline changed, so name it. Revert only what this run wrote, and leave every other change as found. Summarize before and after numbers, append the migration-check output, then `git diff -- .gitignore` and the full diff of the target against the result (`git diff --no-index -- <path-to-target> .skill-migrate/migrated.md`, which exits 1 when the files differ and is not a failure). Say that the caller lands the result in the skill's source checkout. Stop.
+**9. Deliver.** Run the finish check:
+
+```bash
+node "<skill-dir>/scripts/finish-check.mjs" --original=.skill-migrate/quarantine/original.md --rewrite=.skill-migrate/migrated.md --contract=.skill-migrate/contract.md --verbatim=.skill-migrate/verbatim.txt --approvals=.skill-migrate/approvals.json --audit=.skill-migrate/audit.md
+```
+
+Exit 0 is required before any report. Exit 1 names a missing artifact or a dropped code block, command or Verbatim line: produce the missing artifact through its phase, or send the writer back (counts toward the two redispatches), then rerun. Exit 2 is a usage error: fix the argument and rerun. Then run the target integrity check. Then check for leaks: run `git status --porcelain` and account for every line. The only expected change is the `.gitignore` entry from phase 0, because the target stays byte-identical; name any other `??` or modified line in the report as a leak. When `.github/quality/` exists, run `git diff .github/quality/`; a diff there means a quality baseline changed, so name it. Revert only what this run wrote, and leave every other change as found. Summarize before and after numbers, append the migration-check output, add a section titled "Approved cuts" that repeats every entry of `approvals.json` with its reason, then `git diff -- .gitignore` and the full diff of the target against the result (`git diff --no-index -- <path-to-target> .skill-migrate/migrated.md`, which exits 1 when the files differ and is not a failure). Say that the caller lands the result in the skill's source checkout. Stop.
