@@ -30,7 +30,7 @@ Follow the [command-composition contract](../../docs/command-composition.md) for
 
 ## Head convergence
 
-Run after the source-branch push and after PR create or update, before trusting checks or writing the handoff. Poll read-only within a bound until `git ls-remote origin refs/heads/<branch>`, the PR API head, and `refs/pull/<number>/head` name the expected SHA. Read `refs/pull/<number>/merge` parents only to corroborate it, never as CI or review evidence. Stop when a ref is missing, malformed, duplicated, forked, moved, inconsistent, or stale after the bound. Never write hidden PR refs or call `update-branch`.
+Run after the source-branch push and after PR create or update, before trusting checks or writing the handoff. Read read-only at most 12 times, one Bash call per read, with `sleep 5` before every read after the first (never a `sleep` of 30 seconds or more), until `git ls-remote origin refs/heads/<branch>`, the PR API head, and `refs/pull/<number>/head` name the expected SHA. Right after the push no PR exists, so read only the branch ref. Read `refs/pull/<number>/merge` parents only to corroborate it, never as CI or review evidence. Stop at once when a ref is missing, malformed, duplicated, forked, moved, or inconsistent; read again only when a value is stale. After the 12th read without a match, stop and report the expected SHA and the three observed SHAs, writing `missing` for a ref that does not exist. Never write hidden PR refs or call `update-branch`.
 
 ## Structured-work convergence
 
@@ -58,7 +58,7 @@ After the draft exists, before `dod-guard:review-pr` or guarded `complete-pr`, w
 
 ## Create or update the draft
 
-If no open PR uses the head branch, create one draft PR against the default branch. If one exists, update its title and body, never a second PR. After a failed, timed-out, or ambiguous write, read back the open PR and head. Update it if it sits at the intended branch, else retry one identical creation once. Never alter a PR whose head no longer matches the verified branch.
+Before any write, list the open PRs for the head with `gh api -X GET repos/{owner}/{repo}/pulls -f state=open -f head=<owner>:<branch> -f per_page=100` (the GitHub MCP list operation first), and read `number`, `draft`, `head.ref`, and `head.repo.full_name` of each. Stop and report every PR number with its draft state, and do not convert, close, merge, or edit any of them, when more than one is listed, the one listed is not a draft, or its head repo is not this repository. If none is listed, create one draft PR against the default branch. If one draft is listed, update its title and body, never a second PR. After a failed, timed-out, or ambiguous write, run the lookup again: update the PR if it lists one at the intended branch, and retry one identical creation once only if it lists no PR. Never alter a PR whose head no longer matches the verified branch.
 
 Keep the body short: what changed and why, material verification results, the parent acceptance checklist checked only where evidence exists, `Closes #<issue-number>`, and this block, with the handoff linked and not restated.
 
