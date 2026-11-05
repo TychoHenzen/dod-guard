@@ -58,3 +58,17 @@ test("post-push names a pending context when a checkpoint exists", async () => {
   assert.equal(result.status, 1);
   assert.ok(result.json.remainder.includes("required context build-test is pending"), JSON.stringify(result.json));
 });
+
+test("post-push exits 1 and names every row except the one re-observed at the new head", async () => {
+  const handoff = buildHandoff(ROWS_904.map((row, index) => (index === 0 ? row : { ...row, headSha: "deadbeef" })));
+  const { status, json } = await gate("post-push", { handoff });
+
+  assert.equal(status, 1);
+  const staleRows = json.remainder
+    .filter((line) => line.startsWith("acceptance matrix: "))
+    .map((line) => line.split(" ")[2]);
+  assert.deepEqual(
+    staleRows,
+    ROWS_904.slice(1).map((row) => row.id),
+  );
+});

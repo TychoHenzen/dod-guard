@@ -189,7 +189,7 @@ node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body
 The finalization variant takes the same options with the `finalization`
 subcommand; the complete-pr finalization gate runs it before it readies or
 merges. Both use the exit codes above. The proof binds every lens to
-`--head-sha`, so a push needs the rows re-observed at the new head and a rerun,
+`--head-sha`, so a push needs every row of the Acceptance matrix block re-observed at the new head, the Preflight checkpoint rows rewritten there, and a rerun,
 never an edit of the issue body.
 
 Step plans are not one of the seven records and are not in the issue body. Each
