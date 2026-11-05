@@ -7,7 +7,7 @@ description: Hunt duplicate and obsolete implementations with git archaeology, t
 
 Read and apply `standards/working-defaults.md`; stricter rules here win.
 
-The deliverable is a deletion of the dead side of a superseded pair. Say up front this is an aggressive cleanup where nothing is sacred. Backwards compatibility alone never keeps a file; only a named live consumer does. Once evidence is in, delete by default: git history is the safety net.
+The deliverable is a deletion of the dead side of a superseded pair. Say up front this is an aggressive cleanup where nothing is sacred. Backwards compatibility alone never keeps a file; only a named live consumer does. Once evidence is in and the user approves, delete by default: git history is the safety net.
 
 Skip published libraries and SDKs (deprecated exports may have unseen consumers). Skip pairs where one side is a facade over the other.
 
@@ -35,7 +35,7 @@ A candidate pairs the older thing with its replacement; later stages run per pai
 
 Count each name pattern's output. If it matches a large share of the repo, it measures naming convention; drop it and say so.
 
-State a confidence and evidence per pair. Strong: one side unreferenced, the other tested, one author wrote both. Fair: evidence one way with a gap. Weak: anything less; report it in one line and stop.
+State a confidence and evidence per pair. Strong: one side unreferenced, the other tested, one author wrote both. Fair: evidence one way with a gap. Weak: anything less. Only a Strong pair, or a Fair pair whose gap you name in one sentence (which evidence is missing), goes into the Stage 4 list, and that sentence is repeated beside the pair there. A Fair pair with no named gap counts as Weak. Report a Weak pair in one line, stop, and never delete it.
 
 ## Stage 2: dating
 
@@ -70,6 +70,10 @@ Show the exact list of files, data files, and orphaned dependencies, and wait. G
 
 Delete only what the user approves. A partial yes binds, and a named live consumer keeps its item. If new dead files appear or the plan proves wrong, return with a corrected list; never fold new items into an approved run.
 
+- Never delete anything the approval list did not name, including tests, fixtures, data, or dependencies.
+- Before the first `git rm`, run `git status --short` again. If the tree holds changes unrelated to the approved list, stop and report them; do not delete around them. This tightens the "Local deletion exception".
+- Commit the deletion on its own, together with the approved orphaned-dependency and lockfile changes and nothing else, so one `git revert <deletion-commit>` undoes the whole batch. Ported changes are earlier, separate commits.
+
 - Delete whole files with `git rm <path>`; never empty a file and leave it. Delete tests, fixtures, mocks, and data that covered only the dying side.
 - Remove an orphaned dependency with the project's package manager (`npm remove`, `cargo remove`, `pip uninstall`).
 - Recover a wrong deletion before commit with `git checkout HEAD -- <path>`. After commit, run `git log -n 1 --diff-filter=D --format=%h -- <path>`, then `git checkout <hash>~1 -- <path>`. Use `~1`, never `^`.
@@ -77,5 +81,7 @@ Delete only what the user approves. A partial yes binds, and a named live consum
 ## After deleting
 
 Run the build, full test suite, and linter (it catches leftover imports). Re-run the stage 3 sweep for removed names. `rg <symbol>` exit 1 is gone, 0 is a surviving reference, 2 is a failed search.
+
+If the build, tests, or linter fail, restore only the file named in the error with the recovery commands in Stage 4, add it to the report as a live consumer, and do not patch around the failure. If the error names no file, restore nothing: report the failing output and the deleted paths, and stop. `git revert` of the deletion commit is the all-or-nothing undo, not the per-file remedy.
 
 Report what you deleted, kept and why, ported, weak pairs left alone, and any lesson.
