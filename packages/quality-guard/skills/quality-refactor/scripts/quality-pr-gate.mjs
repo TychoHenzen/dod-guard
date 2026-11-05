@@ -55,7 +55,9 @@ const count = (flag, key) => (options, value) => {
 const FLAGS = {
   "--base=": text("base"),
   "--root=": (options) => {
-    options.error = "--root was removed: the gate scans the whole checkout. List code that is not yours under excludePaths in .quality-guard.json";
+    options.error =
+      "--root was removed: the gate scans the whole checkout. " +
+      "List code that is not yours under excludePaths in .quality-guard.json";
   },
   "--exclude=": (options, value) => options.excludes.push(value),
   "--block-on=": text("blockOn"),
@@ -91,8 +93,11 @@ export function parseArgs(argv) {
 
 function validateOptions(options) {
   if (options.error) return;
-  if (!options.base) options.error = "--base=<ref> is required";
-  else if (!isSeverity(options.blockOn)) options.error = "--block-on must be low, medium or high";
+  if (!options.base) {
+    options.error = "--base=<ref> is required";
+    return;
+  }
+  if (!isSeverity(options.blockOn)) options.error = "--block-on must be low, medium or high";
 }
 
 function git(args, cwd) {
@@ -109,12 +114,16 @@ function changedFiles(base, cwd) {
   return parseNameStatus(output);
 }
 
+function spawnFailure(result) {
+  if (result.error) return result.error.message;
+  return result.status === 0 ? undefined : result.stderr.trim();
+}
+
 function scanViolations(dir, excludes) {
   const args = [SCAN, ".", "--format=json", `--root=${dir}`, "--no-config", ...excludes.map((x) => `--exclude=${x}`)];
   const result = spawnSync(process.execPath, args, { cwd: dir, encoding: "utf8", maxBuffer: 512 * 1024 * 1024 });
-  if (result.error || result.status !== 0) {
-    throw new Error(`quality-scan failed: ${result.error?.message ?? result.stderr.trim()}`);
-  }
+  const failure = spawnFailure(result);
+  if (failure !== undefined) throw new Error(`quality-scan failed: ${failure}`);
   const parsed = JSON.parse(result.stdout);
   return { violations: parsed.violations ?? [], fileCount: parsed.fileCount ?? 0 };
 }
@@ -149,6 +158,44 @@ function reportToConsole(gate, err, out) {
   if (gate.passed) out.write(`quality-pr-gate: no new blocking findings. ${quotaText(gate.quota)}\n`);
 }
 
+function runGate(options, cwd, { out, err }) {
+  const files = changedFiles(options.base, cwd);
+  if (files.length === 0) {
+    out.write("quality-pr-gate: no changed files\n");
+    return 0;
+  }
+  const base = scanMergeBase(options, cwd);
+  const head = scanViolations(cwd, base.excludes);
+  if (head.fileCount === 0) {
+    err.write(
+      "quality-pr-gate: the scan covered no files. Check excludePaths in .quality-guard.json " +
+        "and that the checkout holds source files.\n",
+    );
+    return 2;
+  }
+  const classified = classifyChanges({
+    files,
+    head: head.violations,
+    base: base.violations,
+    excludes: base.excludes,
+  });
+  const gate = evaluateGate(classified, options);
+  writeOutputs(options, summarize({ gate, classified, files, base }));
+  reportToConsole(gate, err, out);
+  return gate.passed ? 0 : 1;
+}
+
+function summarize({ gate, classified, files, base }) {
+  return {
+    gate,
+    classified,
+    mergeBase: base.mergeBase.slice(0, 7),
+    changedCount: files.length,
+    skipped: files.filter((file) => isGenerated(file.path, base.excludes)).map((file) => file.path),
+    settingChanged: files.some((file) => file.path === CONFIG_FILE || file.basePath === CONFIG_FILE),
+  };
+}
+
 function main(argv, { cwd = process.cwd(), out = process.stdout, err = process.stderr } = {}) {
   const options = parseArgs(argv);
   if (options.error) {
@@ -156,38 +203,7 @@ function main(argv, { cwd = process.cwd(), out = process.stdout, err = process.s
     return 2;
   }
   try {
-    const files = changedFiles(options.base, cwd);
-    if (files.length === 0) {
-      out.write("quality-pr-gate: no changed files\n");
-      return 0;
-    }
-    const base = scanMergeBase(options, cwd);
-    const head = scanViolations(cwd, base.excludes);
-    if (head.fileCount === 0) {
-      err.write(
-        "quality-pr-gate: the scan covered no files. Check excludePaths in .quality-guard.json and that the checkout holds source files.\n",
-      );
-      return 2;
-    }
-    const classified = classifyChanges({
-      files,
-      head: head.violations,
-      base: base.violations,
-      excludes: base.excludes,
-    });
-    const gate = evaluateGate(classified, options);
-    const skipped = files.filter((file) => isGenerated(file.path, base.excludes)).map((file) => file.path);
-    const settingChanged = files.some((file) => file.path === CONFIG_FILE || file.basePath === CONFIG_FILE);
-    writeOutputs(options, {
-      gate,
-      classified,
-      mergeBase: base.mergeBase.slice(0, 7),
-      changedCount: files.length,
-      skipped,
-      settingChanged,
-    });
-    reportToConsole(gate, err, out);
-    return gate.passed ? 0 : 1;
+    return runGate(options, cwd, { out, err });
   } catch (error) {
     err.write(`quality-pr-gate: ${error instanceof Error ? error.message : String(error)}\n`);
     return 2;

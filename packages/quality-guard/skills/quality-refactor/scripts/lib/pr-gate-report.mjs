@@ -51,11 +51,13 @@ const verdict = (gate) => (gate.passed ? "PASS" : "FAIL");
 const nonBlocking = (gate, classified) => classified.fresh.filter((finding) => !gate.blocking.includes(finding));
 
 const SETTING_CHANGED_TEXT =
-  "This pull request changes .quality-guard.json. The setting from the merge base was applied to both scans, so the change takes effect after merge.";
+  "This pull request changes .quality-guard.json. The setting from the merge base was applied to both scans, " +
+  "so the change takes effect after merge.";
 
 function skippedSection(skipped) {
   if (skipped.length === 0) return [];
-  return [`## Changed files skipped by an exclusion (${skipped.length})`, "", ...skipped.map((path) => `- \`${path}\``), ""];
+  const rows = skipped.map((path) => `- \`${path}\``);
+  return [`## Changed files skipped by an exclusion (${skipped.length})`, "", ...rows, ""];
 }
 
 export function renderReport({ gate, classified, mergeBase, changedCount, skipped = [], settingChanged = false }) {
