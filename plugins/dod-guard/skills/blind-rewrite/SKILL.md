@@ -27,6 +27,8 @@ Paraphrasing keeps the shape of the original. To get a real replacement, take th
 
 Go in this order: classify and preflight, Extract the contract, Quarantine and delete, Write blind, verify, Run the overlap gate, Gap audit and handoff.
 
+Record progress in `.blind/progress.txt`, one slug per line. Append a slug with `echo <slug> >> .blind/progress.txt` only after its phase's exit condition holds. The slugs, in order, are `contract`, `quarantined`, `written`, `verified`, `gated`, `audited`. Append `audited` once the gap auditor's findings are fixed, before `.blind/` is deleted. A phase without its slug is not done. This file is the only resume state.
+
 ### Classify and preflight
 
 Read the target and choose the shape that fits it.
@@ -63,21 +65,41 @@ Keep out implementation names, declaration order, vocabulary, and any example th
 
 ### Quarantine and delete
 
-Copy the exact original to `.blind/quarantine/` and check the copy. Only then remove the target. The order is fixed: contract first, deletion second.
+Copy the exact original into `.blind/quarantine/`, then prove the copy is byte-identical before anything is removed. Run from the repository root, with `<target>` the path you were given and `<name>` its last path segment:
+
+```bash
+mkdir -p .blind/quarantine
+cp -R "<target>" .blind/quarantine/
+diff -rq "<target>" ".blind/quarantine/<name>"
+```
+
+Require exit 0 from `diff`. On exit 1, recopy once and run it again. A second exit 1 ends the run with nothing deleted. Use `diff -rq`, not `git diff --no-index`: under `core.autocrlf=true` the git command passes a CRLF copy of an LF original.
+
+Then check whether git can restore the target with `git ls-files --error-unmatch -- "<target>"`. When it fails, the target is untracked. If `git check-ignore -q -- "<target>"` exits non-zero, snapshot the target first with a commit limited to that path, and never stash:
+
+```bash
+git add -- "<target>" && git commit -m "chore: snapshot <name> before blind rewrite" -- "<target>"
+```
+
+If `git check-ignore` exits 0, the target is ignored and cannot be committed. The verified copy is then the only backup, so keep `.blind/quarantine/` until handoff.
+
+After the copy check passes and any snapshot is made, run `echo quarantined >> .blind/progress.txt`, then remove the target. The order is fixed: contract first, verified copy second, deletion third.
 
 ### Write blind
 
-Dispatch a writer for the single target. Give it the contract, the seam and context it is allowed to see, and the acceptance evidence. It may read output produced earlier in this run. It must not read `.blind/quarantine/`, and it never edits `.gitignore`.
+Dispatch a writer for the single target. Its prompt holds the contract, the seam and context it is allowed to see, and the acceptance evidence. The prompt holds no path under `.blind/quarantine/` and no text copied from the original, including in an example or an error message. The writer may read output produced earlier in this run. It must not read `.blind/quarantine/`, and it never edits `.gitignore`.
+
+If the writer reports that it saw old text, or its tool log shows a read under `.blind/quarantine/`, delete everything it wrote at the target path and dispatch a fresh writer with the same prompt. The replacement counts as one of the two write/gate cycles. When the output is accepted, run `echo written >> .blind/progress.txt`.
 
 ### Verify
 
-Run the focused checks, then the full relevant suite one time.
+Take the check commands from the repository's `AGENTS.md`, or from `CLAUDE.md` when there is no `AGENTS.md`: first the focused checks for the target, then the full relevant suite one time. When neither file names a test command, use the repository's documented one (`package.json` scripts, `Makefile`, or the README test section). When none exists, report that Verify could not run and stop. Invent no command.
 
 - Shape A: compare the boundary results against the quarantine.
 - Shape C: walk the census item by item.
 - Shape D: confirm every required claim at its recorded strength.
 
-If something is missing, you fix it. The writer is never shown the old text to close a gap.
+If a check fails or a claim is missing, you fix it yourself from the contract and the rewrite alone. The writer is never shown the old text to close a gap. When every check passes, run `echo verified >> .blind/progress.txt`.
 
 ### Run the overlap gate
 
@@ -103,7 +125,7 @@ Prose mode fails it above any of these:
 
 With fewer than roughly 40 significant tokens the numbers say little. Report the metrics and inspect the text yourself.
 
-After exit 1, tell the writer `too close` and nothing more. No metrics, no scores, no excerpts. The retry writer must be a fresh bounded subagent. Allow at most two write/gate cycles. A second failure ends the run with a report, not a third try.
+After exit 1, tell the writer `too close` and nothing more. No metrics, no scores, no excerpts. The retry writer must be a fresh bounded subagent. Allow at most two write/gate cycles. A second exit 1 ends the run: leave `.blind/` and the last written target in place, restore nothing from the quarantine, and report the result to the user. On exit 0, run `echo gated >> .blind/progress.txt`.
 
 ### Gap audit and handoff
 
@@ -117,3 +139,7 @@ A separate bounded auditor compares the work against the contract. It may read t
 ## When something breaks
 
 A failed or unclear command leaves the checkpoint in place. Preserve the checkpoint. Read back the remote state and classify the failure. If the blocker is confirmed, consult [dod-guard:codex-advisor](../codex-advisor/SKILL.md) before bringing it to the user. Do not throw away unrelated edits, repeat a review that already finished, or let a high overlap score cover for a missing claim.
+
+If `.blind/` exists when the run starts, this is a resume, not a new run. Do not re-extract the contract. Confirm the current branch is the PBI branch and that `git status --porcelain` shows only paths this run or the user changed, and leave unrelated edits alone. Read the last slug with `tail -n 1 .blind/progress.txt` (see the progress paragraph under "The seven phases") and continue at the phase after it: `contract` goes to Quarantine and delete, `quarantined` to Write blind (finish removing the target first if it still exists), `written` to Verify (rerun it and trust no earlier result), `verified` to the overlap gate, `gated` to Gap audit and handoff, `audited` to deleting `.blind/` and handoff. When the file is missing or empty, trust only `.blind/contract.md`: read it, append `contract`, and continue at Quarantine and delete. If `.blind/quarantine/` also exists and the target is gone, stop and report instead of guessing.
+
+If the target is deleted, the writer failed, and no usable rewrite exists in its place, restore the original with `cp -R ".blind/quarantine/<name>" "<target>"`, check it with `diff -rq "<target>" ".blind/quarantine/<name>"`, and report the failure. Never restore over a usable rewrite.
