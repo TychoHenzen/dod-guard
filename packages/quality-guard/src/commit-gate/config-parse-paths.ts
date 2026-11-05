@@ -8,6 +8,16 @@ export function pathList(value: unknown, location: string): string[] {
   return result;
 }
 
+export function excludePathList(value: unknown): string[] {
+  if (value === undefined) return [];
+  if (
+    !Array.isArray(value) ||
+    value.some((item) => typeof item !== "string" || item === "")
+  )
+    throw new ConfigError("excludePaths must be an array of non-empty strings");
+  return (value as string[]).map((item) => item.split("\\").join("/"));
+}
+
 function assertPathList(
   value: unknown,
   location: string,

@@ -25018,6 +25018,7 @@ var DEFAULT_CONFIG = {
   directTypeLimit: 12,
   genericBuckets: ["utils", "common", "helpers", "shared", "misc"],
   generatedPaths: [],
+  excludePaths: [],
   testPaths: [],
   lowLevelPathGroups: [],
   fluentMarkers: ["builder", "fluent", "pipeline", "query"],
@@ -25039,6 +25040,12 @@ function pathList(value, location) {
   assertUniquePaths(result, location);
   assertRelativePaths(result, location);
   return result;
+}
+function excludePathList(value) {
+  if (value === void 0) return [];
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || item === ""))
+    throw new ConfigError("excludePaths must be an array of non-empty strings");
+  return value.map((item) => item.split("\\").join("/"));
 }
 function assertPathList(value, location) {
   if (!Array.isArray(value) || value.length === 0)
@@ -25138,6 +25145,7 @@ var CONFIG_KEYS = [
   "directTypeLimit",
   "genericBuckets",
   "generatedPaths",
+  "excludePaths",
   "testPaths",
   "lowLevelPathGroups",
   "fluentMarkers",
@@ -25146,6 +25154,7 @@ var CONFIG_KEYS = [
 function optionalPaths(input) {
   return {
     generatedPaths: input.generatedPaths === void 0 ? [] : parseStrings(input.generatedPaths, [], "generatedPaths"),
+    excludePaths: excludePathList(input.excludePaths),
     testPaths: input.testPaths === void 0 ? [] : parseStrings(input.testPaths, [], "testPaths"),
     lowLevelPathGroups: input.lowLevelPathGroups === void 0 ? [] : parseStrings(input.lowLevelPathGroups, [], "lowLevelPathGroups"),
     fluentMarkers: parseStrings(

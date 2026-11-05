@@ -2,19 +2,22 @@
 // Pull-request gate: only findings the pull request introduces can block it. The files it changes are scanned at the
 // merge base and at HEAD; a medium/high finding that exists only at HEAD blocks, and the pull request must also remove
 // a few findings that were already there (a quota), so quality improves without one pull request fixing everything.
-// Usage: node quality-pr-gate.mjs --base=<ref> --root=<dir> [--root=<dir>]... [--exclude=<fragment>]...
+// The whole checkout is scanned at the merge base and at HEAD. The excludePaths of the merge-base .quality-guard.json
+// apply to both scans, so a pull request cannot exclude its own findings.
+// Usage: node quality-pr-gate.mjs --base=<ref> [--exclude=<fragment>]...
 //          [--block-on=low|medium|high] [--rule-block-on=<rule>:<severity>]... [--fix-medium-high=<n>] [--fix-low=<n>]
 //          [--report=<file>] [--comment=<file>] [--report-link=<url>]
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { classifyChanges, severityRank } from "./lib/pr-gate-compare.mjs";
+import { CONFIG_FILE, loadExcludePaths } from "./lib/exclusion-config.mjs";
 import { evaluateGate } from "./lib/pr-gate-evaluate.mjs";
-import { GENERATED_PATHS, baseRoots, parseNameStatus } from "./lib/pr-gate-paths.mjs";
+import { GENERATED_PATHS, isGenerated, parseNameStatus } from "./lib/pr-gate-paths.mjs";
 import { quotaText, renderComment, renderReport } from "./lib/pr-gate-report.mjs";
 
 const SCAN = fileURLToPath(new URL("./quality-scan.mjs", import.meta.url));
@@ -51,7 +54,11 @@ const count = (flag, key) => (options, value) => {
 
 const FLAGS = {
   "--base=": text("base"),
-  "--root=": (options, value) => options.roots.push(value),
+  "--root=": (options) => {
+    options.error =
+      "--root was removed: the gate scans the whole checkout. " +
+      "List code that is not yours under excludePaths in .quality-guard.json";
+  },
   "--exclude=": (options, value) => options.excludes.push(value),
   "--block-on=": text("blockOn"),
   "--rule-block-on=": setRuleBlockOn,
@@ -74,17 +81,23 @@ function applyArg(options, arg) {
 export function parseArgs(argv) {
   const options = {
     base: undefined,
-    roots: [],
     excludes: [...GENERATED_PATHS],
     ruleBlockOn: {},
     error: undefined,
     ...DEFAULTS,
   };
   for (const arg of argv) applyArg(options, arg);
-  if (!options.error && !options.base) options.error = "--base=<ref> is required";
-  if (!options.error && options.roots.length === 0) options.error = "at least one --root=<dir> is required";
-  if (!options.error && !isSeverity(options.blockOn)) options.error = "--block-on must be low, medium or high";
+  validateOptions(options);
   return options;
+}
+
+function validateOptions(options) {
+  if (options.error) return;
+  if (!options.base) {
+    options.error = "--base=<ref> is required";
+    return;
+  }
+  if (!isSeverity(options.blockOn)) options.error = "--block-on must be low, medium or high";
 }
 
 function git(args, cwd) {
@@ -101,25 +114,29 @@ function changedFiles(base, cwd) {
   return parseNameStatus(output);
 }
 
-function scanViolations(options, dir, wanted = options.roots) {
-  const roots = wanted.filter((root) => existsSync(join(dir, root)));
-  if (roots.length === 0) return [];
-  const args = [SCAN, ...roots, "--format=json", `--root=${dir}`, ...options.excludes.map((x) => `--exclude=${x}`)];
-  const result = spawnSync(process.execPath, args, { cwd: dir, encoding: "utf8", maxBuffer: 512 * 1024 * 1024 });
-  if (result.error || result.status !== 0) {
-    throw new Error(`quality-scan failed: ${result.error?.message ?? result.stderr.trim()}`);
-  }
-  return JSON.parse(result.stdout).violations ?? [];
+function spawnFailure(result) {
+  if (result.error) return result.error.message;
+  return result.status === 0 ? undefined : result.stderr.trim();
 }
 
-// The merge base is checked out in a throwaway detached worktree so the scan sees exactly the upstream files.
-function scanMergeBase(options, files, cwd) {
+function scanViolations(dir, excludes) {
+  const args = [SCAN, ".", "--format=json", `--root=${dir}`, "--no-config", ...excludes.map((x) => `--exclude=${x}`)];
+  const result = spawnSync(process.execPath, args, { cwd: dir, encoding: "utf8", maxBuffer: 512 * 1024 * 1024 });
+  const failure = spawnFailure(result);
+  if (failure !== undefined) throw new Error(`quality-scan failed: ${failure}`);
+  const parsed = JSON.parse(result.stdout);
+  return { violations: parsed.violations ?? [], fileCount: parsed.fileCount ?? 0 };
+}
+
+// The merge base is checked out in a throwaway detached worktree so the scan sees exactly the upstream files. Its
+// .quality-guard.json is the only setting that counts, so a pull request cannot change the exclusions it is judged by.
+function scanMergeBase(options, cwd) {
   const mergeBase = git(["merge-base", options.base, "HEAD"], cwd).trim();
   const dir = mkdtempSync(join(tmpdir(), "quality-pr-gate-base-"));
   git(["worktree", "add", "--detach", dir, mergeBase], cwd);
   try {
-    const roots = baseRoots(options.roots, files, (root) => existsSync(join(dir, root)));
-    return { mergeBase, violations: scanViolations(options, dir, roots) };
+    const excludes = [...options.excludes, ...loadExcludePaths(dir)];
+    return { mergeBase, excludes, violations: scanViolations(dir, excludes).violations };
   } finally {
     spawnSync("git", ["worktree", "remove", "--force", dir], { cwd, encoding: "utf8" });
   }
@@ -141,6 +158,44 @@ function reportToConsole(gate, err, out) {
   if (gate.passed) out.write(`quality-pr-gate: no new blocking findings. ${quotaText(gate.quota)}\n`);
 }
 
+function runGate(options, cwd, { out, err }) {
+  const files = changedFiles(options.base, cwd);
+  if (files.length === 0) {
+    out.write("quality-pr-gate: no changed files\n");
+    return 0;
+  }
+  const base = scanMergeBase(options, cwd);
+  const head = scanViolations(cwd, base.excludes);
+  if (head.fileCount === 0) {
+    err.write(
+      "quality-pr-gate: the scan covered no files. Check excludePaths in .quality-guard.json " +
+        "and that the checkout holds source files.\n",
+    );
+    return 2;
+  }
+  const classified = classifyChanges({
+    files,
+    head: head.violations,
+    base: base.violations,
+    excludes: base.excludes,
+  });
+  const gate = evaluateGate(classified, options);
+  writeOutputs(options, summarize({ gate, classified, files, base }));
+  reportToConsole(gate, err, out);
+  return gate.passed ? 0 : 1;
+}
+
+function summarize({ gate, classified, files, base }) {
+  return {
+    gate,
+    classified,
+    mergeBase: base.mergeBase.slice(0, 7),
+    changedCount: files.length,
+    skipped: files.filter((file) => isGenerated(file.path, base.excludes)).map((file) => file.path),
+    settingChanged: files.some((file) => file.path === CONFIG_FILE || file.basePath === CONFIG_FILE),
+  };
+}
+
 function main(argv, { cwd = process.cwd(), out = process.stdout, err = process.stderr } = {}) {
   const options = parseArgs(argv);
   if (options.error) {
@@ -148,18 +203,7 @@ function main(argv, { cwd = process.cwd(), out = process.stdout, err = process.s
     return 2;
   }
   try {
-    const files = changedFiles(options.base, cwd);
-    if (files.length === 0) {
-      out.write("quality-pr-gate: no changed files\n");
-      return 0;
-    }
-    const base = scanMergeBase(options, files, cwd);
-    const head = scanViolations(options, cwd);
-    const classified = classifyChanges({ files, head, base: base.violations, excludes: options.excludes });
-    const gate = evaluateGate(classified, options);
-    writeOutputs(options, { gate, classified, mergeBase: base.mergeBase.slice(0, 7), changedCount: files.length });
-    reportToConsole(gate, err, out);
-    return gate.passed ? 0 : 1;
+    return runGate(options, cwd, { out, err });
   } catch (error) {
     err.write(`quality-pr-gate: ${error instanceof Error ? error.message : String(error)}\n`);
     return 2;

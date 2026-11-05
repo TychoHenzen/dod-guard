@@ -9,7 +9,7 @@ import {
 } from "../../../../../skills/quality-refactor/scripts/lib/pr-gate-paths.mjs";
 import { parseArgs } from "../../../../../skills/quality-refactor/scripts/quality-pr-gate.mjs";
 
-const required = ["--base=main", "--root=Scripts"];
+const required = ["--base=main"];
 
 test("normalizePath makes Windows and dot-relative paths comparable", () => {
   assert.equal(
@@ -43,21 +43,18 @@ test("parseNameStatus maps each changed file to where it lived at the merge base
   ]);
 });
 
-test("parseArgs requires a base ref and at least one root", () => {
+test("parseArgs requires a base ref and rejects --root", () => {
   assert.match(parseArgs([]).error, /--base/);
-  assert.match(parseArgs(["--base=main"]).error, /--root/);
-  assert.equal(parseArgs(["--base=main", "--root=packages"]).error, undefined);
+  assert.equal(parseArgs(["--base=main"]).error, undefined);
+  assert.match(
+    parseArgs(["--base=main", "--root=packages"]).error,
+    /excludePaths/,
+  );
   assert.match(parseArgs(["--bogus"]).error, /unknown argument/);
 });
 
-test("parseArgs keeps every root and exclude, plus the generated defaults", () => {
-  const options = parseArgs([
-    "--base=main",
-    "--root=Scripts",
-    "--root=addons",
-    "--exclude=/gen/",
-  ]);
-  assert.deepEqual(options.roots, ["Scripts", "addons"]);
+test("parseArgs keeps every exclude, plus the generated defaults", () => {
+  const options = parseArgs(["--base=main", "--exclude=/gen/"]);
   assert.ok(options.excludes.includes("/gen/"));
   assert.ok(options.excludes.includes("/dist-test/"));
 });

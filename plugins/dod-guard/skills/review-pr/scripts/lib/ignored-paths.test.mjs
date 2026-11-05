@@ -84,3 +84,16 @@ test("the real scanner reports no violation under a gitignored directory when gi
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("the real scanner honors excludePaths from the repository setting", () => {
+  const root = ignoredRepository();
+  try {
+    mkdirSync(join(root, "samples"));
+    writeFileSync(join(root, "samples", "v.mjs"), "function unusedThing() {\n  return 1;\n}\n");
+    writeFileSync(join(root, ".quality-guard.json"), '{"excludePaths":["/samples/"]}\n');
+    assert.deepEqual(scanned(root, scanArguments(root, ignoredPaths(root))), []);
+    assert.deepEqual(scanned(root, [...scanArguments(root, ignoredPaths(root)), "--no-config"]), ["samples/v.mjs"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
