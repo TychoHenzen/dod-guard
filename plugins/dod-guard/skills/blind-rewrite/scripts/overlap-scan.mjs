@@ -5,6 +5,7 @@ import { join, relative } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { readTextFile } from "../../../lib/read-text.mjs";
+import { optionError, parseArgs } from "./overlap-args.mjs";
 import { scoreOverlap } from "./overlap-metrics.mjs";
 
 async function filesAt(path) {
@@ -22,21 +23,6 @@ async function readTree(path) {
   return (await Promise.all(files.map((file) => readFile(file, "utf8")))).join("\n");
 }
 
-function parseArgs(argv) {
-  const options = { mode: "code", whitelist: [] };
-  for (const arg of argv) {
-    const match = /^--([^=]+)=(.*)$/.exec(arg);
-    const bare = /^--([^=]+)$/.exec(arg);
-    if (match) options[match[1]] = match[2];
-    else if (bare) options[bare[1]] = "true";
-  }
-  options.whitelist = String(options.whitelist ?? "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-  return options;
-}
-
 function loadContract(value) {
   if (!value) return [];
   return value
@@ -46,36 +32,18 @@ function loadContract(value) {
     .map((line) => line.replace(/^Verbatim\s*:\s*/i, ""));
 }
 
-async function main() {
-  const options = parseArgs(process.argv.slice(2));
-  if (!options.original || !options.rewrite) {
-    console.error(
-      "usage: overlap-scan.mjs --original=<path> --rewrite=<path> [--mode=code|prose] [--whitelist=a,b] [--contract-file=<path>] [--require-contract]",
-    );
-    process.exitCode = 2;
-    return;
-  }
+async function readInputs(options) {
+  const [original, rewrite] = await Promise.all([readTree(options.original), readTree(options.rewrite)]);
   const contractPath = options["contract-file"];
-  if (options["require-contract"] === "true" && !contractPath) {
-    console.error("overlap-scan: --require-contract needs --contract-file=<path>");
-    process.exitCode = 2;
-    return;
-  }
-  let original;
-  let rewrite;
-  let contractText = "";
-  try {
-    [original, rewrite] = await Promise.all([readTree(options.original), readTree(options.rewrite)]);
-    if (contractPath) contractText = readTextFile(contractPath);
-  } catch (error) {
-    console.error(`overlap-scan: cannot read an input: ${error.message}`);
-    process.exitCode = 2;
-    return;
-  }
-  const metrics = scoreOverlap(original, rewrite, {
+  return { original, rewrite, contractText: contractPath ? readTextFile(contractPath) : "" };
+}
+
+// Prints the score as JSON and returns the exit code: 0 on pass, 1 on fail.
+function printScore(options, inputs) {
+  const metrics = scoreOverlap(inputs.original, inputs.rewrite, {
     mode: options.mode,
     whitelist: options.whitelist,
-    contract: loadContract(contractText),
+    contract: loadContract(inputs.contractText),
   });
   console.log(
     JSON.stringify({
@@ -85,7 +53,26 @@ async function main() {
       ...metrics,
     }),
   );
-  process.exitCode = metrics.pass ? 0 : 1;
+  return metrics.pass ? 0 : 1;
+}
+
+async function main() {
+  const options = parseArgs(process.argv.slice(2));
+  const problem = optionError(options);
+  if (problem) {
+    console.error(problem);
+    process.exitCode = 2;
+    return;
+  }
+  let inputs;
+  try {
+    inputs = await readInputs(options);
+  } catch (error) {
+    console.error(`overlap-scan: cannot read an input: ${error.message}`);
+    process.exitCode = 2;
+    return;
+  }
+  process.exitCode = printScore(options, inputs);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();

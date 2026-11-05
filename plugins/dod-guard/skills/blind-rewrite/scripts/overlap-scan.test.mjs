@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -26,21 +26,19 @@ test("overlap gate accepts an independent implementation", () => {
 const SCRIPT = fileURLToPath(new URL("./overlap-scan.mjs", import.meta.url));
 
 function run(args) {
-  try {
-    const stdout = execFileSync(process.execPath, [SCRIPT, ...args], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    return { code: 0, stdout, stderr: "" };
-  } catch (error) {
-    return { code: error.status, stdout: error.stdout ?? "", stderr: error.stderr ?? "" };
-  }
+  const result = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8" });
+  return { code: result.status, stdout: result.stdout, stderr: result.stderr };
 }
 
-const COMMAND =
-  "gh api repos/acme/widgets/issues --paginate --jq .[].number --method GET --header accept:json --silent --include --cache 1h";
-const originalText = `Fetch the list first. ${COMMAND}\n${Array.from({ length: 60 }, (_, i) => `alpha${i}`).join(" ")}`;
-const independentText = `Run this to list issues. ${COMMAND}\n${Array.from({ length: 60 }, (_, i) => `omega${i}`).join(" ")}`;
+const COMMAND = [
+  "gh api repos/acme/widgets/issues --paginate --jq .[].number --method GET",
+  "--header accept:json --silent --include --cache 1h",
+].join(" ");
+const words = (prefix) => Array.from({ length: 60 }, (_, i) => `${prefix}${i}`).join(" ");
+const originalText = `Fetch the list first. ${COMMAND}
+${words("alpha")}`;
+const independentText = `Run this to list issues. ${COMMAND}
+${words("omega")}`;
 
 describe("overlap-scan CLI", () => {
   let dir;
