@@ -27,11 +27,21 @@ Assess four lenses: `implementation`, `wiring/usability` (proof the feature is r
 1. Run `dod-guard:add-backlog-idea` once with the complete request. Keep its feature split and issue mappings. For several independent issues, process them one at a time in creation order. If it reports text that fits no feature, stop with that blocker.
 2. Run `dod-guard:refine-backlog-item <issue-number>` for each issue. Ask all independent questions in one round, wait, then resume the same issue. Ask nothing in any other stage. If a material answer stays unavailable, leave the issue in its actual state and stop.
 3. Run `dod-guard:next-ticket <issue-number>` only after refinement moves the issue to `Todo`. Take its pushed branch, commit, and checks as the handoff. Never select another ticket.
+   If it stops with `step-plan-missing`, run `dod-guard:refine-backlog-item <issue-number>` once (it writes only the missing step plans and leaves the Status unchanged), then run `dod-guard:next-ticket <issue-number>` once more. A second `step-plan-missing` and any other stop reason are final: stop and report them.
 4. Run `dod-guard:submit-draft-pr <issue-number>`. Keep the returned pull request and head.
 5. Run `dod-guard:review-pr <pull-request>`. A completed `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` counts as the one review, even with findings. Read the recommendation and reviewed commit back from the remote PR, with no local ledger. If review-pr stops without posting, record its reason and the PR URL as a durable blocker and stop.
-   Only `BLOCKER` and `MAJOR` findings have a `GH-<id>` thread. `MINOR` has none and blocks nothing. Run `dod-guard:fix-pr-review <pull-request> <finding-ids>` once with every valid unresolved `BLOCKER` and `MAJOR` id. It fixes or declines each finding with evidence and resolves the thread. Rerun affected checks. Never run another review.
+   Only `BLOCKER` and `MAJOR` findings have a `GH-<id>` thread. `MINOR` has none and blocks nothing. Run `dod-guard:fix-pr-review <pull-request> <finding-ids>` once with every `GH-<id>` from the posted review whose thread is still unresolved on the remote. It decides valid versus declined, fixes or declines each finding with evidence, and resolves the thread. Rerun affected checks. Never run another review.
 6. Run `dod-guard:complete-pr <pull-request>` only when every `BLOCKER` and `MAJOR` is resolved or recorded not-actionable with evidence, required checks pass, and the head is the one the fixes pushed. Its guarded merge is the acceptance boundary this skill authorizes. If it stops on `unresolved-review-threads`, clear the named threads with fix-pr-review and run it again.
+   If a required check fails (`complete-pr` ends with `required_check_failed` naming it), read the failing job, fix the cause on the same branch with a normal commit and push, wait for the required checks at the new head, and run `dod-guard:complete-pr <pull-request>` again with that head. Never run `dod-guard:review-pr` again and never merge by hand. If the cause is not fixable, stop and report the failing job name. `conflict-triaged` and every other `complete-pr` stop stay final.
+
+## Never
+
+- Force-push.
+- Merge with `gh pr merge` or any path other than `dod-guard:complete-pr`.
+- Resolve a review thread without `fix-pr-review` evidence.
+- Edit the PR head after review without waiting for the required checks at the new head.
+- Create a second PBI for the same request.
 
 ## Failure
 
-On any stage failure, stop. Do not roll back and do not create duplicate issues. Report the completed state (issue, branch, PR, commit, review, checks, Project, merge) and the exact failed stage with the next evidence or decision it needs.
+On any stage failure, stop, except for the two bounded recoveries in stages 3 and 6. Do not roll back and do not create duplicate issues. Report the completed state (issue, branch, PR, commit, review, checks, Project, merge) and the exact failed stage with the next evidence or decision it needs.
