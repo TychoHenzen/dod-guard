@@ -7,6 +7,8 @@ description: Research a backlog item and give it justified priority, Fibonacci e
 
 Turn one existing Backlog or Todo issue into an implementation-ready parent PBI, in the issue's own target repository. Never create a branch, assign the PBI, set In Progress, implement code, or open a PR.
 
+Never run `closure.mjs apply` without a `closure.mjs plan` output from the same snapshot that shows no holds. Never delete or rename repository labels. Never edit a PBI body outside the five sections and the records in Implementation notes.
+
 Resolve the plugin root from this skill's directory. Read and apply `standards/working-defaults.md` and `standards/github-request-discipline.md`. Where this skill is stricter, it wins. After a failed or ambiguous write, read the resource back before you retry.
 
 ## Preconditions
@@ -57,12 +59,12 @@ Give the parent issue `## Outcome` (the observable result), `## Scope` (included
 
 Implementation notes hold the triage and record summaries (one short entry each, fields per `standards/project-workflow.md`), code, caller, and test evidence, the priority and effort rationale tied to label descriptions, and the standard-label rationale. When a version bump is in scope, list its carriers by grepping the exact `"version"` key of the plugin manifests (`plugin.json`, `package.json`), never a bare version string, which also matches dependency ranges and lockfiles.
 
-Ask for direction when a missing choice changes observable behavior, a public interface, data handling, or an acceptance test. Never write a false choice as a requirement.
+Ask only if the missing choice alters the wording of an acceptance checkbox. Otherwise record the assumption in `discovery-triage` and continue. A user-authority point still follows the routes in "Research and discovery triage". Never write a false choice as a requirement.
 
 **Children.** Children are checklist work on the parent's one branch and one PR, never child branches or PRs. Reuse an existing child that owns a unit. Never duplicate one. Each new child gets minimal parent context, scope, criteria, and verification.
 
 - Ordinary parent: create linked sub-issues only for criteria that can be completed, committed, and closed independently. Dependent steps stay in the parent. Add no administrative subtasks.
-- Structured parent: decompose by user action into a small set of coherent slices, only down to what can be implemented, tested, and verified alone. A cohesive feature may stay one checklist. Never add a child to fill a category list.
+- Structured parent: decompose by user action into at most 5 coherent slices, only down to what can be implemented, tested, and verified alone. A count above 5 means the scope is not one PR, so split it as "One parent, one closing PR" says. A cohesive feature may stay one checklist. Never add a child to fill a category list.
 - Each slice leaves the system working with tests green. The first is the thinnest end-to-end path through the supported surface. Name a slice by the behavior it adds. One nameable only by position or layer is mis-cut.
 - For repeated variants, the first slice introduces the shared boundary and converts one variant. The rest are local slices behind it.
 - Keep a concept's validation and error behavior in its slice. A slice that replaces old structure also migrates callers and deletes obsolete parts. Add nothing for speculative variants.
@@ -92,17 +94,17 @@ Each replacement delivery root records the issues it replaces in one `supersedes
   2. `node <plugin-root>/skills/complete-pr/scripts/closure.mjs plan --snapshot=<file> --hierarchy=<issue>`
   3. `node <plugin-root>/skills/complete-pr/scripts/closure.mjs apply --snapshot=<file> --hierarchy=<issue>`
 
-If the snapshot exits non-zero, stop and report. Never plan or apply from an older file. Report any hold with reasons. Never close by hand.
+If the snapshot exits non-zero, stop and report. Never plan or apply from an older file. If the plan shows any hold, report each hold with its reasons and do not run apply. Apply also closes every other issue the same plan admits, not only the hierarchy issue. Never close by hand.
 
 ## Write the step plans
 
 Write one comment per task on the parent, headed `## Step plan: <task-id>`, with the id from the `task-list` record (`task-1` when there is no task list). Write them on this thread at the standard tier, because `dod-guard:next-ticket` runs cheap and plans nothing.
 
-Per step, give the file, the edit (symbol and intent), the test to add or change (name and assertion), the validation command, and the expected result. Use fenced code blocks only, never indented ones, and keep each batch small. The plan carries every design decision, so a cheap model chooses nothing. A control run is a proof an acceptance criterion depends on, such as a baseline or a negative control that must fail or differ before the change. Write each one as its own step with its own command and expected result, never folded into another step's validation.
+Per step, give the file, the edit (symbol and intent), the test to add or change (name and assertion), the validation command, and the expected result. Use fenced code blocks only, never indented ones, and give at most 5 steps per comment. If a task needs more, split it in the `task-list` so each part has its own id and its own comment. A split part with no sub-issue is a parent-level task with `parentLevel: "convergence"`. The plan carries every design decision, so a cheap model chooses nothing. A control run is a proof an acceptance criterion depends on, such as a baseline or a negative control that must fail or differ before the change. Write each one as its own step with its own command and expected result, never folded into another step's validation.
 
 Before posting, check every target the plan names with Grep or Glob in the checkout: each file path exists or is marked as created by that step, each test file sits beside the code it covers, and each symbol is found in the file named. Correct a plan whose target is missing or misplaced, and list the targets checked in the final report.
 
-Post as the authenticated user. Write a plan for every task lacking a comment that the step-plan rule in `standards/project-workflow.md` accepts. On re-refinement, replace a changed task's comment only. Read every comment back with its author before the Status changes, or before you report when Status stays.
+Post as the authenticated user. Write a plan for every task lacking a comment that the step-plan rule in `standards/project-workflow.md` accepts. On re-refinement, replace a changed task's comment only, by posting a new comment (the newest accepted one wins). Never edit another user's comment. Read every comment back with its author before the Status changes, or before you report when Status stays. If a comment is missing or its author is not the authenticated user, repost that task's comment only. After two reposts that still read back wrong, stop before the Status change and report.
 
 ## Apply labels and verify
 
@@ -111,8 +113,8 @@ Post as the authenticated user. Write a plan for every task lacking a comment th
 3. Read back the body, labels, linked sub-issues, step-plan comments, and Project status. Confirm the sections, evidence, a step-plan comment per task, linked sub-issues, Status unchanged (`Backlog` for a Backlog parent, `Todo` for a Todo parent), exactly one label per scale plus a standard label, and effort below 13. An unknown priority must explain the missing evidence.
 4. For a structured PBI also confirm that the seven records are coherent, each linked child matches one independently deliverable slice and is actionable and Todo, and each lens has an owner.
 5. Save the readback body as a UTF-8 file and run `node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]`, passing `outcome: "verified"`. With children, `--children` is a JSON array of slice id and evidence per child. Exit 0 is ok, 1 is an actionable remainder, 2 is a missing or invalid record or argument (including a file that is neither UTF-8 nor UTF-16 with a BOM). On exit 1 or 2, correct the records and rerun. Stop on any actionable remainder.
-6. Move to Todo only on exit 0 with outcome `verified`, using `node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <todo-option-id> Todo <item-id>`; `Todo` is the Status to set and the readback target (see that script's `--help`). A parent already in `Todo` skips the move. Read back the final Project status.
+6. Move to Todo only on exit 0 with outcome `verified`, using `node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <todo-option-id> Todo <item-id>`; `Todo` is the Status to set and the readback target (see that script's `--help`). A parent already in `Todo` skips the move. Read back the final Project status: it must read `Todo`. Otherwise report the partial state and never claim readiness.
 
-If an edit fails or a readback disagrees, stop before the status change, report the actual partial state, and never claim readiness.
+If an edit fails or a readback taken before the status change disagrees, stop before the status change, report the actual partial state, and never claim readiness.
 
 Final report: PBI, priority, effort, standard labels, linked or replacement issues, and unresolved decisions. Then stop before implementation. Regression checks use [the refinement fixtures](fixtures.md).
