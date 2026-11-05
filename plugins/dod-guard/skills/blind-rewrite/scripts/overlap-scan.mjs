@@ -26,7 +26,9 @@ function parseArgs(argv) {
   const options = { mode: "code", whitelist: [] };
   for (const arg of argv) {
     const match = /^--([^=]+)=(.*)$/.exec(arg);
+    const bare = /^--([^=]+)$/.exec(arg);
     if (match) options[match[1]] = match[2];
+    else if (bare) options[bare[1]] = "true";
   }
   options.whitelist = String(options.whitelist ?? "")
     .split(",")
@@ -46,16 +48,34 @@ function loadContract(value) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  if (!(options.original && options.rewrite)) {
-    console.error("usage: overlap-scan.mjs --original=<path> --rewrite=<path> [--mode=code|prose]");
+  if (!options.original || !options.rewrite) {
+    console.error(
+      "usage: overlap-scan.mjs --original=<path> --rewrite=<path> [--mode=code|prose] [--whitelist=a,b] [--contract-file=<path>] [--require-contract]",
+    );
     process.exitCode = 2;
     return;
   }
-  const [original, rewrite] = await Promise.all([readTree(options.original), readTree(options.rewrite)]);
+  const contractPath = options["contract-file"];
+  if (options["require-contract"] === "true" && !contractPath) {
+    console.error("overlap-scan: --require-contract needs --contract-file=<path>");
+    process.exitCode = 2;
+    return;
+  }
+  let original;
+  let rewrite;
+  let contractText = "";
+  try {
+    [original, rewrite] = await Promise.all([readTree(options.original), readTree(options.rewrite)]);
+    if (contractPath) contractText = readTextFile(contractPath);
+  } catch (error) {
+    console.error(`overlap-scan: cannot read an input: ${error.message}`);
+    process.exitCode = 2;
+    return;
+  }
   const metrics = scoreOverlap(original, rewrite, {
     mode: options.mode,
     whitelist: options.whitelist,
-    contract: loadContract(options["contract-file"] ? readTextFile(options["contract-file"]) : ""),
+    contract: loadContract(contractText),
   });
   console.log(
     JSON.stringify({
