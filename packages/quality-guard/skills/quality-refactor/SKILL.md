@@ -136,19 +136,25 @@ Do not apply an arbitrary
 
 For each sub-issue, in order:
 
-1. Make the smallest coherent change.
-2. Run the behavior tests and a fresh scoped scan.
-3. Check that the scan no longer shows the finding, or record why it stays.
+1. Before any edit, save the baseline scan. The refreshes above overwrite
+   `.quality/units.json`, so it is not the baseline:
+   `node <quality-scan.mjs> <scope> --root=<repository> --format=units > .quality/baseline-units.json`
+2. Make the smallest coherent change.
+3. Run the behavior tests and a fresh scoped scan to a different path, never
+   over the baseline:
+   `node <quality-scan.mjs> <scope> --root=<repository> --format=units > .quality/after-units.json`
+4. Check that the scan no longer shows the finding, or record why it stays.
    If the behavior tests fail, or the scan is worse, do not stage or commit.
    Worse means a finding that is new in a touched file, or a higher count for
-   the targeted rule, against the scan taken before the change. Restore each
+   the targeted rule, in `.quality/after-units.json` against
+   `.quality/baseline-units.json`. Restore each
    tracked file you changed with `git checkout -- <files>` and delete each
    file you created, by name. Never run `git clean`, which can remove
    `.quality/` evidence. Rework the sub-issue's boundary and keep it open.
    Never commit a red or worse state.
-4. Run `git status --porcelain`, stage only its files by explicit path (see "Never"), then refresh the report evidence
-5. Commit and push on the issue branch.
-6. Comment on the sub-issue with the commit and close it.
+5. Run `git status --porcelain`, stage only its files by explicit path (see "Never"), then refresh the report evidence
+6. Commit and push on the issue branch.
+7. Comment on the sub-issue with the commit and close it.
 
 Re-scan after each structural wave, because one change can move or expose
 others.
