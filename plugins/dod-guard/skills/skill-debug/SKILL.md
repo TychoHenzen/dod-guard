@@ -52,10 +52,11 @@ node "<skill-dir>/scripts/extract-run.mjs" --session=<id> --skill=<name> --run=1
 
 1. Write the standard. Read the target SKILL.md end to end, plus every script it calls and every agent it dispatches. Write the expected phase sequence, and under each phase the trace evidence it should leave. Finish this before you read any trace. It is the scoring standard.
 2. Find runs. On exit 4, raise `--days` and rerun before you conclude anything.
-3. Extract runs. When two or more exist, use at least two. A run much shorter than its peers stopped early: flag it. Mark any finding that only one run supports.
-4. Score each phase in each run as `ran`, `ran wrong`, `ran out of order`, or `never ran`. Cite step numbers behind every verdict.
-5. Read each trace front to back on its own. A stretch of steps that no phase accounts for is a finding.
-6. Diagnose each finding (table below), then report.
+3. Extract runs. When two or more exist, use at least two. A run is short when its step count is under half the median step count of the other runs (with one peer run, that run's count). A short run stopped early: flag it. Mark any finding that only one run supports.
+4. Check each trace for truncation. extract-run.mjs prints at most 400 steps by default, and the header `steps N` is the total, so N above 400 means steps were dropped. A truncated trace ends with the line "trace truncated. Raise --max-steps to see the rest." and the script still exits 0. When that line is present, rerun with `--max-steps` set to at least N before you score any late phase. Never score `never ran` from a truncated trace.
+5. Score each phase in each run as `ran`, `ran wrong`, `ran out of order`, or `never ran`. Cite step numbers behind every verdict.
+6. Read each trace front to back on its own. A stretch of steps that no phase accounts for is a finding.
+7. Diagnose each finding (table below), then report.
 
 When evidence conflicts, the item higher in this list decides:
 
@@ -82,13 +83,15 @@ Name the cause, then fix that cause with the matching shape.
 
 Rules for fixes:
 
-- A script that can enforce the fix beats an instruction the agent must remember. Long runs shed remembered instructions past roughly step 90.
+- A script that can enforce the fix beats an instruction the agent must remember. Long runs shed remembered instructions past roughly step 80.
 - Never swap one optional exit for another. State a testable condition.
 - If an agent brief looks more at fault than the orchestrator, re-extract with `--sidechains`.
 
 ## Report
 
 Order findings by cost, then by number of runs. A finding that cut a run short outranks one that only degraded output. One seen in all runs outranks one seen once. Every proposed edit cites a step number from a run you pulled. No edit from taste.
+
+Quoted step lines can carry secrets. Before you quote one, replace any token, API key, password, or value read from a .env file with [redacted]. Keep the rest of the line.
 
 ```
 ### {what went wrong, in one line}
