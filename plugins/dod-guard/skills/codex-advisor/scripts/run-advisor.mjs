@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { describeAttempt, launcherCrash, launcherRejection } from "./advisor-attempt.mjs";
 import { runReviewer } from "./advisor-exec.mjs";
 import { parseAdvice } from "./advisor-report.mjs";
-import { resolveCodexExecutable } from "./codex-launch-contract.mjs";
+import { resolveCodexExecutable } from "./codex-executable.mjs";
 
 const defaultSchemaPath = fileURLToPath(new URL("../response-schema.json", import.meta.url));
 
