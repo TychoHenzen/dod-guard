@@ -22,7 +22,7 @@ import {
 import {
   COMMENT_BODY,
   HEAD,
-  LINKED,
+  linkedFor,
   PAGE_VARIANTS,
   valuePages,
 } from "./closure-snapshot-pages.mjs";
@@ -47,7 +47,7 @@ function emptyBranchRoutes() {
 function healthyRoutes(pages) {
   return {
     [ENDPOINT.repository]: ok({ full_name: REPO, default_branch: "master" }),
-    [ENDPOINT.linkedProjects]: linkedProjectsReply(LINKED),
+    [ENDPOINT.linkedProjects]: linkedProjectsReply(linkedFor(pages)),
     [ENDPOINT.fields(2)]: ok(fieldPages()),
     [ENDPOINT.values(2)]: ok(pages),
     [ENDPOINT.subIssues(10)]: ok([
@@ -76,7 +76,9 @@ const ROUTE_VARIANTS = {
     routes[ENDPOINT.values(2)] = SERVER_ERROR;
   },
   "non-object-item": (routes, pages) => {
-    routes[ENDPOINT.values(2)] = ok([[...pages[0], "not an item"], pages[1]]);
+    const rows = [[...pages[0], "not an item"], pages[1]];
+    routes[ENDPOINT.values(2)] = ok(rows);
+    routes[ENDPOINT.linkedProjects] = linkedProjectsReply(linkedFor(rows));
   },
   "missing-page": (routes, pages) => {
     routes[ENDPOINT.values(2)] = ok([pages[0], { message: "Not Found" }]);
@@ -91,9 +93,9 @@ const ROUTE_VARIANTS = {
       linkedProjectNode(3, { closed: true }),
     ]);
   },
-  "two-linked-projects": (routes) => {
+  "two-linked-projects": (routes, pages) => {
     routes[ENDPOINT.linkedProjects] = linkedProjectsReply([
-      ...LINKED,
+      ...linkedFor(pages),
       linkedProjectNode(4),
     ]);
   },

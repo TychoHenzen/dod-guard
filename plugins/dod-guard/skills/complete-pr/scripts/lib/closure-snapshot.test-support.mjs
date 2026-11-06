@@ -58,7 +58,9 @@ function issueProjectItemNode(number, status, { closed = false, login = OWNER } 
 // The issue.projectItems read's answer: the whole relation, or a first page when hasNextPage is true.
 function issueProjectItemsReply(nodes, { hasNextPage = false } = {}) {
   const projectItems = { nodes, pageInfo: { hasNextPage } };
-  return ok({ data: { repository: { issue: { projectItems } } } });
+  const issue = { projectItems };
+  const repository = { issue };
+  return ok({ data: { repository } });
 }
 
 function endpointOf(args) {
