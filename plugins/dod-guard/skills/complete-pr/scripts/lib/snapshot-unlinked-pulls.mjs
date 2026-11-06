@@ -2,18 +2,16 @@ import { sameRepository } from "./project-reads.mjs";
 
 // The pull request numbers the target Issue items list under Linked pull requests, for the target
 // repository only. A same-numbered pull request of another repository does not link.
+// ASSUMPTION: a target item without a Linked pull requests field, such as a non-Issue item, links nothing.
+function linkedReferences(item) {
+  const field = item.fields.find(({ name }) => name === "Linked pull requests");
+  return field?.value ?? [];
+}
+
 function linkedNumbers(targets, repository) {
-  const numbers = new Set();
-  for (const { item } of targets) {
-    // ASSUMPTION: a target item without a Linked pull requests field, such as a non-Issue item, links nothing.
-    const field = item.fields.find(({ name }) => name === "Linked pull requests");
-    for (const reference of field?.value ?? []) {
-      if (sameRepository(reference.repository, repository)) {
-        numbers.add(reference.number);
-      }
-    }
-  }
-  return numbers;
+  const references = targets.flatMap(({ item }) => linkedReferences(item));
+  const sameRepo = references.filter((reference) => sameRepository(reference.repository, repository));
+  return new Set(sameRepo.map((reference) => reference.number));
 }
 
 // Open pull requests that no target Issue item lists, in the order they were read. Unlinked means no
