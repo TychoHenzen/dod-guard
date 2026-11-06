@@ -28,13 +28,14 @@ const SERVER_ERROR = failed("gh: Server Error (HTTP 500)");
 const NOT_FOUND = failed("gh: Not Found (HTTP 404)");
 
 // A Project node in the shape the live repository.projectsV2 read returned on 2026-10-14.
-function linkedProjectNode(number, { closed = false, login = OWNER, typename = "User" } = {}) {
+function linkedProjectNode(number, { closed = false, login = OWNER, typename = "User", itemCount = 0 } = {}) {
   return {
     id: `PVT_${number}`,
     number,
     title: `Project ${number}`,
     closed,
     owner: { __typename: typename, login },
+    items: { totalCount: itemCount },
   };
 }
 

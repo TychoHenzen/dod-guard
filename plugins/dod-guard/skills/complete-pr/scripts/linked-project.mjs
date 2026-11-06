@@ -19,7 +19,8 @@ const USAGE = `usage: linked-project.mjs --repository=<owner/name>
 Reads the repository's explicitly linked GitHub Projects once and keeps the
 open ones.
 exit 0  {outcome: "resolved", repository,
-         project: {ownerLogin, ownerType, basePath, number, title, id}}
+         project: {ownerLogin, ownerType, basePath, number, title, id, itemCount}}
+         itemCount is the Project's total item count, or null when the read carried none.
 exit 1  {outcome: "none" | "several", repository,
          projects: [{ownerLogin, number, title}]}
 exit 2  usage error, gh failure, GraphQL errors, no such repository,
