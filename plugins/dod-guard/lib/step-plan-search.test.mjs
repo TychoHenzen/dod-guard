@@ -36,8 +36,12 @@ const resultOf = (root, pattern, scope) => {
 
 test("searches a directory scope by line anchored pattern", () =>
   withCheckout((root) => {
-    assert.deepEqual(resultOf(root, "^alpha", "lib"), { searched: 2, hits: ["lib/a.mjs"] });
-    assert.deepEqual(resultOf(root, "alpha", "lib"), { searched: 2, hits: ["lib/a.mjs", "lib/b.mjs"] });
+    assert.deepEqual(resultOf(root, "^alpha", "lib"), { searched: 2, hits: ["lib/a.mjs"], problems: [] });
+    assert.deepEqual(resultOf(root, "alpha", "lib"), {
+      searched: 2,
+      hits: ["lib/a.mjs", "lib/b.mjs"],
+      problems: [],
+    });
   }));
 
 test("skips installed, generated, and report directories when the scope is the whole checkout", () =>
@@ -45,11 +49,12 @@ test("skips installed, generated, and report directories when the scope is the w
     assert.deepEqual(resultOf(root, "alpha", "."), {
       searched: 3,
       hits: ["lib/a.mjs", "lib/b.mjs", "other/d.mjs"],
+      problems: [],
     });
   }));
 
 test("searches a single file scope and reports zero files for a missing scope", () =>
   withCheckout((root) => {
-    assert.deepEqual(resultOf(root, "beta", "lib/b.mjs"), { searched: 1, hits: ["lib/b.mjs"] });
-    assert.deepEqual(resultOf(root, "alpha", "missing"), { searched: 0, hits: [] });
+    assert.deepEqual(resultOf(root, "beta", "lib/b.mjs"), { searched: 1, hits: ["lib/b.mjs"], problems: [] });
+    assert.deepEqual(resultOf(root, "alpha", "missing"), { searched: 0, hits: [], problems: [] });
   }));

@@ -2,13 +2,14 @@
 // planned edit can affect and the plan forgot. The plans come from step-plan-parse.mjs with the caller's
 // search result on each proxy; this module is pure.
 function proxyProblems(plan, proxy) {
-  const { searched, hits } = proxy.result;
+  const { searched, hits, problems = [] } = proxy.result;
   const where = `step plan ${plan.task} proxy check "${proxy.pattern}" in ${proxy.scope}`;
-  if (searched === 0) {
+  const unsearched = problems.map((problem) => `${where}: ${problem}`);
+  if (searched === 0 && problems.length === 0) {
     return [`${where} searched no file`];
   }
   const outside = hits.filter((hit) => !plan.files.includes(hit));
-  return outside.map((hit) => `${where} hits ${hit}, which no File line names`);
+  return [...unsearched, ...outside.map((hit) => `${where} hits ${hit}, which no File line names`)];
 }
 
 function planProblems(plan) {
