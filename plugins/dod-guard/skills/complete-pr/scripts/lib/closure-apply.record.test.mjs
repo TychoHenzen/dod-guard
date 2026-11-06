@@ -12,7 +12,7 @@ import {
   REPOSITORY,
   recordedSnapshot,
 } from "./closure.test-support.mjs";
-import { recordCompletion } from "./closure-apply.mjs";
+import { recordCompletion } from "./closure-completion.mjs";
 import { parseCompletionRecord, recordComments } from "./closure-records.mjs";
 
 const CLOSING_ISSUE = 683;
