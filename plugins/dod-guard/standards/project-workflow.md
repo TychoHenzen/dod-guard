@@ -242,7 +242,7 @@ Each caller builds one closure snapshot with
 That command makes GitHub REST reads plus the one read-only GraphQL read that
 resolves the explicitly linked Project, as
 `skills/complete-pr/scripts/linked-project.mjs` does (see
-`github-request-discipline.md`). It removes any earlier file at
+`github-request-discipline.md`). The items list is accepted only when its row count matches the `items.totalCount` that read reports for the Project (an archived item may count on either side); a mismatch is a read failure. It removes any earlier file at
 `--output` before the read starts and writes the new snapshot in one step, so a
 failed or incomplete read exits non-zero, names the endpoint, and leaves no file
 at that path. If snapshot exits non-zero, stop and report its error; never plan,

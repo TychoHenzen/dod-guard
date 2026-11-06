@@ -10,6 +10,7 @@ const MUTATION = /mutation/i;
 const QUERY_OPERATION = /^query\(/;
 const REPOSITORY_PROJECTS = /repository\(owner: \$owner, name: \$name\) \{ projectsV2\(first: 100\)/;
 const PAGE_INFO = /pageInfo \{ hasNextPage \}/;
+const ITEM_COUNT = /items\(first: 1\) \{ totalCount \}/;
 const LOGIN_ERRORS = /returned errors: Field 'login'/;
 const NO_REPOSITORY = /named no repository/;
 const NOT_AN_OBJECT = /did not return a JSON object/;
@@ -36,11 +37,14 @@ function node(number, { closed = false, typename = "User", login = "TychoHenzen"
     title: title ?? `Project ${number}`,
     closed,
     owner: { __typename: typename, login },
+    items: { totalCount: 3 },
   };
 }
 
 function response(nodes, hasNextPage = false) {
-  return { data: { repository: { projectsV2: { nodes, pageInfo: { hasNextPage } } } } };
+  const projectsV2 = { nodes, pageInfo: { hasNextPage } };
+  const repository = { projectsV2 };
+  return { data: { repository } };
 }
 
 function ok(value) {
@@ -75,6 +79,7 @@ test("the query reads only repository.projectsV2 and asks for no mutation", () =
   assert.match(LINKED_PROJECT_QUERY, QUERY_OPERATION);
   assert.match(LINKED_PROJECT_QUERY, REPOSITORY_PROJECTS);
   assert.match(LINKED_PROJECT_QUERY, PAGE_INFO);
+  assert.match(LINKED_PROJECT_QUERY, ITEM_COUNT);
 });
 
 test("the documented read is recognized exactly, and any other GraphQL is not", () => {
@@ -114,6 +119,7 @@ test("one open link resolves, with a closed link alongside it ignored", () => {
         number: 2,
         title: "All Repositories",
         id: "PVT_2",
+        itemCount: 3,
       },
     ],
   });
@@ -123,6 +129,11 @@ test("an Organization owner reads under orgs/", () => {
   const [project] = classifyLinkedProjects(response([node(4, { typename: "Organization", login: "acme" })])).projects;
   assert.equal(project.basePath, "orgs/acme");
   assert.equal(project.ownerType, "Organization");
+});
+
+test("a node without items.totalCount reports a null itemCount", () => {
+  const { projects } = classifyLinkedProjects(response([{ ...node(2), items: undefined }]));
+  assert.equal(projects[0].itemCount, null);
 });
 
 test("no open link is none, and two open links are several", () => {
