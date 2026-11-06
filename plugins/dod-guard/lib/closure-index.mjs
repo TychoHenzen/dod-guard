@@ -1,5 +1,5 @@
-// Indexes a queue snapshot for the closure helper and the queue classifier. Records are matched by repository and number,
-// never by number alone. A Project item, issue, or pull request from another repository can share
+// Indexes a queue snapshot for the closure helper and the queue classifier. Records are matched by repository and
+// number, never by number alone. A Project item, issue, or pull request from another repository can share
 // a number with a target record, so the index keys each kind by "owner/name#N" and no foreign
 // record reaches a decision.
 
