@@ -238,10 +238,12 @@ and work that cannot be separated safely remain stop conditions.
 `next-ticket` then:
 
 1. Resolves the GitHub repository and its explicitly linked open Project.
-2. Creates and pushes `codex/<issue>-<slug>` from the current default branch.
+2. Creates and pushes `codex/<issue>-<slug>` from the current default branch, or adopts the one existing pushed branch (see below).
 3. Assigns the issue and moves it to `In Progress`.
 4. Implements and verifies the acceptance criteria.
 5. Maps every acceptance criterion to fresh evidence, then commits and pushes.
+
+When exactly one `codex/<issue>-*` branch is already pushed, `next-ticket` adopts the one existing pushed branch instead of creating one. It does so only when every changed path is the file of a step in the issue's step plans, the issue is unassigned or assigned to you, and the branch has no closed, merged, forked, or non-draft pull request. A task the branch already delivers is not redone. Otherwise it stops with `branch-not-adoptable`, changes nothing, and names the failed condition.
 
 An unmet criterion or failed check blocks the implementation commit and push.
 The initial branch-only push remains permitted. `/review-pr` is the one

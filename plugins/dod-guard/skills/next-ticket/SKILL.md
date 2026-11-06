@@ -13,7 +13,7 @@ Resolve the plugin root from this skill's directory. Before editing, read `stand
 
 - The current directory must be inside a Git worktree.
 - Run `git worktree list --porcelain`. Work in the first entry, the main checkout, when it can safely create the branch from the fetched default. If it is locked, unavailable, active, or unsafe and user-owned, stop and report the reason, the checkout, and the recovery path.
-- "Unsafe and user-owned" means pending paths that cannot be classified as in scope, or a checkout whose HEAD is not on the default branch and holds unpushed commits. A resumed ticket's own `codex/<issue-number>-<slug>` branch, checked out under "Resume", and its own unpushed commits are not unsafe. Any other branch or unpushed commit stays unsafe.
+- "Unsafe and user-owned" means pending paths that cannot be classified as in scope, or a checkout whose HEAD is not on the default branch and holds unpushed commits. The own branch of a resumed or adopted ticket (`codex/<issue-number>-<slug>` checked out under "Resume", or the branch checked out under "Adopt") and its own unpushed commits are not unsafe. Any other branch or unpushed commit stays unsafe.
 - Never create a worktree.
 - Run `git status --short --branch` and classify every pending path. A dirty tree alone is not a blocker.
 - Ordinary changes that clearly belong to the work stay uncommitted until the ticket branch exists, then are committed there. Never commit them on the current or default branch to clear status.
@@ -46,7 +46,7 @@ Pass `--children` as a JSON array of linked functional-slice children (slice id 
 
 ## Prepare and start
 
-Fetch the remote default branch first. Name the branch `codex/<issue-number>-<slug>`, under 64 characters. The slug is lowercase ASCII from the title (letters, digits, single hyphens, none leading or trailing). Shorten only the slug. Except under "Resume" below, the branch must not exist locally or on `origin`, and you never create or switch to an existing branch.
+Fetch the remote default branch first. Name the branch `codex/<issue-number>-<slug>`, under 64 characters. The slug is lowercase ASCII from the title (letters, digits, single hyphens, none leading or trailing). Shorten only the slug. Except under "Resume" and "Adopt" below, the branch must not exist locally or on `origin`, and you never create or switch to an existing branch.
 
 Except under "Resume" below, the issue must currently be `Todo`. Resolve the project item id, numeric project number, live Status field id, and `In Progress` option id. Stop before any mutation if a value is missing or ambiguous. Never hardcode ids from an earlier run. Selecting the ticket authorizes the branch, assignment, and status changes, so ask no further confirmation. In order:
 
@@ -61,6 +61,33 @@ After a failed, timed-out, or ambiguous action, read back the local and remote b
 ### Resume
 
 An explicit request for an `In Progress` issue resumes instead of starting; `dod-guard:goal-sdlc` lists this skill as the owner of an `In Progress` issue with no pushed handoff. When the issue is `In Progress`, assigned to the current user, and `codex/<issue-number>-<slug>` exists locally or on `origin`, read back the local and remote branch, the assignee, and the Project status, skip every start action that is already complete, and run only the missing ones. Switch to that branch (fetch it from `origin` first when it is not local) only when the tree is clean or every pending path is classified in scope. Never create a second branch. When the branch exists nowhere, or another user is assigned, the `Todo` and no-existing-branch rules above apply unchanged.
+
+### Adopt
+
+A pushed `codex/<issue-number>-*` branch that already holds work is adopted, not refused, when every condition below holds after `git fetch origin`. The issue must be `Todo`, as above. Under `dod-guard:goal-sdlc` the selector holds a root whose branch has no open pull request, so adoption there starts only from an explicit request or from a branch with an open pull request. Under adoption, "the issue branch" in the start-state check and in "Commit and push" is the adopted ref name, whatever its slug.
+
+Read these from Git and GitHub, never from memory. Replace `<branch>` with the one branch found, `<default>` with the default branch, and `<local-tip>` with the local branch tip:
+
+```text
+git ls-remote --heads origin "codex/<issue-number>-*"
+git merge-base --is-ancestor <local-tip> origin/<branch>
+git diff --name-only origin/<default>...origin/<branch>
+gh api "repos/{owner}/{repo}/pulls?state=all&head={owner}:<branch>&per_page=100"
+```
+
+1. The first command lists exactly one branch. None means this section does not apply: create the branch as above. Two or more is stop `branch-not-adoptable`.
+2. No local branch of that name exists, or the second command exits 0 for its tip. A local tip that is ahead of or diverged from `origin/<branch>` is stop `branch-not-adoptable`.
+3. Every path the third command prints is the file of at least one step in this parent's step plan comments. Any other path is stop `branch-not-adoptable`, naming the paths.
+4. The fourth command lists no closed or merged pull request, no pull request whose head repository is not this repository, and at most one open pull request, which must be a draft because `dod-guard:submit-draft-pr` stops on any other. Record that pull request's number.
+5. The issue is unassigned or assigned to the authenticated login (`gh api user --jq .login`), and no `## Implementation handoff` comment by another author exists. Otherwise another run or person owns the work: stop `branch-not-adoptable`, naming the assignee or the comment author.
+
+On a stop, name the failed condition, change nothing, and report to the dispatcher. Never delete, reset, rebase, or force-push the branch.
+
+On adoption:
+
+- Check the branch out only when the tree is clean or every pending path is classified in scope: `git switch --track origin/<branch>` when no local branch exists, otherwise `git switch <branch>` then `git merge --ff-only origin/<branch>`. Skip start actions 1 and 2, because the branch exists and is pushed. Run start actions 3 to 5 unchanged.
+- For each task, dispatch `dod-guard:stage-cheap` with the brief "Run only the validation commands of the step plan in <scratch file>, skipping every step whose first line starts with `Control:`". A control step is left out because its result differs by design once the change exists. A task whose other steps all print their expected result is delivered: dispatch no implementation, and cite as its evidence the commits that `git log --format=%H origin/<default>..HEAD -- <the task's files>` lists. Implement any other task on top of the adopted commits as "Implement" says. Never rewrite an adopted commit.
+- After the three start-state values, put `adopted <branch> at <sha>` and the open pull request number (or `none`) on the first line of the `## Implementation handoff` entry for the first task. `dod-guard:submit-draft-pr` then finds that pull request by its head branch and updates it.
 
 ## Implement
 
