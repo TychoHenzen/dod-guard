@@ -351,7 +351,9 @@ file. `MINOR` findings are
 listed under "Minor notes" in the review body, with no `GH-<id>` and no reply
 needed. The recommendation is `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES`
 for any `MAJOR`, and `APPROVE` when only `MINOR` findings or none remain.
-A file the pull request only trims gets its blocking comment on the nearest line the diff removes (side `LEFT`). If no diff line can hold a blocking comment, `build` refuses and posts nothing. It posts
+A file the pull request only trims gets its blocking comment on the
+nearest line the diff removes (side `LEFT`). If no diff line can hold a
+blocking comment, `build` refuses and posts nothing. The skill posts
 at most one review per pull request. quality-guard must be installed and enabled.
 
 Fix selected GitHub review findings:

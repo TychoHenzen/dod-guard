@@ -121,6 +121,25 @@ test("rejects an ambiguous selected GitHub finding", () => {
   assert.throws(() => normalizeGitHubReviewThreads(payload, ["GH-41"]), /Ambiguous GitHub finding: GH-41/);
 });
 
+test("normalizes a thread on a removed line (side LEFT) like any other open thread", () => {
+  const payload = {
+    reviewThreads: [
+      {
+        comments: [{ body: "Trimmed file", databaseId: 44 }],
+        diffSide: "LEFT",
+        id: "PRRT_4",
+        isOutdated: false,
+        isResolved: false,
+        line: 600,
+        path: "src/trimmed.js",
+      },
+    ],
+  };
+
+  const [left] = normalizeGitHubReviewThreads(payload, ["GH-44"]);
+  assert.deepEqual([left.reviewState, left.file, left.line], ["open", "src/trimmed.js", 600]);
+});
+
 test("keeps outdated findings open for revalidation and marks only resolved threads stale", () => {
   const payload = {
     reviewThreads: [

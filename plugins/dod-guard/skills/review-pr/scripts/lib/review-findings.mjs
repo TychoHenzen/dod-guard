@@ -116,10 +116,12 @@ function checkedInputs(input) {
 
 // Only kept violations reach the unchanged scannerFinding, so a dropped one
 // never sets a file's severity or shows in the counts.
+//
 // A scanner group describes its own file, so it never takes the cross-file
 // fallback: a file the PR only trims anchors on one of its removed lines.
-// Only a judged finding can cite a file outside the diff by design. A
-// blocking finding that still has no line refuses the build.
+// Only a judged finding can cite a file outside the diff by design.
+//
+// A blocking finding that still has no line refuses the build.
 function anchoredFindings({ changedLines, removedLines, judged, kept }, merge) {
   const lines = { added: changedLines, removed: removedLines };
   const fallback = firstAnchor(lines);
