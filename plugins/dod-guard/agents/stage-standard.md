@@ -80,6 +80,7 @@ When CI must run again on a head, rerun the existing run with `gh run rerun <run
 - `gh run view --json jobs` has no `databaseId`. `gh api repos/<owner>/<repo>/actions/workflows/ci.yml/runs` returns its list under `.workflow_runs`.
 - `gh api graphql -f query='...'` with inline literals fails. Pass `-F key=value` for variables and `-F query=@<file>` for the query.
 - `gh api --paginate --slurp --jq` is rejected. Run `gh api --paginate --slurp` without `--jq`, and filter the output in a separate step.
+- Put `--jq` after the `gh api` endpoint and give it one quoted expression. A malformed call can leave an empty file named `--jq` in the working directory, which breaks later preflight. When `git status --porcelain` lists a dash-named file, report it, and delete only an empty one this run created.
 - Never pipe a build, test, or install process into `head`, `tail`, or `Select-Object -First`. Closing the pipe early kills the producer and leaves a half-built output. Redirect the output to a file and read the file.
 - Never wrap a command in a local deadline such as `WaitForExit(ms)`, `timeout`, or a `setTimeout` kill. Wait for its terminal state.
 - After a rejected destructive operation, such as a denied `Remove-Item` or a blocked `rm`, stop and report it. Do not repeat it through another API such as .NET `Directory.Delete`.
