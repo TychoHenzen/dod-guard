@@ -94,9 +94,13 @@ function valuePages() {
 
 // The repository's explicit links. Project 3 is closed, so it is dropped before
 // counting and never read.
-// The linked-Project answer for items pages: one open Project whose count is the rows served, and a closed one.
+// The linked-Project answer for items pages: one open Project whose count is
+// the rows served, and a closed one.
 function linkedFor(pages) {
-  return [linkedProjectNode(2, { itemCount: pages.flat().length }), linkedProjectNode(3, { closed: true })];
+  return [
+    linkedProjectNode(2, { itemCount: pages.flat().length }),
+    linkedProjectNode(3, { closed: true }),
+  ];
 }
 
 function setStatus(pages, nodeId, value) {

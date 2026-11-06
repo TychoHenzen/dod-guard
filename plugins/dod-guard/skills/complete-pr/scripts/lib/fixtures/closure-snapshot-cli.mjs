@@ -67,7 +67,10 @@ const FAULTS = [
   ["repository", [failedAt(ENDPOINT.repository)]],
   ["items", [failedAt(ENDPOINT.values(2))]],
   ["missing-page", [failedAt(ENDPOINT.values(2)), "missing page"]],
-  ["short-items-page", [failedAt(ENDPOINT.values(2)), "item list is incomplete"]],
+  [
+    "short-items-page",
+    [failedAt(ENDPOINT.values(2)), "item list is incomplete"],
+  ],
   ["no-parent-field", [failedAt(ENDPOINT.fields(2)), NO_PARENT]],
   ["no-linked-project", [LINKED_AT, `${ONE_PROJECT} none`]],
   ["two-linked-projects", [LINKED_AT, `${ONE_PROJECT} 2 (#2, #4)`]],
