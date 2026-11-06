@@ -4,9 +4,9 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: the shared refusal check runs inside tests
 // biome-ignore-all lint/style/useNamingConvention: the fixture mirrors GitHub REST field names, which are snake_case
 import assert from "node:assert/strict";
-import { ClosureStop } from "./closure-apply.mjs";
 import { HEAD, ISSUE, MERGE, PULL, REPO, runnerOf } from "./closure-legacy.fake-gh.mjs";
 import { recordLegacyDelivery } from "./closure-legacy.mjs";
+import { ClosureStop } from "./closure-stop.mjs";
 
 function freshIssue() {
   return { number: ISSUE, state: "closed", state_reason: "completed", body: "## Idea\n\nx\n" };

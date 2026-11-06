@@ -1,33 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  fakeGitHub,
-  issue,
-  item,
-  mutating,
-  quotingComment,
-  REPOSITORY,
-  recordedSnapshot,
-  snapshotAfter,
-} from "./closure.test-support.mjs";
+import { fakeGitHub, mutating, recordedSnapshot } from "./closure.test-support.mjs";
 import { applyClosures } from "./closure-apply.mjs";
-import { planClosures } from "./closure-plan.mjs";
-import { recordComments, renderClosureEvidence } from "./closure-records.mjs";
-
-function evidenceCount(github, issue) {
-  return recordComments(github.state.issues.get(issue).comments, "closure").length;
-}
+import { FULL_CLOSE, REPLACED_ORIGINAL, stepNames } from "./harness/closure-apply-steps.mjs";
 
 test("apply comments, closes, reads back, and sets Done for a replaced original", () => {
   const snapshot = recordedSnapshot({ roots: [840] });
   const github = fakeGitHub(snapshot);
   const result = applyClosures(snapshot, { runner: github.runner });
-  assert.deepEqual(result.applied, [777]);
-  assert.deepEqual(
-    result.steps.map(({ step }) => step),
-    ["read", "comment", "close", "readback", "project-status"],
-  );
-  const closed = github.state.issues.get(777);
+  assert.deepEqual(result.applied, [REPLACED_ORIGINAL]);
+  assert.deepEqual(stepNames(result), FULL_CLOSE);
+  const closed = github.state.issues.get(REPLACED_ORIGINAL);
   assert.equal(closed.state, "closed");
   assert.equal(closed.state_reason, "completed");
   assert.match(closed.comments[0].body, /Superseded by #840, delivered by pull request #901/);
@@ -51,129 +34,10 @@ test("apply makes no mutating call when every close is held", () => {
 test("apply stops before writing when the root no longer verifies live", () => {
   const snapshot = recordedSnapshot({ roots: [840] });
   const github = fakeGitHub(snapshot);
-  github.state.issues.get(840).comments[0].body = github.state.issues
-    .get(840)
-    .comments[0].body.replace("[]", '["AC-11"]');
+  const rootRecord = github.state.issues.get(840).comments[0];
+  rootRecord.body = rootRecord.body.replace("[]", '["AC-11"]');
   assert.throws(() => applyClosures(snapshot, { runner: github.runner }), /root #840 no longer verifies/);
   assert.deepEqual(github.calls.filter(mutating), []);
-});
-
-test("a rerun after a failed close posts no second comment and finishes the close", () => {
-  const snapshot = recordedSnapshot({ roots: [840] });
-  const failClose = (args) => mutating(args) && args.includes("state=closed");
-  const github = fakeGitHub(snapshot, { failOnce: failClose });
-  assert.throws(
-    () => applyClosures(snapshot, { runner: github.runner }),
-    (error) => {
-      assert.equal(error.code, "closure_stop");
-      assert.deepEqual(
-        error.state.steps.map(({ step }) => step),
-        ["read", "comment"],
-      );
-      return true;
-    },
-  );
-  assert.equal(evidenceCount(github, 777), 1);
-  assert.equal(github.state.issues.get(777).state, "open");
-  const rerun = applyClosures(snapshot, { runner: github.runner });
-  assert.deepEqual(
-    rerun.steps.map(({ step }) => step),
-    ["read", "close", "readback", "project-status"],
-  );
-  assert.equal(evidenceCount(github, 777), 1);
-  assert.equal(github.state.issues.get(777).state, "closed");
-  assert.equal(github.state.statuses.get("PVTI_777"), "Done");
-});
-
-test("a rerun after a stopped Done write sets Done without another comment or close", () => {
-  const snapshot = recordedSnapshot({ roots: [840] });
-  const failDone = (args) => mutating(args) && args.some((value) => String(value).startsWith("users/"));
-  const github = fakeGitHub(snapshot, { failOnce: failDone });
-  assert.throws(
-    () => applyClosures(snapshot, { runner: github.runner }),
-    (error) => {
-      assert.equal(error.code, "closure_stop");
-      assert.deepEqual(
-        error.state.steps.map(({ step }) => step),
-        ["read", "comment", "close", "readback"],
-      );
-      return true;
-    },
-  );
-  assert.equal(github.state.issues.get(777).state, "closed");
-  assert.equal(github.state.statuses.get("PVTI_777"), "Backlog");
-
-  const after = snapshotAfter(snapshot, github);
-  const replanned = planClosures(after);
-  assert.deepEqual(replanned.closes, []);
-  assert.deepEqual(replanned.statusRepairs, [{ issue: 777, itemId: "PVTI_777", status: "Backlog" }]);
-
-  const mark = github.calls.length;
-  const rerun = applyClosures(after, { runner: github.runner });
-  assert.deepEqual(rerun.repaired, [777]);
-  assert.deepEqual(rerun.applied, []);
-  const writes = github.calls.slice(mark).filter(mutating);
-  assert.equal(writes.length, 1);
-  assert.ok(writes[0].some((value) => String(value).startsWith("users/")));
-  assert.equal(github.state.statuses.get("PVTI_777"), "Done");
-  assert.equal(evidenceCount(github, 777), 1);
-});
-
-test("a status repair stops when the issue was reopened", () => {
-  const snapshot = recordedSnapshot({ roots: [840] });
-  const failDone = (args) => mutating(args) && args.some((value) => String(value).startsWith("users/"));
-  const github = fakeGitHub(snapshot, { failOnce: failDone });
-  assert.throws(
-    () => applyClosures(snapshot, { runner: github.runner }),
-    (error) => {
-      assert.equal(error.code, "closure_stop");
-      assert.deepEqual(
-        error.state.steps.map(({ step }) => step),
-        ["read", "comment", "close", "readback"],
-      );
-      return true;
-    },
-  );
-  const after = snapshotAfter(snapshot, github);
-  github.state.issues.get(777).state = "open";
-  const mark = github.calls.length;
-  assert.throws(() => applyClosures(after, { runner: github.runner }), /issue #777 is no longer closed/);
-  assert.deepEqual(github.calls.slice(mark).filter(mutating), []);
-});
-
-// disc-golf #60 shape: roots [840] keeps the usual close of #777 in the plan, and #2001 is an owner
-// hand close as not_planned on an In Progress Project item.
-const HAND_CLOSED_ISSUE = 2001;
-const REPLACED_ORIGINAL = 777;
-const SUPERSEDES_ROOT = 840;
-const STATE_REASON = "state_reason";
-const NO_LONGER_NOT_PLANNED = /issue #2001 is no longer closed as not_planned/;
-
-function withHandClosed() {
-  const snapshot = recordedSnapshot({ roots: [SUPERSEDES_ROOT] });
-  snapshot.items.push(item(HAND_CLOSED_ISSUE, "In Progress"));
-  snapshot.issues.push(Object.assign(issue(HAND_CLOSED_ISSUE), { state: "closed", [STATE_REASON]: "not_planned" }));
-  return snapshot;
-}
-
-test("apply sets Done for a not_planned hand close and a replan lists no repair", () => {
-  const snapshot = withHandClosed();
-  const github = fakeGitHub(snapshot);
-  const result = applyClosures(snapshot, { runner: github.runner });
-  assert.deepEqual(result.applied, [REPLACED_ORIGINAL]);
-  assert.deepEqual(result.repaired, [HAND_CLOSED_ISSUE]);
-  assert.equal(github.state.statuses.get("PVTI_2001"), "Done");
-  assert.equal(github.state.issues.get(HAND_CLOSED_ISSUE)[STATE_REASON], "not_planned");
-  assert.equal(evidenceCount(github, HAND_CLOSED_ISSUE), 0);
-  assert.deepEqual(planClosures(snapshotAfter(snapshot, github)).statusRepairs, []);
-});
-
-test("a not_planned repair stops when the live issue is no longer closed as not_planned", () => {
-  const snapshot = withHandClosed();
-  const github = fakeGitHub(snapshot);
-  github.state.issues.get(HAND_CLOSED_ISSUE)[STATE_REASON] = "completed";
-  assert.throws(() => applyClosures(snapshot, { runner: github.runner }), NO_LONGER_NOT_PLANNED);
-  assert.notEqual(github.state.statuses.get("PVTI_2001"), "Done");
 });
 
 test("a readback that disagrees stops with the actual state and no further mutation", () => {
@@ -188,8 +52,7 @@ test("a readback that disagrees stops with the actual state and no further mutat
       return true;
     },
   );
-  const lastMutation = github.calls.filter(mutating).at(-1);
-  assert.ok(lastMutation.includes("state=closed"));
+  assert.ok(github.calls.filter(mutating).at(-1).includes("state=closed"));
   assert.equal(github.state.statuses.get("PVTI_777"), "Backlog");
 });
 
@@ -199,45 +62,4 @@ test("apply refuses to write without the Project identity", () => {
   const github = fakeGitHub(snapshot);
   assert.throws(() => applyClosures(snapshot, { runner: github.runner }), /snapshot.project needs/);
   assert.deepEqual(github.calls, []);
-});
-
-test("apply posts real closure evidence when the only marker text is a quote", () => {
-  const snapshot = recordedSnapshot({ roots: [840] });
-  snapshot.issues.find(({ number }) => number === 777).comments = [quotingComment(7001)];
-  const github = fakeGitHub(snapshot);
-  const quote = github.state.issues.get(777).comments[0].body;
-  const result = applyClosures(snapshot, { runner: github.runner });
-  assert.deepEqual(result.applied, [777]);
-  assert.deepEqual(
-    result.steps.map(({ step }) => step),
-    ["read", "comment", "close", "readback", "project-status"],
-  );
-  const closed = github.state.issues.get(777);
-  assert.equal(closed.state, "closed");
-  assert.equal(evidenceCount(github, 777), 1);
-  assert.equal(closed.comments.length, 2);
-  assert.equal(closed.comments.find(({ id }) => id === 7001).body, quote);
-  assert.ok(
-    github.calls.some((args) => args.includes("POST") && args.includes(`repos/${REPOSITORY}/issues/777/comments`)),
-  );
-});
-
-test("apply is not stopped as duplicate by a quote beside real closure evidence", () => {
-  const snapshot = recordedSnapshot({ roots: [840] });
-  const evidence = renderClosureEvidence({ issue: 777, stateReason: "completed", evidence: ["Superseded by #840."] });
-  snapshot.issues.find(({ number }) => number === 777).comments = [{ id: 7002, body: evidence }, quotingComment(7001)];
-  const github = fakeGitHub(snapshot);
-  const quote = github.state.issues.get(777).comments[1].body;
-  const result = applyClosures(snapshot, { runner: github.runner });
-  assert.deepEqual(result.applied, [777]);
-  assert.deepEqual(
-    result.steps.map(({ step }) => step),
-    ["read", "close", "readback", "project-status"],
-  );
-  assert.equal(evidenceCount(github, 777), 1);
-  const posts = github.calls.filter(
-    (args) => args.includes("POST") && args.includes(`repos/${REPOSITORY}/issues/777/comments`),
-  );
-  assert.deepEqual(posts, []);
-  assert.equal(github.state.issues.get(777).comments[1].body, quote);
 });

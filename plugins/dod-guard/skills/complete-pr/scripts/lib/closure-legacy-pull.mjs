@@ -1,6 +1,6 @@
 // The refusals record-legacy makes about the merged pull request itself. Each check is one named
 // predicate over the live read, so a new refusal is a new table row and not a deeper branch.
-import { FULL_SHA } from "./closure-apply.mjs";
+import { FULL_SHA } from "./closure-completion.mjs";
 import { closingReferences } from "./linked-issues.mjs";
 
 function sameRepository(left, right) {
