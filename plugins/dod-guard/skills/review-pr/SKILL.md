@@ -73,8 +73,8 @@ One `dod-guard:read-standard` planner returns a JSON array with one entry per sl
 
 - A question has `id` (unique across lenses), `lens`, `question`, `files`, and the targeted risk.
 - A question is neutral. It asks what the code, test or document shows and names no suspected defect, expected answer or verdict. The targeted risk names the failure the question probes, never a conclusion about it.
-- An exclusion has `lens` and `reason`.
-- The lenses are `review-pr-feature` (F), `review-pr-design` (D), `review-pr-reliability` (R), and `review-pr-hygiene` (H). Write each in `lens` exactly as shown, without the `dod-guard:` prefix the Agent tool takes: the build refuses a prefixed lens. Each gets at least one question or exclusion.
+- An exclusion is one object, `"excluded": { "lens": "review-pr-hygiene", "reason": "..." }`, never an array.
+- The lenses are `review-pr-feature` (F), `review-pr-design` (D), `review-pr-reliability` (R), and `review-pr-hygiene` (H). Write each in `lens` as shown. The build also accepts the `dod-guard:` prefix the Agent tool takes and reads it as the bare name; it refuses any other name. Each gets at least one question or exclusion.
 - For a file slot with in-scope violations, add scanner check questions with a `scanner` array of the S ids covered. They ask whether the violation shows at the reviewed head, whether the path is generated or excluded, and whether the rule's own condition holds. List only S ids from that slot's file. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file. Put each covered violation's rule, line, and message text in the question itself, so an investigator never needs the scanner output.
 
 ### Investigate
@@ -85,7 +85,7 @@ Cut the saved plan into batch files:
 node "<skill-dir>/scripts/review-findings.mjs" batches --plan=<plan.json> --head=<full 40-character head SHA> --out-dir=<batches-dir>
 ```
 
-The command skips exclusions, keeps each slot's questions together, caps a batch at eight questions, and stamps every batch file with the plan hash and the head. Run one `dod-guard:stage-cheap` investigator per batch (`dod_guard_stage_cheap` in Codex) and dispatch all of them in one message so they run in parallel. Dispatch them in the foreground and wait for every report; never in the background. Investigators write their own files because the main thread would otherwise retype every answer. Each brief follows "Stage brief" in `standards/model-routing.md`: its first line is `Read <plugin-root>/skills/review-pr/SKILL.md, then follow only #### Investigator batch.`, then it names the batch file, the answers file `<answers-dir>/<batch>.json`, the head SHA and the checkout path, and asks for the answers file path and the answer counts as the evidence to return.
+The command first checks the plan's shape and refuses a malformed entry before it writes any batch file, so a bad plan fails before any investigator runs. It then skips exclusions, keeps each slot's questions together, caps a batch at eight questions, and stamps every batch file with the plan hash and the head. Run one `dod-guard:stage-cheap` investigator per batch (`dod_guard_stage_cheap` in Codex) and dispatch all of them in one message so they run in parallel. Dispatch them in the foreground and wait for every report; never in the background. Investigators write their own files because the main thread would otherwise retype every answer. Each brief follows "Stage brief" in `standards/model-routing.md`: its first line is `Read <plugin-root>/skills/review-pr/SKILL.md, then follow only #### Investigator batch.`, then it names the batch file, the answers file `<answers-dir>/<batch>.json`, the head SHA and the checkout path, and asks for the answers file path and the answer counts as the evidence to return.
 
 #### Investigator batch
 
@@ -108,15 +108,16 @@ Save the plan with a status per question: `verified`, `repaired` (verified after
 
 ### Judge
 
-Dispatch the four lens reviewers at once. Each judge brief is the shared brief plus, for each slot assigned to its lens, only the slot id, each question's id, text and status or the exclusion's lens and reason, and the path of `<answers.json>`, which the judge reads. A slot belongs to a lens when it has a question or exclusion naming it. The brief holds no owner conclusion, suspected defect, severity guess, earlier finding or other reviewer's output. A judge that returns one of those as a finding gets the one correction request below.
+Dispatch the four lens reviewers at once, and write down each lens agent's id as you dispatch it, before you save its answer, so the one correction request below can resume that same agent. Each judge brief is the shared brief plus, for each slot assigned to its lens, only the slot id, each question's id, text and status or the exclusion's lens and reason, and the path of `<answers.json>`, which the judge reads. A slot belongs to a lens when it has a question or exclusion naming it. The brief holds no owner conclusion, suspected defect, severity guess, earlier finding or other reviewer's output. A judge that returns one of those as a finding gets the one correction request below.
 
+- Paste this result shape into every judge brief and set `reviewer` to that lens: `{"reviewer":"review-pr-feature","rulings":[{"slot":"criterion:1","status":"FINDING","evidence":"..."}],"findings":[{"slot":"criterion:1","severity":"MAJOR","file":"src/a.mjs","line":12,"problem":"...","impact":"...","requirement":"...","correction":"...","rootCause":"...","evidence":"..."}]}`. A finding without all ten fields is refused.
 - Each returns `{ reviewer, rulings, findings }`: one ruling `{ slot, status, evidence }` per assigned
   slot, status `VERIFIED` or `FINDING`, and findings with severity `BLOCKER`, `MAJOR`, or `MINOR`. Each
   finding names its `slot`, one assigned to that lens and ruled `FINDING`. Every `FINDING` ruling has at
   least one finding naming its slot. Build refuses a finding that names no slot, an unassigned slot, or a
   slot ruled `VERIFIED`, and a `FINDING` ruling no finding names.
 - Settle each `unanswered` question only from the files it names, and read no other file for it. Record the answer in that slot's ruling evidence, or report the gap as a finding. Never count one as passing, and change no plan status after dispatch. Report an exclusion as a finding when its reason fails.
-- On malformed JSON, send one correction request in the exact format. On a second failure, stop and name the reviewer. Never escalate a format failure to another tier: the review posts once, so a missing angle cannot be added later.
+- On malformed JSON, send one correction request in the exact format. A finding that lacks a field is a format failure too: `candidates` refuses it and names the reviewer and the missing fields, so quote that error in the one correction request. On a second failure, stop and name the reviewer. Never escalate a format failure to another tier: the review posts once, so a missing angle cannot be added later.
 
 Save the four results as one JSON array.
 

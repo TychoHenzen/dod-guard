@@ -1,5 +1,6 @@
 import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
 import { API_REPOSITORY_URL, urlRepository } from "../../../../lib/repository-identity.mjs";
+import { canonicalLens, oneLine, requireEntryShape, requireQuestion } from "./plan-entry.mjs";
 import { REVIEWERS } from "./reviewer-results.mjs";
 
 function isObject(value) {
@@ -95,77 +96,14 @@ function reviewSlots({ changedLines, pbi, subIssues }) {
   ];
 }
 
-// After the main thread checks an investigator's answer, a question is
-// verified, verified after the one allowed repair, or reported as not
-// answerable from the repository.
-const STATUSES = Object.freeze(["verified", "repaired", "unanswered"]);
-
-function oneLine(value) {
-  return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
-}
-
 // Text that contains HTML could close the details block early.
 function escapeHtml(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
-function namesFiles(question) {
-  return (
-    Array.isArray(question?.files) && question.files.length > 0 && question.files.every((file) => oneLine(file) !== "")
-  );
-}
-
-function isCompleteQuestion(question) {
-  return (
-    REVIEWERS.includes(question?.lens) &&
-    oneLine(question?.id) !== "" &&
-    oneLine(question?.question) !== "" &&
-    namesFiles(question) &&
-    STATUSES.includes(question?.status)
-  );
-}
-
-function isCompleteExclusion(excluded) {
-  return REVIEWERS.includes(excluded?.lens) && oneLine(excluded?.reason) !== "";
-}
-
-// A slot ends the plan with questions or with one exclusion, never both and
-// never neither.
-function requireEntryShape(entry) {
-  const { slot } = entry;
-  const asked = entry.questions !== undefined;
-  const excluded = entry.excluded !== undefined;
-  if (asked && excluded) {
-    throw new Error(`Slot ${slot} has both questions and an exclusion`);
-  }
-  if (!(asked || excluded)) {
-    throw new Error(`Slot ${slot} has neither questions nor an exclusion`);
-  }
-  if (excluded && !isCompleteExclusion(entry.excluded)) {
-    throw new Error(`The exclusion for slot ${slot} needs a reviewer lens and a reason`);
-  }
-  if (asked && !(Array.isArray(entry.questions) && entry.questions.length > 0)) {
-    throw new Error(`Slot ${slot} needs a non-empty questions array`);
-  }
-}
-
-function requireQuestion(question, slot, ids) {
-  if (!isCompleteQuestion(question)) {
-    throw new Error(
-      `Question ${JSON.stringify(question?.id ?? null)} in slot ${slot} ` +
-        "needs an id, a reviewer lens, a question, a files list, " +
-        `and a status of ${STATUSES.join(", ")}`,
-    );
-  }
-  const id = oneLine(question.id);
-  if (ids.has(id)) {
-    throw new Error(`Question ${id} appears more than once`);
-  }
-  ids.add(id);
-}
-
 function entryLenses(entry) {
-  return entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
+  const lenses = entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
+  return lenses.map(canonicalLens);
 }
 
 function requirePlanEntries(plan, generated) {
@@ -220,12 +158,12 @@ function slotHeading(item) {
 function entryLines(entry) {
   if (entry.excluded) {
     const { lens, reason } = entry.excluded;
-    return [`- excluded for ${lens}: ${escapeHtml(oneLine(reason))}`];
+    return [`- excluded for ${canonicalLens(lens)}: ${escapeHtml(oneLine(reason))}`];
   }
   return entry.questions.map((question) => {
     const id = escapeHtml(oneLine(question.id));
     const text = escapeHtml(oneLine(question.question));
-    return `- ${id} ${question.lens} (${question.status}): ${text}`;
+    return `- ${id} ${canonicalLens(question.lens)} (${question.status}): ${text}`;
   });
 }
 
