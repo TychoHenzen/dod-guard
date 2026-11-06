@@ -1,20 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { body904, records904, replaceOnce } from "./harness/issue-body-fixtures.mjs";
 import { parseIssueBodyRecords } from "./issue-body-records.mjs";
-import { postPushInput } from "./post-push-input.mjs";
-import { jsonBlock, subsections } from "./record-readers.mjs";
-
-const body904 = await readFile(new URL("./fixtures/issue-904-body.md", import.meta.url), "utf8");
-// The same #904 records, taken from the live body when the fixture was made.
-const records904 = JSON.parse(
-  await readFile(new URL("../skills/next-ticket/scripts/fixtures/issue-904-handoff.json", import.meta.url), "utf8"),
-);
-
-const replaceOnce = (text, from, to) => {
-  assert.ok(text.includes(from), `fixture holds ${from}`);
-  return text.replace(from, to);
-};
+import { subsections } from "./record-readers.mjs";
 
 test("parses the #904 body into the refinement evaluator input", () => {
   const { input, errors, remainder } = parseIssueBodyRecords(body904);
@@ -48,40 +36,6 @@ test("reads a CRLF body the same as an LF body", () => {
   assert.deepEqual(parseIssueBodyRecords(body904.replace(/\n/g, "\r\n")), parseIssueBodyRecords(body904));
 });
 
-test("names a missing, duplicated, empty, block-less, invalid, or non-array record", () => {
-  const cases = [
-    [
-      replaceOnce(body904, "### planned-acceptance-matrix\n", "### planned-matrix\n"),
-      "missing planned-acceptance-matrix record",
-    ],
-    [
-      `${body904.replace("## Acceptance criteria", "### task-list\n\n```json\n[]\n```\n\n## Acceptance criteria")}`,
-      "duplicate task-list record",
-    ],
-    [
-      replaceOnce(body904, '```json\n[\n  {"id": "AC-1"', '```text\n[\n  {"id": "AC-1"'),
-      "acceptance-evidence record has no JSON block",
-    ],
-    [
-      replaceOnce(body904, '```json\n[\n  {"id": "AC-1"', '```json\n[\n  {"id": "AC-1",,'),
-      "acceptance-evidence record is not valid JSON",
-    ],
-  ];
-  for (const [body, error] of cases) {
-    assert.ok(parseIssueBodyRecords(body).errors.includes(error), error);
-  }
-  const notArray = body904.replace(
-    /### lens-ownership\n[\s\S]*?```json\n[\s\S]*?\n```/,
-    "### lens-ownership\n\n```json\n{}\n```",
-  );
-  assert.deepEqual(parseIssueBodyRecords(notArray).errors, ["lens-ownership record is not a JSON array"]);
-  const empty = body904.replace(/### requirements\n[\s\S]*?(?=### clarifications)/, "### requirements\n\n");
-  assert.deepEqual(parseIssueBodyRecords(empty).errors, ["requirements record is empty"]);
-  const noNotes = parseIssueBodyRecords(replaceOnce(body904, "## Implementation notes\n", "## Notes\n"));
-  assert.equal(noNotes.errors[0], "body has no ## Implementation notes section");
-  assert.ok(noNotes.errors.includes("missing task-list record"));
-});
-
 test("cross-checks acceptance-evidence ids against the Acceptance criteria checkboxes", () => {
   const missingBox = parseIssueBodyRecords(replaceOnce(body904, "- [ ] AC-5 ", "- [ ] AC-9 "));
   assert.deepEqual(missingBox.errors, []);
@@ -92,18 +46,6 @@ test("cross-checks acceptance-evidence ids against the Acceptance criteria check
 
   const noBoxes = parseIssueBodyRecords(body904.replace(/^- \[ \] /gm, "- "));
   assert.deepEqual(noBoxes.remainder, ["Acceptance criteria section has no checkbox"]);
-});
-
-test("subsections and jsonBlock read the first JSON block under each named heading", () => {
-  const notes = "### a\nx\n```json\n[1]\n```\n### b\n```json\n{\n```\n### a\n```json\n[2]\n```\n";
-
-  assert.deepEqual(
-    subsections(notes, "a").map((section) => jsonBlock(section).value),
-    [[1], [2]],
-  );
-  assert.deepEqual(jsonBlock(subsections(notes, "b")[0]), { error: "is not valid JSON" });
-  assert.deepEqual(jsonBlock("no block"), { error: "has no JSON block" });
-  assert.deepEqual(subsections("before\n### a\nx\n### b\ny\n### a\nz\n", "a"), ["x", "z\n"]);
 });
 
 test("a heading inside a fenced example stays in the record around it", () => {
@@ -120,61 +62,4 @@ test("a heading inside a fenced example stays in the record around it", () => {
     /```md\n### task-list\n```\n\nThe plan continues after the example\./,
   );
   assert.deepEqual(subsections("### a\n```md\n### a\n```\nafter\n", "a"), ["```md\n### a\n```\nafter\n"]);
-});
-
-test("binds a lens that stores no head to the given head and keeps a stored head", () => {
-  const input = { ...parseIssueBodyRecords(body904).input, reviewLenses: [{ id: "a" }, { id: "b", headSha: "old" }] };
-  const result = postPushInput({ input, rows: [], headSha: "H" });
-
-  assert.deepEqual(result.reviewLenses, [
-    { id: "a", headSha: "H" },
-    { id: "b", headSha: "old" },
-  ]);
-  assert.equal(result.headSha, "H");
-  assert.equal(result.plannedAcceptanceMatrix, null);
-});
-
-test("reports a requirement that no acceptance criterion cites", () => {
-  const body = replaceOnce(
-    body904,
-    "### clarifications\n",
-    "- R-99 An extra requirement that no criterion cites.\n\n### clarifications\n",
-  );
-  assert.deepEqual(parseIssueBodyRecords(body).requirementRemainder, [
-    "R-99 requirement is cited by no acceptance criterion",
-  ]);
-});
-
-test("reports a cited id that is not a requirement", () => {
-  const body = replaceOnce(body904, "- [ ] AC-1 ", "- [ ] AC-1 (R-98) ");
-  assert.ok(parseIssueBodyRecords(body).requirementRemainder.includes("AC-1 cites R-98 which is not a requirement"));
-});
-
-test("matches requirement ids as whole tokens", () => {
-  const body = replaceOnce(
-    body904,
-    "### clarifications\n",
-    "- R-19 An extra requirement that no criterion cites.\n\n### clarifications\n",
-  );
-  assert.deepEqual(parseIssueBodyRecords(body).requirementRemainder, [
-    "R-19 requirement is cited by no acceptance criterion",
-  ]);
-
-  const citesR19 = replaceOnce(body904, "- [ ] AC-1 ", "- [ ] AC-1 (R-19) ");
-  assert.ok(
-    parseIssueBodyRecords(citesR19).requirementRemainder.includes("AC-1 cites R-19 which is not a requirement"),
-  );
-});
-
-test("reports a repeated requirement id", () => {
-  const body = replaceOnce(body904, "### clarifications\n", "- R-1 A repeated id.\n\n### clarifications\n");
-  assert.ok(parseIssueBodyRecords(body).requirementRemainder.includes("R-1 requirement id is repeated"));
-});
-
-test("reports a requirements record that holds no R-n requirement", () => {
-  const body = body904.replace(
-    /### requirements\n[\s\S]*?(?=### clarifications)/,
-    "### requirements\n\n- A bullet with no id.\n\n",
-  );
-  assert.deepEqual(parseIssueBodyRecords(body).requirementRemainder, ["requirements record has no R-n requirement"]);
 });
