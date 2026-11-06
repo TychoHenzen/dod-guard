@@ -91,6 +91,7 @@ The emergency case deliberately has tiny effort: urgency must not inflate size.
 | One sub-issue keeps scope that no replacement root carries. | It stays open; the epic is not a pure hierarchy record, and the helper reports the hold with its reason instead of closing it. |
 | Label edit fails, a linked issue is absent, or readback shows two effort labels. | Stop before Todo and report the actual partial state. |
 | Title suggests a quick fix, but callers and tests show cross-module work. | Research precedes the final estimate and implementation direction. Use observed scope. |
+| Step plan whose proxy check hits a file that no `File:` line names. | The refinement proof run with `--plans` and `--root` exits 1 and names the hit. Post a corrected plan comment that lists the file or narrows the check, save the newest comment per task, and rerun until it verifies. A repeated task id, a plan with no `File:` line, and a check that searched no file are reported the same way. |
 
 ## Live GitHub exercise
 

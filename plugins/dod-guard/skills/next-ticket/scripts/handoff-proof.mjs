@@ -2,6 +2,7 @@
 // Runs the structured-handoff convergence proof over an issue body.
 //
 // Usage: node handoff-proof.mjs refinement --body-file=<path> [--children=<path>]
+//          [--plans=<path> --root=<dir>]
 //        node handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path>
 //          --head-sha=<sha> [--children=<path>]
 //        node handoff-proof.mjs finalization --body-file=<path> --handoff-file=<path>
@@ -10,7 +11,8 @@
 // refinement reads the records of a body saved to a local file, plus the
 // linked functional-slice children from an optional JSON array file, and runs
 // the pre-push proof, including the lens-row rules on the planned acceptance
-// matrix. post-push reads the same body and the acceptance matrix of the
+// matrix. --plans runs the proxy checks of the saved step plan comments over the
+// checkout at --root.post-push reads the same body and the acceptance matrix of the
 // implementation handoff saved to a local file, and checks every row and every
 // review lens against the pushed head SHA, so a row or lens bound to another
 // head is reported. finalization is the same proof plus the complete-pr gate's
@@ -29,6 +31,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { optionsFrom, readChildren, readText, UsageError } from "./handoff-proof-cli.mjs";
 import { PROOFS } from "./handoff-proof-runs.mjs";
+import { readPlans } from "./step-plan-input.mjs";
 
 const EXIT_CODES = Object.freeze({ verified: 0, "actionable remainder": 1 });
 
@@ -40,7 +43,8 @@ function evaluate(argv) {
   if (subcommand !== "refinement") {
     handoff = readText(options["handoff-file"], "handoff-file");
   }
-  return PROOFS[subcommand]({ body, handoff, headSha: options["head-sha"], children });
+  const plans = readPlans(options);
+  return PROOFS[subcommand]({ body, handoff, headSha: options["head-sha"], children, plans });
 }
 
 function main(argv) {

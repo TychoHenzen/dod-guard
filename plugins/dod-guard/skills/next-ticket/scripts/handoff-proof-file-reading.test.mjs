@@ -54,6 +54,7 @@ test("reads only local files: no network, process, or GitHub module is imported"
     "node:url",
     "./handoff-proof-cli.mjs",
     "./handoff-proof-runs.mjs",
+    "./step-plan-input.mjs",
   ]);
   assert.deepEqual(await importsOf("handoff-proof-cli.mjs"), [
     "node:fs",
@@ -65,6 +66,7 @@ test("reads only local files: no network, process, or GitHub module is imported"
     "../../../lib/issue-body-records.mjs",
     "../../../lib/post-push-input.mjs",
     "../../../lib/preflight-checkpoint.mjs",
+    "../../../lib/step-plan-proxy.mjs",
     "../../complete-pr/scripts/finalization-gate.mjs",
     "./structured-workflow-proof.mjs",
   ]);
