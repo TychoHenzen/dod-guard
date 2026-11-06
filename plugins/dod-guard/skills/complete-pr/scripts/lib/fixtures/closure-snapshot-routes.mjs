@@ -80,6 +80,10 @@ const ROUTE_VARIANTS = {
     routes[ENDPOINT.values(2)] = ok(rows);
     routes[ENDPOINT.linkedProjects] = linkedProjectsReply(linkedFor(rows));
   },
+  // The second items page is lost, as in the short reads seen during #982; the Project count still names every item.
+  "short-items-page": (routes, pages) => {
+    routes[ENDPOINT.values(2)] = ok([pages[0]]);
+  },
   "missing-page": (routes, pages) => {
     routes[ENDPOINT.values(2)] = ok([pages[0], { message: "Not Found" }]);
   },
