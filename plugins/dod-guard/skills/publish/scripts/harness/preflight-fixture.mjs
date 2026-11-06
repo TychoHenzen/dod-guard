@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 export const CLIENTS = ["codex", "claude"];
 
-const MANIFEST_DIRECTORY = { codex: ".codex-plugin", claude: ".claude-plugin" };
+export const MANIFEST_DIRECTORY = { codex: ".codex-plugin", claude: ".claude-plugin" };
 
 const COPIED_ENTRIES = [
   // Every file the helper imports at run time. The helper derives its plugin root

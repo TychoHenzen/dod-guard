@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { EXIT, main } from "./ci-wait.mjs";
-import { checkRun, checks, fakeGh, REPOSITORY, SHA } from "./ci-wait.test-support.mjs";
 import { parseArguments } from "./ci-wait-args.mjs";
+import { checkRun, checks, fakeGh, REPOSITORY, SHA } from "./harness/ci-wait-support.mjs";
 
 const BASE = [`--repository=${REPOSITORY}`, `--sha=${SHA}`, "--attempts=1"];
 
