@@ -59,6 +59,7 @@ function snapshot(args, runner = runGh) {
     items: built.items.length,
     issues: built.issues.length,
     pullRequests: built.pullRequests.length,
+    unlinkedPullRequests: built.unlinkedPullRequests.length,
   };
 }
 

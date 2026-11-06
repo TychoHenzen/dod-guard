@@ -288,6 +288,12 @@ The selector holds an open Todo or Backlog root that has a branch named
 Todo or Backlog group while one exists. An In Progress group still resumes. A snapshot
 without the `branches` key holds nothing.
 
+The snapshot also carries `unlinkedPullRequests` as `[{number, headRef}]`: every open pull
+request of the target repository, fork heads included, that no target Issue item lists under
+Linked pull requests (a reference from another repository never links). The selector reports
+each with a reason and keeps an otherwise empty queue held; it never changes the selection. A
+snapshot without the `unlinkedPullRequests` key reports nothing.
+
 The snapshot also carries a `project` object with `owner`, `number`,
 `statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
 Status field node ID and Done option ID from the Project fields read, the same
