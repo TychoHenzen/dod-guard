@@ -14,7 +14,7 @@ const POST_PUSH = {
   required: [BODY, ["handoff-file", "path"], ["head-sha", "sha"]],
 };
 const SUBCOMMANDS = Object.freeze({
-  refinement: { allowed: new Set(["body-file", "children"]), required: [BODY] },
+  refinement: { allowed: new Set(["body-file", "children", "plans", "root"]), required: [BODY] },
   "post-push": POST_PUSH,
   finalization: POST_PUSH,
 });
