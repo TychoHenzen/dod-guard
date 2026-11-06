@@ -15,5 +15,8 @@ test("the Plan lenses line names exactly the reviewers the build accepts", () =>
   assert.ok(line, "SKILL.md has no lenses line");
   const names = [...line.matchAll(/`(review-pr-[a-z]+)`/g)].map((match) => match[1]);
   assert.deepEqual(names, [...REVIEWERS]);
-  assert.equal(line.includes("dod-guard:review-pr"), false, "lens names carry no dod-guard: prefix");
+  assert.ok(
+    line.includes("The build also accepts the `dod-guard:` prefix"),
+    "the lenses line says the dod-guard: prefix is accepted",
+  );
 });
