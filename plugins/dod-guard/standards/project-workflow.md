@@ -92,8 +92,8 @@ file.
 When several comments by the authenticated user carry the handoff heading, the newest by creation time is
 the handoff, as for step plans. `skills/next-ticket/scripts/handoff-select.mjs` names it, lists a
 handoff-headed comment by another author as ignored, and writes a `## Superseded handoff (head <sha>)`
-replacement for each older one. Patch each replacement over its comment, so exactly one comment carries the
-heading.
+replacement for each older one. Patch each replacement over its comment, so exactly one comment by that user carries
+the heading.
 
 The same comment contains one `## Acceptance matrix` with one row for every
 acceptance criterion and mandatory user-facing path. Each row records the
