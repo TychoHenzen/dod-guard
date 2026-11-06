@@ -95,6 +95,8 @@ or closure evidence is not reported. `closure.mjs apply` sets the Project item
 of such an issue to Done when the item reads as anything else, because a close
 as not planned owes no delivery. A `completed` hand close without evidence is
 still reported, and its Project status is left to `complete-pr` finalization.
+A `completed` close whose own completion record verifies gets Done from
+`closure.mjs apply` when the item reads as anything else.
 `select-next` never holds a closed `not_planned` issue as missing a delivery.
 It holds such an issue only while its Project status is not Done or its group
 is not settled, and the reason says which. A parent that needs a user answer or

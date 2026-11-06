@@ -152,6 +152,8 @@ Run `record`, `snapshot`, `plan`, and `apply` one at a time and check each exit 
 
 When the merged PR closes a child of an open epic, the helper closes only the child. The epic stays open and `plan` and `apply` list it under `holds` with the sub-issues that are still open; that hold is expected, so report it and do not close the epic by hand. Read `holdSummary` first, then the full `holds` list only for an issue you act on. `apply` prints `applied` and `repaired` before the plan.
 
+When a merged PR's issue is closed as completed and its own completion record verifies (acceptance rows done, required checks passed, merge commit matching), `apply` sets the Project item to Done even if Finalize step 6 never ran. This is the backstop for a stopped finalization: it lists the issue under `repaired`, never posts a second comment, and refuses when the live issue was reopened or its close reason is no longer `completed`. A completed close with no record stays reported and is left to this skill.
+
 ## Close delivered issues for goal-sdlc
 
 When `dod-guard:goal-sdlc` delegates its start-of-run cleanup, run only this section. Resolve no PR and merge nothing. Use goal-sdlc's snapshot or run `closure.mjs snapshot`; if snapshot exits non-zero, stop and report its error, and never plan or apply on an older file. Then plan and apply; apply also sets Project `Done`, including on an issue already closed whose status write stopped. Report closes, status repairs, holds, `unverified-closed` reports, and any stop. Make no other issue or Project write.

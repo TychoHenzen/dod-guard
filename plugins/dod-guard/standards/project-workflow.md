@@ -388,6 +388,8 @@ An issue this helper closed whose Project status is not Done is planned as a
 status repair, so a rerun finishes a stopped Done write without a second
 comment or close.
 
+A closed issue with state reason `completed` whose own completion record verifies is planned the same way, even when a person or another run closed it. The delivery is judged as if every readable Project item already read Done, because the missing Done is the one defect the repair fixes; any other unmet condition keeps the issue out of the plan.
+
 After any close, the helper walks to the closed issue's parent and closes it as
 `completed` when every sub-issue is closed with verified evidence or superseded
 by a verified root, no linked pull request is open, and no unchecked acceptance

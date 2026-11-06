@@ -79,9 +79,13 @@ test("holds an original that two roots supersede", () => {
   assert.deepEqual(holdOf(plan, 777).reasons, ["superseded by more than one root: #840, #841"]);
 });
 
-test("status repair leaves issues this helper did not close to complete-pr", () => {
-  const snapshot = recordedSnapshot({ roots: [818] });
+test("status repair leaves a close with no completion record or closure comment alone", () => {
+  const snapshot = recordedSnapshot({ roots: [818], record: { 818: null } });
   setField(snapshot, 818, "Status", { name: "In Progress" });
+  Object.assign(
+    snapshot.issues.find(({ number }) => number === 818),
+    { state_reason: "completed" },
+  );
   assert.deepEqual(planClosures(snapshot).statusRepairs, []);
 });
 
