@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import { join } from "node:path";
 import { readJsonFile } from "../../../../lib/read-text.mjs";
+import { requireDraftPlan } from "./draft-plan.mjs";
 import { batchDocuments, mergeAnswers, planHash } from "./review-batches.mjs";
 
 function planArray(path) {
@@ -17,9 +18,12 @@ function writeJson(path, value) {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-// Cuts the saved plan into the batch files the investigators read.
+// Cuts the saved plan into the batch files the investigators read, after the
+// same shape check the build applies, so a malformed plan fails before any
+// investigator runs.
 function batches(args) {
   const plan = planArray(args.plan);
+  requireDraftPlan(plan);
   mkdirSync(args["out-dir"], { recursive: true });
   const written = batchDocuments(plan, args.head).map((doc) => {
     const file = join(args["out-dir"], `${doc.batch}.json`);
