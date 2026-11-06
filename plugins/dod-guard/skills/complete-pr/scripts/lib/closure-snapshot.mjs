@@ -9,7 +9,7 @@ import { renameSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command reads its process id for the partial file.
 import process from "node:process";
 import { sameRepository } from "./project-reads.mjs";
-import { branchRecords } from "./snapshot-branches.mjs";
+import { branchRecords, readOpenPulls } from "./snapshot-branches.mjs";
 import { readPages } from "./snapshot-failure.mjs";
 import { projectFields } from "./snapshot-fields.mjs";
 import { issueRecord } from "./snapshot-issues.mjs";
@@ -19,6 +19,7 @@ import { itemsEndpoint, projectRecord, readRepository, snapshotProject } from ".
 import { pullRequestRecords } from "./snapshot-pulls.mjs";
 import { guardedRunner } from "./snapshot-runner.mjs";
 import { followSubIssues } from "./snapshot-subissues.mjs";
+import { unlinkedPullRequests } from "./snapshot-unlinked-pulls.mjs";
 
 const JSON_INDENT = 2;
 
@@ -39,6 +40,7 @@ export function buildClosureSnapshot({ repository, runner }) {
     // per-issue read is made for a Project item.
     .map(({ content }) => issueRecord(content, repo.fullName, read));
   const issues = followSubIssues({ issues: projectIssues, repository: repo.fullName, read });
+  const openPulls = readOpenPulls(read, repo.fullName);
   return {
     repository: repo.fullName,
     defaultBranch: repo.defaultBranch,
@@ -46,7 +48,8 @@ export function buildClosureSnapshot({ repository, runner }) {
     items: shaped.map(({ item }) => item),
     issues,
     pullRequests: pullRequestRecords(targets, { repository: repo.fullName, read, endpoint }),
-    branches: branchRecords(read, repo.fullName),
+    branches: branchRecords(read, repo.fullName, openPulls),
+    unlinkedPullRequests: unlinkedPullRequests(openPulls, targets, repo.fullName),
   };
 }
 
