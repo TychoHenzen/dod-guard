@@ -110,6 +110,6 @@ The matrix in that comment is the one fenced `json` block under `## Acceptance m
 
 `node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body-file=<path> --handoff-file=<path> --head-sha=<sha> [--children=<path>]`
 
-Stop before PR handoff on exit 1 or 2. Fix the matrix rows and rerun; never fix the lens heads.
+Stop before PR handoff on exit 1 or 2. Fix the matrix rows and rerun. When the proof names a lens that is not bound to the handoff head, the lens stores a head (refinement should have rejected it): delete `headSha` and `head` from the `lens-ownership` entries in the issue body, change nothing else, and rerun. Never write a head into a lens.
 
 Report repository, Project, issue, branch, commit, checks, each criterion mapped to evidence, any new gate findings per task, and any check that could not run. Stop after the push: `dod-guard:review-pr` is the one independent review.
