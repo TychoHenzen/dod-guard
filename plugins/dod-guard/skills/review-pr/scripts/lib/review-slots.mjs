@@ -1,6 +1,6 @@
 import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
 import { API_REPOSITORY_URL, urlRepository } from "../../../../lib/repository-identity.mjs";
-import { oneLine, requireEntryShape, requireQuestion } from "./plan-entry.mjs";
+import { canonicalLens, oneLine, requireEntryShape, requireQuestion } from "./plan-entry.mjs";
 import { REVIEWERS } from "./reviewer-results.mjs";
 
 function isObject(value) {
@@ -102,7 +102,8 @@ function escapeHtml(value) {
 }
 
 function entryLenses(entry) {
-  return entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
+  const lenses = entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
+  return lenses.map(canonicalLens);
 }
 
 function requirePlanEntries(plan, generated) {
@@ -157,12 +158,12 @@ function slotHeading(item) {
 function entryLines(entry) {
   if (entry.excluded) {
     const { lens, reason } = entry.excluded;
-    return [`- excluded for ${lens}: ${escapeHtml(oneLine(reason))}`];
+    return [`- excluded for ${canonicalLens(lens)}: ${escapeHtml(oneLine(reason))}`];
   }
   return entry.questions.map((question) => {
     const id = escapeHtml(oneLine(question.id));
     const text = escapeHtml(oneLine(question.question));
-    return `- ${id} ${question.lens} (${question.status}): ${text}`;
+    return `- ${id} ${canonicalLens(question.lens)} (${question.status}): ${text}`;
   });
 }
 

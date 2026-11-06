@@ -1,5 +1,9 @@
 import { REVIEWERS } from "./reviewer-results.mjs";
 
+// The Agent tool names a reviewer `dod-guard:review-pr-feature`, so a planner
+// that copies that name into `lens` is right and the plan must accept it.
+const AGENT_PREFIX = "dod-guard:";
+
 // After the main thread checks an investigator's answer, a question is
 // verified, verified after the one allowed repair, or reported as not
 // answerable from the repository.
@@ -9,8 +13,13 @@ function oneLine(value) {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
 }
 
+// The bare reviewer name that REVIEWERS holds; any other value passes through.
+function canonicalLens(lens) {
+  return typeof lens === "string" && lens.startsWith(AGENT_PREFIX) ? lens.slice(AGENT_PREFIX.length) : lens;
+}
+
 function isReviewerLens(lens) {
-  return REVIEWERS.includes(lens);
+  return REVIEWERS.includes(canonicalLens(lens));
 }
 
 function namesFiles(question) {
@@ -77,4 +86,4 @@ function requireQuestion(question, slot, ids) {
   ids.add(id);
 }
 
-export { oneLine, requireEntryShape, requireQuestion };
+export { canonicalLens, oneLine, requireEntryShape, requireQuestion };
