@@ -10,9 +10,11 @@ import { renameSync, rmSync, writeFileSync } from "node:fs";
 import process from "node:process";
 import { sameRepository } from "./project-reads.mjs";
 import { branchRecords } from "./snapshot-branches.mjs";
+import { readPages } from "./snapshot-failure.mjs";
 import { projectFields } from "./snapshot-fields.mjs";
 import { issueRecord } from "./snapshot-issues.mjs";
-import { readShapedItems } from "./snapshot-items.mjs";
+import { requireCompleteItems } from "./snapshot-item-count.mjs";
+import { shapeItems } from "./snapshot-items.mjs";
 import { itemsEndpoint, projectRecord, readRepository, snapshotProject } from "./snapshot-project.mjs";
 import { pullRequestRecords } from "./snapshot-pulls.mjs";
 import { guardedRunner } from "./snapshot-runner.mjs";
@@ -27,7 +29,9 @@ export function buildClosureSnapshot({ repository, runner }) {
   const { basePath, project } = snapshotProject(read, repo.fullName);
   const fields = projectFields(read, basePath, project.number);
   const endpoint = itemsEndpoint(basePath, project.number, fields.fieldIds);
-  const shaped = readShapedItems(read, endpoint, fields.fieldIds);
+  const rows = readPages(read, endpoint);
+  requireCompleteItems(rows, project, endpoint);
+  const shaped = shapeItems(rows, fields.fieldIds, endpoint);
   const targets = shaped.filter(({ item }) => sameRepository(item.repository, repo.fullName));
   const projectIssues = targets
     .filter(({ item }) => item.contentType === "Issue")

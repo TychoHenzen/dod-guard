@@ -1,5 +1,5 @@
 import { contentRepository, PULL_REQUEST_CONTENT_TYPE } from "./project-reads.mjs";
-import { projectRead, readFailure, readPages, siteFailure } from "./snapshot-failure.mjs";
+import { projectRead, readFailure, siteFailure } from "./snapshot-failure.mjs";
 import { contentNumber, fieldValue, parentValue, repositoryValue } from "./snapshot-field-values.mjs";
 import { readStatusName } from "./snapshot-fields.mjs";
 import { linkedPullValues, pullReference } from "./snapshot-pull-reference.mjs";
@@ -7,7 +7,7 @@ import { isObject, nonBlank, positiveInteger } from "./snapshot-values.mjs";
 
 // Archived items are out of the closure scope. The REST default that already
 // leaves them out is not relied on.
-function isArchivedItem(raw) {
+export function isArchivedItem(raw) {
   return isObject(raw) && raw.archived_at !== null && raw.archived_at !== undefined;
 }
 
@@ -60,8 +60,8 @@ function shapeItem(raw, fieldIds, endpoint) {
   return { item: { ...header, fields: itemFields({ field, pulls, site }, fieldIds) }, content, pulls };
 }
 
-export function readShapedItems(read, endpoint, fieldIds) {
-  return readPages(read, endpoint)
+export function shapeItems(rows, fieldIds, endpoint) {
+  return rows
     .filter((raw) => !isArchivedItem(raw))
     .filter((raw) => !isPullRequestItem(raw))
     .map((raw) => shapeItem(raw, fieldIds, endpoint));
