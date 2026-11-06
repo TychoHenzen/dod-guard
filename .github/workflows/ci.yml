@@ -66,9 +66,13 @@ jobs:
         run: >-
           node --test
           plugins/dod-guard/skills/publish/scripts/maintenance-wrapper.test.mjs
+          plugins/dod-guard/skills/publish/scripts/maintenance-wrapper-restore.test.mjs
+          plugins/dod-guard/skills/publish/scripts/maintenance-wrapper-gates.test.mjs
+          plugins/dod-guard/skills/publish/scripts/maintenance-wrapper-responses.test.mjs
           plugins/dod-guard/skills/publish/scripts/release-verification.test.mjs
           plugins/dod-guard/skills/publish/scripts/release-verification-helper.test.mjs
           plugins/dod-guard/skills/publish/scripts/release-native-command.test.mjs
+          plugins/dod-guard/skills/publish/scripts/maintenance-native.test.mjs
 
   # Not a required check: these tests start a real OpenCode server, pinned to
   # the CLI version the plugin's @opencode/plugin dependency targets.
