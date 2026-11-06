@@ -140,7 +140,8 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
   `wiring/usability`, `quality`, and `reliability` (failure/recovery) entry.
   Each entry repeats its
   review-lens id, owner, observable evidence, and any acceptance or
-  verification evidence, and stores no head; the executable handoff proof
+  verification evidence, and stores no head (the refinement proof reports a stored
+  `headSha` or `head`); the executable handoff proof
   binds each lens to the pushed head it is given, reports a stored head that
   differs as stale, and compares this record with the review-lens input instead
   of treating record presence as proof.
@@ -190,7 +191,8 @@ The finalization variant takes the same options with the `finalization`
 subcommand; the complete-pr finalization gate runs it before it readies or
 merges. Both use the exit codes above. The proof binds every lens to
 `--head-sha`, so a push needs every row of the Acceptance matrix block re-observed at the new head, the Preflight checkpoint rows rewritten there, and a rerun,
-never an edit of the issue body.
+never an edit of the issue body, except deleting a stored `headSha` or `head` from a
+`lens-ownership` entry (an entry stores no head), after which the proof is rerun.
 
 Step plans are not one of the seven records and are not in the issue body. Each
 task has one `## Step plan: <task-id>` comment on the parent issue, written by
