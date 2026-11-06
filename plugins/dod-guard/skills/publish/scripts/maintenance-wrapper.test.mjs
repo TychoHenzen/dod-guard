@@ -9,7 +9,7 @@ import {
   runMaintenanceWrapper,
   runPowerShell,
   savedSha,
-} from "./maintenance-harness.mjs";
+} from "./harness/maintenance-harness.mjs";
 
 test("maintenance wrapper parses and owns the exact protected push boundary", {
   skip: process.platform !== "win32",

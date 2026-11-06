@@ -12,7 +12,7 @@ import {
   releaseSha,
   runPowerShell,
   savedSha,
-} from "./maintenance-harness.mjs";
+} from "./harness/maintenance-harness.mjs";
 
 // Global git and gh functions stand in for the real tools (cmd shims would eat the caret in
 // HEAD^) and re-emit the stand-in's stderr as ErrorRecords, as a real native stderr arrives.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { waitForChecks } from "./ci-wait.mjs";
-import { checkRun, checks, fakeGh, REPOSITORY, SHA } from "./ci-wait.test-support.mjs";
+import { checkRun, checks, fakeGh, REPOSITORY, SHA } from "./harness/ci-wait-support.mjs";
 
 function waitWith(gh, overrides) {
   return waitForChecks({
