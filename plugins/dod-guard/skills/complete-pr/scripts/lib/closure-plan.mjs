@@ -5,9 +5,9 @@
 import { childNumbers, issueFor, itemFor, itemStatus, statusUnreadable } from "../../../../lib/closure-index.mjs";
 import { createContext } from "./closure-context.mjs";
 import { isOpen } from "./closure-delivery.mjs";
-import { closureEvidence, hierarchyReasons } from "./closure-evidence.mjs";
+import { closureEvidence, hierarchyReasons, recordGroup } from "./closure-evidence.mjs";
 import { addHold, admitClose, admitWrite, holdSummary, planned } from "./closure-holds.mjs";
-import { recordComments, renderClosureEvidence } from "./closure-records.mjs";
+import { parseCompletionRecord, recordComments, renderClosureEvidence } from "./closure-records.mjs";
 import { walkParents } from "./closure-walk.mjs";
 
 function originalHold(context, original) {
@@ -98,15 +98,18 @@ function unverifiedClosed(context) {
   return reports;
 }
 
+function closedUnplanned(context, number) {
+  const issue = issueFor(context.index, number);
+  return issue && !isOpen(issue) && !planned(context, number) ? issue : null;
+}
+
 // A repair needs a closed, unplanned issue whose Project item is readable and not Done.
 function repairTarget(context, number) {
-  const issue = issueFor(context.index, number);
+  const issue = closedUnplanned(context, number);
   const item = itemFor(context.index, number);
-  if (!issue || isOpen(issue) || planned(context, number)) return null;
-  if (!item?.id || statusUnreadable(item)) return null;
+  if (!(issue && item?.id) || statusUnreadable(item)) return null;
   const status = itemStatus(item);
-  if (status === "Done") return null;
-  return { issue, item, status };
+  return status === "Done" ? null : { issue, item, status };
 }
 
 function helperMadeVerifiedClose(context, number, issue) {
@@ -114,20 +117,21 @@ function helperMadeVerifiedClose(context, number, issue) {
   return closureEvidence(context, number).verified;
 }
 
-// A close posts its evidence comment, closes the issue, and then sets Project Done. A run
-// that stops after the close but before Done leaves a closed issue that no plan closes again,
-// so a fresh snapshot must surface it here for apply to finish the Done write. The evidence
-// comment is the proof that this helper made the close; without it the close came from a
-// completion record or by hand, and complete-pr finalization owns it. The one exception is a
-// close as not_planned: it owes no delivery, so its Project item reads Done whoever closed it
-// and whatever evidence or unverified root it carries (the report stays), and the repair
-// records the reason apply must still find live.
+// The delivery record's group is judged as if Done were written, because the missing Done is
+// the one defect this repair exists to fix.
+function recordedDeliveryAwaitsDone(context, number) {
+  const { record } = parseCompletionRecord(issueFor(context.index, number)?.comments);
+  return Boolean(record) && context.deliveryOnceDone(recordGroup(context, number, record)).status === "verified";
+}
+
+// Why a closed issue may be set Done. A not_planned close owes no delivery, so it reads Done
+// whoever closed it. A completed close needs evidence this run can verify: a closure comment
+// this helper posted, or the issue's own completion record with its delivery verified.
 function repairKind(context, number, issue) {
-  if (issue.state_reason === "not_planned") {
-    return { stateReason: "not_planned" };
-  }
-  if (helperMadeVerifiedClose(context, number, issue)) {
-    return {};
+  if (issue.state_reason === "not_planned") return { stateReason: "not_planned" };
+  if (helperMadeVerifiedClose(context, number, issue)) return {};
+  if (issue.state_reason === "completed" && recordedDeliveryAwaitsDone(context, number)) {
+    return { stateReason: "completed" };
   }
   return null;
 }
