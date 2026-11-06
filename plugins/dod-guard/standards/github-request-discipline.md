@@ -44,7 +44,10 @@ only alternate-transport decisions are:
   query made by `skills/complete-pr/scripts/linked-project.mjs`, because REST
   has no endpoint for a repository's explicit Project link. It reads at most
   100 links and exits 2 on a failed, malformed, or incompletely paginated
-  read. The fifth exception is the single-issue Project item read made by
+  read. The same read also asks each Project for
+  `items(first: 1) { totalCount }`, which the closure snapshot compares with
+  the whole-Project items list; it adds no other query. The fifth exception is
+  the single-issue Project item read made by
   `skills/complete-pr/scripts/ticket-preconditions.mjs`: one read-only
   `repository.issue.projectItems` query, because the REST Project items list
   returns unstable partial pages. It exits 2 on a failed, malformed, or
