@@ -147,6 +147,8 @@ and discovery evidence are verified before Todo. Material unresolved
 requirements, including unavailable or inconclusive advisor advice, keep the
 issue in Backlog until the missing decision or evidence is available.
 
+Each step plan lists the files it changes as `File:` lines and its searches for affected code as `Proxy check:` lines. The refinement proof runs those searches over the checkout and fails on any hit that the plan's `File:` lines do not name, so a forgotten caller or test is fixed in the plan before the item moves to Todo.
+
 ### Stop a `/goal` run
 
 Under Claude Code `/goal`, a small model grades only the condition text
