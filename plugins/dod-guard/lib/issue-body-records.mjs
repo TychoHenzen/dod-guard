@@ -3,6 +3,7 @@
 // that the next-ticket convergence proof evaluates. Every function is pure;
 // reading the issue from GitHub belongs to the callers.
 import { lines, markdownSection } from "./acceptance-criteria.mjs";
+import { lensHeadRemainder } from "./lens-head-remainder.mjs";
 import { acceptanceIdRemainder, requirementIdRemainder } from "./record-id-remainders.mjs";
 import { JSON_RECORDS, jsonRecord, TEXT_RECORDS, textRecord } from "./record-readers.mjs";
 
@@ -29,11 +30,12 @@ function readRecords(notes, errors) {
   return records;
 }
 
-// Returns { input, errors, remainder, requirementRemainder }: the
-// evaluateConvergence input, one error per record that cannot be read, one
+// Returns { input, errors, remainder, requirementRemainder, lensHeadRemainder }:
+// the evaluateConvergence input, one error per record that cannot be read, one
 // remainder entry per acceptance-evidence id that disagrees with the Acceptance
-// criteria checkboxes, and one requirementRemainder entry per requirement-id
-// disagreement, applied by the refinement proof only.
+// criteria checkboxes, one requirementRemainder entry per requirement-id
+// disagreement, and one lensHeadRemainder entry per head that a lens-ownership
+// entry stores. The refinement proof applies those last two lists only.
 function parseIssueBodyRecords(body) {
   const text = lines(body);
   const notes = markdownSection(text, "Implementation notes");
@@ -45,6 +47,7 @@ function parseIssueBodyRecords(body) {
     errors,
     remainder: acceptance ? acceptanceIdRemainder(text, acceptance) : [],
     requirementRemainder: records.requirements ? requirementIdRemainder(text, records.requirements) : [],
+    lensHeadRemainder: lensHeadRemainder(records["lens-ownership"]),
   };
 }
 
