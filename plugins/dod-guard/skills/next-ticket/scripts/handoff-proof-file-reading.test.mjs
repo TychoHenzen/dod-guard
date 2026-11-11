@@ -41,13 +41,13 @@ test("reads UTF-8 with a byte-order mark", async () => {
   });
 });
 
-test("reads only local files: no network, process, or GitHub module is imported", async () => {
-  const importsOf = async (name) => {
-    const source = await readFile(path.join(here, name), "utf8");
-    assert.doesNotMatch(source, /\bimport\(|\bfetch\(|\brequire\(/, name);
-    return [...source.matchAll(/^import .* from "([^"]+)";$/gm)].map((match) => match[1]);
-  };
+async function importsOf(name) {
+  const source = await readFile(path.join(here, name), "utf8");
+  assert.doesNotMatch(source, /\bimport\(|\bfetch\(|\brequire\(/, name);
+  return [...source.matchAll(/^import .* from "([^"]+)";$/gm)].map((match) => match[1]);
+}
 
+test("reads only local files: no network, process, or GitHub module is imported", async () => {
   assert.deepEqual(await importsOf("handoff-proof.mjs"), [
     "node:path",
     "node:process",
@@ -62,6 +62,7 @@ test("reads only local files: no network, process, or GitHub module is imported"
     "../../../lib/read-text.mjs",
   ]);
   assert.deepEqual(await importsOf("handoff-proof-runs.mjs"), [
+    "../../../lib/godot-window-rows.mjs",
     "../../../lib/handoff-matrix.mjs",
     "../../../lib/issue-body-records.mjs",
     "../../../lib/post-push-input.mjs",

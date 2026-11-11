@@ -1,6 +1,6 @@
 // Argument and file reading for handoff-proof.mjs. Every problem the caller can
 // fix is a UsageError, which the entry point reports as exit 2.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { parseArgs } from "../../../lib/args.mjs";
 import { decodeText, NOT_UTF8, TextEncodingError } from "../../../lib/read-text.mjs";
 
@@ -88,4 +88,9 @@ function readChildren(file) {
   return children;
 }
 
-export { optionsFrom, readChildren, readText, UsageError };
+// A Godot checkout holds a project.godot at its root. Only --root names a checkout, so no --root is no Godot.
+function isGodotCheckout(root) {
+  return root !== undefined && existsSync(`${root}/project.godot`);
+}
+
+export { isGodotCheckout, optionsFrom, readChildren, readText, UsageError };

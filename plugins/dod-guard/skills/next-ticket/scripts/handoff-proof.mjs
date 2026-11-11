@@ -12,7 +12,8 @@
 // linked functional-slice children from an optional JSON array file, and runs
 // the pre-push proof, including the lens-row rules on the planned acceptance
 // matrix. --plans runs the proxy checks of the saved step plan comments over the
-// checkout at --root.post-push reads the same body and the acceptance matrix of the
+// checkout at --root. When --root holds a project.godot, refinement also reports a planned row that
+// asks for a window, screenshot, or manual run. post-push reads the same body and the acceptance matrix of the
 // implementation handoff saved to a local file, and checks every row and every
 // review lens against the pushed head SHA, so a row or lens bound to another
 // head is reported. finalization is the same proof plus the complete-pr gate's
@@ -29,7 +30,7 @@
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { optionsFrom, readChildren, readText, UsageError } from "./handoff-proof-cli.mjs";
+import { isGodotCheckout, optionsFrom, readChildren, readText, UsageError } from "./handoff-proof-cli.mjs";
 import { PROOFS } from "./handoff-proof-runs.mjs";
 import { readPlans } from "./step-plan-input.mjs";
 
@@ -44,7 +45,8 @@ function evaluate(argv) {
     handoff = readText(options["handoff-file"], "handoff-file");
   }
   const plans = readPlans(options);
-  return PROOFS[subcommand]({ body, handoff, headSha: options["head-sha"], children, plans });
+  const godot = isGodotCheckout(options.root);
+  return PROOFS[subcommand]({ body, handoff, headSha: options["head-sha"], children, plans, godot });
 }
 
 function main(argv) {
