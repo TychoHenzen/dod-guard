@@ -94,6 +94,21 @@ The emergency case deliberately has tiny effort: urgency must not inflate size.
 | Step plan whose proxy check hits a file that no `File:` line names. | The refinement proof run with `--plans` and `--root` exits 1 and names the hit. Post a corrected plan comment that lists the file or narrows the check, save the newest comment per task, and rerun until it verifies. A repeated task id, a plan with no `File:` line, and a check that searched no file are reported the same way. |
 | Step plan whose planned signature breaks the target gate (an 8-parameter C# method, or a 4-parameter method when the target's gate step passes no `--block-on`). | The signature dry run scans scratch stubs outside the checkout at the target's own block level and reads the `violations` array, not the exit status. The plan is redesigned and rescanned until no violation reaches that level, and the command and result are recorded in Implementation notes. |
 
+## Plan-writing and acceptance-row cases
+
+| Case | Input variation | Expected result |
+|---|---|---|
+| Probability floor | An acceptance criterion says a rate is at least 0.90, and the test samples 400 boxes with expected value 0.923 and standard error 0.013. | The row asserts the rate analytically on the parameter. A sampled row asserts a band of at least 4 standard errors around 0.923, never the 0.90 target itself. |
+| Changed signature | A step adds a parameter to a method that two classes implement and three tests call. | The step lists every caller and implementer, production and test, found at the base SHA, each on a `File:` line, with a `Proxy check:` for the symbol. |
+| New service | A step registers a new service behind an interface. | The step names the DI key and the file that registers it. |
+| Assertions and red-green | A step adds three test cases. | Each case has exact assertions, and the step names the tests that fail before it and pass after it. |
+| Reader sweep | A step changes a group that a register and a pickup hook read. | Every reader is listed at the base SHA, so no reader is found later by a failing test. |
+| Collider walkers | A step adds a solid collision shape to a shelf, and a footprint builder walks the shapes of every node. | The step lists the footprint builder and every other raycast, overlap, or footprint consumer of that node's collision shapes. |
+| Staging | A task ends with a commit step. | The step runs `git status --porcelain`, accounts for every `??` line, and stages explicit paths. A plan with a catch-all staging command is corrected. |
+| Convention and blockers | A step adds a protected resolver member, and a closed blocker replaced an interface the plan names. | The plan states field or property and the naming rule, and every target is checked against the blocker's merged code, not its issue text. |
+| Godot headless rows | The checkout holds a project.godot, and a draft row says the owner confirms in a window that the shelf looks right. | The row is rewritten as a headless state assertion, or the judgement becomes an owner note in Implementation notes. |
+| Godot window lint | The same checkout, and a planned-matrix row reads "windowed screenshot of the shelf". | `handoff-proof.mjs refinement --plans --root` exits 1 and names the row. A headless row passes, and the same row in a checkout without project.godot is not judged. |
+
 ## Live GitHub exercise
 
 Create an explicitly named disposable verification issue in the target
