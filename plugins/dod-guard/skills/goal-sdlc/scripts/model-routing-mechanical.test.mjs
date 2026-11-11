@@ -55,3 +55,22 @@ test("both older stop rules defer to the mechanical gaps section", async () => {
   const source = squash(await readFile(new URL(AGENT, pluginRoot), "utf8"));
   assert.equal(source.split(DEFERRAL).length - 1, 2);
 });
+
+const CHEAP_TIER = "## Verify cheap-tier output";
+const STANDARD_TIER = "## Verify standard-tier and strong-tier output";
+const READBACK = "git ls-remote --heads origin <branch>";
+
+test("the cheap-tier verification checks each mechanical fix and reads pushes back", async () => {
+  const text = squash(await section("standards/model-routing.md", CHEAP_TIER));
+  assertIncludesAll(text, [
+    "`Mechanical fix:` line",
+    "`agents/stage-cheap.md`",
+    "A mechanical fix of any other kind is a failed check",
+    READBACK,
+  ]);
+});
+
+test("the standard-tier verification reads a reported push back", async () => {
+  const text = squash(await section("standards/model-routing.md", STANDARD_TIER));
+  assertIncludesAll(text, [READBACK]);
+});

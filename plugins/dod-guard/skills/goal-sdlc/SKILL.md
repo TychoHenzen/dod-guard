@@ -63,7 +63,7 @@ Agent names take the `dod-guard:` prefix.
 | Refinement investigate code, callers, tests | cheap | read-cheap | Same section |
 | Refinement decide classification and criteria | standard | read-standard | Same section |
 | next-ticket owner thread | cheap | stage-cheap-skill | Skill `dod-guard:next-ticket <issue>` |
-| next-ticket implement one task | cheap | stage-cheap | Follow step plan in <scratch file> holding the task's `## Step plan: <task-id>` comment saved unchanged |
+| next-ticket implement one task | cheap | stage-cheap | Follow step plan in <scratch file> holding the task's `## Step plan: <task-id>` comment saved unchanged. Fix a mechanical gap as the Mechanical gaps section of your agent file allows, and name each fix in the report |
 | next-ticket validations and regenerate artifacts | cheap | stage-cheap | Same file, run only its validation commands |
 | submit-draft-pr | cheap | stage-cheap-skill | Skill `dod-guard:submit-draft-pr <issue>` |
 | review-pr owner thread | cheap | stage-cheap-skill | Skill `dod-guard:review-pr <pull-request>` |
