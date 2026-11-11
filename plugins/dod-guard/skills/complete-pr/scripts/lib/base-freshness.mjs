@@ -1,6 +1,8 @@
 // The pull request base SHA that GitHub reports can stay behind the default branch after that branch moves.
 // Merging such a commit changes nothing when the head already holds it, so the triage would find no conflict
 // to classify. This check compares the base with the default branch tip the caller fetched before the run.
+// It tests equality only, so a stale fetch can produce a false stop; the standard tells the caller to fetch
+// immediately before start.
 
 function trackedTip(git, defaultBranch) {
   const result = git(["rev-parse", "-q", "--verify", `refs/remotes/origin/${defaultBranch}`], [0, 1, 128]);
@@ -29,7 +31,7 @@ function baseFreshnessStop(git, { defaultBranch, pullRequest }) {
   }
   return {
     code: "base_stale",
-    reason: "The pull request base SHA is behind the default branch tip.",
+    reason: "The pull request base SHA differs from the default branch tip fetched before this run.",
     details: { decisionNeeded: refreshStep(defaultBranch), expected: tip, observed: pullRequest.baseSha },
   };
 }

@@ -87,16 +87,17 @@ export class TriageStop extends Error {
   }
 }
 
+function isAllowedForm(subcommand, rest) {
+  if (!TRIAGE_GIT_SUBCOMMANDS.includes(subcommand)) {
+    return false;
+  }
+  const form = ALLOWED_FORMS[subcommand];
+  return form ? form(rest) : !rest.some((argument) => FORBIDDEN_ARGUMENTS.has(argument));
+}
+
 export function assertAllowedGitCommand(args) {
   const [subcommand, ...rest] = args;
-  const form = ALLOWED_FORMS[subcommand];
-  let allowed = TRIAGE_GIT_SUBCOMMANDS.includes(subcommand);
-  if (allowed && form) {
-    allowed = form(rest);
-  } else if (allowed) {
-    allowed = !rest.some((argument) => FORBIDDEN_ARGUMENTS.has(argument));
-  }
-  if (!allowed) {
+  if (!isAllowedForm(subcommand, rest)) {
     throw new TriageStop("forbidden_git_command", `The triage may not run: git ${args.join(" ")}`);
   }
 }
@@ -219,14 +220,7 @@ function detectPendingMerge(git, trustedHead) {
   });
 }
 
-function checkPreconditions(git, input) {
-  detectPendingMerge(git, input.trustedHead);
-  for (const [code, reason, holds] of PRECONDITIONS) {
-    if (!holds(input)) {
-      throw new TriageStop(code, reason, { pullRequest: input.pullRequest, trustedHead: input.trustedHead });
-    }
-  }
-  const { pullRequest, trustedHead } = input;
+function checkCheckoutPosition(git, { pullRequest, trustedHead }) {
   const branch = currentBranch(git);
   if (branch !== pullRequest.headBranch) {
     throw new TriageStop("wrong_branch", "The checkout is not on the pull request head branch.", {
@@ -241,6 +235,9 @@ function checkPreconditions(git, input) {
       observed: head,
     });
   }
+}
+
+function checkCleanWorktree(git) {
   const mergeHead = readMergeHead(git);
   if (mergeHead) {
     throw new TriageStop("merge_in_progress", "A merge is already in progress in this checkout.", {
@@ -251,6 +248,10 @@ function checkPreconditions(git, input) {
   if (pending.length > 0) {
     throw new TriageStop("worktree_dirty", "The worktree has pending changes.", { paths: pending });
   }
+}
+
+function checkBase(git, input) {
+  const { pullRequest } = input;
   if (git(["cat-file", "-e", `${pullRequest.baseSha}^{commit}`], [0, 1, 128]).status !== 0) {
     throw new TriageStop(
       "base_not_local",
@@ -262,7 +263,19 @@ function checkPreconditions(git, input) {
   if (stale) {
     throw new TriageStop(stale.code, stale.reason, stale.details);
   }
-  return { recordedBase: pullRequest.baseSha, trustedHead };
+}
+
+function checkPreconditions(git, input) {
+  detectPendingMerge(git, input.trustedHead);
+  for (const [code, reason, holds] of PRECONDITIONS) {
+    if (!holds(input)) {
+      throw new TriageStop(code, reason, { pullRequest: input.pullRequest, trustedHead: input.trustedHead });
+    }
+  }
+  checkCheckoutPosition(git, input);
+  checkCleanWorktree(git);
+  checkBase(git, input);
+  return { recordedBase: input.pullRequest.baseSha, trustedHead: input.trustedHead };
 }
 
 function readStages(git, path) {
@@ -639,56 +652,4 @@ export async function pushMerge(git, { remote = "origin", branch, trustedHead, r
     });
   }
   return { mergeSha, parents: [trustedHead, recordedBase], remoteHead };
-}
-
-function cell(value) {
-  return String(value ?? "")
-    .replaceAll("|", "\\|")
-    .replaceAll("\n", " ");
-}
-
-function listOrNone(items, render) {
-  return items.length === 0 ? ["- none"] : items.map(render);
-}
-
-export function renderTriageRecord({
-  trustedHead,
-  recordedBase,
-  mergeSha = null,
-  conflicts = [],
-  decisions = [],
-  answers = [],
-  verification = [],
-  stop = null,
-}) {
-  const decisionByPath = new Map(decisions.map((decision) => [decision.path, decision]));
-  const lines = [
-    "## Conflict triage",
-    "",
-    `- Base: \`${recordedBase}\``,
-    `- Trusted head: \`${trustedHead}\``,
-    `- Merge: ${mergeSha ? `\`${mergeSha}\`` : "none"}`,
-    `- Stop: ${stop ? `${stop.stop}: ${cell(stop.reason)}` : "none"}`,
-  ];
-  if (stop?.decisionNeeded) {
-    lines.push(`- Decision needed: ${cell(stop.decisionNeeded)}`);
-  }
-  lines.push("", "| Path | Class | Decision | Basis | Questions |", "|---|---|---|---|---|");
-  for (const conflict of conflicts) {
-    const decision = decisionByPath.get(conflict.path) ?? {};
-    const questions = (decision.questionIds ?? []).join(", ") || "none";
-    const cells = [
-      `\`${cell(conflict.path)}\``,
-      cell(conflict.class),
-      cell(decision.decision ?? "none"),
-      cell(decision.basis ?? "none"),
-      cell(questions),
-    ];
-    lines.push(`| ${cells.join(" | ")} |`);
-  }
-  lines.push("", "Investigator answers used:");
-  lines.push(...listOrNone(answers, (answer) => `- ${answer.id}: ${cell(answer.fact)} (${cell(answer.citation)})`));
-  lines.push("", "Verification:");
-  lines.push(...listOrNone(verification, (entry) => `- ${cell(entry.name)}: ${cell(entry.result)}`));
-  return `${lines.join("\n")}\n`;
 }

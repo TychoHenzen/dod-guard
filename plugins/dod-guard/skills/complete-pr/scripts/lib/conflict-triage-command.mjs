@@ -8,13 +8,13 @@ import {
   checkRegeneration,
   commitMerge,
   pushMerge,
-  renderTriageRecord,
   startTriage,
   TriageStop,
   verifyResolution,
 } from "./conflict-triage.mjs";
 import { UsageError } from "./conflict-triage-flags.mjs";
 import { GitHubClient } from "./github-client.mjs";
+import { renderTriageRecord } from "./triage-record.mjs";
 
 function required(flags, name) {
   if (!flags[name]) {

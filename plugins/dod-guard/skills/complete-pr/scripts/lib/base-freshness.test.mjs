@@ -6,18 +6,8 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { startTriage, TriageStop } from "./conflict-triage.mjs";
-import { BRANCH, sh, textScenario } from "./conflict-triage.test-support.mjs";
-
-function stopOf(action) {
-  try {
-    action();
-  } catch (error) {
-    assert.ok(error instanceof TriageStop, error.message);
-    return error;
-  }
-  assert.fail("expected a TriageStop");
-}
+import { startTriage } from "./conflict-triage.mjs";
+import { BRANCH, sh, stopOf, textScenario } from "./conflict-triage.test-support.mjs";
 
 test("stops base_stale when the pull request base is behind the fetched default branch tip", () => {
   const scenario = textScenario();
