@@ -162,7 +162,7 @@ the skill-capable agent of the stage's tier: `dod-guard:stage-standard`, or
 `dod-guard:next-ticket` and `dod-guard:review-pr` owners. Those two are the only tier agents that hold the Agent and
 Skill tools. That stage worker is the owner's main thread: it dispatches each
 row at its tier and runs the verification below. A worker dispatched for one row
-never dispatches further, even on a skill-capable agent. In Codex, when a
+never dispatches further, even on a skill-capable agent. The `dod-guard:review-pr` owner dispatches its planner, investigators, judges and merge pass itself, each at that stage's tier even when the tier is above its own, and in the foreground, because a child's reply goes to the thread that dispatched it. In Codex, when a
 spawned agent cannot spawn agents of its own, goal-sdlc's main thread runs that
 owner's procedure itself and dispatches each row directly. In this standard, "main thread" means the thread
 that dispatched the work.
@@ -263,7 +263,7 @@ Cap each investigator at eight questions and ask for a report under 20 KB.
 When a stage has more questions, split them into batches by slot or file. If a
 report comes back over the cap, split that batch and rerun it; never accept the
 long report. Dispatch independent batches in one message (in Codex, in one
-turn) so they run in parallel: investigators share no state and each returns or writes only its own batch.
+turn), at most 10 at a time, so they run in parallel; send further batches only after that message's reports return. Investigators share no state and each returns or writes only its own batch.
 
 ## Verify cheap-tier output
 
