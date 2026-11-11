@@ -31,7 +31,7 @@ const IMPLICIT_THIS = new Set(["cs", "java", "cpp"]);
 
 // A name may hold `$` (Java), and a call may carry type arguments: `Gen<int>()`.
 function bareCall(name) {
-  const escaped = name.replace(/[$]/g, "\\$&");
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(?<![.\\w$])${escaped}\\s*(?:<[^<>()]*>)?\\s*\\(`);
 }
 
