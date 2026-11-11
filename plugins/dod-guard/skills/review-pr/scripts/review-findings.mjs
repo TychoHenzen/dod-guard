@@ -9,7 +9,7 @@ import { closeSync, existsSync, fstatSync, ftruncateSync, openSync, readSync, wr
 import process from "node:process";
 import { parseArgs } from "../../../lib/args.mjs";
 import { readJsonFile, readTextFile } from "../../../lib/read-text.mjs";
-import { answers, batches } from "./lib/batch-commands.mjs";
+import { answers, batches, pending } from "./lib/batch-commands.mjs";
 import { candidates, pbiInputs, violations } from "./lib/candidate-commands.mjs";
 import { ignoredPaths, scanArguments } from "./lib/ignored-paths.mjs";
 import { applyRepoLimits, repoLimits } from "./lib/repo-limits.mjs";
@@ -32,6 +32,7 @@ const USAGE = [
   "  review-findings.mjs batches --plan=<plan.json> --head=<sha> --out-dir=<batches-dir>",
   "  review-findings.mjs answers --plan=<plan.json> --head=<sha> --answers-dir=<answers-dir>",
   "    --out=<answers.json>",
+  "  review-findings.mjs pending --plan=<plan.json> --head=<sha> --answers-dir=<answers-dir>",
   "  review-findings.mjs candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<issue.json>",
   "    --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --answers=<answers.json>",
   "    --out=<candidates.json>",
@@ -118,6 +119,7 @@ const COMMANDS = {
   },
   batches,
   answers,
+  pending,
   violations,
   candidates,
   build: (args) => {
@@ -156,6 +158,7 @@ const REQUIRED = {
   violations: ["scan", "diff", "out"],
   batches: ["plan", "head", "out-dir"],
   answers: ["plan", "head", "answers-dir", "out"],
+  pending: ["plan", "head", "answers-dir"],
   candidates: ["scan", "diff", "pbi", "sub-issues", "plan", "results", "answers", "out"],
   build: [
     "head",
@@ -174,24 +177,26 @@ const REQUIRED = {
   report: ["review-id", "comments"],
 };
 const FULL_SHA = /^[0-9a-f]{40}$/;
+// The marker reader only accepts a hex head, so a build with anything else would post an undetectable review.
+// The batch commands stamp or compare the head, so they take the same full-SHA check.
+const HEAD_COMMANDS = new Set(["build", "batches", "answers", "pending"]);
 
 // ASSUMPTION: no command takes an optional flag, so refusing every flag outside
 // REQUIRED is safe. A misspelled or retired flag then stops with usage instead
 // of being ignored.
+function hasExactFlags(required, args) {
+  const valued = required.every((name) => args[name] && args[name] !== "true");
+  return valued && Object.keys(args).every((name) => required.includes(name));
+}
+
 function validArgs(command, args) {
   if (!(args && COMMANDS[command])) {
     return false;
   }
-  if (REQUIRED[command].some((name) => !args[name] || args[name] === "true")) {
+  if (!hasExactFlags(REQUIRED[command], args)) {
     return false;
   }
-  if (!Object.keys(args).every((name) => REQUIRED[command].includes(name))) {
-    return false;
-  }
-  // The marker reader only accepts a hex head, so a build with anything else
-  // would post an undetectable review. batches and answers stamp or compare the
-  // head, so they take the same full-SHA check.
-  return !["build", "batches", "answers"].includes(command) || FULL_SHA.test(args.head);
+  return !HEAD_COMMANDS.has(command) || FULL_SHA.test(args.head);
 }
 
 const [command, ...rest] = process.argv.slice(2);
