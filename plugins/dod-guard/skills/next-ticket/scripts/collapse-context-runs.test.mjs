@@ -45,10 +45,26 @@ test("exits 1 with an empty stdout when one event ran twice", (t) => {
   assert.equal(result.stderr, "required context Analyze C# has more than one pull_request run\n");
 });
 
+test("exits 1 for several events with no pull_request run, and 0 for a lone push run", (t) => {
+  const stopped = execute(t, JSON.stringify([run("push", 11), run("workflow_dispatch", 12)]));
+  const lone = execute(t, JSON.stringify([run("push", 11)]));
+
+  assert.deepEqual([stopped.code, stopped.stdout, lone.code], [1, "", 0]);
+  assert.match(stopped.stderr, /^required context Analyze C# has push and workflow_dispatch runs but no pull_request/);
+  assert.deepEqual(JSON.parse(lone.stdout), [row(11)]);
+});
+
+test("exits 1 for a run that names its context with name instead of context", (t) => {
+  const renamed = { name: "Analyze C#", event: "pull_request", runId: 11, ...base };
+  const result = execute(t, JSON.stringify([renamed]));
+
+  assert.deepEqual([result.code, result.stderr], [1, "run 1 is malformed\n"]);
+});
+
 test("the reader still names a checkpoint that holds both rows of one context", () => {
-  assert.deepEqual(checkpointRemainder([row(11), row(12)], HEAD), [
-    "required context Analyze C# appears more than once",
-  ]);
+  const remainder = checkpointRemainder([row(11), row(12)], HEAD);
+
+  assert.deepEqual(remainder, ["required context Analyze C# appears more than once"]);
 });
 
 test("exits 2 with the usage line for a missing option, an extra option, and a bare word", (t) => {
