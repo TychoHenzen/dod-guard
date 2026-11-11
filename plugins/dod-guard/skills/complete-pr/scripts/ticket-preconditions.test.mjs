@@ -77,6 +77,12 @@ it("exits 0 and prints the project and status", () => {
   assert.deepEqual(JSON.parse(result.out), EXPECTED_READY);
 });
 
+it("exits 0 for an In Progress issue when the caller expects In Progress, the resume path", () => {
+  const result = run(argv("In Progress"), routes("In Progress"));
+  assert.equal(result.code, 0, result.err);
+  assert.deepEqual(JSON.parse(result.out), { ...EXPECTED_READY, status: "In Progress" });
+});
+
 it("exits 1 with linked-project-none when the repository has no open linked Project", () => {
   const result = run(argv(), routes("Todo", { [ENDPOINT.linkedProjects]: linkedProjectsReply([]) }));
   assert.equal(result.code, 1, result.err);
