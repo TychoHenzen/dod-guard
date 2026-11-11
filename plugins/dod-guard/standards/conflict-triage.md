@@ -45,7 +45,7 @@ the head branch at the trusted head, the pull request head must equal the
 trusted head, no merge may be in progress, and the worktree must be clean.
 Commit classified in-scope pending paths first, as `dod-guard:complete-pr` says. Fetch
 the default branch once before `start` so the base commit is local. `start`
-records the pull request base SHA as this run's base. During the run, never
+records the pull request base SHA as this run's base. `start` first checks that this SHA equals the local `origin/<default branch>` tip. A base behind the tip stops with `base_stale`; a clone without that tracking ref stops with `default_tip_unknown`. For `base_stale`, run `gh pr edit <number> --base <default branch>`, read the pull request back until its `base.sha` equals the tip, and run `start` again with a new state file. During the run, never
 fetch the default branch again, rebase, or force-push. Before claiming the
 triage, check that no other run holds the same pull request, branch, or stage.
 
@@ -118,6 +118,7 @@ Stop without a push when:
 - a generated path has no declared generator;
 - a judged decision has no basis, or is `stop`;
 - verification fails a second time;
+- the pull request base SHA is behind the default branch tip (`base_stale`), or the clone has no tracking ref for it (`default_tip_unknown`);
 - the pull request head or base changes during the run.
 
 On a stop, run `abort`. It runs `git merge --abort` only when `MERGE_HEAD` is

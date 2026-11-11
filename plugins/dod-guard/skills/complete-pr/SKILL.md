@@ -99,6 +99,7 @@ When the helper stops with `merge_conflict` on the trusted PBI head, triage per 
 
 - After a verified push, end with `conflict-triaged` and do not merge. The new head needs `dod-guard:submit-draft-pr` convergence and `dod-guard:review-pr` before this skill runs again.
 - If the triage stops, report it and leave the head unchanged.
+- On `base_stale`, refresh the base with `gh pr edit <number> --base <default branch>` as `standards/conflict-triage.md` says, then start the triage again. On `default_tip_unknown`, fetch the default branch first.
 - A run on the cheap model must not triage. It reports the stop with trusted head and PR number and leaves the head unchanged. Its dispatcher runs the triage.
 
 ## Finalize the parent unit

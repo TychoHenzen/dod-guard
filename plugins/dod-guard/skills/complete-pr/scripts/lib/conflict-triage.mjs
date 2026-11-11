@@ -1,5 +1,6 @@
 // biome-ignore lint/correctness/noNodejsModules: This adapter invokes the local Git CLI from Node.
 import { spawnSync } from "node:child_process";
+import { baseFreshnessStop } from "./base-freshness.mjs";
 
 // The rules these mechanics enforce live in standards/conflict-triage.md. This
 // module owns only the deterministic git steps, and it fails closed: every
@@ -256,6 +257,10 @@ function checkPreconditions(git, input) {
       "The recorded base commit is not in this clone. Fetch the default branch before the run.",
       { expected: pullRequest.baseSha },
     );
+  }
+  const stale = baseFreshnessStop(git, input);
+  if (stale) {
+    throw new TriageStop(stale.code, stale.reason, stale.details);
   }
   return { recordedBase: pullRequest.baseSha, trustedHead };
 }

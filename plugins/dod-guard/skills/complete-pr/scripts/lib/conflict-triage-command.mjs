@@ -64,26 +64,19 @@ function carriedState(statePath, pullNumber, trustedHead) {
   return { conflicts: previous.conflicts ?? [], recordedBase: previous.recordedBase ?? null };
 }
 
-function start(git, flags, { createClient, statePath }) {
-  const repository = required(flags, "repository");
-  const pullNumber = Number.parseInt(required(flags, "pull"), 10);
-  const trustedHead = required(flags, "trusted-head");
-  // The generator list is required so that "none declared" is an explicit []:
-  // a missing list would let a generated path be classified as source.
+// The generator list is required so that "none declared" is an explicit []:
+// a missing list would let a generated path be classified as source.
+function readGenerators(git, flags) {
   const generators = readJsonIfSet(outsideRepository(git, required(flags, "generators")));
   if (!Array.isArray(generators)) {
     throw new UsageError("--generators must name a JSON list; pass [] when the repository declares none.");
   }
-  const client = createClient(repository, pullNumber);
-  const pullRequest = client.getPullRequest();
-  const input = {
-    defaultBranch: client.getRepository().defaultBranch,
-    generators,
-    pullRequest,
-    repository,
-    trustedHead,
-  };
-  const state = {
+  return generators;
+}
+
+function initialState(run, pullRequest, statePath) {
+  const { generators, pullNumber, repository, trustedHead } = run;
+  return {
     branch: pullRequest.headBranch,
     ...carriedState(statePath, pullNumber, trustedHead),
     generators,
@@ -92,6 +85,24 @@ function start(git, flags, { createClient, statePath }) {
     stop: null,
     trustedHead,
   };
+}
+
+function recordStop(state, error) {
+  state.conflicts = error.details.conflicts ?? state.conflicts;
+  state.recordedBase = error.details.recordedBase ?? state.recordedBase;
+  state.stop = error.toJSON();
+}
+
+function start(git, flags, { createClient, statePath }) {
+  const repository = required(flags, "repository");
+  const pullNumber = Number.parseInt(required(flags, "pull"), 10);
+  const trustedHead = required(flags, "trusted-head");
+  const generators = readGenerators(git, flags);
+  const client = createClient(repository, pullNumber);
+  const pullRequest = client.getPullRequest();
+  const run = { generators, pullNumber, repository, trustedHead };
+  const input = { ...run, defaultBranch: client.getRepository().defaultBranch, pullRequest };
+  const state = initialState(run, pullRequest, statePath);
   const beforeMerge = ({ recordedBase }) => {
     state.conflicts = [];
     state.recordedBase = recordedBase;
@@ -104,9 +115,7 @@ function start(git, flags, { createClient, statePath }) {
     return result;
   } catch (error) {
     if (error instanceof TriageStop) {
-      state.conflicts = error.details.conflicts ?? state.conflicts;
-      state.recordedBase = error.details.recordedBase ?? state.recordedBase;
-      state.stop = error.toJSON();
+      recordStop(state, error);
       saveState(statePath, state);
     }
     throw error;
