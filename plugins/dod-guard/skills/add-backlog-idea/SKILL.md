@@ -77,7 +77,7 @@ Write each issue body with these parts:
 
 Run this round only when a person invoked this skill directly in an interactive session and the supplied text does not let you state a feature's outcome or the split. The unresolved remainder from "Place every detail" joins this round.
 
-Skip the round, and ask nothing, in every other case: the text is already clear, another skill such as `dod-guard:quick-pbi` or `dod-guard:goal-sdlc` invoked this skill, or no user is present (a non-interactive or active goal run). If it is not clear that a person invoked this skill directly in an interactive session, skip the round. In a skipped run, put each open point under `## Open questions`. Text that fits no feature is not an open point: report it as the unresolved remainder in the final report, as "Place every detail" says.
+Skip the round, and ask nothing, in every other case: the text is already clear, another skill such as `dod-guard:quick-pbi` or `dod-guard:goal-sdlc` invoked this skill, or no user is present (a non-interactive or active goal run). If it is not clear that a person invoked this skill directly in an interactive session, skip the round. In a skipped run, put each open point under `## Open questions`. Text that fits no feature is not an open point: report it as the unresolved remainder in the final report, as "Place every detail" says. That report is the only extra output of a skipped run.
 
 When the round runs, ask once, in ordinary conversation, and never through a provider-specific question tool:
 
@@ -87,7 +87,7 @@ When the round runs, ask once, in ordinary conversation, and never through a pro
 - End with a compact reply format, such as `Reply with 1A, 2C, plus any custom details.`
 - Ground every question in the supplied text only. Do not read the codebase.
 
-After the reply, keep each answer word for word under `## Context` of the feature it settles. Put each point still unanswered under `## Open questions`. Never run a second round. The capture-only rules above still apply.
+After the reply, keep each answer word for word under `## Context` of the feature it settles. Put each point still unanswered under `## Open questions`. Never run a second round. An empty, partial, or declined reply is not a reason to ask again. If the reply leaves the split unsettled, create one issue that holds all of the text, as "Split the request into features" says; a reply that settles the split is honored. Unanswered text that fits no feature stays the unresolved remainder in the final report and does not move under `## Open questions`. The capture-only rules above still apply.
 
 ## Create and file each issue
 
