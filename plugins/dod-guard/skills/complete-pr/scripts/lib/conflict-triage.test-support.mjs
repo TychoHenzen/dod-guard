@@ -1,5 +1,7 @@
 // Shared git fixtures for the conflict triage tests: a bare origin and a clone
 // whose PBI branch and master both changed the same paths.
+// biome-ignore lint/correctness/noNodejsModules: The shared stop helper asserts with Node's assert.
+import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: The fixtures drive a real Git CLI.
 import { spawnSync } from "node:child_process";
 // biome-ignore lint/correctness/noNodejsModules: The fixtures write temporary repositories.
@@ -8,10 +10,21 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 // biome-ignore lint/correctness/noNodejsModules: The fixtures write temporary repositories.
 import { dirname, join } from "node:path";
-import { createGitRunner } from "./conflict-triage.mjs";
+import { createGitRunner, TriageStop } from "./conflict-triage.mjs";
 
 export const REPOSITORY = "owner/repo";
 export const BRANCH = "codex/1-triage";
+
+// Runs a synchronous action that must stop the triage and returns the stop.
+export function stopOf(action) {
+  try {
+    action();
+  } catch (error) {
+    assert.ok(error instanceof TriageStop, error.message);
+    return error;
+  }
+  assert.fail("expected a TriageStop");
+}
 
 // Fixture commands run outside the module under test, so they use a plain
 // runner that the triage allowlist does not restrict.
