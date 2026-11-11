@@ -81,6 +81,10 @@ the next parent PBI with `scripts/select-next.mjs` (which classifies the
 annotated closure snapshot by `owner/name#number` through the classifier it
 shares with the closure helper), runs the `quick-pbi` stages from the one that
 parent has reached, and continues until no eligible work remains.
+Before its first pass it runs `scripts/plugin-version-check.mjs`. It stops the
+run when the loaded plugin copy is older than the release on master and lists
+the refresh commands for you to run. An unreadable version is reported and the
+run continues.
 The annotate step only overlays `activeCheckpoint` and `trustedHeadSha`
 from the completion records and leaves every relation as read. With
 `--output=<annotated-file>` it writes the annotated snapshot to that file. Each
