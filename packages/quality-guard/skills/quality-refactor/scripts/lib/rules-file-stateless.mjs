@@ -29,6 +29,12 @@ function touchesState(fn, fields, interpolations) {
 // Rust need an explicit receiver, so a bare call is not a call on this type.
 const IMPLICIT_THIS = new Set(["cs", "java", "cpp"]);
 
+// A name may hold `$` (Java), and a call may carry type arguments: `Gen<int>()`.
+function bareCall(name) {
+  const escaped = name.replace(/[$]/g, "\\$&");
+  return new RegExp(`(?<![.\\w$])${escaped}\\s*(?:<[^<>()]*>)?\\s*\\(`);
+}
+
 function callsSiblingMethod(fn, owner, context) {
   if (!IMPLICIT_THIS.has(context.file.lang)) return false;
   return context.functions.some(
@@ -36,7 +42,7 @@ function callsSiblingMethod(fn, owner, context) {
       other.name !== fn.name &&
       enclosingClass(context.spans, other) === owner &&
       !isStatic(context.code, other.headerStart) &&
-      new RegExp(`(?<![.\\w])${other.name}\\s*\\(`).test(fn.body),
+      bareCall(other.name).test(fn.body),
   );
 }
 

@@ -64,6 +64,26 @@ test("each TypeScript ternary is one branch", () => {
   assert.deepEqual(scoresIn(tsFn(ternaries)), [REPEATS + 1]);
 });
 
+test("a TypeScript ternary glued to its condition is one branch", () => {
+  const ternaries = repeat((i) => `  const v${i} = a? "y" : "n";`);
+  assert.deepEqual(scoresIn(tsFn(ternaries)), [REPEATS + 1]);
+});
+
+test("a ternary glued to an index is one branch", () => {
+  const ternaries = repeat((i) => `  const v${i} = arr[${i}]? 1 : 2;`);
+  assert.deepEqual(scoresIn(tsFn(ternaries)), [REPEATS + 1]);
+});
+
+test("a C# ternary glued to a comparison is one branch", () => {
+  const ternaries = repeat((i) => `    var v${i} = list.Count>0? 1 : 2;`);
+  assert.deepEqual(scoresIn(csFn(ternaries)), [REPEATS + 1]);
+});
+
+test("a nullable declaration beside a glued ternary adds one branch", () => {
+  const body = repeat((i) => `    int? w${i} = ready? F() : G();`);
+  assert.deepEqual(scoresIn(csFn(body)), [REPEATS + 1]);
+});
+
 test("fallbacks beside an if and ternaries add nothing to their score", () => {
   const body = `    if (x) return A() ?? B() ?? C();\n${repeat(
     (i) => `    var v${i} = ready ? A() ?? B() : C();`,
