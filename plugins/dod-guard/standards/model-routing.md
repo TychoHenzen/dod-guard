@@ -275,7 +275,10 @@ thread checks that:
 - every answer maps to a planned question or plan step;
 - every cited path and line exists at the accepted head and says what the
   answer claims it says;
-- nothing claims a verdict, or a change the step did not ask for;
+- nothing claims a verdict, or a change the step did not ask for, except a
+  `Mechanical fix:` line that names a kind in the "Mechanical gaps" section of
+  `agents/stage-cheap.md` and a file a `File:` line of the step plan names. A
+  mechanical fix of any other kind is a failed check;
 - the changed files and staged state match the diff the step describes, and at
   least one named proof passes when the main thread reruns it;
 - a readback of any issue, pull request, or Project state the step wrote
@@ -293,7 +296,9 @@ planned step or row never commits or pushes, whatever its tier or agent; the
 dispatching main thread does. A run that owns a skill's procedure, such as
 `dod-guard:complete-pr` or `dod-guard:fix-pr-review`, is that skill's main thread even on the
 cheap model, so it commits and pushes as the skill directs, and its dispatcher
-checks every commit and push it reports by reading them back.
+checks every commit and push it reports by reading them back. It reads a push
+back with `git ls-remote --heads origin <branch>`, which must print the reported
+commit SHA.
 
 A failed check sends the same stage back once with the exact gap, under the
 failure-recovery rule in `standards/working-defaults.md`, with no commit or
@@ -312,7 +317,8 @@ A standard worker returns judgements, not citations, so the per-answer check
 above does not apply. Before any later stage relies on standard-tier or
 strong-tier output, the main thread checks that:
 
-- every commit the stage reports exists, is pushed, and matches the diff the
+- every commit the stage reports exists, is pushed (`git ls-remote --heads origin <branch>`
+  prints its SHA), and matches the diff the
   stage describes;
 - the stage's own named proof passes, and was run at the accepted head;
 - a readback of any issue, pull request, or Project state the stage wrote shows
