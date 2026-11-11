@@ -185,7 +185,7 @@ byte-order mark, exits 2.
 `refine-backlog-item` runs it before `Todo`, and `next-ticket` runs it before
 the branch exists.
 
-With `--plans` the same command also reads the step plan comments saved to that file and runs each plan's proxy checks over the checkout at `--root`. `--plans` and `--root` go together, and only `refinement` accepts them. A proxy hit that no `File:` line of its plan names, a proxy check that searched no file, a plan with no `File:` line, and a task id that appears twice are reported as an actionable remainder. `refine-backlog-item` passes both; `next-ticket` plans nothing and passes neither.
+With `--plans` the same command also reads the step plan comments saved to that file and runs each plan's proxy checks over the checkout at `--root`. `--plans` and `--root` go together, and only `refinement` accepts them. A proxy hit that no `File:` line of its plan names, a proxy check that searched no file, a plan with no `File:` line, and a task id that appears twice are reported as an actionable remainder. `refine-backlog-item` passes both; `next-ticket` plans nothing and passes neither. When `--root` holds a `project.godot`, the same command also reports a planned-matrix row that is not `inapplicable` and whose `proof` or `expected` text asks for a window, screenshot, movie capture, or manual run, because a Godot project's rows must be checkable headless.
 
 Post-push proof: after the implementation handoff is pushed, run the post-push
 variant against the saved issue body and the saved handoff comment, at the

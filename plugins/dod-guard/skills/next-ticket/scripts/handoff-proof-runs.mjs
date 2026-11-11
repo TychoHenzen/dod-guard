@@ -4,6 +4,7 @@
 // finalization requires the handoff's ## Preflight checkpoint and fails on any
 // required context that is not present or skipped at the head; post-push checks
 // the rows only when the record exists.
+import { godotWindowRemainder } from "../../../lib/godot-window-rows.mjs";
 import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
 import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
 import { postPushInput } from "../../../lib/post-push-input.mjs";
@@ -18,9 +19,9 @@ function outcomeOf(remainder) {
 
 // Parse errors stop before evaluation, and acceptance-id disagreements join the
 // convergence remainder. Requirement-id disagreements and a head stored in a
-// lens-ownership entry join the remainder in this proof only, so post-push and
-// finalization never see them.
-function refinementProof({ body, children, plans = [] }) {
+// lens-ownership entry join the remainder in this proof only, and so does a Godot
+// row that asks for a window, so post-push and finalization never see them.
+function refinementProof({ body, children, plans = [], godot = false }) {
   const parsed = parseIssueBodyRecords(body);
   if (parsed.errors.length > 0) return { outcome: "parse error", remainder: parsed.errors };
   const convergence = evaluateConvergence({ ...parsed.input, children });
@@ -30,6 +31,7 @@ function refinementProof({ body, children, plans = [] }) {
     ...parsed.lensHeadRemainder,
     ...convergence.remainder,
     ...proxyRemainder(plans),
+    ...(godot ? godotWindowRemainder(parsed.input.plannedAcceptanceMatrix) : []),
   ]);
 }
 
