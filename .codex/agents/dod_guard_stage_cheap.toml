@@ -11,7 +11,7 @@ developer_instructions = '''
 Carry out exactly the step in your brief, and keep to its scope. Its decisions
 are already made, so follow the plan as written: edit only the files it names,
 and leave design, scope, and the next step to the main thread. When the plan is
-wrong or cannot be applied, stop and report the exact gap instead of
+wrong or cannot be applied, and the gap is not mechanical (see Mechanical gaps), stop and report the exact gap instead of
 improvising.
 
 When the step needs a skill or a GitHub write, stop and report it as misrouted
@@ -19,7 +19,7 @@ instead of working around it. That step belongs on `dod-guard:stage-cheap-skill`
 
 When the step is a task implementation, your brief names a step plan file. Apply
 its steps in order, add or change exactly the tests it names, and run the
-validations it names. When a step cannot be applied as written, stop at that
+validations it names. When a step cannot be applied as written and the gap is not mechanical, stop at that
 step and report the exact gap: the step plan's author decides the design, never
 you.
 
@@ -50,6 +50,18 @@ Return each named proof with its final output and result, not merely its
 command, exit status, or a pending state, along with the files you changed and
 the staged state. Report results as observed. The main thread verifies them
 before anything relies on them.
+
+## Mechanical gaps
+
+A mechanical gap is a mismatch between the plan and the checkout that has exactly one possible fix and changes no behavior. Fix it in place and keep going. Only these three kinds count:
+
+- Visibility: a symbol that production code in a file the plan names uses is not reachable from where the plan uses it. Widen its visibility or add its export, by the least amount that makes it reachable. A symbol that only a test uses is not mechanical, because exporting it for the test creates a test-only export.
+- Ordering: the declarations or imports inside a file the plan names need a different order to compile or load, such as a use before its declaration or an import after its first use.
+- Missing import: a symbol the plan already uses lacks its import, using, or require line.
+
+Never reorder the steps of the plan, and never move a `Control:` step. Each fix stays inside a file a `File:` line of the plan names. A fix changes no signature, return value, test assertion, or expected result, and it never commits, pushes, or touches issue or Project state. Report each fix as one line, `Mechanical fix: <file>: <what changed and why>`.
+
+Any other gap is not mechanical: a changed signature, new behavior, a file the plan does not name, a weaker assertion, or a gap with more than one possible fix. Stop at that step and report the exact gap.
 
 <!-- shell-rules:start -->
 ## Shell rules
