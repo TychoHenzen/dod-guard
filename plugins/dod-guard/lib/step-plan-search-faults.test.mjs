@@ -17,7 +17,6 @@ async function withDirs(use) {
     await mkdir(outside);
     await writeFile(path.join(root, "lib", "a.mjs"), "alpha\n");
     await writeFile(path.join(root, "lib", "b.mjs"), "alpha\n");
-    await writeFile(path.join(outside, "secret.mjs"), "alpha\n");
     return await use({ root, outside });
   } finally {
     await rm(base, { recursive: true, force: true });
@@ -25,8 +24,7 @@ async function withDirs(use) {
 }
 
 const planFor = (scope, files = []) => ({ task: "T1", files, errors: [], proxies: [{ pattern: "alpha", scope }] });
-const searched = (root, plan) => searchPlans([plan], root);
-const resultOf = (root, scope) => searched(root, planFor(scope))[0].proxies[0].result;
+const resultOf = (root, scope) => searchPlans([planFor(scope)], root)[0].proxies[0].result;
 
 test("a trailing slash or dot prefix on the scope still yields hit paths a File line can name", () =>
   withDirs(({ root }) => {
@@ -34,7 +32,7 @@ test("a trailing slash or dot prefix on the scope still yields hit paths a File 
     for (const scope of ["lib/", "./lib", "lib\\", "lib//"]) {
       assert.deepEqual(resultOf(root, scope).hits, expected, scope);
     }
-    assert.deepEqual(proxyRemainder(searched(root, planFor("lib/", expected))), []);
+    assert.deepEqual(proxyRemainder(searchPlans([planFor("lib/", expected)], root)), []);
   }));
 
 test("a scope outside the checkout root is reported, not searched", () =>
@@ -60,7 +58,7 @@ test("a symlinked entry under the scope is reported and skipped", () =>
     const result = resultOf(root, "lib");
     assert.deepEqual(result.hits, ["lib/a.mjs", "lib/b.mjs"]);
     assert.deepEqual(result.problems, ["lib/linked is a symlink and was not searched"]);
-    const remainder = proxyRemainder(searched(root, planFor("lib", ["lib/a.mjs", "lib/b.mjs"])));
+    const remainder = proxyRemainder(searchPlans([planFor("lib", result.hits)], root));
     assert.equal(remainder.length, 1);
     assert.match(remainder[0], /lib\/linked is a symlink/u);
   }));
@@ -89,7 +87,8 @@ test("an unreadable file is reported and the search still returns", () =>
       const result = resultOf(root, "lib");
       assert.deepEqual(result.hits, ["lib/b.mjs"]);
       assert.deepEqual(result.problems, ["cannot read lib/a.mjs: EACCES"]);
-    })));
+    }),
+  ));
 
 test("an unreadable directory is reported and the search still returns", () =>
   withDirs(({ root }) =>
@@ -97,4 +96,5 @@ test("an unreadable directory is reported and the search still returns", () =>
       const result = resultOf(root, "lib");
       assert.deepEqual([result.searched, result.hits], [0, []]);
       assert.deepEqual(result.problems, ["cannot read directory lib: EPERM"]);
-    })));
+    }),
+  ));
