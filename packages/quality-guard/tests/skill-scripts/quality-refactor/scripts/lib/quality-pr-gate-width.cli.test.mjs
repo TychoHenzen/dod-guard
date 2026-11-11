@@ -38,7 +38,7 @@ test("a width-120 config blocks a new 130-char line as high", (t) => {
 
 // The long lines stay put and the head only appends a short line: the gate
 // compares only files the pull request changed, so a.js must be touched for
-// its base findings, judged by the base worktree's width-80 config, to show.
+// its base findings, judged by the base tree's width-80 config, to show.
 test("widening the formatter resolves findings on the base side", (t) => {
   const long = `${lineOf(90)}\n${lineOf(110)}\n`;
   const repo = pullRequest(t, {

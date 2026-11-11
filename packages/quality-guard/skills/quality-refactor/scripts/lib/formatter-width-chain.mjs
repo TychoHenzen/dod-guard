@@ -1,6 +1,6 @@
 // Finds the Biome configs that govern a file: the nearest config at or below
 // the scan root, plus its ancestor when it extends "//". Nothing above the
-// root is read, so the PR gate's base worktree is judged by its own config.
+// root is read, so the PR gate's base tree is judged by its own config.
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
