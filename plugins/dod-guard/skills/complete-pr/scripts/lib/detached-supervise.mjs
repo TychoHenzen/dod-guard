@@ -4,8 +4,6 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
 import path from "node:path";
-// biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
-import process from "node:process";
 
 function writeExitCode(stateDir, exitCode) {
   const finalPath = path.join(stateDir, "exit-code");
@@ -14,9 +12,10 @@ function writeExitCode(stateDir, exitCode) {
   fs.renameSync(tempPath, finalPath);
 }
 
+// The launcher owns the pid file and records this process's pid before it exits. A write here would truncate
+// the file first, and a `wait` that read it in that gap would see it empty and report a dead supervisor.
 function runSupervised(stateDir, command) {
   fs.mkdirSync(stateDir, { recursive: true });
-  fs.writeFileSync(path.join(stateDir, "pid"), String(process.pid));
   const stdoutFd = fs.openSync(path.join(stateDir, "stdout.log"), "a");
   const stderrFd = fs.openSync(path.join(stateDir, "stderr.log"), "a");
   const child = spawn(command[0], command.slice(1), {
