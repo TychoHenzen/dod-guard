@@ -30,7 +30,7 @@ export function scanFile(file, config, widthFor) {
   checkPartialTypes({ file, config, code, types, out });
   checkTuples({ file, config, code, starts, out });
   checkComments({ file, config, comments, codeLines: code.split("\n"), out });
-  const context = { starts, spans, code, interpolations };
+  const context = { file, starts, spans, code, interpolations, functions };
   for (const fn of functions) {
     if (inTestRegion(testRegions, fn.headerStart)) continue;
     checkFunction({ file, config, fn, context, out });

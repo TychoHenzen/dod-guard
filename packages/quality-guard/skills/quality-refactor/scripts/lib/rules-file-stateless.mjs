@@ -24,6 +24,30 @@ function touchesState(fn, fields, interpolations) {
   return interpolations.some((id) => fields.has(id.name));
 }
 
+// C#, Java and C++ resolve a bare call to a sibling instance method through the
+// implicit this, so `A() ?? B()` is not a free function there. TypeScript and
+// Rust need an explicit receiver, so a bare call is not a call on this type.
+const IMPLICIT_THIS = new Set(["cs", "java", "cpp"]);
+
+function callsSiblingMethod(fn, owner, context) {
+  if (!IMPLICIT_THIS.has(context.file.lang)) return false;
+  return context.functions.some(
+    (other) =>
+      other.name !== fn.name &&
+      enclosingClass(context.spans, other) === owner &&
+      !isStatic(context.code, other.headerStart) &&
+      new RegExp(`(?<![.\\w])${other.name}\\s*\\(`).test(fn.body),
+  );
+}
+
+function reachesInstance(fn, owner, context) {
+  const interpolations = interpolationsInFn(fn, context);
+  return (
+    touchesState(fn, owner.fields, interpolations) ||
+    callsSiblingMethod(fn, owner, context)
+  );
+}
+
 function statelessCandidate(owner, fn) {
   return owner !== null && fn.name !== "constructor" && fn.name !== owner.name;
 }
@@ -31,9 +55,8 @@ function statelessCandidate(owner, fn) {
 export function checkStatelessMethod({ file, config, fn, context, out }) {
   const owner = enclosingClass(context.spans, fn);
   if (!statelessCandidate(owner, fn) || owner.fields === null) return;
-  const interpolations = interpolationsInFn(fn, context);
   if (
-    touchesState(fn, owner.fields, interpolations) ||
+    reachesInstance(fn, owner, context) ||
     isStatic(context.code, fn.headerStart)
   )
     return;
