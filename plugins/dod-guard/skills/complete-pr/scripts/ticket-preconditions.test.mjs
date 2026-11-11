@@ -2,16 +2,8 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: A Node test file.
 import { it } from "node:test";
-import {
-  ENDPOINT,
-  fakeRest,
-  issueProjectItemNode,
-  issueProjectItemsReply,
-  linkedProjectNode,
-  linkedProjectsReply,
-  NOT_FOUND,
-  SERVER_ERROR,
-} from "./lib/closure-snapshot.test-support.mjs";
+// biome-ignore lint/performance/noNamespaceImport: one namespace avoids repeating the support export list.
+import * as support from "./lib/closure-snapshot.test-support.mjs";
 import { OWNER, ok, REPO } from "./lib/fixtures/rest-shapes.mjs";
 import { runCli } from "./ticket-preconditions.mjs";
 
@@ -40,9 +32,11 @@ function pullRequestReply() {
 // between runs.
 function routes(status = "Todo", overrides = {}) {
   return {
-    [ENDPOINT.linkedProjects]: linkedProjectsReply([linkedProjectNode(PROJECT_NUMBER)]),
+    [support.ENDPOINT.linkedProjects]: support.linkedProjectsReply([support.linkedProjectNode(PROJECT_NUMBER)]),
     [ISSUE]: ok({ number: ISSUE_NUMBER, state: "open" }),
-    [ENDPOINT.issueProjectItems]: issueProjectItemsReply([issueProjectItemNode(PROJECT_NUMBER, status)]),
+    [support.ENDPOINT.issueProjectItems]: support.issueProjectItemsReply([
+      support.issueProjectItemNode(PROJECT_NUMBER, status),
+    ]),
     ...overrides,
   };
 }
@@ -60,7 +54,7 @@ function sink(text, key) {
 }
 
 function run(args, table) {
-  const { calls, runner } = fakeRest(table);
+  const { calls, runner } = support.fakeRest(table);
   const text = { out: "", err: "" };
   const code = runCli(args, { runner, stdout: sink(text, "out"), stderr: sink(text, "err") });
   return { code, calls, out: text.out, err: text.err };
@@ -84,20 +78,20 @@ it("exits 0 for an In Progress issue when the caller expects In Progress, the re
 });
 
 it("exits 1 with linked-project-none when the repository has no open linked Project", () => {
-  const result = run(argv(), routes("Todo", { [ENDPOINT.linkedProjects]: linkedProjectsReply([]) }));
+  const result = run(argv(), routes("Todo", { [support.ENDPOINT.linkedProjects]: support.linkedProjectsReply([]) }));
   assert.equal(result.code, 1, result.err);
   assert.equal(stopReport(result).check, "linked-project-none");
 });
 
 it("exits 1 with linked-project-several when the repository links two open Projects", () => {
-  const nodes = [linkedProjectNode(PROJECT_NUMBER), linkedProjectNode(SECOND_PROJECT)];
-  const result = run(argv(), routes("Todo", { [ENDPOINT.linkedProjects]: linkedProjectsReply(nodes) }));
+  const nodes = [support.linkedProjectNode(PROJECT_NUMBER), support.linkedProjectNode(SECOND_PROJECT)];
+  const result = run(argv(), routes("Todo", { [support.ENDPOINT.linkedProjects]: support.linkedProjectsReply(nodes) }));
   assert.equal(result.code, 1, result.err);
   assert.equal(stopReport(result).check, "linked-project-several");
 });
 
 it("exits 1 with issue-not-in-repository when the issue does not exist", () => {
-  const result = run(argv(), routes("Todo", { [ISSUE]: NOT_FOUND }));
+  const result = run(argv(), routes("Todo", { [ISSUE]: support.NOT_FOUND }));
   assert.equal(result.code, 1, result.err);
   assert.equal(stopReport(result).check, "issue-not-in-repository");
 });
@@ -112,7 +106,9 @@ it("exits 1 with issue-not-in-project when the Project holds no item for the iss
   const result = run(
     argv(),
     routes("Todo", {
-      [ENDPOINT.issueProjectItems]: issueProjectItemsReply([issueProjectItemNode(SECOND_PROJECT, "Todo")]),
+      [support.ENDPOINT.issueProjectItems]: support.issueProjectItemsReply([
+        support.issueProjectItemNode(SECOND_PROJECT, "Todo"),
+      ]),
     }),
   );
   assert.equal(result.code, 1, result.err);
@@ -149,15 +145,23 @@ it("exits 2 on a usage error and never reads", () => {
 });
 
 it("exits 2 when the Project holds two items for the issue", () => {
-  const nodes = [issueProjectItemNode(PROJECT_NUMBER, "Todo"), issueProjectItemNode(PROJECT_NUMBER, "Done")];
-  const result = run(argv(), routes("Todo", { [ENDPOINT.issueProjectItems]: issueProjectItemsReply(nodes) }));
+  const nodes = [
+    support.issueProjectItemNode(PROJECT_NUMBER, "Todo"),
+    support.issueProjectItemNode(PROJECT_NUMBER, "Done"),
+  ];
+  const result = run(
+    argv(),
+    routes("Todo", { [support.ENDPOINT.issueProjectItems]: support.issueProjectItemsReply(nodes) }),
+  );
   assert.equal(result.code, 2);
   assert.ok(result.err.startsWith(FAILED_START), result.err);
 });
 
 it("exits 2, never issue-not-in-project, when the item relation is incomplete", () => {
-  const reply = issueProjectItemsReply([issueProjectItemNode(SECOND_PROJECT, "Todo")], { hasNextPage: true });
-  const result = run(argv(), routes("Todo", { [ENDPOINT.issueProjectItems]: reply }));
+  const reply = support.issueProjectItemsReply([support.issueProjectItemNode(SECOND_PROJECT, "Todo")], {
+    hasNextPage: true,
+  });
+  const result = run(argv(), routes("Todo", { [support.ENDPOINT.issueProjectItems]: reply }));
   assert.equal(result.code, 2);
   assert.equal(result.out, "");
   assert.ok(result.err.startsWith(FAILED_START), result.err);
@@ -165,13 +169,13 @@ it("exits 2, never issue-not-in-project, when the item relation is incomplete", 
 
 it("exits 2 on a failed, errored, or unreadable item read", () => {
   const replies = [
-    SERVER_ERROR,
+    support.SERVER_ERROR,
     ok({ data: null, errors: [{ message: "boom" }] }),
     ok({ data: { repository: { issue: null } } }),
     { status: 0, stdout: "not json", stderr: "" },
   ];
   for (const reply of replies) {
-    const result = run(argv(), routes("Todo", { [ENDPOINT.issueProjectItems]: reply }));
+    const result = run(argv(), routes("Todo", { [support.ENDPOINT.issueProjectItems]: reply }));
     assert.equal(result.code, 2);
     assert.equal(result.out, "");
     assert.ok(result.err.startsWith(FAILED_START), result.err);
@@ -193,7 +197,9 @@ it("recovers after the status is corrected", () => {
   const first = run(argv("Todo"), table);
   assert.equal(first.code, 1, first.err);
   assert.equal(stopReport(first).check, "status-mismatch");
-  table[ENDPOINT.issueProjectItems] = issueProjectItemsReply([issueProjectItemNode(PROJECT_NUMBER, "Todo")]);
+  table[support.ENDPOINT.issueProjectItems] = support.issueProjectItemsReply([
+    support.issueProjectItemNode(PROJECT_NUMBER, "Todo"),
+  ]);
   const second = run(argv("Todo"), table);
   assert.equal(second.code, 0, second.err);
   assert.deepEqual(JSON.parse(second.out), EXPECTED_READY);
