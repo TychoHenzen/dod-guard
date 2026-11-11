@@ -694,7 +694,7 @@ Biome), following the layering Biome 2.5.3 was observed to use:
 - The governing config is the nearest `biome.json` or `biome.jsonc`, searched
   from the file's directory up to `--root` inclusive and never above it.
   `biome.json` wins when a directory has both. The pull-request gate's base
-  side therefore reads the base worktree's own config.
+  side therefore reads the exported base tree's own config.
 - A nested config with `"extends": "//"` is layered over the next config up.
   A nested config with no `extends` below another config is one Biome
   refuses, so its files fall back, unless it sets `"root": false`, in which

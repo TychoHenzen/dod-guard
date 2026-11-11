@@ -8,14 +8,13 @@
 //          [--block-on=low|medium|high] [--rule-block-on=<rule>:<severity>]... [--fix-medium-high=<n>] [--fix-low=<n>]
 //          [--report=<file>] [--comment=<file>] [--report-link=<url>]
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { writeFileSync } from "node:fs";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { classifyChanges, severityRank } from "./lib/pr-gate-compare.mjs";
 import { CONFIG_FILE, loadExcludePaths } from "./lib/exclusion-config.mjs";
+import { exportTree } from "./lib/merge-base-tree.mjs";
 import { evaluateGate } from "./lib/pr-gate-evaluate.mjs";
 import { GENERATED_PATHS, isGenerated, parseNameStatus } from "./lib/pr-gate-paths.mjs";
 import { quotaText, renderComment, renderReport } from "./lib/pr-gate-report.mjs";
@@ -124,21 +123,28 @@ function scanViolations(dir, excludes) {
   const result = spawnSync(process.execPath, args, { cwd: dir, encoding: "utf8", maxBuffer: 512 * 1024 * 1024 });
   const failure = spawnFailure(result);
   if (failure !== undefined) throw new Error(`quality-scan failed: ${failure}`);
-  const parsed = JSON.parse(result.stdout);
-  return { violations: parsed.violations ?? [], fileCount: parsed.fileCount ?? 0 };
+  return summarizeScan(JSON.parse(result.stdout));
 }
 
-// The merge base is checked out in a throwaway detached worktree so the scan sees exactly the upstream files. Its
-// .quality-guard.json is the only setting that counts, so a pull request cannot change the exclusions it is judged by.
+function summarizeScan(parsed) {
+  return {
+    violations: parsed.violations ?? [],
+    fileCount: parsed.fileCount ?? 0,
+  };
+}
+
+// The merge base is exported to a private directory, with no git worktree, so
+// the scan sees exactly the upstream files. Its .quality-guard.json is the only
+// setting that counts, so a pull request cannot change its own exclusions.
 function scanMergeBase(options, cwd) {
   const mergeBase = git(["merge-base", options.base, "HEAD"], cwd).trim();
-  const dir = mkdtempSync(join(tmpdir(), "quality-pr-gate-base-"));
-  git(["worktree", "add", "--detach", dir, mergeBase], cwd);
+  const { dir, cleanup } = exportTree(cwd, mergeBase);
   try {
     const excludes = [...options.excludes, ...loadExcludePaths(dir)];
-    return { mergeBase, excludes, violations: scanViolations(dir, excludes).violations };
+    const { violations } = scanViolations(dir, excludes);
+    return { mergeBase, excludes, violations };
   } finally {
-    spawnSync("git", ["worktree", "remove", "--force", dir], { cwd, encoding: "utf8" });
+    cleanup();
   }
 }
 

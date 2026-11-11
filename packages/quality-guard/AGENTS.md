@@ -106,6 +106,11 @@ already applies to rules the repository turned on as errors.
 
 - The pull-request gate fails closed. An internal error exits 2 and leaves the
   check red; it never reports a pass.
+- The pull-request gate never runs `git worktree`. `lib/merge-base-tree.mjs`
+  exports the merge base with `git read-tree` into a private `GIT_INDEX_FILE`
+  and `git checkout-index --prefix`, so the gate also runs in a repository
+  that forbids worktrees and never touches the caller's index. A worktree call
+  would turn the check of such a repository red.
 - Per-file scans cannot decide `duplicate-block`, `dead-export` or
   `test-only-export`. Those need whole-project reachability, so a per-file run
   would call every export dead. `FILE_RULES` in
