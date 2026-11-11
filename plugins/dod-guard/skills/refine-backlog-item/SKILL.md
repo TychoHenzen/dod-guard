@@ -107,6 +107,16 @@ Write one comment per task on the parent, headed `## Step plan: <task-id>`, with
 
 Per step, give the file, the edit (symbol and intent), the test to add or change (name and assertion), the validation command, and the expected result. Also give the plan `File: <path>` lines, one per file the plan creates or changes, including every test, fixture, and caller of a changed contract, and one `Proxy check: <regex> in <path>` line per search for code the edits can affect, such as the callers of a changed symbol. The regex is a JavaScript regular expression matched per file with the multiline flag, and the path is a file or directory relative to the checkout. The refinement proof reports any hit of a proxy check that no `File:` line of the same plan names, so add the hit's file to the plan or narrow the check. Use fenced code blocks only, never indented ones, and give at most 5 steps per comment. If a task needs more, split it in the `task-list` so each part has its own id and its own comment. A split part with no sub-issue is a parent-level task with `parentLevel: "convergence"`. The plan carries every design decision, so a cheap model chooses nothing. A control run is a proof an acceptance criterion depends on, such as a baseline or a negative control that must fail or differ before the change. Write each one as its own step with its own command and expected result, never folded into another step's validation.
 
+**Plan completeness.** Search the checkout at the plan's base SHA, and give every hit its own `File:` line.
+
+- A step that changes a signature or adds an interface member lists every caller and implementer, production and test, because every step must build clean. Add a `Proxy check:` line for the changed symbol.
+- A step that changes or reads a group, signal, or public member lists every reader of it. A step that adds a collider lists every consumer that walks that node's collision shapes, such as footprint builders, raycasts, and overlap queries.
+- A step that adds a service names its DI key and the file that registers it.
+- Every new test case gets exact assertions, and every step states which tests fail before it and which pass after it.
+- The plan settles what a cheap model would otherwise guess: field or property, and the repository's naming rules.
+- When the issue has blockers, read their merged code and check every plan target against it. Never plan against a blocker's issue text, or against a symbol that exists only in an open blocker.
+- A commit or staging step names explicit paths, after a `git status --porcelain` accounting of every `??` line. Never stage with `-A`, `.`, or a glob.
+
 Before posting, check every target the plan names with Grep or Glob in the checkout: each file path exists or is marked as created by that step, each test file sits beside the code it covers, and each symbol is found in the file named. Correct a plan whose target is missing or misplaced, and list the targets checked in the final report.
 
 **Signature dry run.** Before posting, scan the code each plan fixes with the repository's own gate scanner, so a plan its PR gate would block never reaches `next-ticket`. A plan that introduced an 8-parameter method once stopped `next-ticket` twice with `step-plan-missing`.
