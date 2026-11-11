@@ -342,7 +342,8 @@ you cannot name the extracted function without referring to its position
 ## `complexity` - 5 preferred, 10 hard
 
 **Detects:** cyclomatic complexity, counted as 1 plus each `if`, `for`,
-`while`, `case`, `catch`, `&&`, `||`, `??`, ternary, and (in Rust) `match` arm.
+`while`, `case`, `catch`, `&&`, `||`, ternary, and (in Rust) `match` arm. A
+null fallback (`??`, `??=`) and a nullable type suffix (`int?`) add nothing.
 
 **Why 10 is a stronger signal:** at complexity 10 a function has at least 10
 independent paths, which is roughly where exhaustive testing often becomes
@@ -548,6 +549,13 @@ type at all, so this rule never fired on Rust code, silently, for every file.
 When a type's `impl` block is in the file but its `struct` is not, field
 access cannot be proven either way, so the method is left unreported rather
 than guessed at.
+
+**Implicit calls:** in C#, Java/Kotlin and C++ a bare call such as `Check()`
+reaches a sibling instance method through the implicit `this`, so a method
+whose body makes one is not reported. A call on another object
+(`other.Check()`), a call to a `static` sibling, a call to itself, and a name
+that only appears in a comment or string do not count. TypeScript and Rust need
+an explicit receiver, so a bare call there is not a call on the type.
 
 **When quiet:** TypeScript and JavaScript method signatures without a body
 (interface, type-literal, abstract, overload, and `declare` members) are not

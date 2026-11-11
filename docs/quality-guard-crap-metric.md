@@ -37,8 +37,8 @@ listed in [`rules-file-metrics.mjs`](../packages/quality-guard/skills/quality-re
 
 | Language family | Scanner key | Additional complexity patterns | Current coverage input |
 | --- | --- | --- | --- |
-| JavaScript/TypeScript | `ts` | `??`, ternary, `||` | No target-project input. The package `c8` script covers Quality Guard TypeScript under its own tests. |
-| C# | `cs` | `??`, ternary, `when`, `||` | None found in the current scan/report path. |
+| JavaScript/TypeScript | `ts` | ternary, `||` | No target-project input. The package `c8` script covers Quality Guard TypeScript under its own tests. |
+| C# | `cs` | ternary, `when`, `||` | None found in the current scan/report path. |
 | Rust | `rs` | `=>`, boolean `||` | None found in the current scan/report path. |
 | Python | `py` | `elif`, `and`, `or` | None found in the current scan/report path. |
 | Go | `go` | `select`, `||` | None found in the current scan/report path. |
