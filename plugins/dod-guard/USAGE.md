@@ -153,6 +153,8 @@ issue in Backlog until the missing decision or evidence is available.
 
 Each step plan lists the files it changes as `File:` lines and its searches for affected code as `Proxy check:` lines. The refinement proof runs those searches over the checkout and fails on any hit that the plan's `File:` lines do not name, so a forgotten caller or test is fixed in the plan before the item moves to Todo.
 
+Before a step plan is posted, refinement scans the signatures and verbatim code it plans with the target repository's own quality scanner, at the block level that repository's CI gate uses, and redesigns any planned code the gate would block. The scan runs on scratch files outside the checkout and reads the scanner's violations, not its exit status.
+
 ### Stop a `/goal` run
 
 Under Claude Code `/goal`, a small model grades only the condition text

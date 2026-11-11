@@ -92,6 +92,7 @@ The emergency case deliberately has tiny effort: urgency must not inflate size.
 | Label edit fails, a linked issue is absent, or readback shows two effort labels. | Stop before Todo and report the actual partial state. |
 | Title suggests a quick fix, but callers and tests show cross-module work. | Research precedes the final estimate and implementation direction. Use observed scope. |
 | Step plan whose proxy check hits a file that no `File:` line names. | The refinement proof run with `--plans` and `--root` exits 1 and names the hit. Post a corrected plan comment that lists the file or narrows the check, save the newest comment per task, and rerun until it verifies. A repeated task id, a plan with no `File:` line, and a check that searched no file are reported the same way. |
+| Step plan whose planned signature breaks the target gate (an 8-parameter C# method, or a 4-parameter method when the target's gate step passes no `--block-on`). | The signature dry run scans scratch stubs outside the checkout at the target's own block level and reads the `violations` array, not the exit status. The plan is redesigned and rescanned until no violation reaches that level, and the command and result are recorded in Implementation notes. |
 
 ## Live GitHub exercise
 
