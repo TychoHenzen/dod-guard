@@ -24,7 +24,7 @@ All must hold, in order, before any PR write.
 
 Run the required pre-PR checks when fresh evidence is unavailable. Stop on any failed or unavailable check.
 
-If root `package.json` defines `preflight:static-analysis`, always run `npm run preflight:static-analysis` after verifying the exact pushed head and before any PR write. A failed or unavailable preflight blocks PR writes. Inspect every reported path, commit and push only intended changes on the same branch, reread the head, and rerun. Never stage preflight outputs automatically.
+If root `package.json` defines `preflight:static-analysis`, always run `npm run preflight:static-analysis` after verifying the exact pushed head and before any PR write. A failed or unavailable preflight blocks PR writes. Inspect every reported path, commit and push only intended changes on the same branch, confirm the push as "Confirm every push" in `standards/working-defaults.md` says, reread the head, and rerun. Never stage preflight outputs automatically.
 
 Follow the [command-composition contract](../../docs/command-composition.md) for shell choice, argument vectors, bounded output, and preflight failures.
 

@@ -34,6 +34,23 @@ destructive action.
   `/codex-advisor`: Claude's advisor tool in Claude Code, otherwise Codex with
   `gpt-5.6-sol` at `max` effort. Its advice never replaces the invoking
   skill's repair or proof.
+- Confirm every push. After `git push`, run
+  `git ls-remote --heads origin <branch>` and `git rev-parse HEAD`: the first
+  must print the SHA of the second. A push that exits non-zero is not yet a
+  failed delivery. Read the remote first, because a push that reached origin
+  needs nothing more. When it did not, and the error is a transient connection
+  error such as `Failed to connect to github.com port 443`, retry the push with
+  at most 5 attempts in all, pausing 5, 10, 20, and 20 seconds between attempts
+  (`node -e "setTimeout(()=>{},5000)"` waits 5 seconds; change the number for the
+  others) and reading the remote after each. This is the one exception to the single
+  retry above, because pushing the same commits again is idempotent. An
+  authorization, rejected-update, or non-fast-forward error is not transient:
+  stop at once. When the remote still lacks the head after the last attempt,
+  report the commits as unpushed work with both SHAs, and never call the branch pushed.
+  A checkpoint or handoff comment waits for the confirmed head and is posted
+  without a rescue once the head is on origin. When a skill stops after a task
+  commit, first push the verified commits the same way, or
+  name each commit that stays unpushed.
 - For a skill that commits or pushes, inspect a dirty worktree first. Treat
   ordinary, clearly in-scope pending changes as input to its normal commit
   step: stage only reviewed in-scope paths and commit them on the target
