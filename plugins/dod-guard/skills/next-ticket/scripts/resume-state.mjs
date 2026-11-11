@@ -24,12 +24,18 @@ const OPTIONS = ["comments-file", "author", "tip", "tip-date", "ahead"];
 const FLAGS = OPTIONS.map((name) => `--${name}=<value>`).join(" ");
 const USAGE = `usage: node resume-state.mjs ${FLAGS}\n`;
 
+function hasEveryOption(options) {
+  return options !== null && OPTIONS.every((name) => options[name] && options[name] !== "true");
+}
+
+function hasValidValues(options) {
+  const ahead = Number(options.ahead);
+  return Number.isInteger(ahead) && ahead >= 0 && !Number.isNaN(Date.parse(options["tip-date"]));
+}
+
 function optionsOf(argv) {
   const options = parseArgs(argv);
-  const complete = options !== null && OPTIONS.every((name) => options[name] && options[name] !== "true");
-  const ahead = Number(options?.ahead);
-  const valid = complete && Number.isInteger(ahead) && ahead >= 0 && !Number.isNaN(Date.parse(options["tip-date"]));
-  return valid ? options : null;
+  return hasEveryOption(options) && hasValidValues(options) ? options : null;
 }
 
 function readComments(file) {

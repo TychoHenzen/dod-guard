@@ -17,9 +17,9 @@ date of `origin/<branch>`. Ahead is the commit count of
 
 | Case | Input | Expected `resume-state.mjs` output | Expected skill action |
 |---|---|---|---|
-| Live handoff | The newest handoff by the author lists a matrix row whose `headSha` is a prefix of the tip. Step plans may also exist. | `live-handoff` | Stop `resume-live-handoff`. Report that `dod-guard:submit-draft-pr` owns the issue. Change nothing. |
+| Live handoff | The newest handoff by the author lists a first matrix row whose `headSha` is a prefix of the tip. Step plans may also exist. | `live-handoff` | Stop `resume-live-handoff`. Report that `dod-guard:submit-draft-pr` owns the issue. Change nothing. |
 | Handoff at an older head | The handoff names a commit that is not the tip. | `resumable` | Continue on the branch. |
-| Superseded | Task plan 5 predates the tip and plan 6 for the same task postdates it. Ahead is 3. | `superseded`, reason names comment 6 | Post one `## Superseded branch` comment with the `Branch:` and `Reason:` lines and read it back. Restore the default branch tree, confirm `git diff --quiet origin/<default>` exits 0, commit the restart, push. Delete, reset, and force-push nothing. |
+| Superseded | Step plan 5 predates the tip and plan 6 for the same task postdates it. Ahead is 3. | `superseded`, reason names comment 6 | Post one `## Superseded branch` comment with the `Branch:` and `Reason:` lines and read it back. Restore the default branch tree, confirm `git diff --quiet origin/<default>` exits 0, commit the restart, push. Delete, reset, and force-push nothing. |
 | First plan for a missing task | Only one plan exists for a task, dated after the tip. | `resumable` | Continue. A first plan is not a replacement. |
 | No work on the branch | A replacement plan postdates the tip and ahead is 0. | `resumable` | Continue. There is nothing to supersede. |
 | Replacement by a stranger | The newer plan comes from a login with association NONE. | `resumable` | Continue. Only the author or an OWNER, MEMBER, or COLLABORATOR counts. |

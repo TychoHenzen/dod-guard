@@ -56,19 +56,28 @@ function replacedPlan(comments, login, tipTime) {
   return latest(newest.filter((plan) => postedAt(plan) > tipTime));
 }
 
-function classify({ comments, login, tip, tipDate, ahead }) {
+function liveHandoff({ comments, login, tip }) {
   const own = comments.filter((comment) => firstLine(comment) === HANDOFF_HEADING && isBy(comment, login));
   const handoff = latest(own);
-  if (handoff !== undefined && namesTip(handoff, tip)) {
-    return { state: "live-handoff", reason: `handoff comment ${handoff.id} names the branch tip ${tip}` };
+  if (handoff === undefined || !namesTip(handoff, tip)) {
+    return;
   }
+  return { state: "live-handoff", reason: `handoff comment ${handoff.id} names the branch tip ${tip}` };
+}
+
+function supersededDesign({ comments, login, tip, tipDate, ahead }) {
   const plan = ahead > 0 ? replacedPlan(comments, login, Date.parse(tipDate)) : undefined;
-  if (plan !== undefined) {
-    const task = taskOf(plan);
-    const reason = `step plan comment ${plan.id} for ${task} replaced an earlier plan after the branch tip ${tip}`;
-    return { state: "superseded", reason };
+  if (plan === undefined) {
+    return;
   }
-  return { state: "resumable", reason: "no handoff names the tip and no step plan was replaced after it" };
+  const replaced = `step plan comment ${plan.id} for ${taskOf(plan)} replaced an earlier plan`;
+  return { state: "superseded", reason: `${replaced} after the branch tip ${tip}` };
+}
+
+const RESUMABLE = { state: "resumable", reason: "no handoff names the tip and no step plan was replaced after it" };
+
+function classify(input) {
+  return liveHandoff(input) ?? supersededDesign(input) ?? RESUMABLE;
 }
 
 export { classify };

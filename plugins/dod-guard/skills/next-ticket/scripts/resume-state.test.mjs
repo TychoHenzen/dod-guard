@@ -11,15 +11,17 @@ const TIP = "6d6c8aa1b2c3d4e5f60718293a4b5c6d7e8f9012";
 const TIP_DATE = "2026-11-05T10:00:00Z";
 const BEFORE = "2026-11-05T09:00:00Z";
 const AFTER = "2026-11-05T12:00:00Z";
+const STRANGER = { login: "stranger", association: "NONE" };
 const MATRIX = (head) => `## Acceptance matrix\n\n\`\`\`json\n[{"id":"R1","headSha":"${head}"}]\n\`\`\`\n`;
 
-function comment(id, createdAt, body, login = ME, association = "OWNER") {
+function comment({ id, createdAt, body, login = ME, association = "OWNER" }) {
   return { id, created_at: createdAt, user: { login }, author_association: association, body };
 }
-const handoff = (id, head, login = ME) =>
-  comment(id, AFTER, `## Implementation handoff\n\n- task-1 done\n\n${MATRIX(head)}`, login);
-const plan = (id, createdAt, task = "task-2", login = ME, association = "OWNER") =>
-  comment(id, createdAt, `## Step plan: ${task}\n\nbody`, login, association);
+const handoffBody = (head) => `## Implementation handoff\n\n- task-1 done\n\n${MATRIX(head)}`;
+const handoff = (id, head, login = ME) => comment({ id, createdAt: AFTER, body: handoffBody(head), login });
+const planBody = (task) => `## Step plan: ${task}\n\nbody`;
+const plan = (id, createdAt, { task = "task-2", login = ME, association = "OWNER" } = {}) =>
+  comment({ id, createdAt, body: planBody(task), login, association });
 const stateOf = (comments, ahead = 3) => classify({ comments, login: ME, tip: TIP, tipDate: TIP_DATE, ahead }).state;
 
 test("a handoff by the author that names the tip is live", () => {
@@ -46,16 +48,13 @@ test("a task plan replaced after the tip on a branch that holds work is supersed
 
 test("a first plan for a task posted after the tip is not a replacement", () => {
   assert.equal(stateOf([plan(5, AFTER)]), "resumable");
-  assert.equal(stateOf([plan(5, AFTER, "task-1"), plan(6, AFTER, "task-2")]), "resumable");
+  assert.equal(stateOf([plan(5, AFTER, { task: "task-1" }), plan(6, AFTER)]), "resumable");
 });
 
 test("a replacement before the tip, a branch with no work, or an untrusted author is not superseded", () => {
   assert.equal(stateOf([plan(5, "2026-11-05T08:00:00Z"), plan(6, BEFORE)]), "resumable");
   assert.equal(stateOf([plan(5, BEFORE), plan(6, AFTER)], 0), "resumable");
-  assert.equal(
-    stateOf([plan(5, BEFORE, "task-2", "stranger", "NONE"), plan(6, AFTER, "task-2", "stranger", "NONE")]),
-    "resumable",
-  );
+  assert.equal(stateOf([plan(5, BEFORE, STRANGER), plan(6, AFTER, STRANGER)]), "resumable");
 });
 
 function run(t, comments, extra = []) {
