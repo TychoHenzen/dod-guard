@@ -31,12 +31,12 @@ function smallFile(overrides = {}) {
   return fileFor(SMALL, { batch: "b01", answers: [answered("q1"), answered("q2")], ...overrides });
 }
 
-function merge(files, plan = SMALL) {
-  return mergeAnswers({ plan, headSha: HEAD, files: new Map(files) });
+function merge(files, plan = SMALL, cites = () => null) {
+  return mergeAnswers({ plan, headSha: HEAD, files: new Map(files), cites });
 }
 
-function refused(files, fragment) {
-  assert.throws(() => merge(files), new RegExp(`Answers refused[\\s\\S]*${fragment}`));
+function refused(files, fragment, cites) {
+  assert.throws(() => merge(files, SMALL, cites), new RegExp(`Answers refused[\\s\\S]*${fragment}`));
 }
 
 export { answered, fileFor, HEAD, merge, questions, refused, SMALL, smallFile, TEN };

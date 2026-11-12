@@ -3,10 +3,13 @@ import { batchProblems } from "./batch-problems.mjs";
 import { planHash } from "./plan-hash.mjs";
 
 // files maps each batch name to its parsed answers file or a problem string.
-function mergeAnswers({ plan, headSha, files }) {
+// cites checks that an answered path and line exist in the checkout.
+function mergeAnswers({ plan, headSha, files, cites }) {
   const hash = planHash(plan);
   const batches = batchDocuments(plan, headSha);
-  const problems = batches.flatMap((batch) => batchProblems({ batch, doc: files.get(batch.batch), hash, headSha }));
+  const problems = batches.flatMap((batch) =>
+    batchProblems({ batch, doc: files.get(batch.batch), hash, headSha, cites }),
+  );
   if (problems.length > 0) {
     throw new Error(`Answers refused:\n${problems.map((problem) => `- ${problem}`).join("\n")}`);
   }

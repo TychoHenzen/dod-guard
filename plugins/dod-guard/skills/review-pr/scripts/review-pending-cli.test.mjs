@@ -26,7 +26,10 @@ function setup(t) {
   assert.equal(cut.status, 0, cut.stderr);
   const answers = path.join(dir, "answers");
   mkdirSync(answers);
-  return { dir, answers, plan, files: JSON.parse(cut.stdout).batches };
+  const root = path.join(dir, "checkout");
+  mkdirSync(root);
+  writeFileSync(path.join(root, "a.mjs"), "one\ntwo\nthree\n");
+  return { dir, answers, plan, root, files: JSON.parse(cut.stdout).batches };
 }
 
 // The answers file an investigator writes for one batch, with every question answered.
@@ -46,7 +49,12 @@ function place(env, changes) {
 }
 
 function pendingOf(env, answersDir = env.answers) {
-  const result = run("pending", [`--plan=${env.plan}`, `--head=${HEAD}`, `--answers-dir=${answersDir}`]);
+  const result = run("pending", [
+    `--plan=${env.plan}`,
+    `--head=${HEAD}`,
+    `--answers-dir=${answersDir}`,
+    `--root=${env.root}`,
+  ]);
   assert.equal(result.status, 0, result.stderr);
   return JSON.parse(result.stdout);
 }
@@ -54,6 +62,7 @@ function pendingOf(env, answersDir = env.answers) {
 const keep = (doc) => doc;
 const wrongHead = (doc) => ({ ...doc, headSha: "f".repeat(40) });
 const dropFirst = (doc) => ({ ...doc, answers: doc.answers.slice(1) });
+const gone = (doc) => ({ ...doc, answers: doc.answers.map((a, i) => (i === 0 ? { ...a, path: "gone.mjs" } : a)) });
 const missing = /^b01: answers file .* is missing$/;
 const CASES = [
   ["lists every batch when no answers exist", {}, [], BOTH, missing],
@@ -62,6 +71,13 @@ const CASES = [
   ["counts a truncated file as pending", { b01: '{"planHash": "ab' }, [], BOTH, /^b01: Cannot read JSON from /],
   ["counts a file for another head as pending", { b01: wrongHead }, [], BOTH, /^b01: headSha is/],
   ["counts a file that lacks an answer as pending", { b01: dropFirst }, [], BOTH, /^b01: missing answer for Q00$/],
+  [
+    "counts a file citing a missing path as pending",
+    { b01: gone, b02: keep },
+    ["b02"],
+    ["b01"],
+    /^b01: Q00: "gone\.mjs" is not a file under the checkout$/,
+  ],
 ];
 
 for (const [name, put, done, todo, problem] of CASES) {
@@ -88,9 +104,10 @@ test("pending reads a missing directory as all pending, then sees a rewritten fi
 
 test("pending runs with its flags and refuses a missing flag, a short head and an extra flag", (t) => {
   const env = setup(t);
-  const flags = [`--plan=${env.plan}`, `--head=${HEAD}`, `--answers-dir=${env.answers}`];
+  const flags = [`--plan=${env.plan}`, `--head=${HEAD}`, `--answers-dir=${env.answers}`, `--root=${env.root}`];
   assert.equal(run("pending", flags).status, 0);
-  for (const bad of [flags.slice(0, 2), [flags[0], "--head=abc", flags[2]], [...flags, "--out=x.json"]]) {
+  const shortHead = [flags[0], "--head=abc", flags[2], flags[3]];
+  for (const bad of [flags.slice(0, 2), flags.slice(0, 3), shortHead, [...flags, "--out=x.json"]]) {
     const result = run("pending", bad);
     assert.equal([result.status, result.stderr.startsWith("Usage:")].join(), "3,true", bad.join(" "));
   }
