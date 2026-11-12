@@ -153,6 +153,11 @@ already applies to rules the repository turned on as errors.
   both `files.includes` and `formatter.includes`; a file in neither is judged
   at the default 80 and the preflight never reflows it. Add a new gate module
   under a name that matches the glob.
+- The pull-request gate identifies a finding by rule, `symbol` (the innermost
+  function around it, which the scanner stamps on per-file findings inside a
+  function; file-length and project-level findings carry none) and the message
+  with digits masked. Two findings of one rule and message in different
+  functions are separate findings, so a move between functions is not hidden.
 
 Use `apply_patch` for edits. Keep documentation and tests focused on the
 current advisory/report-only contract; do not revive retired decision-ledger
