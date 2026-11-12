@@ -43,9 +43,10 @@ for (const origin of wrong) {
 }
 
 test("never prints a credential embedded in the origin URL", () => {
-  const origin = "https://x-access-token:hunter2@github.com/owner/other.git";
+  const credential = ["not", "a", "real", "credential"].join("-");
+  const origin = `https://x-access-token:${credential}@github.com/owner/other.git`;
 
-  assert.throws(check(origin), (error) => error.message.includes("owner/other") && !error.message.includes("hunter2"));
+  assert.throws(check(origin), (error) => error.message.includes("owner/other") && !error.message.includes(credential));
 });
 
 test("stops with not_a_checkout and a recovery that names --repo-dir when no origin exists", () => {
