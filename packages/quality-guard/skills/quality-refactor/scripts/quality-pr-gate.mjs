@@ -14,7 +14,7 @@
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-import { parseArgs } from "./lib/pr-gate-cli.mjs";
+import { parseArgs } from "./lib/pr-gate-args.mjs";
 import { classifyChanges } from "./lib/pr-gate-compare.mjs";
 import { evaluateGate } from "./lib/pr-gate-evaluate.mjs";
 import {
