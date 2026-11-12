@@ -13,12 +13,13 @@ function check(origin) {
   return () => requireRepositoryCheckout("Owner/Repo", { originUrl: () => origin }, DIRECTORY);
 }
 
+const userInfo = ["x-access-token", "placeholder"].join(":");
 const accepted = [
   "https://github.com/owner/repo.git",
   "https://github.com/Owner/Repo",
   "git@github.com:owner/repo.git",
   "ssh://git@github.com/owner/repo.git",
-  "https://x-access-token:token@github.com/owner/repo.git",
+  `https://${userInfo}@github.com/owner/repo.git`,
   "https://github.com/owner/repo/",
 ];
 
@@ -34,6 +35,11 @@ const wrong = [
   "https://github.com/other/owner/repo.git",
   "https://notgithub.com/owner/repo.git",
   "file:///srv/mirror",
+  "https://evil.example/github.com/owner/repo.git",
+  "ssh://git@evil.example/github.com/owner/repo.git",
+  "git@evil.example:github.com/owner/repo.git",
+  "https://evil.example/x@github.com/owner/repo.git",
+  "https://github.com.evil.example/owner/repo.git",
 ];
 
 for (const origin of wrong) {

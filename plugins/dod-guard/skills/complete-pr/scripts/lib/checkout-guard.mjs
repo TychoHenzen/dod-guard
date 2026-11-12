@@ -1,7 +1,9 @@
 // Refuses to run the merge helper outside a checkout of the pull request's repository.
 import { stop } from "./completion-error.mjs";
 
-const GITHUB_REMOTE = /(?:^|[/@])github\.com[:/]([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i;
+// github.com must be the host: after the scheme and optional credentials (URL forms), or after an optional user (scp form).
+const GITHUB_REMOTE =
+  /^(?:(?:https?|ssh|git):\/\/(?:[^/\s]*@)?github\.com(?::\d+)?\/|(?:[^/@\s]+@)?github\.com:)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i;
 
 function remoteRepository(url) {
   const match = GITHUB_REMOTE.exec(url.trim());
