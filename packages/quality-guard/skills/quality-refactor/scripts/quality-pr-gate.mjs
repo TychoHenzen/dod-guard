@@ -17,7 +17,8 @@ import { CONFIG_FILE, loadExcludePaths } from "./lib/exclusion-config.mjs";
 import { exportTree } from "./lib/merge-base-tree.mjs";
 import { evaluateGate } from "./lib/pr-gate-evaluate.mjs";
 import { GENERATED_PATHS, isGenerated, parseNameStatus } from "./lib/pr-gate-paths.mjs";
-import { quotaText, renderComment, renderReport } from "./lib/pr-gate-report.mjs";
+import { quotaText } from "./lib/pr-gate-quota.mjs";
+import { renderComment, renderReport } from "./lib/pr-gate-report.mjs";
 
 const SCAN = fileURLToPath(new URL("./quality-scan.mjs", import.meta.url));
 const DEFAULTS = { blockOn: "medium", fixMediumHigh: 1, fixLow: 3 };
