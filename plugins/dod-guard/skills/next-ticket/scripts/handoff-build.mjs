@@ -4,11 +4,12 @@
 // by JSON.stringify and never hand-written.
 //
 // Usage: node handoff-build.mjs --body-file=<issue-body.md> --evidence-file=<evidence.json> --head-sha=<sha>
-//        [--previous-handoff-file=<handoff.md>]
+//        [--previous-handoff-file=<handoff.md>] [--root=<checkout>]
 //
 // handoff-comment.mjs builds the text and handoff-evidence-problems.mjs defines
 // the evidence file.
 // --previous-handoff-file copies that handoff's ## Preflight checkpoint section into the new comment.
+// --root names the checkout that an evidence carryForward is verified against.
 // stdout is the comment text, which post-push reads as the handoff file. stderr
 // lists each problem, one per line, and nothing is printed on stdout then. Exit
 // status: 0 built, 1 problems in the body or evidence, 2 usage error.
@@ -19,16 +20,19 @@ import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This CLI runs under Node.js.
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
+import { checkCarryForward } from "./carry-forward-check.mjs";
 import { build } from "./handoff-comment.mjs";
-import { isPlainObject } from "./handoff-evidence-problems.mjs";
 import { readText, UsageError } from "./handoff-proof-cli.mjs";
+import { isPlainObject } from "./handoff-values.mjs";
 
 const USAGE =
   "usage: node handoff-build.mjs --body-file=<issue-body.md> --evidence-file=<evidence.json> --head-sha=<sha>" +
-  " [--previous-handoff-file=<handoff.md>]\n";
+  // biome-ignore lint/security/noSecrets: the usage text is a plain string with no credential in it.
+  " [--previous-handoff-file=<handoff.md>] [--root=<checkout>]\n" +
+  "--root is required when an evidence row declares a carryForward\n";
 
 const OPTIONS = Object.freeze({ "body-file": "issue-body.md", "evidence-file": "evidence.json", "head-sha": "sha" });
-const OPTIONAL = Object.freeze({ "previous-handoff-file": "handoff.md" });
+const OPTIONAL = Object.freeze({ "previous-handoff-file": "handoff.md", root: "dir" });
 
 function isKnown(name) {
   return Object.hasOwn(OPTIONS, name) || Object.hasOwn(OPTIONAL, name);
@@ -69,6 +73,14 @@ function previousHandoffText(options) {
   return readText(file, "previous-handoff-file");
 }
 
+// A carry-forward is checked against a checkout; without --root, build() refuses every one.
+function carryCheckFor({ root }) {
+  if (root === undefined) {
+    return;
+  }
+  return (request) => checkCarryForward({ root, ...request });
+}
+
 function readEvidence(file) {
   let evidence;
   try {
@@ -91,7 +103,13 @@ function runCli(argv, { stdout = process.stdout, stderr = process.stderr } = {})
     const options = optionsFrom(argv);
     const body = readText(options["body-file"], "body-file");
     const evidence = readEvidence(options["evidence-file"]);
-    result = build({ body, evidence, headSha: options["head-sha"], previousHandoff: previousHandoffText(options) });
+    result = build({
+      body,
+      evidence,
+      headSha: options["head-sha"],
+      previousHandoff: previousHandoffText(options),
+      carryCheck: carryCheckFor(options),
+    });
   } catch (error) {
     if (!(error instanceof UsageError)) {
       throw error;
