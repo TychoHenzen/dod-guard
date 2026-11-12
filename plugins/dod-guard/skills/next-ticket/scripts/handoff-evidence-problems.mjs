@@ -1,6 +1,7 @@
 // The checks handoff-build.mjs runs on the evidence file, which supplies only
 // what was observed: tasks[] of { id, commit, files[], result } and rows{} keyed
-// by row id of { observed, status, reason? }. Every planned task and row needs
+// by row id of { observed, status, reason?, carryForward? } where carryForward is
+// { fromHead, paths } (handoff-build.mjs --root checks it). Every planned task and row needs
 // exactly one entry, and no entry may name a task or row the body does not plan
 // or carry another field. Each check returns one message per problem.
 import { ACCEPTANCE_MATRIX_STATUSES } from "../../../lib/acceptance-matrix.mjs";
