@@ -65,7 +65,8 @@ Agent names take the `dod-guard:` prefix.
 | Refinement investigate code, callers, tests | cheap | read-cheap | Same section |
 | Refinement decide classification and criteria | standard | read-standard | Same section |
 | next-ticket owner thread | cheap | stage-cheap-skill | Skill `dod-guard:next-ticket <issue>`. It holds exclusive write access to the issue branch unless a running agent that is neither it nor its dispatcher is listed. |
-| next-ticket implement one task | cheap | stage-cheap | Follow step plan in <scratch file> holding the task's `## Step plan: <task-id>` comment saved unchanged. Fix a mechanical gap as the Mechanical gaps section of your agent file allows, and name each fix in the report |
+| next-ticket implement one task, plan without the line `Tier: standard` | cheap | stage-cheap | Follow step plan in <scratch file> holding the task's `## Step plan: <task-id>` comment saved unchanged. Fix a mechanical gap as the Mechanical gaps section of your agent file allows, and name each fix in the report |
+| next-ticket implement one task, plan holds the line `Tier: standard` | standard | stage-standard | Follow step plan in <scratch file> holding the task's `## Step plan: <task-id>` comment saved unchanged |
 | next-ticket validations and regenerate artifacts | cheap | stage-cheap | Same file, run only its validation commands |
 | submit-draft-pr | cheap | stage-cheap-skill | Skill `dod-guard:submit-draft-pr <issue>` |
 | review-pr owner thread | cheap | stage-cheap-skill | Skill `dod-guard:review-pr <pull-request>` |
