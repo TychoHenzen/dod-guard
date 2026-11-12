@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { findingKey } from "../../../../../skills/quality-refactor/scripts/lib/pr-gate-key.mjs";
+import {
+  findingKey,
+} from "../../../../../skills/quality-refactor/scripts/lib/pr-gate-key.mjs";
 import { classify, finding, modified } from "./pr-gate-test-support.mjs";
 
 const long = (symbol, line, extra = {}) => finding({ symbol, line, ...extra });
@@ -65,4 +67,14 @@ test("a function moved to another changed file stays moved", () => {
   );
   assert.equal(result.fresh.length, 0);
   assert.equal(result.moved.length, 1);
+});
+
+test("a renamed function's finding is fresh, not moved", () => {
+  const result = classify(
+    [finding({ symbol: "beta", line: 3 })],
+    [finding({ symbol: "alpha", line: 9 })],
+    [modified("a.cs")],
+  );
+  assert.equal(result.moved.length, 0);
+  assert.equal(result.fresh.length, 1);
 });

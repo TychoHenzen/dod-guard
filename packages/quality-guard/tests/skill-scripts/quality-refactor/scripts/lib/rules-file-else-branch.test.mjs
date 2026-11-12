@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildConfig } from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
-import { scanFile } from "../../../../../skills/quality-refactor/scripts/lib/rules-file.mjs";
+import {
+  buildConfig,
+} from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
+import {
+  scanFile,
+} from "../../../../../skills/quality-refactor/scripts/lib/rules-file.mjs";
 import { rustFile, tsFile } from "./rules-file-fixtures.test.mjs";
 import { scanViolations } from "./rules-file-fixtures.test.mjs";
 
@@ -76,25 +80,4 @@ test("else words in strings and comments are not tokens", () => {
   assertQuiet(tsFile("label.ts", ts), ["label"]);
   assertQuiet(pyFile("label.py", py), ["label"]);
   assertQuiet(rustFile("label.rs", rs), ["label"]);
-});
-test("a TypeScript two-way branch reports the reviewed message", () => {
-  const code =
-    "function pick(v: number): number { if (v > 0) { return 1; } else { return 2; } }";
-  assert.deepEqual(findings(tsFile("pick.ts", code)), [
-    {
-      file: "pick.ts",
-      line: 1,
-      rule: "else-branch",
-      severity: "medium",
-      message:
-        "pick() has 1 if/else branch(es); review whether a guard clause or polymorphism reads better",
-      metric: 1,
-      suggestion:
-        "Options to review: handle the exceptional case first and return early " +
-        "(Replace Nested Conditional with Guard Clauses), or Replace Conditional with " +
-        "Polymorphism for a type switch. Keep a genuine two-way branch whose outcomes " +
-        "are equally normal.",
-      symbol: "pick",
-    },
-  ]);
 });

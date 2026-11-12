@@ -60,10 +60,14 @@ const EXPECTED = [
   `c.rs:${lineOf(C_RS, "use crate::items::*;")}:wildcard-import`,
 ].sort();
 
-// symbol is optional: a finding outside every function has none, which finding-symbol.test.mjs covers.
+// symbol is optional: a finding outside every function has none, which
+// finding-symbol.test.mjs covers. When present it must name a function.
 function assertShape(finding) {
   const keys = Object.keys(finding).filter((key) => key !== "symbol");
   assert.deepEqual(keys.sort(), FINDING_KEYS);
+  if ("symbol" in finding) {
+    assert.ok(typeof finding.symbol === "string" && finding.symbol.length > 0);
+  }
   assert.equal(finding.severity, "medium");
   assert.ok(Number.isInteger(finding.line) && finding.line > 0);
   assert.ok(typeof finding.metric === "number" && finding.metric > 0);
