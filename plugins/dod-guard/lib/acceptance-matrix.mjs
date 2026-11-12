@@ -190,11 +190,15 @@ function contractErrors(rows, requiredContracts, mode) {
     .map((contract) => `missing ${mode.contractLabel} acceptance row for ${contract}`);
 }
 
+function canTake(row, requiredPath, seenRows) {
+  return row.path !== null && pathMatches(row.path, requiredPath) && !seenRows.has(row.index);
+}
+
 function pathErrors(rows, requiredPaths) {
   const matchedRows = new Map();
   const assignRow = (requiredPath, seenRows) => {
     for (const row of rows) {
-      if (row.path !== null && pathMatches(row.path, requiredPath) && !seenRows.has(row.index)) {
+      if (canTake(row, requiredPath, seenRows)) {
         seenRows.add(row.index);
         const assignedPath = matchedRows.get(row.index);
         if (assignedPath === undefined || assignRow(assignedPath, seenRows)) {
