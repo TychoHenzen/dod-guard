@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  findingKey,
-} from "../../../../../skills/quality-refactor/scripts/lib/pr-gate-key.mjs";
+import { findingKey } from "../../../../../skills/quality-refactor/scripts/lib/pr-gate-key.mjs";
 import { classify, finding, modified } from "./pr-gate-test-support.mjs";
 
 const long = (symbol, line, extra = {}) => finding({ symbol, line, ...extra });

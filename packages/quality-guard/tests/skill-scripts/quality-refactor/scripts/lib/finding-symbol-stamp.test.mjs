@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  stampSymbols,
-} from "../../../../../skills/quality-refactor/scripts/lib/finding-symbol.mjs";
+import { stampSymbols } from "../../../../../skills/quality-refactor/scripts/lib/finding-symbol.mjs";
 
 test("stampSymbols adds only the symbol field", () => {
   const violations = [{ rule: "x", line: 3, message: "m" }];

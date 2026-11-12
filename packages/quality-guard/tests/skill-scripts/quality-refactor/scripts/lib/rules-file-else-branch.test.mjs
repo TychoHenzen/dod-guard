@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  buildConfig,
-} from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
-import {
-  scanFile,
-} from "../../../../../skills/quality-refactor/scripts/lib/rules-file.mjs";
+import { buildConfig } from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
+import { scanFile } from "../../../../../skills/quality-refactor/scripts/lib/rules-file.mjs";
 import { rustFile, tsFile } from "./rules-file-fixtures.test.mjs";
 import { scanViolations } from "./rules-file-fixtures.test.mjs";
 
