@@ -11,31 +11,58 @@ const skillScript = JSON.parse(readFileSync(join(repositoryRoot, "package.json")
   "test:dod-guard-skills"
 ];
 
-function runFixture({ firstFails, secondFails }) {
+const firstName = "configured first skill group";
+const secondName = "configured second skill group";
+
+function writeFixture(fixtureRoot) {
+  const pluginRoot = join(fixtureRoot, "plugins", "dod-guard");
+  const firstRoot = join(pluginRoot, "skills", "fixture", "scripts");
+  const secondRoot = join(firstRoot, "lib");
+  mkdirSync(secondRoot, { recursive: true });
+  writeFileSync(
+    join(fixtureRoot, "package.json"),
+    JSON.stringify({ name: "skills-fixture", private: true, scripts: { "test:dod-guard-skills": skillScript } }),
+  );
+  writeFixtureTest(join(firstRoot, "first.test.mjs"), firstName);
+  writeFixtureTest(join(secondRoot, "second.test.mjs"), secondName);
+  writeFixtureTest(join(pluginRoot, "opencode-adapter.test.mjs"), "adapter stub group");
+}
+
+function failingGroup({ firstFails, secondFails }) {
+  if (firstFails) {
+    return firstName;
+  }
+  if (secondFails) {
+    return secondName;
+  }
+  return "";
+}
+
+function fixtureEnvironment(failure) {
+  const environment = { ...process.env };
+  delete environment.NODE_TEST_CONTEXT;
+  environment.DOD_GUARD_SKILL_FIXTURE_FAILURE = failure;
+  return environment;
+}
+
+function npmInvocation() {
+  const npmArgs = ["run", "test:dod-guard-skills"];
+  if (process.platform !== "win32") {
+    return { command: "npm", args: npmArgs };
+  }
+  return { command: process.env.ComSpec ?? "cmd.exe", args: ["/d", "/s", "/c", "npm.cmd", ...npmArgs] };
+}
+
+function spawnNpm(cwd, env) {
+  const { command, args } = npmInvocation();
+  return spawnSync(command, args, { cwd, encoding: "utf8", env, shell: false });
+}
+
+function runFixture(failures) {
   const fixtureRoot = mkdtempSync(join(tmpdir(), "dod-guard-skills-"));
   try {
-    const pluginRoot = join(fixtureRoot, "plugins", "dod-guard");
-    const firstRoot = join(pluginRoot, "skills", "fixture", "scripts");
-    const secondRoot = join(firstRoot, "lib");
-    mkdirSync(secondRoot, { recursive: true });
-    const firstName = "configured first skill group";
-    const secondName = "configured second skill group";
-    writeFileSync(
-      join(fixtureRoot, "package.json"),
-      JSON.stringify({ name: "skills-fixture", private: true, scripts: { "test:dod-guard-skills": skillScript } }),
-    );
-    writeFixtureTest(join(firstRoot, "first.test.mjs"), firstName);
-    writeFixtureTest(join(secondRoot, "second.test.mjs"), secondName);
-    writeFixtureTest(join(pluginRoot, "opencode-adapter.test.mjs"), "adapter stub group");
-
-    const environment = { ...process.env };
-    delete environment.NODE_TEST_CONTEXT;
-    environment.DOD_GUARD_SKILL_FIXTURE_FAILURE = firstFails ? firstName : secondFails ? secondName : "";
-    const npmArgs = ["run", "test:dod-guard-skills"];
-    const command = process.platform === "win32" ? (process.env.ComSpec ?? "cmd.exe") : "npm";
-    const args = process.platform === "win32" ? ["/d", "/s", "/c", "npm.cmd", ...npmArgs] : npmArgs;
-    const result = spawnSync(command, args, { cwd: fixtureRoot, encoding: "utf8", env: environment, shell: false });
-
+    writeFixture(fixtureRoot);
+    const result = spawnNpm(fixtureRoot, fixtureEnvironment(failingGroup(failures)));
     assert.equal(result.error, undefined);
     return { fixtureRoot, firstName, secondName, status: result.status, output: `${result.stdout}${result.stderr}` };
   } finally {
