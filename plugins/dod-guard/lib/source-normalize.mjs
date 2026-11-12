@@ -1,3 +1,5 @@
+import { stringStateAfter } from "./string-state.mjs";
+
 const SLASH = "//";
 const HASH = "#";
 const COMMENT_PREFIX = Object.freeze({
@@ -11,9 +13,6 @@ const COMMENT_PREFIX = Object.freeze({
 });
 const INDENT_SIGNIFICANT = new Set([".gd", ".py"]);
 const LINE_BREAK = /\r?\n/;
-// ASSUMPTION: these openers can start a string that spans lines. An odd count of them on the kept lines so far means a
-// later comment-looking line may be string content, so the file reads as code-changed.
-const STRING_OPENERS = Object.freeze(['"""', "'''", "`", '@"', 'r#"']);
 function extensionOf(file) {
   const dot = file.lastIndexOf(".");
   if (dot < 0) {
@@ -21,31 +20,33 @@ function extensionOf(file) {
   }
   return file.slice(dot).toLowerCase();
 }
-function openerCount(line) {
-  return STRING_OPENERS.reduce((sum, opener) => sum + line.split(opener).length - 1, 0);
-}
 function isDropped(line, prefix) {
   const text = line.trim();
   return text === "" || text.startsWith(prefix);
 }
-function trimmed(raw, extension) {
-  if (INDENT_SIGNIFICANT.has(extension)) {
-    return raw.trimEnd();
+// Whitespace is trimmed only where it cannot be string content: a line that starts inside a
+// string stays verbatim, and a line that ends inside one keeps its trailing whitespace.
+function comparable(raw, { extension, starts, ends }) {
+  if (starts) {
+    return raw;
   }
-  return raw.trim();
+  let text = raw;
+  if (!INDENT_SIGNIFICANT.has(extension)) {
+    text = text.trimStart();
+  }
+  if (!ends) {
+    text = text.trimEnd();
+  }
+  return text;
 }
 function behaviorLines(text, { extension, prefix }) {
   const kept = [];
-  let openers = 0;
+  let state = null;
   for (const raw of text.split(LINE_BREAK)) {
-    const line = trimmed(raw, extension);
-    const dropped = isDropped(line, prefix);
-    if (dropped && openers % 2 === 1) {
-      return null;
-    }
-    if (!dropped) {
-      kept.push(line);
-      openers += openerCount(line);
+    if (state !== null || !isDropped(raw, prefix)) {
+      const next = stringStateAfter(raw, state);
+      kept.push(comparable(raw, { extension, starts: state !== null, ends: next !== null }));
+      state = next;
     }
   }
   return kept;
