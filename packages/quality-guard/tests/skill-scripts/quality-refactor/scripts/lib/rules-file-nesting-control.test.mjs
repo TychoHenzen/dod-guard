@@ -41,6 +41,7 @@ test("real nested control flow still reports its nesting metric", () => {
       message: "deeply_nested() nests 6 levels deep",
       metric: 6,
       suggestion: suggestionFor("nesting-depth"),
+      symbol: "deeply_nested",
     },
   ]);
 });

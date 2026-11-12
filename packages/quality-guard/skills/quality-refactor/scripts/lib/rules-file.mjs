@@ -1,4 +1,5 @@
 import { lineIndex } from "./offsets.mjs";
+import { stampSymbols } from "./finding-symbol.mjs";
 import { findTypes } from "./parse-types.mjs";
 import { findFunctions } from "./parse.mjs";
 import { checkComments } from "./rules-comments.mjs";
@@ -37,7 +38,7 @@ export function scanFile(file, config, widthFor) {
   }
 
   return {
-    violations: out,
+    violations: stampSymbols(out, functions, starts),
     code,
     comments,
     starts,

@@ -94,6 +94,7 @@ test("a TypeScript two-way branch reports the reviewed message", () => {
         "(Replace Nested Conditional with Guard Clauses), or Replace Conditional with " +
         "Polymorphism for a type switch. Keep a genuine two-way branch whose outcomes " +
         "are equally normal.",
+      symbol: "pick",
     },
   ]);
 });

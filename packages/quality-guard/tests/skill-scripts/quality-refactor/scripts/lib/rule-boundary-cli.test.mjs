@@ -60,6 +60,19 @@ const EXPECTED = [
   `c.rs:${lineOf(C_RS, "use crate::items::*;")}:wildcard-import`,
 ].sort();
 
+// symbol is optional: a finding outside every function has none, which finding-symbol.test.mjs covers.
+function assertShape(finding) {
+  const keys = Object.keys(finding).filter((key) => key !== "symbol");
+  assert.deepEqual(keys.sort(), FINDING_KEYS);
+  assert.equal(finding.severity, "medium");
+  assert.ok(Number.isInteger(finding.line) && finding.line > 0);
+  assert.ok(typeof finding.metric === "number" && finding.metric > 0);
+  assert.ok(typeof finding.message === "string" && finding.message.length > 0);
+  assert.ok(
+    typeof finding.suggestion === "string" && finding.suggestion.length > 0,
+  );
+}
+
 test("the CLI reports exactly the four retained findings, in the finding shape", async () => {
   const dir = await mkdtemp(join(tmpdir(), "rule-boundary-cli-"));
   try {
@@ -79,14 +92,7 @@ test("the CLI reports exactly the four retained findings, in the finding shape",
       violations.map((v) => `${v.file}:${v.line}:${v.rule}`).sort(),
       EXPECTED,
     );
-    for (const v of violations) {
-      assert.deepEqual(Object.keys(v).sort(), FINDING_KEYS);
-      assert.equal(v.severity, "medium");
-      assert.ok(Number.isInteger(v.line) && v.line > 0);
-      assert.ok(typeof v.metric === "number" && v.metric > 0);
-      assert.ok(typeof v.message === "string" && v.message.length > 0);
-      assert.ok(typeof v.suggestion === "string" && v.suggestion.length > 0);
-    }
+    violations.forEach(assertShape);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
