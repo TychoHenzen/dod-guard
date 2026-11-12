@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ACCEPTANCE_MATRIX_PATHS, ACCEPTANCE_MATRIX_STATUSES, validateAcceptanceMatrix } from "./acceptance-matrix.mjs";
+import { ACCEPTANCE_MATRIX_PATHS, validateAcceptanceMatrix } from "./acceptance-matrix.mjs";
+import { ACCEPTANCE_MATRIX_STATUSES } from "./matrix-observed-status.mjs";
 
 const HEAD_SHA = "abc1234";
 
