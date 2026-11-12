@@ -196,19 +196,17 @@ function canTake(row, requiredPath, seenRows) {
 
 function pathErrors(rows, requiredPaths) {
   const matchedRows = new Map();
-  const assignRow = (requiredPath, seenRows) => {
-    for (const row of rows) {
-      if (canTake(row, requiredPath, seenRows)) {
-        seenRows.add(row.index);
-        const assignedPath = matchedRows.get(row.index);
-        if (assignedPath === undefined || assignRow(assignedPath, seenRows)) {
-          matchedRows.set(row.index, requiredPath);
-          return true;
-        }
-      }
+  const takeRow = (row, requiredPath, seenRows) => {
+    seenRows.add(row.index);
+    const assignedPath = matchedRows.get(row.index);
+    if (assignedPath === undefined || assignRow(assignedPath, seenRows)) {
+      matchedRows.set(row.index, requiredPath);
+      return true;
     }
     return false;
   };
+  const assignRow = (requiredPath, seenRows) =>
+    rows.some((row) => canTake(row, requiredPath, seenRows) && takeRow(row, requiredPath, seenRows));
 
   return requiredPaths
     .filter((requiredPath) => !assignRow(requiredPath, new Set()))
