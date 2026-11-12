@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { PackagedBrowserFixture } from "./application-fixture.test.js";
-import { PACKAGED_BROWSER_TIMEOUT_MS } from "./packaged/test-timeouts.js";
+import { PACKAGED_BROWSER_SHUTDOWN_TIMEOUT_MS } from "./packaged/test-timeouts.js";
 
 function assertFixtureCleanup(
   fixture: PackagedBrowserFixture,
@@ -31,7 +31,10 @@ export async function assertBrowserOwnedShutdown(
     });
   const closePromise = fixture.close();
   const timedOut = await new Promise<boolean>((resolve) => {
-    const timer = setTimeout(() => resolve(true), PACKAGED_BROWSER_TIMEOUT_MS);
+    const timer = setTimeout(
+      () => resolve(true),
+      PACKAGED_BROWSER_SHUTDOWN_TIMEOUT_MS,
+    );
     void closePromise.then(() => {
       clearTimeout(timer);
       resolve(false);
