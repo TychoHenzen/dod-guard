@@ -7,12 +7,9 @@
 
 import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
 import { checkpointSection } from "../../../lib/preflight-checkpoint.mjs";
-import { evidenceValues } from "./convergence-core.mjs";
 import { carryProblems, carryRecord, refuseCarry } from "./handoff-carry.mjs";
+import { commentText, taskBullet } from "./handoff-comment-text.mjs";
 import { rowSetProblems, taskProblems } from "./handoff-evidence-problems.mjs";
-
-// A row whose status is one of these needs no remainder entry.
-const SETTLED = new Set(["pass", "inapplicable"]);
 
 // Keys come in the order post-push and the reader expect.
 function matrixRow(row, entry, headSha) {
@@ -34,46 +31,6 @@ function matrixRow(row, entry, headSha) {
     out.reason = entry.reason;
   }
   return out;
-}
-
-function oneLine(text) {
-  return String(text).replace(/\s+/g, " ");
-}
-
-// The bullet names the task's functional slice (or its parent-level marker) and its
-// planned evidence ids, all from the task list, so the comment maps each task to its child.
-function taskOwner(task) {
-  if (task.child) {
-    return `slice ${task.child}`;
-  }
-  return `parent-level ${task.parentLevel ?? "none"}`;
-}
-
-function taskBullet(task, entry) {
-  const owner = taskOwner(task);
-  const evidence = evidenceValues(task.evidence).join(", ");
-  const done = `commit ${entry.commit}, files ${entry.files.join(", ")}`;
-  return `- ${task.id} (${owner}): ${done}, evidence ${evidence}, result ${oneLine(entry.result)}`;
-}
-
-function remainderText(rows) {
-  const open = rows.filter((row) => !SETTLED.has(row.status)).map((row) => row.id);
-  if (open.length === 0) {
-    return "none";
-  }
-  return open.join(", ");
-}
-
-function commentText(bullets, rows) {
-  const remainder = remainderText(rows);
-  return (
-    "## Implementation handoff\n\n" +
-    `${bullets.join("\n")}\n` +
-    "\n## Acceptance matrix\n\n```json\n" +
-    `${JSON.stringify(rows, null, 2)}\n` +
-    "```\n\n" +
-    `Remainder: ${remainder}\n`
-  );
 }
 
 // Carry checks read fields the earlier checks validate, so they run only when those pass.
