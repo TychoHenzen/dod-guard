@@ -7,7 +7,7 @@ import {
   normalizePath,
   parseNameStatus,
 } from "../../../../../skills/quality-refactor/scripts/lib/pr-gate-paths.mjs";
-import { parseArgs } from "../../../../../skills/quality-refactor/scripts/lib/pr-gate-args.mjs";
+import { parseArgs } from "../../../../../skills/quality-refactor/scripts/lib/pr-gate-cli.mjs";
 
 const required = ["--base=main"];
 
