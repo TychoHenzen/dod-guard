@@ -1,7 +1,8 @@
-// Path handling for the pull-request gate: normalizing scanner and git paths, skipping generated output,
-// and reading `git diff --name-status` rows.
+// Path handling for the pull-request gate: normalizing scanner and git paths,
+// skipping generated output, and reading `git diff --name-status` rows.
 
-// Built-in exclusions of the gate; a repository adds its own through excludePaths in .quality-guard.json.
+// Built-in exclusions of the gate; a repository adds its own through
+// excludePaths in .quality-guard.json.
 export const GENERATED_PATHS = ["/dist/", "/dist-test/", "/node_modules/"];
 
 export function normalizePath(path) {
@@ -13,10 +14,12 @@ export function isGenerated(path, excludes = GENERATED_PATHS) {
   return excludes.some((fragment) => normalized.includes(fragment));
 }
 
-// Where the file lived at the merge base: the old name for a rename or copy, null for an added file.
+// Where the file lived at the merge base: the old name for a rename or copy,
+// null for an added file.
 function toRow(line) {
   const [status, first, second] = line.split("\t");
-  if (status.startsWith("R") || status.startsWith("C")) return { path: second, basePath: first };
+  if (status.startsWith("R") || status.startsWith("C"))
+    return { path: second, basePath: first };
   if (status.startsWith("A")) return { path: first, basePath: null };
   return { path: first, basePath: first };
 }
