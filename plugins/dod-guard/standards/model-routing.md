@@ -12,7 +12,8 @@ of effort but low intelligence, sonnet only for tasks that need the added
 intelligence, and opus only when sonnet or haiku cannot figure it out.
 
 The cheap tier is for work that needs a lot of effort but low intelligence:
-implementing one task from its written step plan, applying a written
+implementing one task from its written step plan (unless the plan holds the
+line `Tier: standard`, which makes it standard-tier work below), applying a written
 plan, running validations, regenerating artifacts, reading files to answer
 planned questions, capturing backlog items, and running a stage whose gates
 are fail-closed scripts and named stop codes that the dispatcher re-verifies,
@@ -25,6 +26,14 @@ The standard tier is for tasks that need the added intelligence: planning what
 to look for, deciding scope and acceptance, writing step plans (in
 `dod-guard:refine-backlog-item`), judging evidence into findings, designing
 remediation, and owning a stage whose thread must carry out a failed row.
+
+A task whose step plan holds the line `Tier: standard` is standard-tier work from
+its first dispatch. `dod-guard:refine-backlog-item` writes that line for a task
+that restructures or splits code to clear scanner findings, because a cheap run
+of such a task once guessed an error constant, applied a change its plan
+forbade, and left Biome errors. A plan without the line, or with any other
+`Tier:` value, is cheap work. The `dod-guard:next-ticket` owner reads the line
+and judges nothing.
 
 The strong tier is for escalation only. No stage starts on it; a stage reaches
 it through "Escalation" below.
@@ -225,7 +234,10 @@ dispatcher. A skill-capable worker loads the skill as its first tool call (the
 Skill tool in Claude Code, a read of the skill file in Codex) and
 starts its report with the line `Skill loaded: dod-guard:<name>`, or
 `Standard followed: <path>` for a row that names a standard. A report without
-that line is a failed check. A read-only agent and `dod-guard:stage-cheap` hold
+that line is a failed check. A `dod-guard:stage-standard` worker on a row that
+reads `Follow the step plan in <file>` starts its report with
+`Standard followed: <file>`, the saved plan path. A read-only agent and
+`dod-guard:stage-cheap` hold
 no Skill tool, so their brief is the one the owning skill defines, and they
 return their output as that skill says.
 
@@ -339,6 +351,11 @@ The strong tier is a recovery path. A stage never starts on it: it climbs from
 the cheap tier to the standard tier, and from the standard tier to the strong
 tier, one rung at a time. Each stage climbs a given rung at most once.
 
+A task whose step plan holds `Tier: standard` starts on the standard rung, so
+the cheap-to-standard rung never applies to it. After its one same-tier
+send-back, a second failure climbs straight to the strong rung, by the numbered
+order below.
+
 A stage climbs only after its normal repair has been tried, on one of these
 triggers:
 
@@ -391,6 +408,12 @@ dispatcher sends it back once, asks `/codex-advisor` its one question, applies
 advice that names a repair at the standard tier, and otherwise runs the stage on
 `model: opus` with the strong effort. A failure on the opus run stops the stage
 as a blocker.
+
+When the failure record is a task marked `Tier: standard` that already failed
+twice on `dod-guard:stage-standard`, the dispatcher skips the haiku send-back and
+the sonnet rerun, asks `/codex-advisor` its one question, applies advice that
+names a repair at the standard tier, and otherwise runs the stage on `model: opus`
+with the strong effort.
 
 Dispatching a review investigator batch one rung up is not carrying out a failed row. The
 `dod-guard:review-pr` owner reruns a failed investigator batch once on
