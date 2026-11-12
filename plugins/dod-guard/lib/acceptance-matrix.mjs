@@ -275,5 +275,4 @@ function validateAcceptanceMatrix({
   };
 }
 
-export { ACCEPTANCE_MATRIX_STATUSES } from "./matrix-observed-status.mjs";
 export { ACCEPTANCE_MATRIX_FIELDS, ACCEPTANCE_MATRIX_PATHS, validateAcceptanceMatrix };

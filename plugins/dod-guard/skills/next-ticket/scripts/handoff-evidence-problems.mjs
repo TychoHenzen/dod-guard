@@ -4,8 +4,9 @@
 // { fromHead, paths } (handoff-build.mjs --root checks it). Every planned task and row needs
 // exactly one entry, and no entry may name a task or row the body does not plan
 // or carry another field. Each check returns one message per problem.
-import { ACCEPTANCE_MATRIX_STATUSES } from "../../../lib/acceptance-matrix.mjs";
+
 import { isPlainObject, isText, isTextList } from "../../../lib/handoff-values.mjs";
+import { ACCEPTANCE_MATRIX_STATUSES } from "../../../lib/matrix-observed-status.mjs";
 import { carryEntryProblems } from "./handoff-carry-shape.mjs";
 
 const STATUSES = new Set(ACCEPTANCE_MATRIX_STATUSES);
