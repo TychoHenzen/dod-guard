@@ -131,7 +131,7 @@ Map each acceptance criterion to fresh evidence. A structured PBI builds one `##
 
 Give every task its own evidence ids (`ev-t3-change`, not a shared `ev-change`): the proof reports `evidence <id> is mapped more than once` when two owners claim one id. A lens has exactly one entry; the proof reports `<id> lens-ownership entry is declared more than once` and `<lens> review lens is declared more than once`. When a new convergence task covers a lens that another task already owns, change that entry's `owner` to the new task instead of adding a second entry.
 
-Write no `## Preflight checkpoint`: this skill ends at the push, before any PR exists. `dod-guard:submit-draft-pr` writes the record into this handoff once the draft exists, as `standards/project-workflow.md` defines it. A rebuild of a handoff that already holds one carries it over, as "Commit and push" says.
+Write no `## Preflight checkpoint`: this skill ends at the push, before any PR exists. `dod-guard:submit-draft-pr` writes the record into this handoff once the draft exists, as `standards/project-workflow.md` defines it. A rebuild of a handoff that already holds one carries it over, as "Commit and push" says. When this skill pushes a new head onto a branch whose draft PR exists and the handoff holds none, the report says that `dod-guard:submit-draft-pr` must run in Update mode before review or merge, which writes the record at the new head.
 
 Stop before commit or PR handoff when any row, criterion, child, required check, or proof is missing, failed, unverified, blocked, or head-mismatched. State the exact failed command or remainder.
 
