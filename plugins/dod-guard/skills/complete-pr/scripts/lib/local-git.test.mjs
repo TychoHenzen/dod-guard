@@ -187,3 +187,28 @@ test("restores the feature checkout if fast-forward fails after the switch", () 
     false,
   );
 });
+
+test("originUrl returns the trimmed origin remote", () => {
+  const fixture = createGitFixture([
+    [["remote", "get-url", "origin"], [result("https://github.com/owner/repo.git\n")]],
+  ]);
+
+  assert.equal(new LocalGit(fixture.runner).originUrl(), "https://github.com/owner/repo.git");
+});
+
+test("originUrl is null outside a checkout and when origin is missing", () => {
+  const notRepository = createGitFixture([
+    [["remote", "get-url", "origin"], [new Error("fatal: not a git repository")]],
+  ]);
+  const noOrigin = createGitFixture([[["remote", "get-url", "origin"], [result("")]]]);
+
+  assert.equal(new LocalGit(notRepository.runner).originUrl(), null);
+  assert.equal(new LocalGit(noOrigin.runner).originUrl(), null);
+});
+
+test("originUrl rethrows a missing git binary instead of reporting no checkout", () => {
+  const missing = Object.assign(new Error("spawnSync git ENOENT"), { code: "ENOENT" });
+  const fixture = createGitFixture([[["remote", "get-url", "origin"], [missing]]]);
+
+  assert.throws(() => new LocalGit(fixture.runner).originUrl(), { code: "ENOENT" });
+});

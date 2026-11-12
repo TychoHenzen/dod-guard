@@ -1,0 +1,31 @@
+// Refuses to run the merge helper outside a checkout of the pull request's repository.
+import { stop } from "./completion-error.mjs";
+
+const GITHUB_REMOTE = /(?:^|[/@])github\.com[:/]([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i;
+
+function remoteRepository(url) {
+  const match = GITHUB_REMOTE.exec(url.trim());
+  if (!match) {
+    return null;
+  }
+  return `${match[1]}/${match[2]}`.toLowerCase();
+}
+
+function requireRepositoryCheckout(repository, localGit, directory) {
+  const recovery = [
+    `Run the helper from a checkout of ${repository}, or pass --repo-dir <that checkout>.`,
+    "Nothing on GitHub was changed.",
+  ].join(" ");
+  const origin = localGit.originUrl();
+  if (origin === null) {
+    stop("not_a_checkout", `${directory} is not a git checkout with an origin remote.`, recovery);
+  }
+  const found = remoteRepository(origin);
+  if (found !== repository.toLowerCase()) {
+    // The raw URL is never printed: an origin can embed a credential.
+    const named = found ?? "not a github.com repository";
+    stop("wrong_checkout", `The origin of ${directory} is ${named}, not ${repository}.`, recovery);
+  }
+}
+
+export { requireRepositoryCheckout };

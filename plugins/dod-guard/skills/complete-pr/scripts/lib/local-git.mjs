@@ -71,6 +71,18 @@ export class LocalGit {
     return "deleted";
   }
 
+  // Null when the directory is not a checkout or has no origin; a missing git binary still throws.
+  originUrl() {
+    try {
+      return this.#run(["remote", "get-url", "origin"]).stdout.trim() || null;
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        throw error;
+      }
+      return null;
+    }
+  }
+
   currentBranch() {
     return this.#run(["branch", "--show-current"]).stdout.trim();
   }
