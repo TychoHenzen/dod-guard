@@ -4,8 +4,8 @@
 // exactly one entry, and no entry may name a task or row the body does not plan
 // or carry another field. Each check returns one message per problem.
 import { ACCEPTANCE_MATRIX_STATUSES } from "../../../lib/acceptance-matrix.mjs";
+import { isPlainObject, isText, isTextList } from "../../../lib/handoff-values.mjs";
 import { carryEntryProblems } from "./handoff-carry-shape.mjs";
-import { isPlainObject, isText, isTextList } from "./handoff-values.mjs";
 
 const STATUSES = new Set(ACCEPTANCE_MATRIX_STATUSES);
 const ROW_FIELDS = new Set(["observed", "status", "reason", "carryForward"]);

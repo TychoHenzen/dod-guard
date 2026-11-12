@@ -1,6 +1,6 @@
 // Shape checks on an evidence row's carryForward entry: an object of fromHead and
 // paths, and nothing else. The revisions themselves are verified in handoff-carry.mjs.
-import { isPlainObject, isText, isTextList } from "./handoff-values.mjs";
+import { isPlainObject, isText, isTextList } from "../../../lib/handoff-values.mjs";
 
 const CARRY_FIELDS = new Set(["fromHead", "paths"]);
 

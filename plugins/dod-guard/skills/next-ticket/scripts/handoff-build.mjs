@@ -20,10 +20,10 @@ import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This CLI runs under Node.js.
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
+import { isPlainObject } from "../../../lib/handoff-values.mjs";
 import { checkCarryForward } from "./carry-forward-check.mjs";
 import { build } from "./handoff-comment.mjs";
 import { readText, UsageError } from "./handoff-proof-cli.mjs";
-import { isPlainObject } from "./handoff-values.mjs";
 
 const USAGE =
   "usage: node handoff-build.mjs --body-file=<issue-body.md> --evidence-file=<evidence.json> --head-sha=<sha>" +

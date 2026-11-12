@@ -1,8 +1,8 @@
 // biome-ignore lint/correctness/noNodejsModules: the carry-forward check reads revisions from git
 import { spawnSync } from "node:child_process";
+import { COMMIT_SHA as REVISION } from "../../../lib/carry-forward-record.mjs";
 import { sameBehavior } from "../../../lib/source-normalize.mjs";
 
-const REVISION = /^[0-9a-f]{7,64}$/;
 const MAX_BUFFER = 67_108_864; // 64 MB, the largest revision text read
 // ASSUMPTION: newHead gets the same sha check as baseHead, because it is also interpolated into a git argument.
 function textAt({ root, revision, file }) {
