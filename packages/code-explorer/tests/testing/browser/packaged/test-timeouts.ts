@@ -66,7 +66,9 @@ async function timeoutError(
   );
 }
 
-export const PACKAGED_BROWSER_TIMEOUT_MS = 10_000;
+// A page load took over 10 seconds when Chromium shared the machine with the
+// other test files, so a wait gets 30 seconds before it counts as a hang.
+export const PACKAGED_BROWSER_TIMEOUT_MS = 30_000;
 
 // Chromium needs 4 to 18 seconds to exit on Windows even with a stuck page,
 // so shutdown gets its own bound: it still fails a close that never ends.
