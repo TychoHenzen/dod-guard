@@ -6,6 +6,7 @@ import { parseArguments } from "./cli-args.mjs";
 
 const HEAD = "0123456789abcdef0123456789abcdef01234567";
 const BASE = ["owner/repo", "24"];
+const REPO_DIR = "C:/work/repo";
 
 test("parses normal completion with a pushed head", () => {
   assert.deepEqual(parseArguments([...BASE, "--pushed-head", HEAD]), {
@@ -19,19 +20,22 @@ test("parses normal completion with a pushed head", () => {
 });
 
 test("accepts --repo-dir before or after the other flags", () => {
-  const before = parseArguments([...BASE, "--repo-dir", "C:/work/repo", "--pushed-head", HEAD]);
-  const after = parseArguments([...BASE, "--pushed-head", HEAD, "--repo-dir", "C:/work/repo"]);
+  const before = parseArguments([...BASE, "--repo-dir", REPO_DIR, "--pushed-head", HEAD]);
+  const after = parseArguments([...BASE, "--pushed-head", HEAD, "--repo-dir", REPO_DIR]);
 
   assert.deepEqual(before, after);
-  assert.equal(before.repoDir, "C:/work/repo");
+  assert.equal(before.repoDir, REPO_DIR);
 });
 
-test("parses merged recovery with an optional dry run and checkout", () => {
-  const request = parseArguments([...BASE, "--recover-merged", "--dry-run", "--repo-dir", "C:/work/repo"]);
+test("parses merged recovery with a dry run and a checkout", () => {
+  const request = parseArguments([...BASE, "--recover-merged", "--dry-run", "--repo-dir", REPO_DIR]);
 
   assert.equal(request.recoverMerged, true);
   assert.equal(request.dryRun, true);
   assert.equal(request.pushedHead, null);
+});
+
+test("leaves the dry run off unless it is requested", () => {
   assert.equal(parseArguments([...BASE, "--recover-merged"]).dryRun, false);
 });
 
