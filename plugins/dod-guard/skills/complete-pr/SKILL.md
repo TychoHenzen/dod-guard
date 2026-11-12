@@ -13,7 +13,7 @@ Apply `standards/working-defaults.md` and `standards/github-request-discipline.m
 
 ## Resolve the pull request
 
-1. Confirm the cwd is inside a Git checkout. Run `git status --short`.
+1. Confirm the cwd is inside a Git checkout of the target repository. Run `git status --short`. The helper enforces this before any GitHub request: from a directory that is not such a checkout, such as the plugin cache, it stops with `not_a_checkout` or `wrong_checkout` and changes nothing. Pass `--repo-dir <checkout>` to run it against a checkout from elsewhere.
 2. Classify pending paths without changing them. Preserve changes that clearly belong to the accepted PBI. Stop for secrets, destructive intent, or unrelated or indistinguishable work.
 3. Run `gh auth status` and require `repo` access.
 4. Resolve the repository and default branch with the GitHub MCP repository operation, or `gh repo view --json nameWithOwner,defaultBranchRef,url` without MCP.
@@ -31,7 +31,7 @@ Compare the merge ref's first parent with the current base branch tip, and recor
 
 ## Bounded branch synchronization
 
-When the pull request is BEHIND its base, the helper runs this once and nothing else may update the branch. It reads the base branch tip, calls update-branch pinned to the trusted head, then waits for the pull request head to become a merge commit whose two parents are exactly the previous head and that base tip. Any other new head stops with `untrusted_base_update`, and a head that does not move in time stops with `base_update_timeout`. The new head invalidates earlier acceptance: rerun the required checks, the review-thread read, and the acceptance proof at it before any merge. A conflict goes to "Triage a merge conflict". Never rebase, force-push, or update the branch by hand.
+When the pull request is BEHIND its base, the helper runs this once and nothing else may update the branch. It reads the base branch tip, calls update-branch pinned to the trusted head, then waits for the pull request head to become a merge commit whose two parents are exactly the previous head and that base tip. Any other new head stops with `untrusted_base_update`, and a head that does not move in time stops with `base_update_timeout`. The helper then stops with `branch_synced` and merges nothing, because the new head carries no handoff evidence. The stop report names the previous and the synced head. Rebind the handoff to the synced head (`dod-guard:fix-pr-review`, "Rebind the handoff"), rerun the required checks, the review-thread read, and the finalization proof at it, then run the helper again with `--pushed-head <synced head>`. A conflict goes to "Triage a merge conflict". Never rebase, force-push, or update the branch by hand.
 
 ## Review threads
 
@@ -62,7 +62,7 @@ Exit 0 with `verified` continues. Exit 1 or 2 stops with the printed remainder b
 Pass repository and PR number as separate native arguments. Keep a non-zero preflight result.
 
 ```text
-node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha>
+node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha> [--repo-dir <checkout>]
 ```
 
 The helper can wait about 30 minutes. For a foreground limit shorter than that, start it with `node <skill-dir>/scripts/run-detached.mjs start <state-dir> -- node <skill-dir>/scripts/complete-pr.mjs ...`, then call `node <skill-dir>/scripts/run-detached.mjs wait <state-dir> --seconds 240` until it prints `exited`; its exitCode is the helper's. Wait on the same state directory, never start a second copy, never kill it. On a stop the helper also writes `{ok:false, code, message, recovery}` to stdout.

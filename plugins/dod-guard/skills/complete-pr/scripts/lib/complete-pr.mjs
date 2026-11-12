@@ -2,7 +2,7 @@
 import { createCiRecovery, ensureCiWorkflowRun } from "./ci-workflow-gate.mjs";
 import { confirmClosedIssues, requireClosingIssue } from "./closing-issue-gate.mjs";
 import { stop } from "./completion-error.mjs";
-import { updateBehindBranch } from "./guarded-base-update.mjs";
+import { syncBehindBranch } from "./guarded-base-update.mjs";
 import { waitForHeadConvergence } from "./head-convergence.mjs";
 import {
   inspectRequiredChecks,
@@ -60,14 +60,14 @@ async function advanceOpenPullRequest(client, step) {
   const { checksPassed, completion, pullRequest, trustedHead } = step;
   const { defaultBranch, options, pullNumber, repository } = completion;
   if (pullRequest.mergeState === "BEHIND") {
-    return updateBehindBranch(client, { defaultBranch, options, pullNumber, repository, trustedHead });
+    await syncBehindBranch(client, { defaultBranch, options, pullNumber, repository, trustedHead });
   }
-  if (checksPassed) {
-    await requireNoUnresolvedThreads(client, pullNumber);
-    await client.mergePullRequest(pullNumber, trustedHead);
-  } else {
+  if (!checksPassed) {
     await client.wait(options.pollMs);
+    return trustedHead;
   }
+  await requireNoUnresolvedThreads(client, pullNumber);
+  await client.mergePullRequest(pullNumber, trustedHead);
   return trustedHead;
 }
 
