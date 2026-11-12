@@ -148,7 +148,10 @@ already applies to rules the repository turned on as errors.
   deliberately bad fixture code as a real regression.
 - The pull-request gate sources (`quality-pr-gate.mjs`, `lib/pr-gate-*.mjs`,
   `lib/finding-symbol.mjs` under `skills/quality-refactor/scripts/`) are in
-  `biome.json` `formatter.includes` with a `lineWidth` of 80 override. The
+  `biome.json` `formatter.includes` with a `lineWidth` of 80 override. Width 80
+  is the scanner's own `line-length` limit, so the files that enforce the
+  limit must meet it themselves, or the gate would report findings on its own
+  code. The
   scanner takes a file's line-length width from Biome only when the file is in
   both `files.includes` and `formatter.includes`; a file in neither is judged
   at the default 80 and the preflight never reflows it. Add a new gate module
