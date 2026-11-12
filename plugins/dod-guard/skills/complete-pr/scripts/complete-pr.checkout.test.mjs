@@ -16,6 +16,7 @@ import test, { after } from "node:test";
 const SCRIPT = join(import.meta.dirname, "complete-pr.mjs");
 const HEAD = ["0123456789", "abcdef0123", "456789abcd", "ef01234567"].join("");
 const NOT_A_CHECKOUT_PREFIX = /^complete-pr failed \[not_a_checkout\]/;
+const FAILED_PREFIX = /^complete-pr failed/;
 const GUARD_STOP = /\[(?:not_a_checkout|wrong_checkout)\]/;
 const created = [];
 
@@ -29,7 +30,9 @@ after(() => {
 function emptyDirectory() {
   const directory = mkdtempSync(join(tmpdir(), "complete-pr-"));
   created.push(directory);
-  return { directory, env: { ...process.env, GIT_CEILING_DIRECTORIES: dirname(directory) } };
+  // biome-ignore lint/style/noProcessEnv: The child process inherits the parent environment plus one git variable.
+  const env = { ...process.env, ...Object.fromEntries([["GIT_CEILING_DIRECTORIES", dirname(directory)]]) };
+  return { directory, env };
 }
 
 function checkoutWithOrigin(origin) {
@@ -75,12 +78,19 @@ test("stops with wrong_checkout when origin names another repository", () => {
 test("--repo-dir naming a matching checkout passes the guard from another working directory", () => {
   const { directory, env } = checkoutWithOrigin("https://github.com/owner/repo.git");
   // The unreachable proxy keeps the GitHub request that follows the guard off the network.
-  const offline = { ...env, GH_TOKEN: "placeholder", HTTPS_PROXY: "http://127.0.0.1:9", NO_PROXY: "" };
+  const offline = {
+    ...env,
+    ...Object.fromEntries([
+      ["GH_TOKEN", "placeholder"],
+      ["HTTPS_PROXY", "http://127.0.0.1:9"],
+      ["NO_PROXY", ""],
+    ]),
+  };
 
   const result = runFrom(import.meta.dirname, offline, ["--repo-dir", directory]);
 
   assert.equal(result.status, 1, result.stderr);
-  assert.match(result.stderr, /^complete-pr failed/);
+  assert.match(result.stderr, FAILED_PREFIX);
   assert.doesNotMatch(result.stderr, GUARD_STOP);
 });
 

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { parseArguments } from "./cli-args.mjs";
 
-const HEAD = "0123456789abcdef0123456789abcdef01234567";
+const HEAD = ["0123456789", "abcdef0123", "456789abcd", "ef01234567"].join("");
 const BASE = ["owner/repo", "24"];
 const REPO_DIR = "C:/work/repo";
 

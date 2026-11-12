@@ -12,6 +12,7 @@ import { buildStopReport } from "./lib/stop-report.mjs";
 const USAGE = [
   "Usage: node complete-pr.mjs <owner/repository> <pull-request-number>",
   "--pushed-head <verified-head-sha> | [--recover-merged [--dry-run]]",
+  // biome-ignore lint/security/noSecrets: This is a usage string, not a secret.
   "[--repo-dir <checkout>]\n",
 ].join(" ");
 
