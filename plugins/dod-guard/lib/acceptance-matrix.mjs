@@ -1,4 +1,4 @@
-const ACCEPTANCE_MATRIX_STATUSES = Object.freeze(["pass", "unverified", "failed", "blocked", "inapplicable"]);
+import { ACCEPTANCE_MATRIX_STATUSES as MATRIX_STATUSES, observedStatusErrors } from "./matrix-observed-status.mjs";
 
 // Refinement plans each row before any proof runs, so a planned row has no
 // observed result or head yet and is either still to prove or ruled out.
@@ -98,10 +98,20 @@ function matrixRows(matrix) {
   return null;
 }
 
+// The optional carryForward record is not an acceptance field, so it is kept
+// only when the row supplies one and rows without it normalize as before.
+function carryForwardField(row) {
+  if (Object.hasOwn(row ?? {}, "carryForward")) {
+    return { carryForward: row.carryForward };
+  }
+  return {};
+}
+
 function normalizeRow(row, index) {
   const normalized = Object.fromEntries(ACCEPTANCE_MATRIX_FIELDS.map((field) => [field, fieldValue(row, field)]));
   normalized.index = index;
   normalized.reason = textValue(row?.reason) ?? textValue(row?.inapplicableReason);
+  Object.assign(normalized, carryForwardField(row));
   if (normalized.status !== null) {
     normalized.status = normalizeStatus(normalized.status);
   }
@@ -112,33 +122,14 @@ function missingFieldErrors(row, label, requiredFields) {
   return requiredFields.filter((field) => row[field] === null).map((field) => `${label} is missing ${field}`);
 }
 
-function staleHeadErrors(row, label, expectedHeadSha) {
-  const stale = row.headSha !== null && expectedHeadSha !== null && row.headSha !== expectedHeadSha;
-  return stale ? [`${label} is bound to head ${row.headSha}, expected ${expectedHeadSha}`] : [];
-}
-
-function observedStatusErrors(row, label, expectedHeadSha) {
-  const errors = [];
-  if (row.status !== null && !ACCEPTANCE_MATRIX_STATUSES.includes(row.status)) {
-    errors.push(`${label} has unsupported status ${row.status}`);
-  }
-  errors.push(...staleHeadErrors(row, label, expectedHeadSha));
-  if (row.status === "inapplicable" && row.reason === null) {
-    errors.push(`${label} marked inapplicable without an explicit reason`);
-  }
-  if (row.status !== null && row.status !== "pass" && row.status !== "inapplicable") {
-    errors.push(`${label} has non-passing status ${row.status}`);
-  }
-  return errors;
-}
-
 function plannedStatusErrors(row, label) {
   if (row.status === null || ACCEPTANCE_MATRIX_PLANNED_STATUSES.includes(row.status)) {
-    return row.status === "inapplicable" && row.reason === null
-      ? [`${label} marked inapplicable without an explicit reason`]
-      : [];
+    if (row.status === "inapplicable" && row.reason === null) {
+      return [`${label} marked inapplicable without an explicit reason`];
+    }
+    return [];
   }
-  if (ACCEPTANCE_MATRIX_STATUSES.includes(row.status)) {
+  if (MATRIX_STATUSES.includes(row.status)) {
     return [`${label} has status ${row.status}, which is not a planned status`];
   }
   return [`${label} has unsupported status ${row.status}`];
@@ -165,7 +156,9 @@ const MATRIX_MODES = Object.freeze({
 });
 
 function matrixMode(mode) {
-  if (!Object.hasOwn(MATRIX_MODES, mode)) throw new TypeError(`unknown acceptance matrix mode ${mode}`);
+  if (!Object.hasOwn(MATRIX_MODES, mode)) {
+    throw new TypeError(`unknown acceptance matrix mode ${mode}`);
+  }
   return MATRIX_MODES[mode];
 }
 
@@ -201,14 +194,13 @@ function pathErrors(rows, requiredPaths) {
   const matchedRows = new Map();
   const assignRow = (requiredPath, seenRows) => {
     for (const row of rows) {
-      if (row.path === null || !pathMatches(row.path, requiredPath) || seenRows.has(row.index)) {
-        continue;
-      }
-      seenRows.add(row.index);
-      const assignedPath = matchedRows.get(row.index);
-      if (assignedPath === undefined || assignRow(assignedPath, seenRows)) {
-        matchedRows.set(row.index, requiredPath);
-        return true;
+      if (row.path !== null && pathMatches(row.path, requiredPath) && !seenRows.has(row.index)) {
+        seenRows.add(row.index);
+        const assignedPath = matchedRows.get(row.index);
+        if (assignedPath === undefined || assignRow(assignedPath, seenRows)) {
+          matchedRows.set(row.index, requiredPath);
+          return true;
+        }
       }
     }
     return false;
@@ -217,6 +209,13 @@ function pathErrors(rows, requiredPaths) {
   return requiredPaths
     .filter((requiredPath) => !assignRow(requiredPath, new Set()))
     .map((requiredPath) => `missing acceptance row for ${requiredPath}`);
+}
+
+function expectedHead(mode, headSha) {
+  if (mode.needsHead) {
+    return textValue(headSha);
+  }
+  return null;
 }
 
 function validateRows(rows, expectedHeadSha, mode) {
@@ -240,7 +239,7 @@ function validateAcceptanceMatrix({
   const mode = matrixMode(modeName);
   const errors = [];
   const rows = matrixRows(matrix);
-  const expectedHeadSha = mode.needsHead ? textValue(headSha) : null;
+  const expectedHeadSha = expectedHead(mode, headSha);
   const normalizedRows = [];
   if (rows !== null) {
     normalizedRows.push(...rows.map(normalizeRow));
@@ -265,4 +264,5 @@ function validateAcceptanceMatrix({
   };
 }
 
-export { ACCEPTANCE_MATRIX_FIELDS, ACCEPTANCE_MATRIX_PATHS, ACCEPTANCE_MATRIX_STATUSES, validateAcceptanceMatrix };
+export const ACCEPTANCE_MATRIX_STATUSES = MATRIX_STATUSES;
+export { ACCEPTANCE_MATRIX_FIELDS, ACCEPTANCE_MATRIX_PATHS, validateAcceptanceMatrix };
