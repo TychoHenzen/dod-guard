@@ -43,6 +43,11 @@ function commitFiles(root, files) {
   git(root, ["commit", "-q", "-m", "fixture"]);
   return git(root, ["rev-parse", "HEAD"]);
 }
+function removeFile(root, file) {
+  git(root, ["rm", "-q", file]);
+  git(root, ["commit", "-q", "-m", "remove"]);
+  return git(root, ["rev-parse", "HEAD"]);
+}
 function makeRepo(files) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "carry-"));
   git(root, ["init", "-q"]);
@@ -50,4 +55,4 @@ function makeRepo(files) {
   return { root, head };
 }
 
-export { commitFiles, makeRepo };
+export { commitFiles, makeRepo, removeFile };

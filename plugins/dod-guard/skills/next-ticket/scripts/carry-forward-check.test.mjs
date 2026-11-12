@@ -1,15 +1,12 @@
 // biome-ignore lint/correctness/noNodejsModules: node:test is the repository's runner
 import assert from "node:assert/strict";
-// biome-ignore lint/correctness/noNodejsModules: the test removes a file through git
-import { spawnSync } from "node:child_process";
 // biome-ignore lint/correctness/noNodejsModules: the test removes its temp repositories
 import fs from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: node:test is the repository's runner
 import { after, test } from "node:test";
 import { checkCarryForward } from "./carry-forward-check.mjs";
-import { commitFiles, makeRepo } from "./testing/carry-forward-repo.mjs";
+import { commitFiles, makeRepo, removeFile } from "./testing/carry-forward-repo.mjs";
 
-const GIT_ARGS = ["-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false"];
 const roots = [];
 after(() => {
   for (const root of roots) {
@@ -28,12 +25,6 @@ function compare(base, next, paths) {
 }
 function editOne(file, before, updated) {
   return compare({ [file]: before }, { [file]: updated }, [file]);
-}
-function removeFile(root, file) {
-  const args = [...GIT_ARGS, "-C", root];
-  spawnSync("git", [...args, "rm", "-q", file]);
-  spawnSync("git", [...args, "commit", "-q", "-m", "remove"]);
-  return spawnSync("git", [...args, "rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
 }
 
 test("passes a comment, blank line and re-indent change", () => {
@@ -61,7 +52,7 @@ test("fails an edit inside a template literal", () => {
 test("fails a .md path", () => {
   const result = editOne("doc.md", "# Title\n", "# Title\n\nMore.\n");
   assert.equal(result.ok, false);
-  assert.ok(result.reason.includes(".md"));
+  assert.equal(result.reason, "doc.md changed code or has no comment-only reading");
 });
 
 test("fails a python re-indent", () => {

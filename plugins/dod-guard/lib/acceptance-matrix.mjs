@@ -1,4 +1,4 @@
-import { ACCEPTANCE_MATRIX_STATUSES as MATRIX_STATUSES, observedStatusErrors } from "./matrix-observed-status.mjs";
+import { ACCEPTANCE_MATRIX_STATUSES, observedStatusErrors } from "./matrix-observed-status.mjs";
 
 // Refinement plans each row before any proof runs, so a planned row has no
 // observed result or head yet and is either still to prove or ruled out.
@@ -122,17 +122,22 @@ function missingFieldErrors(row, label, requiredFields) {
   return requiredFields.filter((field) => row[field] === null).map((field) => `${label} is missing ${field}`);
 }
 
-function plannedStatusErrors(row, label) {
-  if (row.status === null || ACCEPTANCE_MATRIX_PLANNED_STATUSES.includes(row.status)) {
-    if (row.status === "inapplicable" && row.reason === null) {
-      return [`${label} marked inapplicable without an explicit reason`];
-    }
-    return [];
-  }
-  if (MATRIX_STATUSES.includes(row.status)) {
+function unplannedStatusErrors(row, label) {
+  if (ACCEPTANCE_MATRIX_STATUSES.includes(row.status)) {
     return [`${label} has status ${row.status}, which is not a planned status`];
   }
   return [`${label} has unsupported status ${row.status}`];
+}
+
+function plannedStatusErrors(row, label) {
+  const planned = row.status === null || ACCEPTANCE_MATRIX_PLANNED_STATUSES.includes(row.status);
+  if (!planned) {
+    return unplannedStatusErrors(row, label);
+  }
+  if (row.status === "inapplicable" && row.reason === null) {
+    return [`${label} marked inapplicable without an explicit reason`];
+  }
+  return [];
 }
 
 // Observed rows carry proof results bound to a pushed head. Planned rows come
@@ -162,21 +167,25 @@ function matrixMode(mode) {
   return MATRIX_MODES[mode];
 }
 
-function rowErrors(row, expectedHeadSha, seenIds, mode) {
-  const errors = [];
-  const label = row.id ?? `row ${row.index + 1}`;
+function idErrors(row, label, seenIds) {
   if (row.id === null) {
-    errors.push(`${label} is missing id`);
+    return [`${label} is missing id`];
   }
-  if (row.id !== null && seenIds.has(row.id)) {
-    errors.push(`${label} duplicates an earlier id`);
+  const duplicate = seenIds.has(row.id);
+  seenIds.add(row.id);
+  if (duplicate) {
+    return [`${label} duplicates an earlier id`];
   }
-  if (row.id !== null) {
-    seenIds.add(row.id);
-  }
-  errors.push(...missingFieldErrors(row, label, mode.requiredFields));
-  errors.push(...mode.statusErrors(row, label, expectedHeadSha));
-  return errors;
+  return [];
+}
+
+function rowErrors(row, { expectedHeadSha, seenIds, mode }) {
+  const label = row.id ?? `row ${row.index + 1}`;
+  return [
+    ...idErrors(row, label, seenIds),
+    ...missingFieldErrors(row, label, mode.requiredFields),
+    ...mode.statusErrors(row, label, expectedHeadSha),
+  ];
 }
 
 function contractErrors(rows, requiredContracts, mode) {
@@ -224,7 +233,7 @@ function validateRows(rows, expectedHeadSha, mode) {
   const errors = [];
   const seenIds = new Set();
   for (const row of rows) {
-    errors.push(...rowErrors(row, expectedHeadSha, seenIds, mode));
+    errors.push(...rowErrors(row, { expectedHeadSha, seenIds, mode }));
   }
   return errors;
 }
@@ -266,5 +275,5 @@ function validateAcceptanceMatrix({
   };
 }
 
-export const ACCEPTANCE_MATRIX_STATUSES = MATRIX_STATUSES;
+export { ACCEPTANCE_MATRIX_STATUSES } from "./matrix-observed-status.mjs";
 export { ACCEPTANCE_MATRIX_FIELDS, ACCEPTANCE_MATRIX_PATHS, validateAcceptanceMatrix };
