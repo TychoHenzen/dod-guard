@@ -689,10 +689,13 @@ grapheme-aware width), judged against a width W:
 The message is `line is N chars (width W)`. Each finding also carries a
 `widthSource` field: the Biome config that decided W, relative to `--root`
 with forward slashes, or `default` for the fallback. The source stays out of
-the message on purpose. The pull-request gate identifies a finding by rule
-plus message (digit runs normalized), so a config path in the message would
-re-pair every long line as resolved plus new whenever the deciding config
-moved between the base and the head, and the new high copy would block.
+the message on purpose. The pull-request gate identifies a finding by rule,
+`symbol` and message (digit runs normalized). `symbol` is an optional field
+of a finding: the name of the innermost function around it. The scanner adds
+it to every per-file finding inside a function, and `file-length` and the
+project-level rules omit it, so the gate key uses an empty symbol for them. A config path in the message would re-pair every long line as resolved
+plus new whenever the deciding config moved between the base and the head, and
+the new high copy would block.
 
 **Where W comes from.** For `.ts`, `.tsx`, `.mts`, `.cts`, `.js`, `.jsx`,
 `.mjs` and `.cjs` files, W is the line width the repository's Biome formatter

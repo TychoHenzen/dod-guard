@@ -50,6 +50,9 @@
       "packages/*/tests/**/*.ts",
       "packages/quality-guard/scripts/**/*.mjs",
       "packages/quality-guard/tests/**/*.mjs",
+      "packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs",
+      "packages/quality-guard/skills/quality-refactor/scripts/lib/pr-gate-*.mjs",
+      "packages/quality-guard/skills/quality-refactor/scripts/lib/finding-symbol.mjs",
       "scripts/ci/**/*.mjs",
       "plugins/**/*.mjs",
       "plugins/**/*.js"
@@ -137,6 +140,16 @@
     },
     {
       "includes": ["packages/quality-guard/scripts/**/*.mjs", "packages/quality-guard/tests/**/*.mjs"],
+      "formatter": {
+        "lineWidth": 80
+      }
+    },
+    {
+      "includes": [
+        "packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs",
+        "packages/quality-guard/skills/quality-refactor/scripts/lib/pr-gate-*.mjs",
+        "packages/quality-guard/skills/quality-refactor/scripts/lib/finding-symbol.mjs"
+      ],
       "formatter": {
         "lineWidth": 80
       }

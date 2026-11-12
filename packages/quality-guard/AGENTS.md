@@ -146,6 +146,21 @@ already applies to rules the repository turned on as errors.
   (`config.mjs`), which is the only reason the corpus never trips the
   structural diagnostic. Rename the directory and it starts scanning
   deliberately bad fixture code as a real regression.
+- The pull-request gate sources (`quality-pr-gate.mjs`, `lib/pr-gate-*.mjs`,
+  `lib/finding-symbol.mjs` under `skills/quality-refactor/scripts/`) are in
+  `biome.json` `formatter.includes` with a `lineWidth` of 80 override. Width 80
+  is the scanner's own `line-length` limit, so the files that enforce the
+  limit must meet it themselves, or the gate would report findings on its own
+  code. The
+  scanner takes a file's line-length width from Biome only when the file is in
+  both `files.includes` and `formatter.includes`; a file in neither is judged
+  at the default 80 and the preflight never reflows it. Add a new gate module
+  under a name that matches the glob.
+- The pull-request gate identifies a finding by rule, `symbol` (the innermost
+  function around it, which the scanner stamps on per-file findings inside a
+  function; file-length and project-level findings carry none) and the message
+  with digits masked. Two findings of one rule and message in different
+  functions are separate findings, so a move between functions is not hidden.
 
 Use `apply_patch` for edits. Keep documentation and tests focused on the
 current advisory/report-only contract; do not revive retired decision-ledger
