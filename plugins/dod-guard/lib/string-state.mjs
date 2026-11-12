@@ -25,14 +25,18 @@ function hasOddBackslashes(line, end) {
 
 // How many characters of an apparent closer are escaped: a backslash escapes one, and a
 // doubled quote inside a C# verbatim string escapes two.
-function escapeWidth(line, found, { close, escapes }) {
-  if (escapes && hasOddBackslashes(line, found)) {
-    return 1;
-  }
-  if (!escapes && close === '"' && line[found + 1] === '"') {
+function doubledQuoteWidth(line, found, close) {
+  if (close === '"' && line[found + 1] === '"') {
     return 2;
   }
   return 0;
+}
+
+function escapeWidth(line, found, { close, escapes }) {
+  if (escapes) {
+    return Number(hasOddBackslashes(line, found));
+  }
+  return doubledQuoteWidth(line, found, close);
 }
 
 function closeIndex(line, from, delimiter) {
