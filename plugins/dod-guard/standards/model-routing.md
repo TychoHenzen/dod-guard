@@ -407,10 +407,8 @@ cheap-to-standard rung skips the advisor. When the sonnet run fails, the
 dispatcher sends it back once, asks `/codex-advisor` its one question, applies
 advice that names a repair at the standard tier, and otherwise runs the stage on
 `model: opus` with the strong effort. A failure on the opus run stops the stage
-as a blocker.
-
-When the failure record is a task marked `Tier: standard` that already failed
-twice on `dod-guard:stage-standard`, the dispatcher skips the haiku send-back and
+as a blocker. When the failure record is a task marked `Tier: standard` that
+already failed twice on `dod-guard:stage-standard`, the dispatcher skips the haiku send-back and
 the sonnet rerun, asks `/codex-advisor` its one question, applies advice that
 names a repair at the standard tier, and otherwise runs the stage on `model: opus`
 with the strong effort.
