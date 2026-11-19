@@ -88,3 +88,6 @@ openspec/changes/archive/
 
 # quality-pr-gate.mjs --report output: written to the repo root in the quality-guard CI job, uploaded as an artifact by path
 quality-gate-report.md
+
+# Python bytecode that running the readability-gate hook or its tests writes next to the .py files
+__pycache__/
