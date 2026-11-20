@@ -8,12 +8,14 @@ the same turn is unread, and so is every earlier final message except the one
 the owner last replied to.
 
 One check: a reader model plays the owner (gate_reader.py, with the rules in
-prompts/reader.md). It judges the new message on the rules of talk-normal
-(github.com/hexiecs/talk-normal) plus references the owner has never seen.
-A failing message goes back once for a rewrite. At session start the same
-rules go into Claude's context (prompts/guide.md), so the first draft follows
-them. Fails open on any error, with a visible warning. Set
-READABILITY_GATE=off to skip.
+prompts/reader.md). It lists what costs the owner effort, using the rules of
+talk-normal (github.com/hexiecs/talk-normal) plus references the owner has
+never seen, and writes the message the owner wanted. The message fails when
+the owner cannot act on it, or when that draft is much shorter
+(gate_verdict.py). A failing message goes back once, with the draft as the
+target. At session start the same rules go into Claude's context
+(prompts/guide.md), so the first draft follows them. Fails open on any error,
+with a visible warning. Set READABILITY_GATE=off to skip.
 """
 import json
 import os
@@ -63,24 +65,30 @@ def save_state(session_id, state):
         json.dump(state, f)
 
 
+def feedback(result):
+    text = load_prompt('feedback').replace('{wanted}', result.wanted)
+    return text.replace('{notes}', result.notes)
+
+
 def gate(message, session_id, seen):
-    """Block the stop at most MAX_BLOCKS_PER_TURN times when the reader
-    fails the message."""
+    """Block the stop at most MAX_BLOCKS_PER_TURN times when the reader's
+    review fails the message."""
     state = load_state(session_id, seen.turn)
     if state['blocks'] >= MAX_BLOCKS_PER_TURN:
         return
     tag = '%s turn=%s' % (session_id[:8], seen.turn[:8])
     started = time.time()
-    notes = review(message, seen)
-    if not notes:
-        log('passed %s in %.1fs' % (tag, time.time() - started))
+    result = review(message, seen)
+    if not result.reason:
+        log('passed %s in %.1fs, %s'
+            % (tag, time.time() - started, result.size))
         return
     state['blocks'] += 1
     save_state(session_id, state)
-    log('blocked %s #%d: %s'
-        % (tag, state['blocks'], notes.replace('\n', ' | ')[:500]))
-    feedback = load_prompt('feedback').replace('{notes}', notes)
-    print(json.dumps({'decision': 'block', 'reason': feedback}))
+    log('blocked %s #%d, %s, %s: %s'
+        % (tag, state['blocks'], result.reason, result.size,
+           result.notes.replace('\n', ' | ')[:500]))
+    print(json.dumps({'decision': 'block', 'reason': feedback(result)}))
 
 
 def handle_stop(data):

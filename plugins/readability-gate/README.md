@@ -13,39 +13,62 @@ event started, since the owner may never have opened those.
 
 ## What it checks
 
-One reader model (`claude -p` with Sonnet) plays the owner. It gets the
-owner's request, the message they last replied to, the names of their
-installed plugins and skills, and the new message. It writes what it
-understood, lists up to six problems, and gives a PASS or FAIL verdict. The
-problems it looks for come from
-[talk-normal](https://github.com/hexiecs/talk-normal), plus references the
-owner has never seen:
+One reader model (`claude -p` with Sonnet) plays the owner, who wants to spend
+as little effort on the message as they can. It gets the owner's request, the
+message they last replied to, the names of their installed plugins and skills,
+and the new message. It writes four sections: what it understood, up to six
+problems, the message the owner wanted, and a verdict. The problems it looks
+for come from [talk-normal](https://github.com/hexiecs/talk-normal), plus
+references the owner has never seen:
 
-- **Answer.** What the owner asked for is at the top, in full. A list the owner
-  asked to see is written out, not pointed at.
-- **Unread references.** An issue, task or step number, a file, a check or a
-  made-up label that the message uses as if the owner knew it.
-- **Hard sentences.** A sentence the owner has to read twice.
-- **Voice.** The message sounds like a person answering, not like a report, a
-  form or a legal document. Headings are fine; the sentences under them count.
-- **Decisions.** Each decision says what every choice does and which one
-  Claude recommends.
+- **Answer.** What the owner asked for is in the first sentence or two, and is
+  given rather than pointed at.
+- **Unread references.** A number, file, check, script or label that the
+  message uses as if the owner knew it.
+- **Effort.** A sentence that makes more than one point, runs past about 20
+  words, or tucks one clause inside another. A fix described only as new
+  behavior, so the owner has to work out what was wrong.
+- **Not needed.** Claude's own process (searches, failed tools, retries, notes
+  for itself or for a hook), counts and file names nobody asked for, a point
+  made twice.
+- **Voice.** It sounds like a report, a form or a legal document.
+- **Decisions.** A decision that does not say what each choice does and which
+  one Claude recommends.
 - **Padding.** Filler, restating the question, "not X, but Y" frames, summary
   labels, offer menus at the end, bullets used as decoration.
+
+The wanted message keeps every decision and everything the owner must act on
+or asked to see, and uses only facts from the real message. Where the owner
+needs something the message does not give, such as a recommendation, the
+reader writes a note in square brackets instead of making it up.
 
 Text in a code block is material for somewhere else, so only its purpose is
 checked, not its wording.
 
-The message fails when the answer is missing or buried, when the owner cannot
-follow a point or make a decision it asks for, or when most of it reads like a
-report. Padding alone fails only at three or more cases.
+## When a message fails
+
+Code decides, in `hooks/gate_verdict.py`. A message fails when either is true:
+
+- The reader's verdict is FAIL. The verdict covers only whether the owner can
+  act on the message: the answer is missing or buried, it relies on something
+  the owner cannot place, or it asks for a decision the owner cannot make.
+- The wanted message is at least 60 words and at least 30% shorter, and the
+  reader listed at least one problem. Words inside code blocks are not
+  counted.
+
+The length rule exists because a reader asked for a holistic verdict passed
+long, report-style messages while listing three or four real problems in
+them. On real messages, the drafts for messages the owner rejected cut 36% to
+70% and over 100 words. The drafts for short messages the owner accepted cut
+under 30 words.
 
 ## What happens on a failure
 
-The hook blocks the stop once per turn and sends the reader's notes back. The
-notes ask Claude to write the message again from the top, keep every fact and
-decision, and explain in place whatever the reader could not follow. A bare
-number or label may go, as long as the thing it named stays. The rewrite is not
+The hook blocks the stop once per turn. The reason holds the reader's notes and
+its wanted message, which Claude uses as the shape and length to aim for.
+Claude checks every fact in the draft, fills in the notes in square brackets,
+and drops any question or recommendation it does not mean. It adds back only
+what the owner needs, and leaves out its own process. The rewrite is not
 checked again, so a turn costs at most one extra wait.
 
 ## At session start
@@ -72,6 +95,10 @@ Earlier versions tried other checks. Each one made messages worse:
   Claude to cut sentences that repeated them. It cut decision lists the owner
   had just asked to see again, and the rewrites pointed at "items 1 to 5 of my
   last report" instead.
+- A reader verdict on the whole message, where padding failed only at three or
+  more cases. It passed a 293-word report three times out of three. Its
+  feedback asked Claude to keep every fact, so rewrites grew instead of
+  shrinking.
 
 ## Requirements
 
@@ -105,11 +132,12 @@ block count lives next to it in `<session id>.gate.json`.
 |------|------|
 | `hooks/readability-gate.py` | Hook entry: the once-per-turn block, the session-start guide, failing open |
 | `hooks/gate_transcript.py` | Reads the transcript: the current turn, the owner's request, the message they last replied to |
-| `hooks/gate_reader.py` | Runs the reader model and turns its reply into a verdict |
+| `hooks/gate_reader.py` | Runs the reader model |
+| `hooks/gate_verdict.py` | Splits the reader's reply into its sections and decides pass or fail |
 | `prompts/reader.md` | The reader's instructions |
-| `prompts/feedback.md` | What Claude is told on a failure; `{notes}` is replaced by the reader's notes |
+| `prompts/feedback.md` | What Claude is told on a failure; `{notes}` and `{wanted}` are replaced by the reader's notes and draft |
 | `prompts/guide.md` | The writing rules added to context at session start |
-| `tests/` | Tests for transcript reading, the reader input, verdict parsing, the block path and the guide; no model call |
+| `tests/` | Tests for transcript reading, the reader input, the verdict, the block path and the guide; no model call |
 | `.claude-plugin/plugin.json` | Plugin manifest; registers the SessionStart and Stop hooks |
 
 The prompts are plain text files so their wording can change without touching
