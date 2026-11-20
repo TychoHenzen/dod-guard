@@ -15,9 +15,14 @@ MIN_CUT_SHARE = 0.30
 REQUIRED = ('PROBLEMS', 'WANTED', 'VERDICT')
 NOTES = ('UNDERSTOOD', 'PROBLEMS')
 # Case-sensitive, so a "Problems:" line inside the draft is not a heading.
-SECTION = re.compile(r'^\W*(UNDERSTOOD|PROBLEMS|WANTED|VERDICT):', re.M)
-VERDICT = re.compile(r'^\W*VERDICT:\W*(PASS|FAIL)\b', re.M | re.I)
-CODE_BLOCK = re.compile(r'^\s*```.*?^\s*```', re.M | re.S)
+# The lead-in, such as "**", stays on the heading's own line, so a match never
+# starts on a blank line above it.
+SECTION = re.compile(
+    r'^[^\w\n]*(UNDERSTOOD|PROBLEMS|WANTED|VERDICT):', re.M)
+VERDICT = re.compile(r'^[^\w\n]*VERDICT:\W*(PASS|FAIL)\b', re.M | re.I)
+# A Markdown fence of backticks or tildes, closed by the same fence.
+CODE_BLOCK = re.compile(r'^[ \t]*(`{3,}|~{3,}).*?^[ \t]*\1', re.M | re.S)
+NOT_NEWLINE = re.compile(r'[^\n]')
 WORD = re.compile(r"[A-Za-z0-9']+")
 
 
@@ -29,11 +34,18 @@ class Review:
     size: str    # the word counts of the message and the draft
 
 
+def blanked(text):
+    """The text with every code block blanked out at the same length, so a
+    heading or verdict line that the draft copies inside one is not read as
+    the reader's own."""
+    return CODE_BLOCK.sub(lambda m: NOT_NEWLINE.sub(' ', m.group()), text)
+
+
 def sections(reply):
     """{name: text} for each section heading; the first one that has text
     wins."""
     found = {}
-    marks = list(SECTION.finditer(reply))
+    marks = list(SECTION.finditer(blanked(reply)))
     ends = [mark.start() for mark in marks[1:]] + [len(reply)]
     for mark, end in zip(marks, ends):
         text = reply[mark.end():end].strip()
@@ -56,7 +68,7 @@ def none_listed(problems):
 def parse(reply):
     """The reply's sections, with VERDICT holding every verdict line. Raises
     when one is missing, so a garbled review is reported instead of passed."""
-    parts = dict(sections(reply), VERDICT=VERDICT.findall(reply))
+    parts = dict(sections(reply), VERDICT=VERDICT.findall(blanked(reply)))
     missing = [name for name in REQUIRED if not parts.get(name)]
     if missing:
         raise RuntimeError('review is missing %s: %r'

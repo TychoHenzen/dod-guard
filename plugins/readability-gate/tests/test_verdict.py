@@ -53,6 +53,16 @@ class JudgeTest(unittest.TestCase):
                          'UNDERSTOOD:\nthe gist\n\nPROBLEMS:\n' + PROBLEM)
         self.assertEqual(review.wanted, 'the draft')
 
+    def test_a_tilde_fenced_code_block_is_not_counted_either(self):
+        message = words(50) + '\n\n~~~\n' + words(300) + '\n~~~\n'
+        self.assertEqual(judge(message, reply(words(45))).reason, '')
+
+    def test_headings_inside_a_copied_code_block_stay_in_the_draft(self):
+        draft = 'Here is the template:\n\n```\nPROBLEMS:\nVERDICT: FAIL\n```'
+        review = judge(words(10), reply(draft))
+        self.assertEqual(review.wanted, draft)
+        self.assertEqual(review.reason, '')
+
     def test_a_problems_line_inside_the_draft_stays_in_the_draft(self):
         draft = 'Fixed it.\nProblems: none left.'
         self.assertEqual(judge(words(10), reply(draft)).wanted, draft)
