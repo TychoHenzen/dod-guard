@@ -63,8 +63,9 @@ class JudgeTest(unittest.TestCase):
         self.assertEqual(judge(words(10), text).reason, 'cannot act on it')
 
     def test_a_reply_without_a_draft_raises(self):
+        no_draft = 'UNDERSTOOD:\nx\n\nPROBLEMS:\nnone\n\nVERDICT: PASS'
         with self.assertRaises(RuntimeError):
-            judge(words(10), 'UNDERSTOOD:\nx\n\nPROBLEMS:\nnone\n\nVERDICT: PASS')
+            judge(words(10), no_draft)
 
     def test_a_reply_without_a_verdict_raises(self):
         with self.assertRaises(RuntimeError):

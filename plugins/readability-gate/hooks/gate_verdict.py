@@ -12,7 +12,7 @@ from dataclasses import dataclass
 # the owner accepts cut under 30 words.
 MIN_CUT_WORDS = 60
 MIN_CUT_SHARE = 0.30
-REQUIRED = ('PROBLEMS', 'WANTED')
+REQUIRED = ('PROBLEMS', 'WANTED', 'VERDICT')
 NOTES = ('UNDERSTOOD', 'PROBLEMS')
 # Case-sensitive, so a "Problems:" line inside the draft is not a heading.
 SECTION = re.compile(r'^\W*(UNDERSTOOD|PROBLEMS|WANTED|VERDICT):', re.M)
@@ -54,36 +54,32 @@ def none_listed(problems):
 
 
 def parse(reply):
-    """The reply's sections and its last verdict. Raises when one is missing,
-    so a garbled review is reported instead of passed."""
-    parts = sections(reply)
-    missing = [name for name in REQUIRED if name not in parts]
-    verdicts = VERDICT.findall(reply)
-    if missing or not verdicts:
+    """The reply's sections, with VERDICT holding every verdict line. Raises
+    when one is missing, so a garbled review is reported instead of passed."""
+    parts = dict(sections(reply), VERDICT=VERDICT.findall(reply))
+    missing = [name for name in REQUIRED if not parts.get(name)]
+    if missing:
         raise RuntimeError('review is missing %s: %r'
-                           % (', '.join(missing) or 'a verdict', reply[:200]))
-    return parts, verdicts[-1].upper()
+                           % (', '.join(missing), reply[:200]))
+    return parts
 
 
-def failures(verdict, before, after, problems):
-    reasons = []
-    if verdict == 'FAIL':
-        reasons.append('cannot act on it')
+def too_long(before, after, problems):
     cut = before - after
     shorter = cut >= MIN_CUT_WORDS and cut >= MIN_CUT_SHARE * before
     # A reader that found no problems may write "unchanged" for the draft.
-    if shorter and not none_listed(problems):
-        reasons.append('too long')
-    return reasons
+    return shorter and not none_listed(problems)
 
 
 def judge(message, reply):
     """Split the reader's reply and decide."""
-    parts, verdict = parse(reply or '')
+    parts = parse(reply or '')
     before, after = prose_words(message), prose_words(parts['WANTED'])
-    reasons = failures(verdict, before, after, parts['PROBLEMS'])
+    checks = (
+        ('cannot act on it', parts['VERDICT'][-1].upper() == 'FAIL'),
+        ('too long', too_long(before, after, parts['PROBLEMS'])))
     notes = '\n\n'.join('%s:\n%s' % (name, parts[name])
                         for name in NOTES if name in parts)
     return Review(notes=notes, wanted=parts['WANTED'],
-                  reason=' and '.join(reasons),
+                  reason=' and '.join(name for name, hit in checks if hit),
                   size='%d -> %d words' % (before, after))
