@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { lineIndex } from "../../../../../skills/quality-refactor/scripts/lib/offsets.mjs";
 import { findFunctions } from "../../../../../skills/quality-refactor/scripts/lib/parse.mjs";
 import { namesIn } from "./parse-more-support.test.mjs";
 import { strip } from "../../../../../skills/quality-refactor/scripts/lib/strip.mjs";
@@ -40,8 +39,7 @@ test("Rust receiver forms do not count as parameters", () => {
     "fn d(mut self, x: i32) -> i32 { x }",
     "fn e(&'a self, x: i32) -> i32 { x }",
   ].join("\n");
-  const { code } = strip(src, "rs");
-  for (const fn of findFunctions(code, "rs", lineIndex(code), src)) {
+  for (const fn of findFunctions(strip(src, "rs"), "rs", src)) {
     assert.deepEqual(fn.params, ["x: i32"]);
   }
 });

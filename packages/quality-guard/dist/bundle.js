@@ -26369,10 +26369,20 @@ function advancePrevious(previous, ch) {
   previous.char = ch;
   previous.word = /\w/.test(ch) ? previous.word + ch : "";
 }
+function markLiteralNewlines(state, text3) {
+  let { line } = state.cursor;
+  let at = text3.indexOf("\n");
+  while (at !== -1) {
+    line += 1;
+    state.literalLines.add(line);
+    at = text3.indexOf("\n", at + 1);
+  }
+}
 function consumeSpan(state, span) {
   const { source, cursor, comments, parts, previous, interpolations } = state;
   const at = cursor.index;
   const raw = source.slice(at, span.end);
+  markLiteralNewlines(state, raw);
   if (span.isComment) comments.push({ line: cursor.line, text: raw });
   if (!span.isComment) previous.char = "x";
   if (span.captures)
@@ -26419,11 +26429,15 @@ function closeInterp(state) {
 function consumeTemplateEscape(state) {
   const { source, cursor, parts } = state;
   const raw = source.slice(cursor.index, cursor.index + 2);
+  markLiteralNewlines(state, raw);
   parts.push(blank(raw));
   cursor.index += raw.length;
 }
-function blankTemplateChar(ch) {
-  return ch === "\n" ? "\n" : " ";
+function consumeTemplateChar(state) {
+  const ch = state.source[state.cursor.index];
+  markLiteralNewlines(state, ch);
+  state.parts.push(blank(ch));
+  state.cursor.index += 1;
 }
 function trackBrace(frame, ch) {
   if (ch === "{") {
@@ -26459,13 +26473,11 @@ function stepInterp(state, frame) {
   consumePlain(state);
 }
 function stepTemplate(state) {
-  const { source, cursor, parts } = state;
-  const ch = source[cursor.index];
+  const ch = state.source[state.cursor.index];
   if (ch === "\\") return consumeTemplateEscape(state);
   if (ch === "`") return closeTemplate(state);
   if (opensInterp(state)) return openInterp(state);
-  parts.push(blankTemplateChar(ch));
-  cursor.index += 1;
+  consumeTemplateChar(state);
 }
 function dispatch(state) {
   const frame = state.stack[state.stack.length - 1];
@@ -26483,6 +26495,7 @@ function createState(source, lang) {
     parts: [],
     comments: [],
     interpolations: [],
+    literalLines: /* @__PURE__ */ new Set(),
     previous: { char: "\n", word: "" },
     stack: [{ kind: "code" }]
   };
@@ -26502,7 +26515,8 @@ function strip(source, lang) {
   return {
     code: state.parts.join(""),
     comments: state.comments,
-    interpolations: state.interpolations
+    interpolations: state.interpolations,
+    literalLines: state.literalLines
   };
 }
 
@@ -27333,69 +27347,145 @@ function goFunctions(code, starts) {
 }
 
 // skills/quality-refactor/scripts/lib/parse-python.mjs
-function bodyLastLine(lines, first, baseIndent) {
+var DEF = /^\s*(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(/;
+var LEADING_WHITESPACE = /^[ \t]*/;
+var TAB = /\t/g;
+function bracketDepthAfter(text3, depth) {
+  let open = depth;
+  for (const ch of text3) {
+    open += Number("([{".includes(ch));
+    open = Math.max(0, open - Number(")]}".includes(ch)));
+  }
+  return open;
+}
+function logicalIndents(lines, source, literalLines) {
+  const sourceLines = source.split("\n");
+  let depth = 0;
+  let joined = false;
+  return lines.map((text3, index) => {
+    const opens = depth === 0 && !joined && !literalLines.has(index + 1);
+    depth = bracketDepthAfter(text3, depth);
+    joined = text3.trimEnd().endsWith("\\");
+    if (!opens || text3.trim() === "") {
+      return null;
+    }
+    return indentOf(sourceLines[index]);
+  });
+}
+function holdsBodyText(layout, index) {
+  const blank2 = layout.lines[index].trim() === "";
+  return !blank2 || layout.literalLines.has(index + 1);
+}
+function bodyLastLine(layout, first, baseIndent) {
+  const { lines, indents } = layout;
   let last = first;
   for (let j = first + 1; j < lines.length; j += 1) {
-    if (lines[j].trim() === "") continue;
-    if (indentOf(lines[j]) <= baseIndent) break;
-    last = j;
+    if (indents[j] !== null && indents[j] <= baseIndent) break;
+    if (holdsBodyText(layout, j)) last = j;
   }
   return last;
 }
-function indentOf(line) {
-  const match = /^[ \t]*/.exec(line);
-  return match[0].replace(/\t/g, "    ").length;
+function bodyIndents(indents, first, last) {
+  return indents.slice(first + 1, last + 1).filter((indent) => indent !== null);
 }
-function pythonFunctions(code, starts) {
+function headerParams(code, start) {
+  const open = code.indexOf("(", start);
+  const close = matchBracket(code, open, "()");
+  return splitParams(close === -1 ? "" : code.slice(open + 1, close));
+}
+function indentOf(line) {
+  const match = LEADING_WHITESPACE.exec(line);
+  return match[0].replace(TAB, "    ").length;
+}
+function pythonFunctions(stripped, starts, source) {
+  const { code, literalLines } = stripped;
   const lines = code.split("\n");
+  const indents = logicalIndents(lines, source, literalLines);
+  const layout = { lines, indents, literalLines };
   const found = [];
   for (let i = 0; i < lines.length; i += 1) {
-    const match = /^\s*(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(/.exec(lines[i]);
+    const match = DEF.exec(lines[i]);
     if (!match) continue;
     const baseIndent = indentOf(lines[i]);
-    const last = bodyLastLine(lines, i, baseIndent);
-    const openParen = code.indexOf("(", starts[i]);
-    const closeParen = matchBracket(code, openParen, "()");
+    const last = bodyLastLine(layout, i, baseIndent);
     const end = last + 1 < starts.length ? starts[last + 1] - 1 : code.length - 1;
     found.push({
       name: match[1],
       line: i + 1,
-      params: splitParams(
-        closeParen === -1 ? "" : code.slice(openParen + 1, closeParen)
-      ),
+      params: headerParams(code, starts[i]),
       headerStart: starts[i],
       start: starts[i],
       end,
       body: code.slice(starts[i], end + 1),
-      indentBased: true,
-      baseIndent
+      logicalIndents: [baseIndent, ...bodyIndents(indents, i, last)]
     });
   }
   return found;
 }
 
 // skills/quality-refactor/scripts/lib/parse.mjs
-function findFunctions(code, lang, starts, source) {
+var FINDERS = {
+  py: pythonFunctions,
+  rs: (stripped, starts) => rustFunctions(stripped.code, starts),
+  go: (stripped, starts) => goFunctions(stripped.code, starts),
+  ts: (stripped, starts, source) => tsFunctions(stripped.code, starts, source)
+};
+function braceFunctions(stripped, starts) {
+  return braceLanguageFunctions(stripped.code, starts);
+}
+function findFunctions(stripped, lang, source) {
   if (typeof source !== "string") {
     throw new TypeError("findFunctions requires the raw source string");
   }
-  if (lang === "py") {
-    return pythonFunctions(code, starts);
-  }
-  if (lang === "rs") {
-    return rustFunctions(code, starts);
-  }
-  if (lang === "go") {
-    return goFunctions(code, starts);
-  }
-  if (lang === "ts") {
-    return tsFunctions(code, starts, source);
-  }
-  return braceLanguageFunctions(code, starts);
+  const find = FINDERS[lang] ?? braceFunctions;
+  return find(stripped, lineIndex(stripped.code), source);
 }
 
 // skills/quality-refactor/scripts/lib/design-smells/configuration-facts.mjs
-var CONFIGURATION_PARAMETER = /(?:config|settings?|options?|timeout|deadline|retry|backoff|limit|threshold|capacity|size|batch|page(?:Size)?|host|port|url|path|directory|file|format|mode|enabled|disabled|region|connection|pool|cache|buffer|delay|interval|parallel|concurrency|max|min)/i;
+var CONFIGURATION_WORDS = [
+  "config",
+  "settings?",
+  "options?",
+  "timeout",
+  "deadline",
+  "retry",
+  "backoff",
+  "delay",
+  "interval",
+  "limit",
+  "threshold",
+  "capacity",
+  "size",
+  "batch",
+  "page(?:Size)?",
+  "max",
+  "min",
+  "parallel",
+  "concurrency",
+  "host",
+  "port",
+  "url",
+  "region",
+  "connection",
+  "pool",
+  "path",
+  "directory",
+  "file",
+  "format",
+  "mode",
+  "enabled",
+  "disabled",
+  "cache",
+  "buffer"
+];
+var CONFIGURATION_PARAMETER = new RegExp(
+  `(?:${CONFIGURATION_WORDS.join("|")})`,
+  "i"
+);
+var NUMBER2 = String.raw`[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?[uUlLfFdDmM]*`;
+var KEYWORD_LITERAL = "true|false|null|undefined|none|nil";
+var NUMBER_OR_KEYWORD = new RegExp(`^(?:${NUMBER2}|${KEYWORD_LITERAL})$`, "i");
+var QUOTED = /^(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')$/s;
 function parameterText(source, fn) {
   const open = source.indexOf("(", fn.headerStart);
   if (open === -1) return [];
@@ -27430,9 +27520,7 @@ function parameterName(left, lang) {
 }
 function literalDefault(value) {
   const trimmed = value.trim();
-  const numberOrBoolean = /^(?:[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?[uUlLfFdDmM]*|true|false|null|undefined|none|nil)$/i;
-  const quoted = /^(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')$/s;
-  return numberOrBoolean.test(trimmed) || quoted.test(trimmed) ? trimmed : void 0;
+  return NUMBER_OR_KEYWORD.test(trimmed) || QUOTED.test(trimmed) ? trimmed : void 0;
 }
 function defaultFact(parameter, fn, lang) {
   const split = defaultOffset(parameter);
@@ -27441,17 +27529,13 @@ function defaultFact(parameter, fn, lang) {
   if (!name || !CONFIGURATION_PARAMETER.test(name)) return [];
   const value = literalDefault(parameter.slice(split + 1));
   if (!value) return [];
-  return [{ method: fn.name, parameter: name, defaultValue: value, line: fn.line }];
+  return [
+    { method: fn.name, parameter: name, defaultValue: value, line: fn.line }
+  ];
 }
 function configurationDefaults(source, lang) {
   if (lang === "rs") return [];
-  const searchable = strip(source, lang).code;
-  const functions = findFunctions(
-    searchable,
-    lang,
-    lineIndex(searchable),
-    source
-  );
+  const functions = findFunctions(strip(source, lang), lang, source);
   return functions.flatMap(
     (fn) => parameterText(source, fn).flatMap(
       (parameter) => defaultFact(parameter, fn, lang)
@@ -27462,9 +27546,10 @@ function configurationDefaults(source, lang) {
 // skills/quality-refactor/scripts/lib/design-smells/navigation-facts.mjs
 var CHAIN = /\b(?:this|self)(?:\.|->)([A-Za-z_]\w*)((?:(?:\.|->)[A-Za-z_]\w*\(\)){2,})/g;
 function transitiveNavigation(source, lang) {
-  const searchable = strip(source, lang).code;
+  const stripped = strip(source, lang);
+  const searchable = stripped.code;
   const starts = lineIndex(searchable);
-  const functions = findFunctions(searchable, lang, starts, source);
+  const functions = findFunctions(stripped, lang, source);
   const seen = /* @__PURE__ */ new Set();
   return functions.flatMap((fn) => {
     const body = searchable.slice(fn.start, fn.end + 1);
