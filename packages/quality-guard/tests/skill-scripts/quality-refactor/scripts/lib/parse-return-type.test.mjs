@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildConfig } from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
-import { findFunctions } from "../../../../../skills/quality-refactor/scripts/lib/parse.mjs";
-import { scanFile } from "../../../../../skills/quality-refactor/scripts/lib/rules-file.mjs";
-import { strip } from "../../../../../skills/quality-refactor/scripts/lib/strip.mjs";
+import { buildConfig } from "#quality-guard-config";
+import { findFunctions } from "#quality-guard-parse";
+import { scanFile } from "#quality-guard-rules-file";
+import { strip } from "#quality-guard-strip";
 import { tsFile } from "./rules-file-fixtures.test.mjs";
 
 const BLOCK = "{\n    return 1;\n  }"; // shared by the probe and long-return tests

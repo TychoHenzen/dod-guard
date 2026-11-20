@@ -1,5 +1,5 @@
-import { findFunctions } from "../../../../../skills/quality-refactor/scripts/lib/parse.mjs";
-import { strip } from "../../../../../skills/quality-refactor/scripts/lib/strip.mjs";
+import { findFunctions } from "#quality-guard-parse";
+import { strip } from "#quality-guard-strip";
 
 export function namesIn(source, lang) {
   return findFunctions(strip(source, lang), lang, source)

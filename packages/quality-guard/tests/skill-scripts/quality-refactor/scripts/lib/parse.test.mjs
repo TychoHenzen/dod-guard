@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { findFunctions } from "../../../../../skills/quality-refactor/scripts/lib/parse.mjs";
-import { strip } from "../../../../../skills/quality-refactor/scripts/lib/strip.mjs";
+import { findFunctions } from "#quality-guard-parse";
+import { strip } from "#quality-guard-strip";
 
 function namesIn(source, lang) {
   return findFunctions(strip(source, lang), lang, source)

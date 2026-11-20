@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { findFunctions } from "../../../../../skills/quality-refactor/scripts/lib/parse.mjs";
+import { findFunctions } from "#quality-guard-parse";
+import { strip } from "#quality-guard-strip";
 import { namesIn } from "./parse-more-support.test.mjs";
-import { strip } from "../../../../../skills/quality-refactor/scripts/lib/strip.mjs";
 
 test("pub async Rust functions are definitions", () => {
   const src = [
