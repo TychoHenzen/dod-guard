@@ -33,9 +33,7 @@ jobs:
   # -- Always runs ------------------------------------------------------
 
   build-test:
-    # Pinned, not ubuntu-latest: the locked Playwright installs Chromium only
-    # on the Ubuntu releases it knows. Move this and Playwright together.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
