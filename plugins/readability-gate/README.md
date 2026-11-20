@@ -132,6 +132,8 @@ block count lives next to it in `<session id>.gate.json`.
 |------|------|
 | `hooks/readability-gate.py` | Hook entry: the once-per-turn block, the session-start guide, failing open |
 | `hooks/gate_transcript.py` | Reads the transcript: the current turn, the owner's request, the message they last replied to |
+| `hooks/gate_state.py` | The log and the per-session block count |
+| `hooks/gate_input.py` | Builds the reader's input: the owner's tools, request and last-read message |
 | `hooks/gate_reader.py` | Runs the reader model |
 | `hooks/gate_verdict.py` | Splits the reader's reply into its sections and decides pass or fail |
 | `prompts/reader.md` | The reader's instructions |
