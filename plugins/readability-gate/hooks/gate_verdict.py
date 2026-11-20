@@ -71,15 +71,18 @@ def too_long(before, after, problems):
     return shorter and not none_listed(problems)
 
 
+def notes_of(parts):
+    return '\n\n'.join('%s:\n%s' % (name, parts[name])
+                       for name in NOTES if name in parts)
+
+
 def judge(message, reply):
     """Split the reader's reply and decide."""
     parts = parse(reply or '')
     before, after = prose_words(message), prose_words(parts['WANTED'])
-    checks = (
+    failed = [name for name, hit in (
         ('cannot act on it', parts['VERDICT'][-1].upper() == 'FAIL'),
-        ('too long', too_long(before, after, parts['PROBLEMS'])))
-    notes = '\n\n'.join('%s:\n%s' % (name, parts[name])
-                        for name in NOTES if name in parts)
-    return Review(notes=notes, wanted=parts['WANTED'],
-                  reason=' and '.join(name for name, hit in checks if hit),
+        ('too long', too_long(before, after, parts['PROBLEMS']))) if hit]
+    return Review(notes=notes_of(parts), wanted=parts['WANTED'],
+                  reason=' and '.join(failed),
                   size='%d -> %d words' % (before, after))
