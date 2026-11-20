@@ -10,10 +10,21 @@ function advancePrevious(previous, ch) {
   previous.word = /\w/.test(ch) ? previous.word + ch : "";
 }
 
+function markLiteralNewlines(state, text) {
+  let { line } = state.cursor;
+  let at = text.indexOf("\n");
+  while (at !== -1) {
+    line += 1;
+    state.literalLines.add(line);
+    at = text.indexOf("\n", at + 1);
+  }
+}
+
 export function consumeSpan(state, span) {
   const { source, cursor, comments, parts, previous, interpolations } = state;
   const at = cursor.index;
   const raw = source.slice(at, span.end);
+  markLiteralNewlines(state, raw);
   if (span.isComment) comments.push({ line: cursor.line, text: raw });
   if (!span.isComment) previous.char = "x";
   if (span.captures)
@@ -63,15 +74,15 @@ export function closeInterp(state) {
   state.previous.word = "";
 }
 
-export function consumeTemplateEscape(state) {
+// An escape takes its backslash and the next character together, so an
+// escaped backtick or `${` stays template text.
+export function consumeTemplateText(state) {
   const { source, cursor, parts } = state;
-  const raw = source.slice(cursor.index, cursor.index + 2);
+  const length = source[cursor.index] === "\\" ? 2 : 1;
+  const raw = source.slice(cursor.index, cursor.index + length);
+  markLiteralNewlines(state, raw);
   parts.push(blank(raw));
   cursor.index += raw.length;
-}
-
-export function blankTemplateChar(ch) {
-  return ch === "\n" ? "\n" : " ";
 }
 
 export function trackBrace(frame, ch) {

@@ -1,18 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildConfig } from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
-import { lineIndex } from "../../../../../skills/quality-refactor/scripts/lib/offsets.mjs";
-import { findFunctions } from "../../../../../skills/quality-refactor/scripts/lib/parse.mjs";
-import { scanFile } from "../../../../../skills/quality-refactor/scripts/lib/rules-file.mjs";
-import { strip } from "../../../../../skills/quality-refactor/scripts/lib/strip.mjs";
+import { buildConfig } from "#quality-guard-config";
+import { findFunctions } from "#quality-guard-parse";
+import { scanFile } from "#quality-guard-rules-file";
+import { strip } from "#quality-guard-strip";
 import { tsFile } from "./rules-file-fixtures.test.mjs";
 
 const BLOCK = "{\n    return 1;\n  }"; // shared by the probe and long-return tests
 
-// The raw source is the fourth argument, as the production callers pass it.
+// The raw source is the third argument, as the production callers pass it.
 function functionsIn(source, lang = "ts") {
-  const { code } = strip(source, lang);
-  const found = findFunctions(code, lang, lineIndex(code), source);
+  const found = findFunctions(strip(source, lang), lang, source);
   return found.map(({ name, body }) => ({ name, body }));
 }
 
