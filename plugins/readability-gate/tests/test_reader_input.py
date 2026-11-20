@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'hooks'))
-from gate_reader import build_input  # noqa: E402
+from gate_input import build_input  # noqa: E402
 from gate_transcript import Seen  # noqa: E402
 
 

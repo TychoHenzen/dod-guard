@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 """Stop hook: checks that the final message of a turn answers the owner in
-plain spoken English.
+plain spoken English, with no more than they need.
 
 The owner reads almost only the last assistant message of each turn, often as
-a phone notification. That message must stand on its own. Text from earlier in
-the same turn is unread, and so is every earlier final message except the one
-the owner last replied to.
-
-One check: a reader model plays the owner (gate_reader.py, with the rules in
-prompts/reader.md). It lists what costs the owner effort, using the rules of
-talk-normal (github.com/hexiecs/talk-normal) plus references the owner has
-never seen, and writes the message the owner wanted. The message fails when
-the owner cannot act on it, or when that draft is much shorter
+a phone notification. A reader model plays the owner (gate_reader.py, rules in
+prompts/reader.md) and writes the message the owner wanted. The message fails
+when the owner cannot act on it, or when that draft is much shorter
 (gate_verdict.py). A failing message goes back once, with the draft as the
 target. At session start the same rules go into Claude's context
-(prompts/guide.md), so the first draft follows them. Fails open on any error,
-with a visible warning. Set READABILITY_GATE=off to skip.
+(prompts/guide.md). Fails open on any error, with a visible warning. Set
+READABILITY_GATE=off to skip. See README.md.
 """
 import json
 import os
@@ -23,46 +17,13 @@ import sys
 import time
 
 from gate_reader import TOKEN_PATH, load_prompt, review
+from gate_state import load_state, log, save_state
 from gate_transcript import read_transcript
 
 MIN_CHARS = 80
 # A second block mostly brought new nitpicks instead of a better message, and
 # each one costs the owner another wait.
 MAX_BLOCKS_PER_TURN = 1
-
-STATE_DIR = os.path.join(os.path.expanduser('~'), '.claude', 'hook-state')
-LOG_PATH = os.path.join(STATE_DIR, 'readability-gate.log')
-
-
-def log(msg):
-    try:
-        os.makedirs(STATE_DIR, exist_ok=True)
-        with open(LOG_PATH, 'a', encoding='utf-8') as f:
-            f.write(time.strftime('%Y-%m-%d %H:%M:%S ') + msg + '\n')
-    except OSError:
-        pass
-
-
-def state_path(session_id):
-    return os.path.join(STATE_DIR, session_id + '.gate.json')
-
-
-def load_state(session_id, turn):
-    """The block count for this turn; a new turn starts at zero."""
-    try:
-        with open(state_path(session_id)) as f:
-            state = json.load(f)
-    except (OSError, ValueError):
-        state = {}
-    if state.get('turn') != turn:
-        return {'turn': turn, 'blocks': 0}
-    return state
-
-
-def save_state(session_id, state):
-    os.makedirs(STATE_DIR, exist_ok=True)
-    with open(state_path(session_id), 'w') as f:
-        json.dump(state, f)
 
 
 def feedback(result):

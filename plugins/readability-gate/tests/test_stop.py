@@ -12,6 +12,7 @@ from unittest import mock
 
 HOOKS = os.path.join(os.path.dirname(__file__), '..', 'hooks')
 sys.path.insert(0, HOOKS)
+import gate_state  # noqa: E402
 from gate_transcript import Seen  # noqa: E402
 from gate_verdict import Review  # noqa: E402
 
@@ -31,12 +32,12 @@ class GateTest(unittest.TestCase):
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        self.patch('STATE_DIR', tmp.name)
-        self.patch('LOG_PATH', os.path.join(tmp.name, 'gate.log'))
-        self.patch('review', mock.Mock(return_value=FAILED))
+        self.patch(gate_state, 'STATE_DIR', tmp.name)
+        self.patch(gate_state, 'LOG_PATH', os.path.join(tmp.name, 'gate.log'))
+        self.patch(entry, 'review', mock.Mock(return_value=FAILED))
 
-    def patch(self, name, value):
-        patcher = mock.patch.object(entry, name, value)
+    def patch(self, module, name, value):
+        patcher = mock.patch.object(module, name, value)
         patcher.start()
         self.addCleanup(patcher.stop)
 

@@ -34,10 +34,11 @@ def sections(reply):
     wins."""
     found = {}
     marks = list(SECTION.finditer(reply))
-    for mark, after in zip(marks, marks[1:] + [None]):
-        text = reply[mark.end():after.start() if after else len(reply)]
-        if text.strip():
-            found.setdefault(mark.group(1), text.strip())
+    ends = [mark.start() for mark in marks[1:]] + [len(reply)]
+    for mark, end in zip(marks, ends):
+        text = reply[mark.end():end].strip()
+        if text:
+            found.setdefault(mark.group(1), text)
     return found
 
 
@@ -52,27 +53,37 @@ def none_listed(problems):
     return problems.strip().strip('."').lower() == 'none'
 
 
-def judge(message, reply):
-    """Split the reader's reply and decide. Raises when a section is missing,
+def parse(reply):
+    """The reply's sections and its last verdict. Raises when one is missing,
     so a garbled review is reported instead of passed."""
-    reply = reply or ''
     parts = sections(reply)
     missing = [name for name in REQUIRED if name not in parts]
     verdicts = VERDICT.findall(reply)
     if missing or not verdicts:
         raise RuntimeError('review is missing %s: %r'
                            % (', '.join(missing) or 'a verdict', reply[:200]))
-    before, after = prose_words(message), prose_words(parts['WANTED'])
-    cut = before - after
+    return parts, verdicts[-1].upper()
+
+
+def failures(verdict, before, after, problems):
     reasons = []
-    if verdicts[-1].upper() == 'FAIL':
+    if verdict == 'FAIL':
         reasons.append('cannot act on it')
-    # A reader that found no problems may write "unchanged" for the draft.
+    cut = before - after
     shorter = cut >= MIN_CUT_WORDS and cut >= MIN_CUT_SHARE * before
-    if shorter and not none_listed(parts['PROBLEMS']):
+    # A reader that found no problems may write "unchanged" for the draft.
+    if shorter and not none_listed(problems):
         reasons.append('too long')
+    return reasons
+
+
+def judge(message, reply):
+    """Split the reader's reply and decide."""
+    parts, verdict = parse(reply or '')
+    before, after = prose_words(message), prose_words(parts['WANTED'])
+    reasons = failures(verdict, before, after, parts['PROBLEMS'])
     notes = '\n\n'.join('%s:\n%s' % (name, parts[name])
-                        for name in NOTES if parts.get(name))
+                        for name in NOTES if name in parts)
     return Review(notes=notes, wanted=parts['WANTED'],
                   reason=' and '.join(reasons),
                   size='%d -> %d words' % (before, after))

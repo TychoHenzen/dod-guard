@@ -58,8 +58,8 @@ class JudgeTest(unittest.TestCase):
         self.assertEqual(judge(words(10), reply(draft)).wanted, draft)
 
     def test_the_last_verdict_line_counts(self):
-        text = reply(words(10)).replace('VERDICT: PASS',
-                                        'VERDICT: PASS or FAIL?\nVERDICT: FAIL')
+        two = 'VERDICT: PASS or FAIL?\nVERDICT: FAIL'
+        text = reply(words(10)).replace('VERDICT: PASS', two)
         self.assertEqual(judge(words(10), text).reason, 'cannot act on it')
 
     def test_a_reply_without_a_draft_raises(self):
