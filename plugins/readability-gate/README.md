@@ -59,15 +59,19 @@ that a quoted bad example gets copied.
 
 ## What it no longer does
 
-Version 1 also ran two checks without a model. Version 2 removes both:
+Earlier versions tried other checks. Each one made messages worse:
 
+- An ASD-STE100 grammar audit. Its rewrites read like a translated manual.
+- A reader that forgot every earlier turn, so each update re-explained
+  everything from the start.
 - A spaCy density check flagged stacked nouns, relative clauses without
   "that", and long dependencies. Over half of its noun-stack findings were
   tokenizer noise, such as `dod-guard` split into three words or a list number.
   Its fixes made messages stiffer rather than clearer.
 - A repetition check counted the last three final messages as read and asked
   Claude to cut sentences that repeated them. It cut decision lists the owner
-  had just asked to see again.
+  had just asked to see again, and the rewrites pointed at "items 1 to 5 of my
+  last report" instead.
 
 ## Requirements
 
@@ -99,9 +103,17 @@ block count lives next to it in `<session id>.gate.json`.
 
 | Path | Role |
 |------|------|
-| `hooks/readability-gate.py` | The reader check and the session-start guide |
-| `tests/test_readability_gate.py` | Tests for transcript reading, verdict parsing and the guide; no model call |
+| `hooks/readability-gate.py` | Hook entry: the once-per-turn block, the session-start guide, failing open |
+| `hooks/gate_transcript.py` | Reads the transcript: the current turn, the owner's request, the message they last replied to |
+| `hooks/gate_reader.py` | Runs the reader model and turns its reply into a verdict |
+| `prompts/reader.md` | The reader's instructions |
+| `prompts/feedback.md` | What Claude is told on a failure; `{notes}` is replaced by the reader's notes |
+| `prompts/guide.md` | The writing rules added to context at session start |
+| `tests/` | Tests for transcript reading, the reader input, verdict parsing, the block path and the guide; no model call |
 | `.claude-plugin/plugin.json` | Plugin manifest; registers the SessionStart and Stop hooks |
+
+The prompts are plain text files so their wording can change without touching
+the code.
 
 Run the tests with `python -m unittest discover plugins/readability-gate/tests`.
 
