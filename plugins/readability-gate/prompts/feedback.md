@@ -1,11 +1,14 @@
-The owner could not follow your last message. A reader who has seen only what the owner has seen (their request and the last message they replied to) reported this:
+The owner would have to work too hard to read your last message. A reader who has seen only what the owner has seen (their request and the last message they replied to) reported this:
 
 {notes}
 
-Write the message again from the top, as a fresh answer to the owner rather than an edit of the old wording.
-- Start with the answer to what the owner asked, or with what happened, in one or two plain sentences.
-- Keep every fact and every decision. Where the reader got lost, explain that thing in place, in plain words: what it is and why it matters to the owner. A bare number or label can go, as long as the thing it named stays.
-- For each decision, say what each choice does and which one you recommend. When the facts do not favor one, say it is the owner's call and why.
-- Write sentences you would say out loud to the owner, with the small words left in.
-- Use a list only for a real list. Keep any heading or format a skill requires.
-Do not mention this check.
+The reader also wrote the message the owner wanted, using only facts from yours:
+
+{wanted}
+
+Write your message again from the top, with that draft as the shape and length to aim for.
+- Check every fact in the draft against what you actually did, and fix what it got wrong. Fill in each note in square brackets from what you know. Drop any question, offer or recommendation in it that you do not mean.
+- Add back only what the owner needs to act on, or to know what changed. Leave out your own process: searches, failed tools, retries, notes you saved, and counts or file names they did not ask for.
+- For each decision, say what each choice does and which one you recommend.
+- Use short sentences, one point each, the way you would say them out loud.
+Keep any heading or format a skill requires. Do not mention this check.
