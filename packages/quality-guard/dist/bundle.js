@@ -26426,18 +26426,13 @@ function closeInterp(state) {
   state.previous.char = "x";
   state.previous.word = "";
 }
-function consumeTemplateEscape(state) {
+function consumeTemplateText(state) {
   const { source, cursor, parts } = state;
-  const raw = source.slice(cursor.index, cursor.index + 2);
+  const length = source[cursor.index] === "\\" ? 2 : 1;
+  const raw = source.slice(cursor.index, cursor.index + length);
   markLiteralNewlines(state, raw);
   parts.push(blank(raw));
   cursor.index += raw.length;
-}
-function consumeTemplateChar(state) {
-  const ch = state.source[state.cursor.index];
-  markLiteralNewlines(state, ch);
-  state.parts.push(blank(ch));
-  state.cursor.index += 1;
 }
 function trackBrace(frame, ch) {
   if (ch === "{") {
@@ -26473,11 +26468,9 @@ function stepInterp(state, frame) {
   consumePlain(state);
 }
 function stepTemplate(state) {
-  const ch = state.source[state.cursor.index];
-  if (ch === "\\") return consumeTemplateEscape(state);
-  if (ch === "`") return closeTemplate(state);
+  if (state.source[state.cursor.index] === "`") return closeTemplate(state);
   if (opensInterp(state)) return openInterp(state);
-  consumeTemplateChar(state);
+  consumeTemplateText(state);
 }
 function dispatch(state) {
   const frame = state.stack[state.stack.length - 1];
@@ -27346,8 +27339,7 @@ function goFunctions(code, starts) {
   return scanLanguage(code, starts, [HEADER_GO]);
 }
 
-// skills/quality-refactor/scripts/lib/parse-python.mjs
-var DEF = /^\s*(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(/;
+// skills/quality-refactor/scripts/lib/parse-python-lines.mjs
 var LEADING_WHITESPACE = /^[ \t]*/;
 var TAB = /\t/g;
 function bracketDepthAfter(text3, depth) {
@@ -27357,6 +27349,10 @@ function bracketDepthAfter(text3, depth) {
     open = Math.max(0, open - Number(")]}".includes(ch)));
   }
   return open;
+}
+function indentOf(line) {
+  const match = LEADING_WHITESPACE.exec(line);
+  return match[0].replace(TAB, "    ").length;
 }
 function logicalIndents(lines, source, literalLines) {
   const sourceLines = source.split("\n");
@@ -27372,6 +27368,9 @@ function logicalIndents(lines, source, literalLines) {
     return indentOf(sourceLines[index]);
   });
 }
+
+// skills/quality-refactor/scripts/lib/parse-python.mjs
+var DEF = /^\s*(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(/;
 function holdsBodyText(layout, index) {
   const blank2 = layout.lines[index].trim() === "";
   return !blank2 || layout.literalLines.has(index + 1);
@@ -27392,10 +27391,6 @@ function headerParams(code, start) {
   const open = code.indexOf("(", start);
   const close = matchBracket(code, open, "()");
   return splitParams(close === -1 ? "" : code.slice(open + 1, close));
-}
-function indentOf(line) {
-  const match = LEADING_WHITESPACE.exec(line);
-  return match[0].replace(TAB, "    ").length;
 }
 function pythonFunctions(stripped, starts, source) {
   const { code, literalLines } = stripped;

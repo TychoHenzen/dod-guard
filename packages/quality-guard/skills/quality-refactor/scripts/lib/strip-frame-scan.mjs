@@ -4,8 +4,7 @@ import {
   closeTemplate,
   consumePlain,
   consumeSpan,
-  consumeTemplateChar,
-  consumeTemplateEscape,
+  consumeTemplateText,
   openInterp,
   openTemplate,
   trackBrace,
@@ -37,11 +36,9 @@ function stepInterp(state, frame) {
 }
 
 function stepTemplate(state) {
-  const ch = state.source[state.cursor.index];
-  if (ch === "\\") return consumeTemplateEscape(state);
-  if (ch === "`") return closeTemplate(state);
+  if (state.source[state.cursor.index] === "`") return closeTemplate(state);
   if (opensInterp(state)) return openInterp(state);
-  consumeTemplateChar(state);
+  consumeTemplateText(state);
 }
 
 export function dispatch(state) {

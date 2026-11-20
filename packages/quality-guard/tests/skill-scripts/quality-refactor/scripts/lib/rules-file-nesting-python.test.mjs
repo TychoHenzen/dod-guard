@@ -17,7 +17,7 @@ function nestingFindings(lines) {
   const file = { rel: "walk.py", lang: "py", isTest: false, source };
   return scanFile({ ...file, lines: source.split("\n") }, buildConfig())
     .violations.filter((violation) => violation.rule === "nesting-depth")
-    .map(({ severity, message, metric }) => ({ severity, message, metric }));
+    .map(({ severity, message, metric }) => `${severity} ${metric} ${message}`);
 }
 
 const COPY_ALL = [
@@ -73,11 +73,7 @@ test("multi-line strings add no depth", () => {
 
 test("a real if/for/with/if nest is still reported", () => {
   assert.deepEqual(nestingFindings(COPY_ALL), [
-    {
-      severity: "medium",
-      message: "copy_all() nests 4 levels deep",
-      metric: 4,
-    },
+    "medium 4 copy_all() nests 4 levels deep",
   ]);
 });
 

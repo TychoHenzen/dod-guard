@@ -74,19 +74,15 @@ export function closeInterp(state) {
   state.previous.word = "";
 }
 
-export function consumeTemplateEscape(state) {
+// An escape takes its backslash and the next character together, so an
+// escaped backtick or `${` stays template text.
+export function consumeTemplateText(state) {
   const { source, cursor, parts } = state;
-  const raw = source.slice(cursor.index, cursor.index + 2);
+  const length = source[cursor.index] === "\\" ? 2 : 1;
+  const raw = source.slice(cursor.index, cursor.index + length);
   markLiteralNewlines(state, raw);
   parts.push(blank(raw));
   cursor.index += raw.length;
-}
-
-export function consumeTemplateChar(state) {
-  const ch = state.source[state.cursor.index];
-  markLiteralNewlines(state, ch);
-  state.parts.push(blank(ch));
-  state.cursor.index += 1;
 }
 
 export function trackBrace(frame, ch) {
