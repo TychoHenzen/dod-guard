@@ -24,6 +24,8 @@ Assess four lenses: `implementation`, `wiring/usability` (proof the feature is r
 
 ## Stages
 
+Before stage 1, run `node <plugin-root>/skills/goal-sdlc/scripts/archon-managed.mjs` in the target checkout, where `<plugin-root>` is two directories above this skill's base directory. On exit 1, Archon's SDLC pack runs this repository's lifecycle: stop before creating any issue and tell the user to file the request as an issue for `archon-intake` instead. On exit 3, report its `problem` and continue.
+
 1. Run `dod-guard:add-backlog-idea` once with the complete request. Keep its feature split and issue mappings. For several independent issues, process them one at a time in creation order. If it reports text that fits no feature, stop with that blocker.
 2. Run `dod-guard:refine-backlog-item <issue-number>` for each issue. Ask all independent questions in one round, wait, then resume the same issue. Ask nothing in any other stage. If a material answer stays unavailable, leave the issue in its actual state and stop.
 3. Run `dod-guard:next-ticket <issue-number>` only after refinement moves the issue to `Todo`. Take its pushed branch, commit, and checks as the handoff. Never select another ticket.

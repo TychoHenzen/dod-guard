@@ -2,7 +2,10 @@
   "schemaVersion": 1,
   "kind": "workflow-pack",
   "name": "dod-guard",
-  "description": "dod-guard workflows for Archon: blind rewrite of one file or directory from a behavior contract",
+  "description": "dod-guard workflows for Archon: blind rewrite of one file or directory from a behavior contract, and dod-guard's engineering standards for Archon's SDLC pack",
   "compatibility": { "archon": ">=0.14.0" },
-  "entrypoints": { "blind-rewrite": "archon-blind-rewrite/blind-rewrite.yaml" }
+  "entrypoints": {
+    "blind-rewrite": "archon-blind-rewrite/blind-rewrite.yaml",
+    "sdlc-standards": "archon-sdlc-standards/sdlc-standards.yaml"
+  }
 }
