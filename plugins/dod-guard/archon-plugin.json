@@ -2,10 +2,17 @@
   "schemaVersion": 1,
   "kind": "workflow-pack",
   "name": "dod-guard",
-  "description": "dod-guard workflows for Archon: blind rewrite of one file or directory from a behavior contract, and dod-guard's engineering standards for Archon's SDLC pack",
+  "description": "dod-guard workflows for Archon: dod-guard engineering standards for the SDLC pack, blind rewrite, doc reconcile, clean house, codex migrate, skill debug, skill migrate, wiring audit and usability review",
   "compatibility": { "archon": ">=0.14.0" },
   "entrypoints": {
     "blind-rewrite": "archon-blind-rewrite/blind-rewrite.yaml",
-    "sdlc-standards": "archon-sdlc-standards/sdlc-standards.yaml"
+    "sdlc-standards": "archon-sdlc-standards/sdlc-standards.yaml",
+    "doc-reconcile": "archon-doc-reconcile/doc-reconcile.yaml",
+    "clean-house": "archon-clean-house/clean-house.yaml",
+    "codex-migrate": "archon-codex-migrate/codex-migrate.yaml",
+    "skill-debug": "archon-skill-debug/skill-debug.yaml",
+    "skill-migrate": "archon-skill-migrate/skill-migrate.yaml",
+    "wiring-audit": "archon-wiring-audit/wiring-audit.yaml",
+    "usability-review": "archon-usability-review/usability-review.yaml"
   }
 }
