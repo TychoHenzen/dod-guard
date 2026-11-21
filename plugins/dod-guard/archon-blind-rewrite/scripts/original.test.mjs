@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url";
 import { materialize } from "./original.mjs";
 
 const SCRIPT = fileURLToPath(new URL("./original.mjs", import.meta.url));
+const UNTRACKED = /no tracked file at missing/;
+const MISSING_COMMIT = /missing --commit/;
 let repo;
 let commit;
 
@@ -41,10 +43,7 @@ test("export attributes do not drop or rewrite files", () => {
   try {
     assert.equal(materialize({ commit, target: "component", dir, cwd: repo }), 2);
     assert.equal(readFileSync(join(dir, "component", "module.js"), "utf8"), "export const a = 1;\r\n");
-    assert.equal(
-      readFileSync(join(dir, "component", "inner", "util.js"), "utf8"),
-      "export const $Format:%H$ = 2;\n",
-    );
+    assert.equal(readFileSync(join(dir, "component", "inner", "util.js"), "utf8"), "export const $Format:%H$ = 2;\n");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -63,13 +62,12 @@ test("a single file target is written at its repository path", () => {
 test("an untracked target exits 2 from the command line", () => {
   const dir = mkdtempSync(join(tmpdir(), "original-out-"));
   try {
-    const result = spawnSync(
-      process.execPath,
-      [SCRIPT, `--commit=${commit}`, "--target=missing", `--dir=${dir}`],
-      { cwd: repo, encoding: "utf8" },
-    );
+    const result = spawnSync(process.execPath, [SCRIPT, `--commit=${commit}`, "--target=missing", `--dir=${dir}`], {
+      cwd: repo,
+      encoding: "utf8",
+    });
     assert.equal(result.status, 2);
-    assert.match(result.stderr, /no tracked file at missing/);
+    assert.match(result.stderr, UNTRACKED);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -78,5 +76,5 @@ test("an untracked target exits 2 from the command line", () => {
 test("a missing option exits 2 from the command line", () => {
   const result = spawnSync(process.execPath, [SCRIPT, "--target=component"], { cwd: repo, encoding: "utf8" });
   assert.equal(result.status, 2);
-  assert.match(result.stderr, /missing --commit/);
+  assert.match(result.stderr, MISSING_COMMIT);
 });

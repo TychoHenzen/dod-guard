@@ -11,42 +11,55 @@ import { dirname, join } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
-const MAX_BUFFER = 1 << 28;
+const MAX_BUFFER = 256 * 1024 * 1024;
+const OPTION = /^--(commit|target|dir)=(.+)$/;
 
 function git(cwd, args) {
   return execFileSync("git", args, { cwd, maxBuffer: MAX_BUFFER });
 }
 
-export function materialize({ commit, target, dir, cwd = process.cwd() }) {
-  const listing = git(cwd, ["ls-tree", "-r", "-z", "--full-tree", commit, "--", target]);
-  let written = 0;
-  for (const entry of listing.toString("utf8").split("\0")) {
-    if (entry === "") continue;
-    const tab = entry.indexOf("\t");
-    const type = entry.slice(0, tab).split(" ")[1];
-    // A submodule entry is a commit with no content in this repository.
-    if (type !== "blob") continue;
-    const sha = entry.slice(0, tab).split(" ")[2];
-    const out = join(dir, entry.slice(tab + 1));
-    mkdirSync(dirname(out), { recursive: true });
-    writeFileSync(out, git(cwd, ["cat-file", "blob", sha]));
-    written += 1;
-  }
-  if (written === 0) throw new Error(`no tracked file at ${target} in ${commit}`);
-  return written;
+// One `git ls-tree -z` entry is "<mode> <type> <sha>\t<path>".
+function parseEntry(entry) {
+  const tab = entry.indexOf("\t");
+  const [, type, sha] = entry.slice(0, tab).split(" ");
+  return { type, sha, path: entry.slice(tab + 1) };
 }
 
 function parseArgs(argv) {
   const options = {};
   for (const arg of argv) {
-    const match = /^--(commit|target|dir)=(.+)$/.exec(arg);
-    if (!match) throw new Error(`unknown argument: ${arg}`);
+    const match = OPTION.exec(arg);
+    if (!match) {
+      throw new Error(`unknown argument: ${arg}`);
+    }
     options[match[1]] = match[2];
   }
   for (const name of ["commit", "target", "dir"]) {
-    if (!options[name]) throw new Error(`missing --${name}`);
+    if (!options[name]) {
+      throw new Error(`missing --${name}`);
+    }
   }
   return options;
+}
+
+export function materialize({ commit, target, dir, cwd = process.cwd() }) {
+  const listing = git(cwd, ["ls-tree", "-r", "-z", "--full-tree", commit, "--", target]);
+  // A submodule entry is a commit with no content in this repository.
+  const blobs = listing
+    .toString("utf8")
+    .split("\0")
+    .filter((entry) => entry !== "")
+    .map(parseEntry)
+    .filter((entry) => entry.type === "blob");
+  if (blobs.length === 0) {
+    throw new Error(`no tracked file at ${target} in ${commit}`);
+  }
+  for (const { sha, path } of blobs) {
+    const out = join(dir, path);
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, git(cwd, ["cat-file", "blob", sha]));
+  }
+  return blobs.length;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
