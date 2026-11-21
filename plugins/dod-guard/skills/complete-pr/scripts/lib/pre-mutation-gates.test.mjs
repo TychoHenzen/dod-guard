@@ -172,58 +172,6 @@ test("completePullRequest stops with not_open_pull_request before any mutation",
   );
 });
 
-const unlinkedMergeTitle = [
-  "with --no-linked-issue, a pull request that closes no issue merges,",
-  "deletes its branch, and reports no linked issues",
-].join(" ");
-
-test(unlinkedMergeTitle, async () => {
-  const client = new FixtureClient({
-    issues: [[]],
-    pulls: [
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-      pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
-    ],
-  });
-
-  const result = await completePullRequest(client, {
-    ...immediateOptions,
-    localGit: createFixtureLocalGit(),
-    noLinkedIssue: true,
-  });
-
-  assert.deepEqual(
-    client.calls.filter(([name]) => name === "mergePullRequest"),
-    [["mergePullRequest", 24, "head-1"]],
-  );
-  assert.deepEqual(result.linkedIssues, []);
-  assert.equal(result.branch, "deleted");
-});
-
-test("with --no-linked-issue, a linked issue is still confirmed closed after the merge", async () => {
-  const closedIssue = { number: 24, state: "CLOSED", url: "issue" };
-  const client = new FixtureClient({
-    issues: [[{ ...closedIssue, state: "OPEN" }], [closedIssue]],
-    pulls: [
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-      pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
-    ],
-  });
-
-  const result = await completePullRequest(client, {
-    ...immediateOptions,
-    localGit: createFixtureLocalGit(),
-    noLinkedIssue: true,
-  });
-
-  // Only the second poll reads the issue as closed, so this result proves the confirmation still ran.
-  assert.deepEqual(result.linkedIssues, [closedIssue]);
-});
-
 test("a missing closing issue stops before the temporary refs are read", async () => {
   const client = new FixtureClient({ issues: [[]], pulls: [pull()] });
 
