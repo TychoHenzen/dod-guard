@@ -1,0 +1,301 @@
+name: skill-migrate
+description: |
+  Migrate one skill, agent definition, CLAUDE.md, memory file or instinct file
+  to post-4.6 Claude models by blind-rewriting it from a behavioral contract.
+  Read-only sessions write the inventory, the contract and the classification
+  of every OBSERVED item; a script rejects any of them that repeats the
+  original's wording, since the blind writer reads all three, and one session
+  rewords what it rejects. A maintainer picks which SCAFFOLDING to cut on a
+  multi-select form and can correct the contract in the answer text. The
+  target is then removed from the run's checkout; a fresh writer that never
+  sees it writes the replacement into the run's artifacts. skill-migrate's own
+  scripts gate it: the overlap scan, the regression check against the saved
+  baseline, and the finish check. A gap auditor is the one later session that
+  sees the original. The target is restored byte for byte and checked; the
+  migrated draft and a report with the full diff stay in the artifacts. Nothing
+  is committed: landing the draft is the maintainer's call.
+
+  Use when: a skill or agent should be tuned for newer, more literal models.
+  NOT for: writing a new skill, or debugging a skill from its runs
+  (skill-debug).
+
+  Run with: archon workflow run TychoHenzen/dod-guard:skill-migrate
+            --branch migrate/<name> --input target=<repo-relative path>
+            [--input kind=skill|agent|claude-md|memory|instinct]
+  Answer the form with: archon workflow answer <run-id> --occurrence <id>
+            [--choose <cut-id>]... [--choose none] [--text "<corrections>"]
+
+model: medium
+
+inputs:
+  target:
+    required: true
+    description: Repository-relative path of the one artifact to migrate.
+  kind:
+    default: ""
+    description: Overrides kind detection. Empty lets migration-check detect it.
+
+nodes:
+  # Git at this commit is the run's only copy of the original, and the
+  # digest proves at the end that the target was never written.
+  - id: preflight
+    bash: |
+      set -euo pipefail
+      target="$INPUTS_TARGET"
+      case "$target" in
+        ""|/*|*..*|*\\*) echo "target must be a repository-relative path with forward slashes: '$target'" >&2; exit 1 ;;
+      esac
+      git ls-files --error-unmatch -- "$target" > /dev/null 2>&1 \
+        || { echo "target '$target' is not tracked by git" >&2; exit 1; }
+      [ -z "$(git status --porcelain)" ] \
+        || { echo "checkout is not clean; the target must be checked byte for byte at the end" >&2; git status --porcelain >&2; exit 1; }
+      # Exit 3 here refuses an installed plugin cache copy.
+      node "$PACK_DIR/skills/skill-migrate/scripts/migration-check.mjs" "$target" --sha256
+
+  - id: commit
+    depends_on: [preflight]
+    bash: git rev-parse HEAD
+
+  # migration-check exits 1 when a check fails, which an unmigrated artifact
+  # may well do; the baseline is saved either way.
+  - id: baseline
+    depends_on: [preflight]
+    bash: |
+      set -uo pipefail
+      kind_arg=()
+      [ -z "$INPUTS_KIND" ] || kind_arg=("--kind=$INPUTS_KIND")
+      node "$PACK_DIR/skills/skill-migrate/scripts/migration-check.mjs" "$INPUTS_TARGET" \
+        --save="$ARTIFACTS_DIR/baseline.json" "${kind_arg[@]}" > "$ARTIFACTS_DIR/baseline.txt" 2>&1
+      code=$?
+      [ "$code" = 0 ] || [ "$code" = 1 ] || { echo "migration-check exited $code" >&2; cat "$ARTIFACTS_DIR/baseline.txt" >&2; exit 1; }
+      node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).kind)' "$ARTIFACTS_DIR/baseline.json"
+
+  - id: inventory
+    depends_on: [baseline]
+    command: inventory
+    context: fresh
+    mutates_checkout: false
+    allowed_tools: [Read, Grep, Glob, Write]
+    settingSources: [project]
+
+  - id: extract
+    depends_on: [inventory]
+    command: extract
+    context: fresh
+    model: large
+    mutates_checkout: false
+    allowed_tools: [Read, Grep, Glob, Write]
+    settingSources: [project]
+
+  - id: verbatim
+    depends_on: [extract]
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-skill-migrate/scripts/migrate.mjs" verbatim --dir="$ARTIFACTS_DIR"
+
+  - id: classify
+    depends_on: [verbatim]
+    command: classify
+    context: fresh
+    model: large
+    mutates_checkout: false
+    allowed_tools: [Read, Grep, Glob, Write]
+    settingSources: [project]
+
+  # The writer reads these three files, and the sessions that wrote them read
+  # the original. Each must pass the writer's own overlap scan, or the
+  # writer copies the original second hand. One reword, then the scan is
+  # final, all before a maintainer spends time on the form.
+  - id: scan
+    depends_on: [classify]
+    bash: |
+      set -euo pipefail
+      base=$commit.output
+      node "$PACK_DIR/archon-skill-migrate/scripts/migrate.mjs" leak --dir="$ARTIFACTS_DIR" --repo="$(pwd)" \
+        --target="$INPUTS_TARGET" --commit="$base" --pack="$PACK_DIR"
+
+  - id: reword
+    depends_on: [scan]
+    when: "$scan.output != 'PASS'"
+    command: reword
+    context: fresh
+    mutates_checkout: false
+    allowed_tools: [Read, Grep, Glob, Write, Edit]
+    settingSources: [project]
+
+  - id: rescan
+    depends_on: [scan, reword]
+    trigger_rule: none_failed_min_one_success
+    bash: |
+      set -euo pipefail
+      base=$commit.output
+      node "$PACK_DIR/archon-skill-migrate/scripts/migrate.mjs" leak --dir="$ARTIFACTS_DIR" --repo="$(pwd)" \
+        --target="$INPUTS_TARGET" --commit="$base" --pack="$PACK_DIR" --strict=true
+
+  - id: list
+    depends_on: [rescan]
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-skill-migrate/scripts/migrate.mjs" options --dir="$ARTIFACTS_DIR"
+    output_format:
+      type: object
+      properties:
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              does: { type: string }
+            required: [id]
+        count: { type: string }
+        message: { type: string }
+      required: [options, count, message]
+
+  # Phase 3: the one step that blocks on a person.
+  - id: ask
+    depends_on: [list]
+    wait:
+      attention: "$list.output.message"
+      form: multi_select
+      options: "$list.output.options"
+      labels:
+        stage: skill-migrate
+        kind: approval
+
+  - id: approve
+    depends_on: [ask]
+    bash: |
+      set -euo pipefail
+      answer=$ask.output
+      node "$PACK_DIR/archon-skill-migrate/scripts/migrate.mjs" approve --dir="$ARTIFACTS_DIR" --answer="$answer"
+
+  # The writer must not find the target in its checkout. It comes back from
+  # git in the restore node, whatever happens in between.
+  - id: hide
+    depends_on: [approve]
+    bash: |
+      set -euo pipefail
+      rm -- "$INPUTS_TARGET"
+      [ ! -e "$INPUTS_TARGET" ]
+
+  # Two writer rounds; the repair below is the last of the skill's two
+  # redispatches. Two rounds without a PASS fail the node (on_exhausted
+  # defaults to fail), so no audit runs against a deleted draft.
+  - id: rounds
+    depends_on: [hide]
+    loop_group:
+      max_iterations: 2
+      until_bash: 'verdict=$gate.output; [ "$verdict" = PASS ]'
+      nodes:
+        - id: writer
+          command: write
+          context: fresh
+          allowed_tools: [Read, Grep, Glob, Write]
+          settingSources: [project]
+          output_format:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [done, ambiguous]
+              exposed: { type: boolean }
+              report: { type: string }
+            required: [status, exposed, report]
+            additionalProperties: false
+
+        - id: gate
+          depends_on: [writer]
+          bash: |
+            set -uo pipefail
+            status=$writer.output.status
+            exposed=$writer.output.exposed
+            report=$writer.output.report
+            base=$commit.output
+            if [ "$status" != done ]; then
+              printf 'The writer could not settle the contract:\n%s\n' "$report" >&2
+              exit 1
+            fi
+            if [ "$exposed" = true ]; then
+              rm -f -- "$ARTIFACTS_DIR/body.md" "$ARTIFACTS_DIR/migrated.md"
+              echo exposed > "$ARTIFACTS_DIR/feedback.md"
+              echo exposed
+              exit 0
+            fi
+            node "$PACK_DIR/archon-skill-migrate/scripts/migrate.mjs" gate --dir="$ARTIFACTS_DIR" --repo="$(pwd)" \
+              --target="$INPUTS_TARGET" --commit="$base" --pack="$PACK_DIR"
+
+  # The auditor is the one later session that may read the original.
+  - id: reveal
+    depends_on: [rounds]
+    bash: |
+      set -euo pipefail
+      base=$commit.output
+      orig="$ARTIFACTS_DIR/original"
+      rm -rf -- "$orig"; mkdir -p "$orig"
+      node "$PACK_DIR/archon-blind-rewrite/scripts/original.mjs" \
+        --commit="$base" --target="$INPUTS_TARGET" --dir="$orig" > /dev/null
+
+  - id: audit
+    depends_on: [reveal]
+    command: audit
+    context: fresh
+    mutates_checkout: false
+    allowed_tools: [Read, Grep, Glob, Write]
+    settingSources: [project]
+    output_format:
+      type: object
+      properties:
+        verdict:
+          type: string
+          enum: [clean, gaps]
+      required: [verdict]
+      additionalProperties: false
+
+  - id: hide-original
+    depends_on: [audit]
+    trigger_rule: all_done
+    bash: |
+      rm -rf -- "$ARTIFACTS_DIR/original"
+      [ ! -e "$ARTIFACTS_DIR/original" ]
+
+  - id: repair
+    depends_on: [audit, hide-original]
+    when: "$audit.output.verdict == 'gaps'"
+    command: repair
+    context: fresh
+    allowed_tools: [Read, Grep, Glob, Write, Edit]
+    settingSources: [project]
+
+  # The last word belongs to skill-migrate's own scripts.
+  - id: final
+    depends_on: [audit, hide-original, repair]
+    trigger_rule: none_failed_min_one_success
+    bash: |
+      set -euo pipefail
+      base=$commit.output
+      node "$PACK_DIR/archon-skill-migrate/scripts/migrate.mjs" final --dir="$ARTIFACTS_DIR" --repo="$(pwd)" \
+        --target="$INPUTS_TARGET" --commit="$base" --pack="$PACK_DIR"
+
+  # Target integrity, on every path through the run.
+  - id: restore
+    depends_on: [hide, final]
+    trigger_rule: all_done
+    bash: |
+      set -euo pipefail
+      digest=$preflight.output
+      target="$INPUTS_TARGET"
+      git checkout HEAD -- "$target"
+      now=$(node "$PACK_DIR/skills/skill-migrate/scripts/migration-check.mjs" "$target" --sha256)
+      [ "$now" = "$digest" ] || { echo "target digest changed: $digest before, $now after" >&2; exit 1; }
+      [ -z "$(git status --porcelain)" ] \
+        || { echo "the run left changes in the checkout:" >&2; git status --porcelain >&2; exit 1; }
+      echo "target unchanged: $now"
+
+  - id: report
+    depends_on: [final, restore]
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-skill-migrate/scripts/migrate.mjs" report --dir="$ARTIFACTS_DIR" --repo="$(pwd)" \
+        --target="$INPUTS_TARGET"

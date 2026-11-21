@@ -10,6 +10,7 @@
     "doc-reconcile": "archon-doc-reconcile/doc-reconcile.yaml",
     "clean-house": "archon-clean-house/clean-house.yaml",
     "codex-migrate": "archon-codex-migrate/codex-migrate.yaml",
-    "skill-debug": "archon-skill-debug/skill-debug.yaml"
+    "skill-debug": "archon-skill-debug/skill-debug.yaml",
+    "skill-migrate": "archon-skill-migrate/skill-migrate.yaml"
   }
 }
