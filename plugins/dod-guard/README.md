@@ -67,6 +67,33 @@ Every skill applies the shared working defaults in
 dirty worktree changes use the normal commit path, stale tests follow the
 current contract, and explicit safety or authority boundaries remain.
 
+## Archon
+
+This directory is also an Archon workflow pack (`archon-plugin.json`). Install
+it once for every project on the machine:
+
+```bash
+archon plugin add TychoHenzen/dod-guard/plugins/dod-guard
+```
+
+It ships one workflow, `blind-rewrite`, the Archon form of the `/blind-rewrite`
+skill for one tracked file or directory:
+
+```bash
+archon workflow run TychoHenzen/dod-guard:blind-rewrite \
+  --branch rewrite/<slug> --input target=<repo-relative path>
+```
+
+A session writes the behavior contract while it can still see the original,
+the target is deleted, and a fresh session with no shell writes the
+replacement. Git at the run's start commit is the only copy of the original:
+scripts bring it out for the overlap gate and the gap audit and remove it
+again, so it is never on disk while a writer runs. The workflow reuses the
+skill's overlap scanner and the `blind-*` agent instructions from this
+directory. It ends with a draft pull request (`--input open_pr=false` stops at
+the commit). A code target needs tests around it; the workflow stops on a
+target with no seam and on a dependency swap across call sites.
+
 ## Repository setup
 
 `/setup-repository` connects a local project to GitHub, creates a new target as

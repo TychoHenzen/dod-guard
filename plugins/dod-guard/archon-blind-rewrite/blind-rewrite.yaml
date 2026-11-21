@@ -1,0 +1,310 @@
+name: blind-rewrite
+description: |
+  Replace one tracked file or directory from a behavior contract instead of
+  paraphrasing it. One session writes the contract while it can still see the
+  original; the target is deleted; a fresh session with no shell and no copy of
+  the original writes the replacement; a script fails it when it is too close to
+  the original; a separate session audits what the replacement lost. The
+  original never sits on disk while a writer runs: git at the run's start commit
+  is the only copy, and scripts bring it out only for the gate and the audit.
+
+  Use when: a complete rewrite, replacement or algorithm change of one file or
+  directory is wanted, or an earlier rewrite was only cosmetic. Code needs an
+  existing seam (callers and tests that judge it); prose needs none.
+  NOT for: ordinary edits, bug fixes, additive features, copy editing, a
+  library swap across call sites, or code with no tests around it (build the
+  seam first, then rerun).
+
+  Run with: archon workflow run TychoHenzen/dod-guard:blind-rewrite
+            --branch rewrite/<slug> --input target=<repo-relative path>
+            [--input issue=<number>] [--input open_pr=false]
+
+model: medium
+
+inputs:
+  target:
+    required: true
+    description: Repository-relative path of the one tracked file or directory to replace.
+  issue:
+    default: ""
+    description: Issue number the pull request refers to with Refs #N. Empty for none.
+  open_pr:
+    default: "true"
+    description: '"true" pushes the branch and opens a draft pull request; anything else stops at the commit.'
+
+nodes:
+  # The target must be tracked and the checkout clean, because git at this
+  # commit is the run's only copy of the original.
+  - id: preflight
+    bash: |
+      set -euo pipefail
+      target="$INPUTS_TARGET"
+      case "$target" in
+        ""|/*|*..*|*\\*) echo "target must be a repository-relative path with forward slashes: '$target'" >&2; exit 1 ;;
+      esac
+      git ls-files --error-unmatch -- "$target" > /dev/null 2>&1 \
+        || { echo "target '$target' is not tracked by git" >&2; exit 1; }
+      [ -z "$(git status --porcelain)" ] \
+        || { echo "checkout is not clean; the run needs a clean start commit" >&2; git status --porcelain >&2; exit 1; }
+      git rev-parse HEAD
+
+  # The only session that reads the original before the audit.
+  - id: contract
+    depends_on: [preflight]
+    command: contract
+    context: fresh
+    mutates_checkout: false
+    allowed_tools: [Read, Grep, Glob, Write]
+    settingSources: [project]
+    output_format:
+      type: object
+      properties:
+        shape:
+          type: string
+          enum: [seam, prose, no-seam, dependency-swap]
+        seam: { type: string }
+        checks: { type: string }
+        leak_paths:
+          type: array
+          items: { type: string }
+        whitelist: { type: string }
+        question: { type: string }
+      required: [shape, seam, checks, leak_paths, whitelist, question]
+      additionalProperties: false
+
+  - id: refuse
+    depends_on: [contract]
+    when: "$contract.output.shape == 'no-seam' || $contract.output.shape == 'dependency-swap'"
+    cancel: >-
+      The target has no seam to judge a blind rewrite against, or the change is a
+      dependency swap across call sites. Build the seam (tests around the target)
+      or migrate the call sites as ordinary work first.
+
+  # Contradicting requirements are the one thing a person must settle.
+  - id: ask
+    depends_on: [contract]
+    when: "$contract.output.question != ''"
+    wait:
+      attention: "$contract.output.question"
+      labels:
+        stage: blind-rewrite
+        kind: contract
+
+  - id: record-answer
+    depends_on: [ask]
+    bash: |
+      answer=$ask.output.text
+      printf '%s\n' "$answer" > "$ARTIFACTS_DIR/answer.md"
+
+  # The checks must pass on the original, or a failure after the rewrite says
+  # nothing about the rewrite and the fix loop chases a broken command.
+  - id: baseline
+    depends_on: [contract, refuse]
+    trigger_rule: none_failed_min_one_success
+    bash: |
+      cmd=$contract.output.checks
+      [ -n "$cmd" ] || exit 0
+      if ! bash -c "$cmd" > "$ARTIFACTS_DIR/baseline.txt" 2>&1; then
+        echo "the check command fails on the original, so it cannot judge a rewrite: $cmd" >&2
+        tail -n 20 "$ARTIFACTS_DIR/baseline.txt" >&2
+        exit 1
+      fi
+
+  - id: remove
+    depends_on: [contract, refuse, record-answer, baseline]
+    trigger_rule: none_failed_min_one_success
+    bash: |
+      set -euo pipefail
+      git rm -r -q -- "$INPUTS_TARGET"
+      [ ! -e "$INPUTS_TARGET" ] || rm -rf -- "$INPUTS_TARGET"
+
+  # Two write and gate cycles at most. A writer that comes back too close is
+  # thrown away whole; the next one starts from the contract alone.
+  - id: rounds
+    depends_on: [remove]
+    loop_group:
+      max_iterations: 2
+      until_bash: 'verdict=$gate.output; [ "$verdict" = PASS ]'
+      nodes:
+        - id: writer
+          command: write
+          context: fresh
+          allowed_tools: [Read, Grep, Glob, Write, Edit]
+          settingSources: [project]
+          output_format:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [done, ambiguous]
+              report: { type: string }
+            required: [status, report]
+            additionalProperties: false
+
+        - id: gate
+          depends_on: [writer]
+          bash: |
+            set -uo pipefail
+            status=$writer.output.status
+            report=$writer.output.report
+            base=$preflight.output
+            shape=$contract.output.shape
+            whitelist=$contract.output.whitelist
+            target="$INPUTS_TARGET"
+            if [ "$status" != done ]; then
+              printf 'The writer could not settle the contract:\n%s\n' "$report" >&2
+              exit 1
+            fi
+            [ -e "$target" ] || { echo "the writer wrote nothing at $target" >&2; exit 1; }
+            mode=code; [ "$shape" = prose ] && mode=prose
+            orig="$ARTIFACTS_DIR/original-gate"
+            trap 'rm -rf -- "$orig"' EXIT
+            rm -rf -- "$orig"; mkdir -p "$orig"
+            # Extract from inside the folder: GNU tar reads "C:/..." after -C as a remote host.
+            git archive "$base" -- "$target" | (cd "$orig" && tar -x)
+            node "$PACK_DIR/skills/blind-rewrite/scripts/overlap-scan.mjs" \
+              --original="$orig/$target" --rewrite="$target" --mode="$mode" \
+              --whitelist="$whitelist" --contract-file="$ARTIFACTS_DIR/verbatim.txt" \
+              > "$ARTIFACTS_DIR/overlap.json"
+            code=$?
+            case "$code" in
+              0) echo PASS ;;
+              1) rm -rf -- "$target"; echo "too close" ;;
+              *) echo "overlap scan failed with exit $code" >&2; exit 1 ;;
+            esac
+
+  - id: checks
+    depends_on: [rounds]
+    bash: |
+      cmd=$contract.output.checks
+      shape=$contract.output.shape
+      if [ -z "$cmd" ]; then
+        if [ "$shape" = prose ]; then echo PASS; exit 0; fi
+        echo "no check command was found for a code target; nothing can verify the rewrite" >&2
+        exit 1
+      fi
+      if bash -c "$cmd" > "$ARTIFACTS_DIR/checks.txt" 2>&1; then echo PASS; else echo FAIL; fi
+
+  - id: fix
+    depends_on: [checks]
+    when: "$checks.output == 'FAIL'"
+    loop:
+      command: fix
+      fresh_context: true
+      max_iterations: 3
+      until_bash: 'cmd=$contract.output.checks; bash -c "$cmd" > /dev/null 2>&1'
+    allowed_tools: [Read, Grep, Glob, Write, Edit, Bash]
+
+  # The auditor is the one later session that may read the original. It is
+  # brought out for the audit and removed again whatever the audit does.
+  - id: reveal
+    depends_on: [checks, fix]
+    trigger_rule: none_failed_min_one_success
+    bash: |
+      set -euo pipefail
+      base=$preflight.output
+      orig="$ARTIFACTS_DIR/original"
+      rm -rf -- "$orig"; mkdir -p "$orig"
+      git archive "$base" -- "$INPUTS_TARGET" | (cd "$orig" && tar -x)
+
+  - id: audit
+    depends_on: [reveal]
+    command: audit
+    context: fresh
+    mutates_checkout: false
+    allowed_tools: [Read, Grep, Glob]
+    settingSources: [project]
+    output_format:
+      type: object
+      properties:
+        verdict:
+          type: string
+          enum: [clean, gaps]
+        report: { type: string }
+      required: [verdict, report]
+      additionalProperties: false
+
+  - id: hide
+    depends_on: [audit]
+    trigger_rule: all_done
+    bash: |
+      rm -rf -- "$ARTIFACTS_DIR/original"
+      [ ! -e "$ARTIFACTS_DIR/original" ]
+
+  - id: repair
+    depends_on: [audit, hide]
+    when: "$audit.output.verdict == 'gaps'"
+    command: repair
+    context: fresh
+    allowed_tools: [Read, Grep, Glob, Write, Edit, Bash]
+    settingSources: [project]
+
+  # The last word belongs to scripts: the checks pass and the rewrite is still
+  # far enough from the original after every repair.
+  - id: final
+    depends_on: [audit, hide, repair]
+    trigger_rule: none_failed_min_one_success
+    bash: |
+      set -uo pipefail
+      cmd=$contract.output.checks
+      base=$preflight.output
+      shape=$contract.output.shape
+      whitelist=$contract.output.whitelist
+      target="$INPUTS_TARGET"
+      if [ -n "$cmd" ] && ! bash -c "$cmd" > "$ARTIFACTS_DIR/checks.txt" 2>&1; then
+        echo "checks fail after repair; see $ARTIFACTS_DIR/checks.txt" >&2
+        tail -n 40 "$ARTIFACTS_DIR/checks.txt" >&2
+        exit 1
+      fi
+      mode=code; [ "$shape" = prose ] && mode=prose
+      orig="$ARTIFACTS_DIR/original-final"
+      trap 'rm -rf -- "$orig"' EXIT
+      rm -rf -- "$orig"; mkdir -p "$orig"
+      git archive "$base" -- "$target" | (cd "$orig" && tar -x)
+      node "$PACK_DIR/skills/blind-rewrite/scripts/overlap-scan.mjs" \
+        --original="$orig/$target" --rewrite="$target" --mode="$mode" \
+        --whitelist="$whitelist" --contract-file="$ARTIFACTS_DIR/verbatim.txt" \
+        > "$ARTIFACTS_DIR/overlap.json"
+      code=$?
+      [ "$code" = 0 ] || { echo "the repaired rewrite is too close to the original (exit $code)" >&2; cat "$ARTIFACTS_DIR/overlap.json" >&2; exit 1; }
+      cat "$ARTIFACTS_DIR/overlap.json"
+
+  - id: commit
+    depends_on: [final]
+    bash: |
+      set -euo pipefail
+      verdict=$audit.output.verdict
+      target="$INPUTS_TARGET"
+      git add -A
+      [ -n "$(git diff --cached --name-only)" ] || { echo "nothing to commit" >&2; exit 1; }
+      printf 'refactor: blind rewrite of %s\n\nWritten from a behavior contract by the blind-rewrite workflow.\nOverlap gate: pass. Gap audit before repair: %s.\n' \
+        "$target" "$verdict" > "$ARTIFACTS_DIR/commit-message.txt"
+      git commit -q -F "$ARTIFACTS_DIR/commit-message.txt"
+      git rev-parse HEAD
+
+  # A public write, so a script does it and reads the result back.
+  - id: pr
+    depends_on: [commit]
+    when: "$INPUTS.open_pr == 'true'"
+    bash: |
+      set -euo pipefail
+      head=$commit.output
+      verdict=$audit.output.verdict
+      target="$INPUTS_TARGET"
+      issue="$INPUTS_ISSUE"
+      branch=$(git branch --show-current)
+      git push -q -u origin "$branch"
+      [ "$(git ls-remote --heads origin "$branch" | cut -f1)" = "$head" ] \
+        || { echo "the pushed head does not match $head" >&2; exit 1; }
+      {
+        printf '## Blind rewrite of `%s`\n\n' "$target"
+        printf 'Written from a behavior contract by a session that never saw the original.\n\n'
+        printf -- '- Overlap gate: pass\n- Gap audit before repair: %s\n' "$verdict"
+        printf '\n```json\n'; cat "$ARTIFACTS_DIR/overlap.json"; printf '\n```\n'
+        if [ -n "$issue" ]; then printf '\nRefs #%s\n' "$issue"; fi
+      } > "$ARTIFACTS_DIR/pr-body.md"
+      gh pr create --draft --head "$branch" --title "Blind rewrite of $target" \
+        --body-file "$ARTIFACTS_DIR/pr-body.md" > /dev/null
+      read_head=$(gh pr view "$branch" --json headRefOid --jq .headRefOid)
+      [ "$read_head" = "$head" ] || { echo "the pull request head $read_head is not $head" >&2; exit 1; }
+      gh pr view "$branch" --json url --jq .url
