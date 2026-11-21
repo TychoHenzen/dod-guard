@@ -7,8 +7,10 @@ description: |
   `.archon/sdlc/policy/triage.md` and `build.md` after the pack's defaults.
   This workflow writes one marked block into each of those files and opens a
   draft pull request. A rerun replaces only the block, so the project's own
-  lines stay. Nothing takes effect until the pull request merges, because
-  worktree runs start from the default branch.
+  lines stay. The standards take effect once the pull request merges and the
+  checkout the queues are launched from has pulled it: worktree nodes start
+  from the default branch, and intake and the build queue's route read the
+  policy files from the launch checkout itself.
 
   Use when: a repository runs Archon's SDLC pack and should be built and
   reviewed to dod-guard's standards, or dod-guard's standards changed and the

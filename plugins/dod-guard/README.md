@@ -93,7 +93,9 @@ It writes one marked block into each file the pack reads after its defaults:
 `engineering.md` (the implementer reads it before writing code, and reviewers
 cite it for any finding about taste), and `.archon/sdlc/policy/triage.md` and
 `build.md`. A rerun replaces only the block. The standards take effect once its
-draft pull request merges.
+draft pull request merges and the checkout you launch the queues from has
+pulled it, because intake and the build queue's routing read the policy files
+from that checkout.
 
 What carried over: building only what the contract names, reachability from the
 user's entrypoint, test rules (no weakened tests, "pre-existing" is not an
