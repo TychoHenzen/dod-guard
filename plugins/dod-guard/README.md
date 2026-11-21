@@ -106,10 +106,6 @@ names, the issue contract's shape, review and merge records, model routing, and
 when the merge queue asks a maintainer. Where the two disagree, such as size
 alone forcing a split, the pack's default stands.
 
-goal-sdlc and quick-pbi stop in a repository whose default branch holds
-`.archon/sdlc/policy/maintainers.json`, so the two lifecycles never share one
-backlog.
-
 ### blind-rewrite
 
 The Archon form of the `/blind-rewrite` skill for one tracked file or directory:
