@@ -13,9 +13,12 @@ exact-text rule. Register: direct and technical.
   every Verbatim item.
 - `$ARTIFACTS_DIR/approvals.json`: the cuts the maintainer approved. Leave
   each one out. Every other OBSERVED item that is not ACCIDENTAL in
-  `$ARTIFACTS_DIR/classification.md` stays.
+  `$ARTIFACTS_DIR/classification.md` stays. Its `replacements` list edits
+  exact text: for each entry, write `becomes` character for character where
+  the contract's Verbatim item `text` would go, and never write `text`.
 - `$ARTIFACTS_DIR/corrections.md`: the maintainer's corrections. They win over
-  the contract where the two differ.
+  the contract's claims where the two differ. They never change a Verbatim
+  item; only a replacement in `approvals.json` does.
 - `$ARTIFACTS_DIR/inventory.md`: what the artifact connects to.
 - `$ARTIFACTS_DIR/feedback.md`, if it exists: why the previous round was
   thrown away. `too close` means it kept too much of the original's shape;

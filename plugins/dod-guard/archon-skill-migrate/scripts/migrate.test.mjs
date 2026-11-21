@@ -160,6 +160,68 @@ test("a dropped exact command fails final", (t) => {
   assert.throws(() => final(base), GateFailure);
 });
 
+function approveReplacing(dir, text) {
+  writeFileSync(join(dir, "cuts.json"), JSON.stringify({ cuts: [] }));
+  const form = options({ dir });
+  approve({ dir, answer: JSON.stringify({ decisions: [NONE], text }) });
+  return form;
+}
+
+test("an approved replacement of a Verbatim item is the exact text final requires", (t) => {
+  const { dir, base } = fixture(t);
+  const form = approveReplacing(dir, "replace v1: node scripts/check.mjs --safe\nKeep the report short.");
+  writeFileSync(join(dir, "audit.md"), "### Approved cuts\n\n- None.\n");
+  writeFileSync(join(dir, "body.md"), REWRITE.replace("--strict", "--safe"));
+  assert.equal(final(base), "PASS");
+  writeFileSync(join(dir, "body.md"), REWRITE);
+  assert.throws(
+    () => final(base),
+    (error) => error instanceof GateFailure && /--safe/.test(error.message),
+  );
+  assert.match(form.message, /^v1: node scripts\/check\.mjs --strict$/m);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, "approvals.json"), "utf8")).replacements, [
+    {
+      text: "node scripts/check.mjs --strict",
+      becomes: "node scripts/check.mjs --safe",
+      reason: "Keep the report short.",
+    },
+  ]);
+  assert.equal(readFileSync(join(dir, "corrections.md"), "utf8"), "Keep the report short.\n");
+  const listed = "- `node scripts/check.mjs --strict` became `node scripts/check.mjs --safe`";
+  assert.ok(report({ dir, repo: base.repo, target: TARGET }).includes(`exact-text replacements\n\n${listed}`));
+});
+
+test("a replacement's new text is required literally, dollar signs included", (t) => {
+  const { dir, base } = fixture(t);
+  const becomes = "node scripts/check.mjs --tag=$& --pid=$$";
+  approveReplacing(dir, `replace v1: ${becomes}`);
+  writeFileSync(join(dir, "audit.md"), "### Approved cuts\n\n- None.\n");
+  writeFileSync(
+    join(dir, "body.md"),
+    REWRITE.replace("node scripts/check.mjs --strict", () => becomes),
+  );
+  assert.equal(final(base), "PASS");
+});
+
+test("a replace line with an unknown id, no new text, or a second time is refused", (t) => {
+  const { dir } = fixture(t);
+  for (const text of [
+    "replace v2: node scripts/check.mjs --safe",
+    "replace v1:   ",
+    "replace v1: node a.mjs\nreplace v1: node b.mjs",
+  ]) {
+    assert.throws(() => approveReplacing(dir, text), /replace v[12]/);
+  }
+  const value = "node scripts/check.mjs --strict";
+  writeFileSync(
+    join(dir, "cuts.json"),
+    JSON.stringify({ cuts: [{ id: "c1", kind: "text", value, keep: "k", cut: "c" }] }),
+  );
+  options({ dir });
+  const answer = JSON.stringify({ decisions: ["c1"], text: "replace v1: node scripts/check.mjs --safe" });
+  assert.throws(() => approve({ dir, answer }), /both cut and replaced/);
+});
+
 test("a writer input that quotes the original leaks; one in its own words passes", (t) => {
   const { dir, base } = fixture(t);
   writeFileSync(

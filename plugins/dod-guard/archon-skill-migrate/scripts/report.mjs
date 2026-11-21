@@ -19,7 +19,7 @@ function section(text, heading) {
 }
 
 export function report({ dir, repo, target }) {
-  const { approvedCuts } = readJson(join(dir, "approvals.json"));
+  const { approvedCuts, replacements = [] } = readJson(join(dir, "approvals.json"));
   const migrated = join(dir, "migrated.md");
   const diff = spawnSync("git", ["diff", "--no-index", "--", target, migrated], {
     cwd: repo,
@@ -57,6 +57,12 @@ export function report({ dir, repo, target }) {
   const audited = section(read(join(dir, "audit.md")), "### Approved cuts");
   if (audited !== "") {
     out.push("", "The gap audit listed these as approved cuts:", "", audited);
+  }
+  if (replacements.length > 0) {
+    out.push("", "### Approved exact-text replacements", "");
+  }
+  for (const entry of replacements) {
+    out.push(`- \`${entry.text}\` became \`${entry.becomes}\` (reason: ${entry.reason})`);
   }
   out.push("", "### Diff", "", "```diff", diff.stdout.trimEnd(), "```");
   const text = `${out.join("\n")}\n`;

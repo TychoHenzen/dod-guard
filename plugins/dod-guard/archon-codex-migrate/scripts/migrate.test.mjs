@@ -6,6 +6,7 @@ import process from "node:process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { commitAll, git, initRepo, scratch } from "../../archon-shared/scripts/testing.mjs";
+import { atOrUnder } from "./common.mjs";
 import { advance, approve, NONE, options, report, signalProblem } from "./migrate.mjs";
 
 const AGENT = "---\nname: helper\ndescription: Helps.\nmodel: sonnet\ntools: Read\n---\n\nRead files and answer.\n";
@@ -63,6 +64,7 @@ test("the form offers valid slices and rejects hand-edited TOML and incomplete m
     { id: "bad", label: "edit toml", kind: "reword", files: [".codex/agents/helper.toml"], signals: ["x"] },
     { id: "half", label: "half a move", kind: "move", from: ["CLAUDE.md"] },
     { id: NONE, label: "clash", kind: "agents" },
+    { id: "gen-dir", label: "edit toml dir", kind: "reword", files: [".codex/agents"], signals: ["x"] },
   ]);
   const form = options({ dir, repo: dir });
   assert.deepEqual(
@@ -73,7 +75,7 @@ test("the form offers valid slices and rejects hand-edited TOML and incomplete m
   const items = JSON.parse(readFileSync(join(dir, "items.json"), "utf8"));
   assert.deepEqual(
     items.rejected.map((entry) => entry.id),
-    ["bad", "half", NONE],
+    ["bad", "half", NONE, "gen-dir"],
   );
 });
 
@@ -155,6 +157,15 @@ test("the signal rules for a move catch lost signals and a non-canonical adapter
   assert.equal(signalProblem(moved, before, custom), null);
 });
 
+test("the signal rules count findings at or under a slice entry that names a directory", () => {
+  const at = (file) => ({ findings: [{ category: "claude-only", file, line: 1, signal: "AskUserQuestion" }] });
+  const agentFile = at(".claude/agents/helper.md");
+  const reword = { kind: "reword", files: [".claude/agents"], signals: ["AskUserQuestion"] };
+  assert.equal(signalProblem(reword, agentFile, { findings: [] }), null);
+  const move = { kind: "move", files: [], from: [".claude/agents"], to: ["docs"], signals: [] };
+  assert.equal(signalProblem(move, agentFile, at("docs/rules.md")), null);
+});
+
 test("Apply nothing records no slice, and the report names what went unobserved", (t) => {
   const { dir, base } = start(t, [REWORD]);
   approve({ ...base, answer: JSON.stringify({ decisions: [NONE, "s1"] }) });
@@ -226,4 +237,25 @@ test("a reword of text the scanner does not flag is applied and reported as test
   assert.equal(advance(base), true);
   assert.equal(state(dir).results.s4.status, "applied");
   assert.match(report({ dir }), /s4 .*applied in \w+; the scanner flags none of this text/);
+});
+
+test("a path is at or under a directory named with or without a trailing slash, never a sibling prefix", () => {
+  assert.equal(atOrUnder(".claude/agents", ".claude/agents/"), true);
+  assert.equal(atOrUnder(".claude/agents/x.md", ".claude/agents/"), true);
+  assert.equal(atOrUnder(".claude/agentsX/y.md", ".claude/agents"), false);
+});
+
+test("a reword that names the agent directory regenerates the Codex agents from its edit", (t) => {
+  const agentDir = { id: "s5", label: "Word the helper by capability", kind: "reword", files: [".claude/agents"] };
+  const { repo, dir, base } = start(t, [agentDir]);
+  approve({ ...base, answer: JSON.stringify({ decisions: ["s5"] }) });
+  writeFileSync(join(repo, ".claude", "agents", "helper.md"), AGENT.replace("Read files", "Inspect files"));
+  assert.equal(advance(base), true);
+  assert.equal(state(dir).results.s5.status, "applied", state(dir).results.s5.reason);
+  const toml = git(repo, ["ls-files", ".codex/agents"])
+    .split("\n")
+    .find((path) => path.endsWith("helper.toml"));
+  assert.ok(toml, "the slice commit carries no generated agent TOML");
+  assert.match(git(repo, ["show", `HEAD:${toml}`]), /Inspect files and answer/);
+  assert.equal(git(repo, ["status", "--porcelain"]), "");
 });

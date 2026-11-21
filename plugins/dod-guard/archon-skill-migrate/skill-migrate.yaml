@@ -6,8 +6,10 @@ description: |
   of every OBSERVED item; a script rejects any of them that repeats the
   original's wording, since the blind writer reads all three, and one session
   rewords what it rejects. A maintainer picks which SCAFFOLDING to cut on a
-  multi-select form and can correct the contract in the answer text. The
-  target is then removed from the run's checkout; a fresh writer that never
+  multi-select form and can correct the contract's claims in the answer text.
+  Exact text changes only through an answer line "replace v<n>: <new text>"
+  naming a Verbatim item the form lists; the finish check then requires the
+  new text and no longer the old. The target is then removed from the run's checkout; a fresh writer that never
   sees it writes the replacement into the run's artifacts. skill-migrate's own
   scripts gate it: the overlap scan, the regression check against the saved
   baseline, and the finish check. A gap auditor is the one later session that
@@ -24,6 +26,9 @@ description: |
             [--input kind=skill|agent|claude-md|memory|instinct]
   Answer the form with: archon workflow answer <run-id> --occurrence <id>
             [--choose <cut-id>]... [--choose none] [--text "<corrections>"]
+  An exact-text edit is one line of that text, for example
+            --text "replace v1: node scripts/check.mjs --safe"
+  and several go on separate lines: --text "$(printf 'replace v1: a\nreplace v2: b')"
 
 model: medium
 

@@ -42,12 +42,37 @@ export function hunks(diff) {
   return ranges;
 }
 
+// Each target allows its own lines plus the gaps on either side of it, where
+// a pure insertion lands.
 function inside(range, target) {
   return range.start >= target.startLine - 0.5 && range.end <= target.endLine + 0.5;
 }
 
+function overlaps(range, target) {
+  return range.start <= target.endLine + 0.5 && range.end >= target.startLine - 0.5;
+}
+
+// Adjacent or overlapping targets join into one span, because git reports
+// edits to neighbouring lines as a single hunk. Fresh objects keep the plan's
+// own targets unchanged.
+function spans(targets) {
+  const sorted = targets.map(({ startLine, endLine }) => ({ startLine, endLine }));
+  sorted.sort((left, right) => left.startLine - right.startLine);
+  const merged = [];
+  for (const next of sorted) {
+    const last = merged.at(-1);
+    if (last && next.startLine <= last.endLine + 1) {
+      last.endLine = Math.max(last.endLine, next.endLine);
+      continue;
+    }
+    merged.push(next);
+  }
+  return merged;
+}
+
 export function rangesFit(ranges, targets) {
-  return ranges.every((range) => targets.some((target) => inside(range, target)));
+  const allowed = spans(targets);
+  return ranges.every((range) => allowed.some((span) => inside(range, span)));
 }
 
 function revert(repo, file) {
@@ -113,7 +138,7 @@ export function verify({ dir, repo }) {
   const applied = [];
   for (const entry of current.actions) {
     const ranges = touched.get(entry.target.file) ?? [];
-    if (ranges.some((range) => inside(range, entry.target))) {
+    if (ranges.some((range) => overlaps(range, entry.target))) {
       applied.push(entry);
       continue;
     }

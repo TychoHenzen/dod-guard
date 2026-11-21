@@ -115,6 +115,21 @@ test("hunks report the original-side ranges an edit touches", () => {
   assert.equal(rangesFit([{ start: 5, end: 5 }], targets), false);
 });
 
+test("a hunk may span adjacent planned ranges but not a gap between them", () => {
+  const adjacent = [
+    { startLine: 3, endLine: 3 },
+    { startLine: 4, endLine: 4 },
+  ];
+  assert.equal(rangesFit([{ start: 3, end: 4 }], adjacent), true);
+  assert.equal(rangesFit([{ start: 3, end: 4 }], adjacent.slice(0, 1)), false);
+  const gapped = [adjacent[0], { startLine: 5, endLine: 5 }];
+  assert.equal(rangesFit([{ start: 3, end: 5 }], gapped), false);
+  for (const at of [2.5, 3.5, 4.5]) {
+    assert.equal(rangesFit([{ start: at, end: at }], adjacent), true);
+  }
+  assert.equal(rangesFit([{ start: 5.5, end: 5.5 }], adjacent), false);
+});
+
 // The claim dates come from the commits, so each one is made at a fixed time.
 function commitAt(repo, message, date) {
   git(repo, ["add", "-A"]);
@@ -192,6 +207,28 @@ test("an edit outside the planned range reverts the file and leaves its pair und
   const planned = JSON.parse(readFileSync(join(dir, "plan.json"), "utf8"));
   assert.equal(planned.applied.length, 0);
   assert.equal(planned.undecided[0].reason, "edit outside the named range");
+});
+
+test("deleting two adjacent claims in one hunk counts both as applied", (t) => {
+  const repo = initRepo(t, "reconcile-");
+  writeFileSync(join(repo, "doc.md"), "# Doc\n\nClaim one.\nClaim two.\nTail.\n");
+  commitAt(repo, "claims", "2026-01-01T00:00:00Z");
+  const dir = scratch(t, "reconcile-");
+  const at = (line) => ({ file: "doc.md", startLine: line, endLine: line, heading: "Doc", text: "" });
+  const actions = [3, 4].map((line) => ({ id: `p${line}`, kind: "delete", target: at(line), survivor: NEW }));
+  writeFileSync(join(dir, "plan.json"), JSON.stringify({ actions, undecided: [] }));
+  writeFileSync(join(repo, "doc.md"), "# Doc\n\nTail.\n");
+  assert.equal(verify({ dir, repo }), 1);
+  const planned = JSON.parse(readFileSync(join(dir, "plan.json"), "utf8"));
+  assert.deepEqual(planned.undecided, []);
+  assert.deepEqual(
+    planned.applied.map((entry) => [entry.target.startLine, entry.target.endLine]),
+    [
+      [3, 3],
+      [4, 4],
+    ],
+  );
+  assert.equal(readFileSync(join(repo, "doc.md"), "utf8"), "# Doc\n\nTail.\n");
 });
 
 function cli(args) {

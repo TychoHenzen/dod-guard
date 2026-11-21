@@ -1,6 +1,6 @@
 // The skill's scanner rules for a slice: compare the scanner findings before
 // and after it, per file and signal.
-import { GENERATED } from "./common.mjs";
+import { atOrUnder, GENERATED, underAny } from "./common.mjs";
 
 const SEPARATOR = "\u001f";
 
@@ -18,7 +18,7 @@ function total(table, files, signals = null) {
   let sum = 0;
   for (const [key, value] of table) {
     const [file, signal] = key.split(SEPARATOR);
-    if (files.includes(file) && (signals === null || signals.includes(signal))) {
+    if (underAny(file, files) && (signals === null || signals.includes(signal))) {
       sum += value;
     }
   }
@@ -29,7 +29,7 @@ function bySignal(table, files) {
   const out = new Map();
   for (const [key, value] of table) {
     const [file, signal] = key.split(SEPARATOR);
-    if (files.includes(file)) {
+    if (underAny(file, files)) {
       out.set(signal, (out.get(signal) ?? 0) + value);
     }
   }
@@ -59,7 +59,7 @@ function untouchedElsewhere(before, after, files) {
   const keys = new Set([...before.keys(), ...after.keys()]);
   return [...keys].every((key) => {
     const file = key.split(SEPARATOR)[0];
-    return files.includes(file) || file.startsWith(GENERATED) || before.get(key) === after.get(key);
+    return underAny(file, files) || atOrUnder(file, GENERATED) || before.get(key) === after.get(key);
   });
 }
 

@@ -4,7 +4,7 @@
 import { dirname, join } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { GENERATED, git, run } from "./common.mjs";
+import { atOrUnder, GENERATED, git, run, underAny } from "./common.mjs";
 import { signalProblem } from "./signals.mjs";
 
 // The codex-migrate skill's own scripts, found from this file rather than
@@ -36,27 +36,24 @@ export function changedPaths(repo) {
   return paths;
 }
 
-function inSlice(slice, path) {
-  return slice.files.includes(path) || slice.files.some((file) => path.startsWith(`${file}/`));
-}
-
-function scopeProblem(slice, repo) {
-  const changes = changedPaths(repo);
-  if (changes.some((change) => change.path.startsWith(GENERATED))) {
+function scopeProblem(slice, changes) {
+  if (changes.some((change) => atOrUnder(change.path, GENERATED))) {
     return "the session edited generated agent TOML by hand";
   }
   if (changes.some((change) => change.path === "CLAUDE.md" && change.code.includes("D"))) {
     return "the session deleted CLAUDE.md; it is reduced to an @AGENTS.md import, never deleted";
   }
-  const outside = changes.filter((change) => !inSlice(slice, change.path));
+  const outside = changes.filter((change) => !underAny(change.path, slice.files));
   return outside.length > 0
     ? `changed files outside the slice: ${outside.map((change) => change.path).join(", ")}`
     : null;
 }
 
-function touchesAgents(slice, agentSource) {
+// Decided from the session's real diff, which the generated TOML must match;
+// an agents slice regenerates with no session edit at all.
+function touchesAgents(slice, agentSource, changes) {
   return (
-    slice.kind === "agents" || (agentSource !== "" && slice.files.some((file) => file.startsWith(`${agentSource}/`)))
+    slice.kind === "agents" || (agentSource !== "" && changes.some((change) => atOrUnder(change.path, agentSource)))
   );
 }
 
@@ -93,11 +90,13 @@ export function verifySlice(slice, state, repo) {
   if (git(repo, ["rev-parse", "HEAD"]).trim() !== state.head) {
     return "the session made a commit; the workflow commits each slice itself";
   }
-  const scope = scopeProblem(slice, repo);
+  // One snapshot, taken before the converter writes .codex/agents.
+  const changes = changedPaths(repo);
+  const scope = scopeProblem(slice, changes);
   if (scope) {
     return scope;
   }
-  const converter = touchesAgents(slice, state.agentSource) ? converterProblem(state, repo) : null;
+  const converter = touchesAgents(slice, state.agentSource, changes) ? converterProblem(state, repo) : null;
   if (converter) {
     return converter;
   }

@@ -8,7 +8,9 @@ finding.
 - The new version: `$ARTIFACTS_DIR/migrated.md`
 - The contract: `$ARTIFACTS_DIR/contract.md`
 - The approved cuts: `$ARTIFACTS_DIR/approvals.json`. An approved cut is not
-  a gap.
+  a gap. Its `replacements` list edits exact text: a Verbatim item `text` that
+  the new version replaced with its `becomes`, character for character, is not
+  a gap; a `becomes` the new version lacks is.
 - The maintainer's corrections: `$ARTIFACTS_DIR/corrections.md`. A
   correction that names a missed requirement makes its absence a gap.
 

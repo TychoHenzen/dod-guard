@@ -52,6 +52,7 @@ function withOriginal(options, check) {
   mkdirSync(folder, { recursive: true });
   const source = original(options.repo, options.commit, options.target).toString("utf8");
   const paths = {
+    folder,
     whole: join(folder, "original.md"),
     body: join(folder, "original-body.md"),
     rewriteBody: join(folder, "migrated-body.md"),
@@ -156,12 +157,38 @@ function regression(options) {
   return null;
 }
 
+// The exact text as the maintainer approved it: each replaced Verbatim item
+// becomes its new text in the Verbatim list and wherever it appears in the
+// original, so finish-check requires the new text, a fenced block around it
+// included, and no longer the old. The overlap scan keeps the true original.
+// ASSUMPTION: a replaced item is replaced at every occurrence, even inside a
+// longer string; that can only demand more of the rewrite, never excuse it.
+function approvedExactText(options, paths) {
+  const approvalsFile = join(options.dir, "approvals.json");
+  const approvals = existsSync(approvalsFile) ? readJson(approvalsFile) : {};
+  const replacements = Array.isArray(approvals.replacements) ? approvals.replacements : [];
+  const verbatimFile = join(options.dir, "verbatim.txt");
+  if (replacements.length === 0) {
+    return { original: paths.whole, verbatim: verbatimFile };
+  }
+  const apply = (text) =>
+    replacements.reduce((out, { text: from, becomes }) => out.replaceAll(from, () => becomes), text);
+  const corrected = {
+    original: join(paths.folder, "original-approved.md"),
+    verbatim: join(paths.folder, "verbatim-approved.txt"),
+  };
+  writeFileSync(corrected.original, apply(read(paths.whole)));
+  writeFileSync(corrected.verbatim, apply(read(verbatimFile)));
+  return corrected;
+}
+
 function finishCheck(options, paths) {
+  const exact = approvedExactText(options, paths);
   const result = runNode(join(options.pack, "skills", "skill-migrate", "scripts", "finish-check.mjs"), [
-    `--original=${paths.whole}`,
+    `--original=${exact.original}`,
     `--rewrite=${join(options.dir, "migrated.md")}`,
     `--contract=${join(options.dir, "contract.md")}`,
-    `--verbatim=${join(options.dir, "verbatim.txt")}`,
+    `--verbatim=${exact.verbatim}`,
     `--approvals=${join(options.dir, "approvals.json")}`,
     `--audit=${join(options.dir, "audit.md")}`,
   ]);

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { commitAll, git, initRepo, scratch } from "../../archon-shared/scripts/testing.mjs";
 import { advance, approve, bareName, gather, indexRows, NONE, options, report, target } from "./debug.mjs";
 
@@ -40,7 +41,30 @@ const RUNS = {
   bbbb2222: [["2026-10-01 10:00", 8]],
 };
 
+// Transcript files under a scratch root, laid out the way Claude Code writes
+// them, as { "<project>/<session>.jsonl": [lines] }, with skill-debug's
+// transcript lookup pointed at that root.
+function transcripts(t, files) {
+  const root = scratch(t, "debug-");
+  for (const [path, lines] of Object.entries(files)) {
+    mkdirSync(join(root, dirname(path)), { recursive: true });
+    writeFileSync(join(root, path), `${lines.join("\n")}\n`);
+  }
+  const before = process.env.SKILL_DEBUG_TRANSCRIPTS;
+  process.env.SKILL_DEBUG_TRANSCRIPTS = root;
+  t.after(() => {
+    if (before === undefined) {
+      delete process.env.SKILL_DEBUG_TRANSCRIPTS;
+      return;
+    }
+    process.env.SKILL_DEBUG_TRANSCRIPTS = before;
+  });
+}
+
+// The stand-in extract-run keys its runs by the first 8 characters of the
+// transcript file it is handed.
 function standIns(t) {
+  transcripts(t, { "proj/aaaa1111-session.jsonl": [], "proj/bbbb2222-session.jsonl": [] });
   const dir = scratch(t, "debug-");
   writeFileSync(
     join(dir, "find-runs.mjs"),
@@ -49,11 +73,12 @@ function standIns(t) {
   writeFileSync(
     join(dir, "extract-run.mjs"),
     [
+      "import { basename } from 'node:path';",
       `const runs = ${JSON.stringify(RUNS)};`,
       "const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1];",
-      "const list = runs[arg('session')] ?? [];",
+      "const list = runs[basename(arg('session')).slice(0, 8)] ?? [];",
       "const run = list[Number(arg('run')) - 1];",
-      "if (!run) process.exit(4);",
+      "if (!run) { process.stderr.write(`${list.length} runs of demo in that session\\n`); process.exit(4); }",
       "const shown = Math.min(run[1], Number(arg('max-steps')));",
       "const steps = Array.from({ length: shown }, " +
         "(_, i) => `${String(i + 1).padStart(4)}  tool   Read step`).join('\\n');",
@@ -80,12 +105,77 @@ test("gather pulls the newest runs by start time and step count, each complete",
   assert.deepEqual(
     traces.map((trace) => [trace.session, trace.run, trace.steps]),
     [
-      ["aaaa1111", 3, 30],
-      ["aaaa1111", 2, 12],
-      ["aaaa1111", 1, 1],
+      ["aaaa1111-session", 3, 30],
+      ["aaaa1111-session", 2, 12],
+      ["aaaa1111-session", 1, 1],
     ],
   );
   assert.match(readFileSync(join(dir, "trace-1.txt"), "utf8"), /\n {2}30 {2}tool/);
+});
+
+// skill-debug's real scripts, read in place.
+const SKILL_DEBUG_SCRIPTS = fileURLToPath(new URL("../../skills/skill-debug/scripts", import.meta.url));
+
+function bashRecord(command) {
+  const content = [{ type: "tool_use", name: "Bash", input: { command } }];
+  return { type: "assistant", message: { content } };
+}
+
+// One call of demo and two Bash steps, so every run has the same step count.
+function demoRun(at, marker) {
+  const call = { type: "user", message: { content: "<command-name>/demo</command-name>" }, timestamp: at };
+  const steps = [`echo ${marker} one`, `echo ${marker} two`].map(bashRecord);
+  return [call, ...steps].map((record) => JSON.stringify(record));
+}
+
+function gatherTwo(t) {
+  const dir = scratch(t, "debug-");
+  assert.equal(gather({ dir, skill: "demo", days: "30", runs: "2", scripts: SKILL_DEBUG_SCRIPTS }), "2");
+  const { traces } = JSON.parse(readFileSync(join(dir, "traces.json"), "utf8"));
+  const text = (k) => readFileSync(join(dir, `trace-${k}.txt`), "utf8");
+  return { traces, first: text(1), second: text(2) };
+}
+
+test("gather pulls the newest runs when runs in one session share their minute and step count", (t) => {
+  transcripts(t, {
+    "proj/cccc3333-session.jsonl": [
+      ...demoRun("2026-08-01T10:00:05.000Z", "run-A"),
+      ...demoRun("2026-08-01T10:00:20.000Z", "run-B"),
+      ...demoRun("2026-08-01T10:00:40.000Z", "run-C"),
+    ],
+  });
+  const { traces, first, second } = gatherTwo(t);
+  assert.deepEqual(
+    traces.map((trace) => trace.run),
+    [3, 2],
+  );
+  assert.match(first, /echo run-C/);
+  assert.match(second, /echo run-B/);
+});
+
+test("gather tells apart two sessions whose ids share their first 8 characters", (t) => {
+  transcripts(t, {
+    "proj-one/eeee5555-one.jsonl": demoRun("2026-08-01T10:00:05.000Z", "run-A"),
+    "proj-two/eeee5555-two.jsonl": demoRun("2026-08-01T11:00:05.000Z", "run-B"),
+  });
+  const { traces, first, second } = gatherTwo(t);
+  assert.deepEqual(
+    traces.map((trace) => [trace.session, trace.run]),
+    [
+      ["eeee5555-two", 1],
+      ["eeee5555-one", 1],
+    ],
+  );
+  assert.match(first, /echo run-B/);
+  assert.match(second, /echo run-A/);
+});
+
+test("gather refuses to guess when an id prefix matches two sessions of one project", (t) => {
+  transcripts(t, {
+    "proj/ffff6666-one.jsonl": demoRun("2026-08-01T10:00:05.000Z", "run-A"),
+    "proj/ffff6666-two.jsonl": demoRun("2026-08-01T11:00:05.000Z", "run-B"),
+  });
+  assert.throws(() => gatherTwo(t), /session ffff6666 in proj matches 2 transcripts: ffff6666-(one|two), ffff6666-/);
 });
 
 function diagnosed(t, findings) {

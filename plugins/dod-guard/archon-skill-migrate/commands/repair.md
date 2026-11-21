@@ -17,5 +17,7 @@ any other copy of the artifact, version control data, anything else under
 `~/.archon`, or anything under `~/.claude`.
 
 Repair the gaps in your own words, except Verbatim items, which stay exact.
+A Verbatim item with an entry in the `replacements` list of `approvals.json`
+is written as that entry's `becomes`, character for character.
 Ask no one anything and commit nothing. In your final reply, list each gap and
 the sentence that now carries it.

@@ -1,7 +1,7 @@
 // The approval form: validate the slices a proposal session wrote to
 // slices.json, keep the valid ones in items.json, and build the choices.
 import { join } from "node:path";
-import { GENERATED, list, readJson, writeJson } from "./common.mjs";
+import { atOrUnder, GENERATED, list, readJson, writeJson } from "./common.mjs";
 
 const ID = /^[a-z0-9][a-z0-9-]*$/;
 export const NONE = "none";
@@ -30,7 +30,7 @@ function pathProblem(slice) {
   if (!paths.every(relative)) {
     return "every path must be repository-relative with forward slashes";
   }
-  if (paths.some((path) => path.startsWith(GENERATED))) {
+  if (paths.some((path) => atOrUnder(path, GENERATED))) {
     return "generated agent TOML is never edited by hand; use an agents slice";
   }
   return null;
