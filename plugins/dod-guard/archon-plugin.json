@@ -6,6 +6,7 @@
   "compatibility": { "archon": ">=0.14.0" },
   "entrypoints": {
     "blind-rewrite": "archon-blind-rewrite/blind-rewrite.yaml",
-    "sdlc-standards": "archon-sdlc-standards/sdlc-standards.yaml"
+    "sdlc-standards": "archon-sdlc-standards/sdlc-standards.yaml",
+    "doc-reconcile": "archon-doc-reconcile/doc-reconcile.yaml"
   }
 }
