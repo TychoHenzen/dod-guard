@@ -76,8 +76,43 @@ it once for every project on the machine:
 archon plugin add TychoHenzen/dod-guard/plugins/dod-guard
 ```
 
-It ships one workflow, `blind-rewrite`, the Archon form of the `/blind-rewrite`
-skill for one tracked file or directory:
+It ships two workflows.
+
+### sdlc-standards
+
+In a repository that Archon's bundled SDLC pack delivers, the pack's own queues
+run the lifecycle that goal-sdlc runs elsewhere: `archon-intake` triages,
+`archon-build-queue` builds and reviews, `archon-merge-queue` merges. This
+workflow gives those queues dod-guard's standards instead of replacing them:
+
+```bash
+archon workflow run TychoHenzen/dod-guard:sdlc-standards --branch chore/dod-guard-standards
+```
+
+It writes one marked block into each file the pack reads after its defaults:
+`engineering.md` (the implementer reads it before writing code, and reviewers
+cite it for any finding about taste), and `.archon/sdlc/policy/triage.md` and
+`build.md`. A rerun replaces only the block. The standards take effect once its
+draft pull request merges and the checkout you launch the queues from has
+pulled it, because intake and the build queue's routing read the policy files
+from that checkout.
+
+What carried over: building only what the contract names, reachability from the
+user's entrypoint, test rules (no weakened tests, "pre-existing" is not an
+excuse), the four reviewer lenses as citable sections, falsifiable acceptance.
+What Archon's pack does its own way, so dod-guard leaves it: queue order (triage
+urgency, importance and size instead of GitHub Project order), labels, branch
+names, the issue contract's shape, review and merge records, model routing, and
+when the merge queue asks a maintainer. Where the two disagree, such as size
+alone forcing a split, the pack's default stands.
+
+goal-sdlc and quick-pbi stop in a repository whose default branch holds
+`.archon/sdlc/policy/maintainers.json`, so the two lifecycles never share one
+backlog.
+
+### blind-rewrite
+
+The Archon form of the `/blind-rewrite` skill for one tracked file or directory:
 
 ```bash
 archon workflow run TychoHenzen/dod-guard:blind-rewrite \
