@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { citationProblem } from "./evidence.mjs";
+import { citationProblem } from "../../archon-shared/scripts/evidence.mjs";
 import { check, STAGES } from "./wiring.mjs";
 
 function scratch(t) {

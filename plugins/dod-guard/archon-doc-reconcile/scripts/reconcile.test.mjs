@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import process from "node:process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { git, initRepo, scratch } from "../../archon-shared/scripts/testing.mjs";
 import {
   advance,
   BUDGET,
@@ -26,12 +27,6 @@ const PAIR = {
   a: { file: "a.md", startLine: 1, endLine: 1, heading: "", text: "The pool runs 4 workers." },
   b: { file: "b.md", startLine: 3, endLine: 3, heading: "", text: "The pool runs  8 workers by default." },
 };
-
-function scratch(t) {
-  const dir = mkdtempSync(join(tmpdir(), "reconcile-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
-  return dir;
-}
 
 function writeCandidates(dir, pairs) {
   const path = join(dir, "candidates.json");
@@ -59,7 +54,7 @@ test("a reply needs a known verdict and a reason", () => {
 });
 
 test("a malformed reply is re-dispatched once, then the pair is undecided", (t) => {
-  const dir = scratch(t);
+  const dir = scratch(t, "reconcile-");
   assert.equal(prep({ dir, candidates: writeCandidates(dir, [PAIR, PAIR]) }), 2);
   assert.equal(JSON.parse(readFileSync(join(dir, "current.json"), "utf8")).id, "p1");
   assert.equal(advance({ dir }), false);
@@ -76,7 +71,7 @@ test("a malformed reply is re-dispatched once, then the pair is undecided", (t) 
 });
 
 test("pairs past the dispatch budget are undecided", (t) => {
-  const dir = scratch(t);
+  const dir = scratch(t, "reconcile-");
   prep({
     dir,
     candidates: writeCandidates(
@@ -120,24 +115,16 @@ test("hunks report the original-side ranges an edit touches", () => {
   assert.equal(rangesFit([{ start: 5, end: 5 }], targets), false);
 });
 
-function sh(cwd, args, env = {}) {
-  const result = spawnSync("git", args, { cwd, encoding: "utf8", env: { ...process.env, ...env } });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout;
-}
-
+// The claim dates come from the commits, so each one is made at a fixed time.
 function commitAt(repo, message, date) {
-  sh(repo, ["add", "-A"]);
-  sh(repo, ["-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", message], {
-    GIT_AUTHOR_DATE: date,
-    GIT_COMMITTER_DATE: date,
-  });
+  git(repo, ["add", "-A"]);
+  const env = { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date };
+  const result = spawnSync("git", ["commit", "-q", "-m", message], { cwd: repo, encoding: "utf8", env });
+  assert.equal(result.status, 0, result.stderr);
 }
 
 function fixtureRepo(t) {
-  const repo = scratch(t);
-  sh(repo, ["init", "-q"]);
-  sh(repo, ["config", "core.autocrlf", "false"]);
+  const repo = initRepo(t, "reconcile-");
   writeFileSync(join(repo, "old.md"), "# Old\n\nThe pool runs 4 workers.\n");
   commitAt(repo, "old claim", "2026-01-01T00:00:00Z");
   writeFileSync(join(repo, "new.md"), "# New\n\nThe pool runs 8 workers.\n");
@@ -160,7 +147,7 @@ test("textAt reads Markdown ranges and manifest descriptions", (t) => {
 
 test("the plan deletes the older side, skips generated sources, and verify keeps only planned edits", (t) => {
   const repo = fixtureRepo(t);
-  const dir = scratch(t);
+  const dir = scratch(t, "reconcile-");
   prep({
     dir,
     candidates: writeCandidates(dir, [
@@ -195,7 +182,7 @@ test("the plan deletes the older side, skips generated sources, and verify keeps
 
 test("an edit outside the planned range reverts the file and leaves its pair undecided", (t) => {
   const repo = fixtureRepo(t);
-  const dir = scratch(t);
+  const dir = scratch(t, "reconcile-");
   prep({ dir, candidates: writeCandidates(dir, [{ score: 0.9, a: NEW, b: OLD }]) });
   reply(dir, { verdict: "CONFLICT", evidenceA: "8 workers", evidenceB: "4 workers", why: "counts differ" });
   advance({ dir });
@@ -205,4 +192,24 @@ test("an edit outside the planned range reverts the file and leaves its pair und
   const planned = JSON.parse(readFileSync(join(dir, "plan.json"), "utf8"));
   assert.equal(planned.applied.length, 0);
   assert.equal(planned.undecided[0].reason, "edit outside the named range");
+});
+
+function cli(args) {
+  return spawnSync(process.execPath, [join(here, "reconcile.mjs"), ...args], { encoding: "utf8" });
+}
+
+test("the CLI reads kebab-case options and exits 2 with its name on an error", (t) => {
+  const repo = fixtureRepo(t);
+  const dir = scratch(t, "reconcile-");
+  const candidates = writeCandidates(dir, [{ score: 0.9, a: NEW, b: OLD }]);
+  assert.equal(cli(["prep", `--dir=${dir}`, `--candidates=${candidates}`]).stdout, "1\n");
+  assert.equal(cli(["advance", `--dir=${dir}`]).status, 1);
+  reply(dir, { verdict: "CONFLICT", evidenceA: "8 workers", evidenceB: "4 workers", why: "counts differ" });
+  assert.equal(cli(["advance", `--dir=${dir}`]).status, 0);
+  const planned = cli(["plan", `--dir=${dir}`, `--repo=${repo}`, `--claim-age=${claimAge}`, "--min-gap=1"]);
+  assert.equal(planned.stdout, "1\n", planned.stderr);
+  assert.match(cli(["report", `--dir=${dir}`]).stdout, /^## Doc reconcile\n/);
+  const missing = cli(["report"]);
+  assert.equal(missing.status, 2);
+  assert.equal(missing.stderr, "reconcile: missing --dir\n");
 });

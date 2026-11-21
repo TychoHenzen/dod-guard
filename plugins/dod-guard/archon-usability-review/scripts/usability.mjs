@@ -12,20 +12,16 @@
 // the running interface as unavailable evidence.
 //
 // Exit 2 on any error.
-import { existsSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import process from "node:process";
-import { pathToFileURL } from "node:url";
+import { runCli } from "../../archon-shared/scripts/cli.mjs";
 import {
+  checkFindings,
   citationProblem,
   clause,
   formatCitation,
   nonEmptyText,
-  readJson,
   textList,
-} from "../../archon-wiring-audit/scripts/evidence.mjs";
+} from "../../archon-shared/scripts/evidence.mjs";
 
-const OPTION = /^--([\w-]+)=(.*)$/s;
 export const SURFACES = ["CLI", "API", "docs", "GUI", "other"];
 export const SEVERITIES = ["high", "medium", "low"];
 export const JOURNEY = [
@@ -116,8 +112,7 @@ function checkFinding(repo, finding, index, problems) {
   citations(repo, finding.evidence, where, problems, { required: true });
 }
 
-export function validate(repo, review) {
-  const problems = [];
+function checkHeader(review, problems) {
   for (const field of ["user", "task", "outcome"]) {
     if (!nonEmptyText(review[field])) {
       problems.push(`${field} must be non-empty text`);
@@ -131,21 +126,37 @@ export function validate(repo, review) {
       problems.push(`${field} must be a list of text, empty when there is none`);
     }
   }
-  checkGroup(repo, review.journey, JOURNEY, "journey", problems, ["covered", "not observed", "inapplicable"]);
+}
+
+const OBSERVED = ["covered", "not observed"];
+
+function checkAccessibility(repo, review, problems) {
   if (review.surface === "GUI") {
-    checkGroup(repo, review.accessibility, ACCESSIBILITY, "accessibility", problems, ["covered", "not observed"]);
+    checkGroup(repo, review.accessibility, ACCESSIBILITY, "accessibility", problems, OBSERVED);
   } else if (review.accessibility !== undefined) {
     problems.push(
-      "accessibility: a CLI, API, document or other surface gets no visual checks; put its clarity and operability under journey",
+      "accessibility: a CLI, API, document or other surface gets no visual checks; " +
+        "put its clarity and operability under journey",
     );
   }
+}
+
+function checkTrust(repo, review, problems) {
   if (typeof review.usesAi !== "boolean") {
     problems.push("usesAi must be true or false");
   } else if (review.usesAi) {
-    checkGroup(repo, review.trust, TRUST, "trust", problems, ["covered", "not observed"]);
+    checkGroup(repo, review.trust, TRUST, "trust", problems, OBSERVED);
   } else if (review.trust !== undefined) {
     problems.push("trust: leave AI trust cues out when the feature does not use AI");
   }
+}
+
+export function validate(repo, review) {
+  const problems = [];
+  checkHeader(review, problems);
+  checkGroup(repo, review.journey, JOURNEY, "journey", problems, [...OBSERVED, "inapplicable"]);
+  checkAccessibility(repo, review, problems);
+  checkTrust(repo, review, problems);
   if (!Array.isArray(review.findings)) {
     problems.push("findings must be a list");
   } else {
@@ -171,6 +182,10 @@ function joined(values) {
   return values.length > 0 ? values.join("; ") : "none";
 }
 
+function labelsWith(items, status) {
+  return joined(items.filter(({ item }) => item.status === status).map(({ label }) => label));
+}
+
 export function render(review) {
   const items = groups(review);
   const unavailable = [...review.evidenceUnavailable];
@@ -180,15 +195,16 @@ export function render(review) {
   const covered = items
     .filter(({ item }) => item.status === "covered")
     .map(({ label, item }) => `- ${label}: ${clause(item.note)} (${item.evidence.map(formatCitation).join(", ")})`);
+  const who = `${clause(review.user)}, who wants to ${clause(review.task)}`;
   const lines = [
     "## Usability review",
     "",
-    `Intended user and task: ${clause(review.user)}, who wants to ${clause(review.task)}. They expect ${clause(review.outcome)}.`,
+    `Intended user and task: ${who}. They expect ${clause(review.outcome)}.`,
     `Surface: ${review.surface}`,
     `Evidence used: ${joined(review.evidenceUsed)}`,
     `Evidence unavailable: ${joined(unavailable)}`,
-    `Not observed: ${joined(items.filter(({ item }) => item.status === "not observed").map(({ label }) => label))}`,
-    `Inapplicable states: ${joined(items.filter(({ item }) => item.status === "inapplicable").map(({ label }) => label))}`,
+    `Not observed: ${labelsWith(items, "not observed")}`,
+    `Inapplicable states: ${labelsWith(items, "inapplicable")}`,
     "",
     "### Covered",
     "",
@@ -214,56 +230,7 @@ export function render(review) {
 }
 
 export function check({ dir, repo }) {
-  const feedback = join(dir, "feedback.md");
-  const source = join(dir, "findings.json");
-  let problems;
-  let review;
-  if (!existsSync(source)) {
-    problems = ["findings.json was not written"];
-  } else {
-    try {
-      review = readJson(source);
-      problems = validate(repo, review);
-    } catch (error) {
-      problems = [`findings.json is not valid JSON: ${error.message}`];
-    }
-  }
-  if (problems.length > 0) {
-    writeFileSync(feedback, `${problems.map((problem) => `- ${problem}`).join("\n")}\n`);
-    return "RETRY";
-  }
-  rmSync(feedback, { force: true });
-  writeFileSync(join(dir, "report.md"), render(review));
-  return "PASS";
+  return checkFindings({ dir, repo, validate, render });
 }
 
-function parse(argv) {
-  const [command, ...rest] = argv;
-  const options = {};
-  for (const arg of rest) {
-    const match = OPTION.exec(arg);
-    if (!match) {
-      throw new Error(`unexpected argument: ${arg}`);
-    }
-    options[match[1]] = match[2];
-  }
-  for (const name of ["dir", "repo"]) {
-    if (!options[name]) {
-      throw new Error(`--${name} is required`);
-    }
-  }
-  return { command, options };
-}
-
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  try {
-    const { command, options } = parse(process.argv.slice(2));
-    if (command !== "check") {
-      throw new Error(`unknown command: ${command}`);
-    }
-    console.log(check(options));
-  } catch (error) {
-    console.error(error.message);
-    process.exit(2);
-  }
-}
+runCli({ url: import.meta.url, name: "usability", required: ["dir", "repo"], commands: { check } });

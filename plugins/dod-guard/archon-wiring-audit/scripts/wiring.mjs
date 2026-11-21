@@ -8,21 +8,19 @@
 //                         writes feedback.md with every problem found.
 //
 // Exit 2 on any error.
-import { existsSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
-import process from "node:process";
-import { pathToFileURL } from "node:url";
+import { runCli } from "../../archon-shared/scripts/cli.mjs";
 import {
+  checkFindings,
   citationProblem,
   clause,
   filesContaining,
   formatCitation,
   nonEmptyText,
-  readJson,
   textList,
-} from "./evidence.mjs";
+} from "../../archon-shared/scripts/evidence.mjs";
 
-const OPTION = /^--([\w-]+)=(.*)$/s;
 export const BOUNDARIES = ["user-facing", "unverified", "not applicable"];
 export const TAGS = ["required", "optional", "unverified"];
 export const STATUSES = ["verified", "missing", "contradicted", "unverified", "not applicable"];
@@ -62,7 +60,8 @@ function checkMissing(repo, finding, where, problems) {
   const absent = searched.paths.filter((path) => !existsSync(join(repo, path)));
   if (absent.length > 0) {
     problems.push(
-      `${where}: ${absent.join(", ")} does not exist, so it proves nothing; drop it from searched.paths, or mark the surface unverified when no searchable location is left`,
+      `${where}: ${absent.join(", ")} does not exist, so it proves nothing; ` +
+        "drop it from searched.paths, or mark the surface unverified when no searchable location is left",
     );
     return;
   }
@@ -70,7 +69,8 @@ function checkMissing(repo, finding, where, problems) {
     const hits = filesContaining(repo, id, searched.paths);
     if (hits.length > 0) {
       problems.push(
-        `${where}: '${id}' appears in ${hits.join(", ")}, so the surface is not missing there; read those files and judge again`,
+        `${where}: '${id}' appears in ${hits.join(", ")}, so the surface is not missing there; ` +
+          "read those files and judge again",
       );
     }
   }
@@ -169,56 +169,7 @@ export function render(audit) {
 }
 
 export function check({ dir, repo }) {
-  const feedback = join(dir, "feedback.md");
-  const source = join(dir, "findings.json");
-  let problems;
-  let audit;
-  if (!existsSync(source)) {
-    problems = ["findings.json was not written"];
-  } else {
-    try {
-      audit = readJson(source);
-      problems = validate(repo, audit);
-    } catch (error) {
-      problems = [`findings.json is not valid JSON: ${error.message}`];
-    }
-  }
-  if (problems.length > 0) {
-    writeFileSync(feedback, `${problems.map((problem) => `- ${problem}`).join("\n")}\n`);
-    return "RETRY";
-  }
-  rmSync(feedback, { force: true });
-  writeFileSync(join(dir, "report.md"), render(audit));
-  return "PASS";
+  return checkFindings({ dir, repo, validate, render });
 }
 
-function parse(argv) {
-  const [command, ...rest] = argv;
-  const options = {};
-  for (const arg of rest) {
-    const match = OPTION.exec(arg);
-    if (!match) {
-      throw new Error(`unexpected argument: ${arg}`);
-    }
-    options[match[1]] = match[2];
-  }
-  for (const name of ["dir", "repo"]) {
-    if (!options[name]) {
-      throw new Error(`--${name} is required`);
-    }
-  }
-  return { command, options };
-}
-
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  try {
-    const { command, options } = parse(process.argv.slice(2));
-    if (command !== "check") {
-      throw new Error(`unknown command: ${command}`);
-    }
-    console.log(check(options));
-  } catch (error) {
-    console.error(error.message);
-    process.exit(2);
-  }
-}
+runCli({ url: import.meta.url, name: "wiring", required: ["dir", "repo"], commands: { check } });

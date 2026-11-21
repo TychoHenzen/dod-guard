@@ -90,7 +90,7 @@ nodes:
       set -euo pipefail
       answer=$ask.output
       node "$PACK_DIR/archon-codex-migrate/scripts/migrate.mjs" approve --dir="$ARTIFACTS_DIR" --repo="$(pwd)" \
-        --scanner="$PACK_DIR/skills/codex-migrate/scripts/scan-agent-setup.mjs" --answer="$answer"
+        --answer="$answer"
     output_format:
       type: object
       properties:
@@ -110,8 +110,6 @@ nodes:
       max_iterations: 10
       until_bash: >-
         node "$PACK_DIR/archon-codex-migrate/scripts/migrate.mjs" advance --dir="$ARTIFACTS_DIR" --repo="$(pwd)"
-        --scanner="$PACK_DIR/skills/codex-migrate/scripts/scan-agent-setup.mjs"
-        --converter="$PACK_DIR/skills/codex-migrate/scripts/convert-claude-agents.mjs"
 
   - id: report
     depends_on: [list, approve, apply]

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { commitAll, git, initRepo, scratch } from "../../archon-shared/scripts/testing.mjs";
 import { approve, final, GateFailure, gate, leak, merge, NONE, options, report, verbatim } from "./migrate.mjs";
 
 const PACK = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -14,7 +14,8 @@ const ORIGINAL = [
   "name: demo",
   // As long as a real skill's description: the merge copies it back, so a
   // gate that scanned the frontmatter would fail every rewrite on it.
-  "description: Check one file with the strict checker and report the outcome. Use when the user asks whether a file passes, or before handing a change back for review.",
+  "description: Check one file with the strict checker and report the outcome. " +
+    "Use when the user asks whether a file passes, or before handing a change back for review.",
   "---",
   "",
   "# Demo",
@@ -33,29 +34,14 @@ const ORIGINAL = [
   "",
 ].join("\n");
 
-function scratch(t) {
-  const dir = mkdtempSync(join(tmpdir(), "skill-migrate-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
-  return dir;
-}
-
-function sh(cwd, args) {
-  const result = spawnSync("git", args, { cwd, encoding: "utf8" });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout.trim();
-}
+const PREFIX = "skill-migrate-";
 
 function fixture(t) {
-  const repo = scratch(t);
-  sh(repo, ["init", "-q"]);
-  sh(repo, ["config", "core.autocrlf", "false"]);
-  sh(repo, ["config", "user.name", "t"]);
-  sh(repo, ["config", "user.email", "t@example.invalid"]);
+  const repo = initRepo(t, PREFIX);
   mkdirSync(join(repo, "skills", "demo"), { recursive: true });
   writeFileSync(join(repo, TARGET), ORIGINAL);
-  sh(repo, ["add", "-A"]);
-  sh(repo, ["commit", "-q", "-m", "init"]);
-  const dir = scratch(t);
+  commitAll(repo);
+  const dir = scratch(t, PREFIX);
   const check = spawnSync(
     process.execPath,
     [
@@ -68,16 +54,18 @@ function fixture(t) {
   assert.ok(check.status === 0 || check.status === 1, check.stderr);
   writeFileSync(
     join(dir, "contract.md"),
-    "## Contract: demo\n\n### Verbatim (copy exactly)\n- node scripts/check.mjs --strict\n\n### REQUIRED\n- Runs the check.\n",
+    "## Contract: demo\n\n### Verbatim (copy exactly)\n- node scripts/check.mjs --strict\n\n" +
+      "### REQUIRED\n- Runs the check.\n",
   );
   verbatim({ dir });
-  return { repo, dir, base: { dir, repo, target: TARGET, commit: sh(repo, ["rev-parse", "HEAD"]), pack: PACK } };
+  return { repo, dir, base: { dir, repo, target: TARGET, commit: git(repo, ["rev-parse", "HEAD"]), pack: PACK } };
 }
 
 const REWRITE = [
   "Goal: a verified answer about one file.",
   "",
-  "Acceptance: the strict check exits 0 on the final state, and the user gets a brief summary naming the file, its outcome, and any failing lines worth quoting.",
+  "Acceptance: the strict check exits 0 on the final state, and the user gets a brief summary " +
+    "naming the file, its outcome, and any failing lines worth quoting.",
   "",
   "Gate:",
   "",
@@ -95,7 +83,7 @@ test("the Verbatim section becomes one item per line without its marker", (t) =>
 });
 
 test("the form offers SCAFFOLDING cuts with both outcomes, and the answer text is the reason", (t) => {
-  const dir = scratch(t);
+  const dir = scratch(t, PREFIX);
   writeFileSync(
     join(dir, "cuts.json"),
     JSON.stringify({
@@ -180,7 +168,8 @@ test("a writer input that quotes the original leaks; one in its own words passes
   );
   writeFileSync(
     join(dir, "inventory.md"),
-    "Goal: check one file.\n\nRules: Then run the check below and read its output carefully before you say anything at all to the user.\n",
+    "Goal: check one file.\n\nRules: Then run the check below and read its output carefully " +
+      "before you say anything at all to the user.\n",
   );
   assert.equal(leak(base), "inventory.md");
   assert.match(
@@ -195,4 +184,29 @@ test("a writer input that quotes the original leaks; one in its own words passes
   assert.equal(leak({ ...base, strict: "true" }), "PASS");
   assert.equal(existsSync(join(dir, "leak.md")), false);
   assert.equal(existsSync(join(dir, "original-gate")), false);
+});
+
+function cli(args) {
+  const script = join(dirname(fileURLToPath(import.meta.url)), "migrate.mjs");
+  return spawnSync(process.execPath, [script, ...args], { encoding: "utf8" });
+}
+
+test("on the command line a strict leak exits 1 and any other error exits 2", (t) => {
+  const { dir, base } = fixture(t);
+  writeFileSync(join(dir, "classification.md"), "## Classification\n");
+  writeFileSync(
+    join(dir, "inventory.md"),
+    "Rules: Then run the check below and read its output carefully before you say anything at all to the user.\n",
+  );
+  const flags = ["dir", "repo", "target", "commit", "pack"].map((name) => `--${name}=${base[name]}`);
+  const strict = cli(["leak", ...flags, "--strict=true"]);
+  assert.equal(strict.status, 1, strict.stderr);
+  assert.equal(strict.stdout, "");
+  assert.match(strict.stderr, /^skill-migrate: still too close to the original after rewording:\n- inventory\.md:/);
+  const loose = cli(["leak", ...flags]);
+  assert.equal(loose.status, 0, loose.stderr);
+  assert.equal(loose.stdout, "inventory.md\n");
+  const missing = cli(["leak"]);
+  assert.equal(missing.status, 2);
+  assert.equal(missing.stderr, "skill-migrate: missing --dir\n");
 });

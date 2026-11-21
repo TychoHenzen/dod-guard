@@ -1,27 +1,12 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { commitAll, git, initRepo, scratch } from "../../archon-shared/scripts/testing.mjs";
 import { approve, changes, checks, gate, NONE, options, ports, report } from "./clean.mjs";
 
-function scratch(t) {
-  const dir = mkdtempSync(join(tmpdir(), "clean-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
-  return dir;
-}
-
-function sh(cwd, args) {
-  const result = spawnSync("git", args, { cwd, encoding: "utf8" });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout;
-}
-
 function fixture(t) {
-  const repo = scratch(t);
-  sh(repo, ["init", "-q"]);
-  sh(repo, ["config", "core.autocrlf", "false"]);
+  const repo = initRepo(t, "clean-");
   mkdirSync(join(repo, "src"));
   const files = {
     "src/parser.js": "export const parse = (s) => s.trim();\n",
@@ -33,8 +18,7 @@ function fixture(t) {
   for (const [path, text] of Object.entries(files)) {
     writeFileSync(join(repo, path), text);
   }
-  sh(repo, ["add", "-A"]);
-  sh(repo, ["-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "init"]);
+  commitAll(repo);
   return repo;
 }
 
@@ -58,7 +42,7 @@ function candidates(dir, items, extra = {}) {
 
 test("the form offers only valid Strong and Fair items, plus Delete nothing", (t) => {
   const repo = fixture(t);
-  const dir = scratch(t);
+  const dir = scratch(t, "clean-");
   candidates(dir, [
     GOOD,
     { ...GOOD, id: "c2", confidence: "Fair", gap: "" },
@@ -86,7 +70,7 @@ test("the form offers only valid Strong and Fair items, plus Delete nothing", (t
 
 test("an answer approves the picked items, and Delete nothing approves none", (t) => {
   const repo = fixture(t);
-  const dir = scratch(t);
+  const dir = scratch(t, "clean-");
   candidates(dir, [GOOD, { ...GOOD, id: "c2", delete: ["src/other.js"], edits: [], ports: [] }]);
   options({ dir, repo });
   assert.deepEqual(approve({ dir, answer: JSON.stringify({ decisions: ["c1"], text: "" }) }), {
@@ -99,11 +83,11 @@ test("an answer approves the picked items, and Delete nothing approves none", (t
 
 test("the deletion gate keeps approved deletions, edits and manifests, and reverts the rest", (t) => {
   const repo = fixture(t);
-  const dir = scratch(t);
+  const dir = scratch(t, "clean-");
   candidates(dir, [GOOD]);
   options({ dir, repo });
   approve({ dir, answer: JSON.stringify({ decisions: ["c1"] }) });
-  sh(repo, ["rm", "-q", "src/parser-v1.js"]);
+  git(repo, ["rm", "-q", "src/parser-v1.js"]);
   writeFileSync(join(repo, "src/index.js"), 'export { parse } from "./parser.js";\n');
   writeFileSync(join(repo, "package.json"), '{ "dependencies": {} }\n');
   unlinkSync(join(repo, "src/other.js"));
@@ -122,7 +106,7 @@ test("the deletion gate keeps approved deletions, edits and manifests, and rever
 
 test("the port gate reverts deletions and edits to dying files", (t) => {
   const repo = fixture(t);
-  const dir = scratch(t);
+  const dir = scratch(t, "clean-");
   candidates(dir, [GOOD]);
   options({ dir, repo });
   approve({ dir, answer: JSON.stringify({ decisions: ["c1"] }) });
@@ -139,7 +123,7 @@ test("the port gate reverts deletions and edits to dying files", (t) => {
 
 test("the report lists deletions, restorations, declined, rejected and weak items", (t) => {
   const repo = fixture(t);
-  const dir = scratch(t);
+  const dir = scratch(t, "clean-");
   candidates(dir, [
     GOOD,
     { ...GOOD, id: "c2", label: "other", delete: ["src/other.js"], edits: [], ports: [] },
@@ -147,13 +131,13 @@ test("the report lists deletions, restorations, declined, rejected and weak item
   ]);
   options({ dir, repo });
   approve({ dir, answer: JSON.stringify({ decisions: ["c1"] }) });
-  sh(repo, ["rm", "-q", "src/parser-v1.js"]);
+  git(repo, ["rm", "-q", "src/parser-v1.js"]);
   const text = report({ dir, repo });
   assert.match(text, /c1 parser v1: deleted src\/parser-v1\.js; superseded by src\/parser\.js/);
   assert.match(text, /c1: abc1234 trims input/);
   assert.match(text, /c2 other: not approved/);
   assert.match(text, /bad : not offered/);
   assert.match(text, /Weak, left alone: w1/);
-  sh(repo, ["checkout", "HEAD", "--", "src/parser-v1.js"]);
+  git(repo, ["checkout", "HEAD", "--", "src/parser-v1.js"]);
   assert.match(report({ dir, repo }), /kept src\/parser-v1\.js, restored after the checks failed/);
 });

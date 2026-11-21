@@ -1,41 +1,22 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import process from "node:process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { commitAll, git, initRepo, scratch } from "../../archon-shared/scripts/testing.mjs";
 import { advance, approve, NONE, options, report, signalProblem } from "./migrate.mjs";
-
-const SKILL = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "skills", "codex-migrate", "scripts");
-const TOOLS = { scanner: join(SKILL, "scan-agent-setup.mjs"), converter: join(SKILL, "convert-claude-agents.mjs") };
-
-function scratch(t) {
-  const dir = mkdtempSync(join(tmpdir(), "migrate-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
-  return dir;
-}
-
-function sh(cwd, args) {
-  const result = spawnSync("git", args, { cwd, encoding: "utf8" });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout.trim();
-}
 
 const AGENT = "---\nname: helper\ndescription: Helps.\nmodel: sonnet\ntools: Read\n---\n\nRead files and answer.\n";
 
 function fixture(t) {
-  const repo = scratch(t);
-  sh(repo, ["init", "-q"]);
-  sh(repo, ["config", "core.autocrlf", "false"]);
-  sh(repo, ["config", "user.name", "t"]);
-  sh(repo, ["config", "user.email", "t@example.invalid"]);
+  const repo = initRepo(t, "migrate-");
   mkdirSync(join(repo, ".claude", "agents"), { recursive: true });
   writeFileSync(join(repo, "CLAUDE.md"), "# Rules\n\nAsk with AskUserQuestion before big changes.\n");
   writeFileSync(join(repo, "AGENTS.md"), "# Agents\n\nShared rules.\n");
   writeFileSync(join(repo, ".claude", "agents", "helper.md"), AGENT);
-  sh(repo, ["add", "-A"]);
-  sh(repo, ["commit", "-q", "-m", "init"]);
+  commitAll(repo);
   return repo;
 }
 
@@ -67,16 +48,16 @@ const AGENTS = { id: "s3", label: "Generate Codex agents", kind: "agents", plan:
 
 function start(t, slices, extra) {
   const repo = fixture(t);
-  const dir = scratch(t);
+  const dir = scratch(t, "migrate-");
   propose(dir, slices, extra);
   options({ dir, repo });
-  return { repo, dir, base: { dir, repo, ...TOOLS } };
+  return { repo, dir, base: { dir, repo } };
 }
 
 const state = (dir) => JSON.parse(readFileSync(join(dir, "state.json"), "utf8"));
 
 test("the form offers valid slices and rejects hand-edited TOML and incomplete moves", (t) => {
-  const dir = scratch(t);
+  const dir = scratch(t, "migrate-");
   propose(dir, [
     REWORD,
     { id: "bad", label: "edit toml", kind: "reword", files: [".codex/agents/helper.toml"], signals: ["x"] },
@@ -103,13 +84,13 @@ test("a reword that lowers its signals is committed; a second slice is queued af
   writeFileSync(join(repo, "CLAUDE.md"), "# Rules\n\nAsk the user before big changes.\n");
   assert.equal(advance(base), false);
   assert.equal(state(dir).results.s1.status, "applied");
-  assert.equal(sh(repo, ["log", "-1", "--format=%s"]), "codex-migrate: Word the check-in by capability");
+  assert.equal(git(repo, ["log", "-1", "--format=%s"]), "codex-migrate: Word the check-in by capability");
   assert.equal(state(dir).current, "s3");
   // The agents slice needs no session edit: the converter writes the TOML.
   assert.equal(advance(base), true);
   assert.equal(state(dir).results.s3.status, "applied");
-  assert.match(sh(repo, ["ls-files", ".codex/agents"]), /helper\.toml$/);
-  assert.equal(sh(repo, ["status", "--porcelain"]), "");
+  assert.match(git(repo, ["ls-files", ".codex/agents"]), /helper\.toml$/);
+  assert.equal(git(repo, ["status", "--porcelain"]), "");
 });
 
 test("a reword that leaves its signals is reverted and the next slice still runs", (t) => {
@@ -134,12 +115,12 @@ test("a change outside the slice or a hand commit fails the slice and is undone"
 
   const second = start(t, [REWORD]);
   approve({ ...second.base, answer: JSON.stringify({ decisions: ["s1"] }) });
-  const before = sh(second.repo, ["rev-parse", "HEAD"]);
+  const before = git(second.repo, ["rev-parse", "HEAD"]);
   writeFileSync(join(second.repo, "CLAUDE.md"), "# Rules\n\nAsk the user.\n");
-  sh(second.repo, ["commit", "-qam", "by hand"]);
+  git(second.repo, ["commit", "-qam", "by hand"]);
   advance(second.base);
   assert.match(state(second.dir).results.s1.reason, /made a commit/);
-  assert.equal(sh(second.repo, ["rev-parse", "HEAD"]), before);
+  assert.equal(git(second.repo, ["rev-parse", "HEAD"]), before);
 });
 
 test("a deleted CLAUDE.md fails the slice", (t) => {
@@ -191,6 +172,50 @@ test("a failing documented test command fails the slice", (t) => {
   writeFileSync(join(repo, "CLAUDE.md"), "# Rules\n\nAsk the user before big changes.\n");
   advance(base);
   assert.match(state(dir).results.s1.reason, /test command failed: exit 3/);
+});
+
+test("the form message, commit message, mismatch reason and report lines keep their exact text", (t) => {
+  const { repo, dir, base } = start(t, [REWORD]);
+  const form = options({ dir, repo });
+  assert.equal(
+    form.message,
+    "Pick the slices to apply; they run back to back in this order. " +
+      `The proposal is in ${join(dir, "proposal.md")}.\n\n` +
+      "s1: Word the check-in by capability (reword)\n  files: CLAUDE.md\n  plan: say ask the user",
+  );
+  approve({ ...base, answer: JSON.stringify({ decisions: ["s1"] }) });
+  writeFileSync(join(repo, "CLAUDE.md"), "# Rules\n\nAsk the user before big changes.\n");
+  assert.equal(advance(base), true);
+  assert.equal(
+    git(repo, ["log", "-1", "--format=%B"]),
+    "codex-migrate: Word the check-in by capability\n\n" +
+      "Slice s1 (reword), applied and verified by the dod-guard\ncodex-migrate workflow.",
+  );
+  const finding = { category: "claude-only", file: "CLAUDE.md", line: 1, signal: "AskUserQuestion" };
+  assert.equal(
+    signalProblem(REDUCE, { findings: [finding] }, { claudeAdapter: "canonical", findings: [] }),
+    "signals removed from CLAUDE.md (AskUserQuestion x1) do not equal those added to AGENTS.md (none)",
+  );
+  assert.ok(
+    report({ dir }).includes(
+      "\n- Neither runtime was asked to name its active instruction sources; " +
+        "open Codex and Claude in this checkout to confirm.\n",
+    ),
+  );
+});
+
+test("the CLI prints one trailing newline and exits 2 with the migrate prefix on an error", (t) => {
+  const script = fileURLToPath(new URL("./migrate.mjs", import.meta.url));
+  const missing = spawnSync(process.execPath, [script, "report"], { encoding: "utf8" });
+  assert.equal(missing.status, 2);
+  assert.equal(missing.stderr, "migrate: missing --dir\n");
+  const { dir } = start(t, [REWORD]);
+  const printed = spawnSync(process.execPath, [script, "report", `--dir=${dir}`], { encoding: "utf8" });
+  assert.equal(printed.status, 0, printed.stderr);
+  assert.equal(printed.stdout, readFileSync(join(dir, "report.md"), "utf8"));
+  const listed = spawnSync(process.execPath, [script, "options", `--dir=${dir}`], { encoding: "utf8" });
+  assert.equal(listed.status, 0, listed.stderr);
+  assert.equal(listed.stdout, `${JSON.stringify(options({ dir }))}\n`);
 });
 
 test("a reword of text the scanner does not flag is applied and reported as test-verified only", (t) => {

@@ -1,37 +1,19 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { commitAll, git, initRepo, scratch } from "../../archon-shared/scripts/testing.mjs";
 import { advance, approve, bareName, gather, indexRows, NONE, options, report, target } from "./debug.mjs";
-
-function scratch(t) {
-  const dir = mkdtempSync(join(tmpdir(), "debug-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
-  return dir;
-}
-
-function sh(cwd, args) {
-  const result = spawnSync("git", args, { cwd, encoding: "utf8" });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout.trim();
-}
 
 const SKILL = "plugins/p/skills/demo/SKILL.md";
 
 function fixture(t) {
-  const repo = scratch(t);
-  sh(repo, ["init", "-q"]);
-  sh(repo, ["config", "core.autocrlf", "false"]);
-  sh(repo, ["config", "user.name", "t"]);
-  sh(repo, ["config", "user.email", "t@example.invalid"]);
+  const repo = initRepo(t, "debug-");
   mkdirSync(join(repo, "plugins", "p", "skills", "demo"), { recursive: true });
   mkdirSync(join(repo, "plugins", "p", "agents"), { recursive: true });
   writeFileSync(join(repo, SKILL), "# Demo\n\n1. Run the dry run unless the change is trivial.\n");
   writeFileSync(join(repo, "plugins", "p", "agents", "worker.md"), "Work.\n");
-  sh(repo, ["add", "-A"]);
-  sh(repo, ["commit", "-q", "-m", "init"]);
+  commitAll(repo);
   return repo;
 }
 
@@ -59,7 +41,7 @@ const RUNS = {
 };
 
 function standIns(t) {
-  const dir = scratch(t);
+  const dir = scratch(t, "debug-");
   writeFileSync(
     join(dir, "find-runs.mjs"),
     `process.stdout.write(${JSON.stringify(`${INDEX}\n`)}); process.exit(0);\n`,
@@ -73,8 +55,10 @@ function standIns(t) {
       "const run = list[Number(arg('run')) - 1];",
       "if (!run) process.exit(4);",
       "const shown = Math.min(run[1], Number(arg('max-steps')));",
-      "const steps = Array.from({ length: shown }, (_, i) => `${String(i + 1).padStart(4)}  tool   Read step`).join('\\n');",
-      "process.stdout.write(`skill demo\\nstarted ${run[0]}  records 1..2\\nboundary: end\\nsteps ${run[1]}  tool calls 1\\n\\n${steps}\\n`);",
+      "const steps = Array.from({ length: shown }, " +
+        "(_, i) => `${String(i + 1).padStart(4)}  tool   Read step`).join('\\n');",
+      "process.stdout.write(`skill demo\\nstarted ${run[0]}  records 1..2\\nboundary: end\\n" +
+        "steps ${run[1]}  tool calls 1\\n\\n${steps}\\n`);",
     ].join("\n"),
   );
   return dir;
@@ -82,14 +66,14 @@ function standIns(t) {
 
 test("a qualified skill name reaches the same SKILL.md, and an installed copy is never the target", (t) => {
   const repo = fixture(t);
-  const dir = scratch(t);
+  const dir = scratch(t, "debug-");
   assert.equal(bareName("dod-guard:demo"), "demo");
   assert.equal(target({ dir, repo, skill: "dod-guard:demo" }), SKILL);
   assert.throws(() => target({ dir, repo, skill: "missing" }), /tracks no skills\/missing\/SKILL.md/);
 });
 
 test("gather pulls the newest runs by start time and step count, each complete", (t) => {
-  const dir = scratch(t);
+  const dir = scratch(t, "debug-");
   assert.equal(indexRows(INDEX)[2].steps, 1);
   assert.equal(gather({ dir, skill: "demo", days: "30", runs: "3", scripts: standIns(t) }), "3");
   const { traces } = JSON.parse(readFileSync(join(dir, "traces.json"), "utf8"));
@@ -106,7 +90,7 @@ test("gather pulls the newest runs by start time and step count, each complete",
 
 function diagnosed(t, findings) {
   const repo = fixture(t);
-  const dir = scratch(t);
+  const dir = scratch(t, "debug-");
   writeFileSync(
     join(dir, "traces.json"),
     JSON.stringify({
@@ -170,14 +154,14 @@ test("an accepted edit to the named file is committed; one that strays is revert
   approve({ dir, repo, answer: JSON.stringify({ decisions: ["f1", "f2"] }) });
   writeFileSync(join(repo, SKILL), "# Demo\n\n1. Always run the dry run.\n");
   assert.equal(advance({ dir, repo }), false);
-  assert.equal(sh(repo, ["log", "-1", "--format=%s"]), "skill-debug: Skips the dry run");
+  assert.equal(git(repo, ["log", "-1", "--format=%s"]), "skill-debug: Skips the dry run");
   writeFileSync(join(repo, "plugins", "p", "agents", "worker.md"), "Work carefully.\n");
   writeFileSync(join(repo, SKILL), "# Demo\n\nrewritten\n");
   assert.equal(advance({ dir, repo }), true);
   const state = JSON.parse(readFileSync(join(dir, "state.json"), "utf8"));
   assert.match(state.results.f2.reason, /besides plugins\/p\/agents\/worker.md: plugins\/p\/skills\/demo\/SKILL.md/);
   assert.equal(readFileSync(join(repo, SKILL), "utf8"), "# Demo\n\n1. Always run the dry run.\n");
-  assert.equal(sh(repo, ["status", "--porcelain"]), "");
+  assert.equal(git(repo, ["status", "--porcelain"]), "");
 });
 
 test("the pull request body carries no evidence or fix text, and expectations only for applied fixes", (t) => {
