@@ -12,8 +12,10 @@ $audit.output.report
 
 Repair from the report and the contract alone. Never read the original in any
 form: no `git show`, `git log -p`, `git diff` against the start commit, other
-branches, other checkouts, or any path under `$ARTIFACTS_DIR` other than the
-two files above. Write each restored behavior in the rewrite's own structure;
+branches, other checkouts, any path under `$ARTIFACTS_DIR` other than the two
+files above, session logs and transcripts (`~/.archon` outside `$PACK_DIR` and
+those files, and `~/.claude`), or index and cache folders that code tools keep
+in the checkout. Write each restored behavior in the rewrite's own structure;
 do not rebuild the original's.
 
 When a reported gap is not real (the contract does not hold it, or the rewrite

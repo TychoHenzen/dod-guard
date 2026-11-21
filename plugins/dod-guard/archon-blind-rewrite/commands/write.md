@@ -16,8 +16,14 @@ original is deleted. You will not see it, and you must not look for it.
 - These copies of the original: $contract.output.leak_paths
 - Version control data of any kind (`.git`, history, other branches, other
   checkouts of this repository).
+- Session logs and transcripts, which recorded the contract session reading
+  the original: anything under `~/.archon` other than `$PACK_DIR` and the two
+  files above, and anything under `~/.claude`.
+- Index or cache folders that code tools keep inside the checkout (for example
+  `.code-review-graph`), which hold copies of the old code.
 
-If you open one by accident, say so in your report. That costs one rewrite. A
+Nothing but this list stops you from opening those copies. If you open one by
+accident, say so in your report. That costs one rewrite. A
 copy you keep quiet about costs the whole run.
 
 ## How to write

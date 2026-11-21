@@ -4,9 +4,11 @@ description: |
   paraphrasing it. One session writes the contract while it can still see the
   original; the target is deleted; a fresh session with no shell and no copy of
   the original writes the replacement; a script fails it when it is too close to
-  the original; a separate session audits what the replacement lost. The
-  original never sits on disk while a writer runs: git at the run's start commit
-  is the only copy, and scripts bring it out only for the gate and the audit.
+  the original; a separate session audits what the replacement lost. While a
+  writer runs, the original is in neither the run's checkout nor its artifacts
+  folder: scripts bring it out of git at the start commit only for the gate and
+  the audit. Other copies remain (the source checkout, Archon run logs, Claude
+  Code transcripts). The writer is told not to open them; nothing enforces it.
 
   Use when: a complete rewrite, replacement or algorithm change of one file or
   directory is wanted, or an earlier rewrite was only cosmetic. Code needs an
@@ -275,7 +277,12 @@ nodes:
       set -euo pipefail
       verdict=$audit.output.verdict
       target="$INPUTS_TARGET"
-      git add -A
+      # The target plus edits to tracked files (fix may adjust a test). A new
+      # file outside the target is a session's leftover, so it stops the run.
+      git add -A -- "$target"
+      git add -u
+      stray=$(git ls-files --others --exclude-standard)
+      [ -z "$stray" ] || { printf 'untracked files outside %s; commit nothing:\n%s\n' "$target" "$stray" >&2; exit 1; }
       [ -n "$(git diff --cached --name-only)" ] || { echo "nothing to commit" >&2; exit 1; }
       printf 'refactor: blind rewrite of %s\n\nWritten from a behavior contract by the blind-rewrite workflow.\nOverlap gate: pass. Gap audit before repair: %s.\n' \
         "$target" "$verdict" > "$ARTIFACTS_DIR/commit-message.txt"

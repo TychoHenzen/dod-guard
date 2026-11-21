@@ -86,9 +86,12 @@ archon workflow run TychoHenzen/dod-guard:blind-rewrite \
 
 A session writes the behavior contract while it can still see the original,
 the target is deleted, and a fresh session with no shell writes the
-replacement. Git at the run's start commit is the only copy of the original:
-scripts bring it out for the overlap gate and the gap audit and remove it
-again, so it is never on disk while a writer runs. The workflow reuses the
+replacement. While a writer runs, the original is in neither the run's
+checkout nor its artifacts folder: scripts bring it out of git for the overlap
+gate and the gap audit and remove it again. Other copies remain on the machine
+(the source checkout, Archon run logs, Claude Code transcripts); the writer is
+told not to open them, but nothing enforces that. The checks must pass on the
+original before anything is deleted. The workflow reuses the
 skill's overlap scanner and the `blind-*` agent instructions from this
 directory. It ends with a draft pull request (`--input open_pr=false` stops at
 the commit). A code target needs tests around it; the workflow stops on a
