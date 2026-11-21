@@ -1,0 +1,146 @@
+name: codex-migrate
+description: |
+  Migrate a project whose agent setup targets Claude so it also works well
+  with Codex. A script saves the scanner baseline. A read-only session runs
+  codex-migrate's inventory and proposal and writes the slices it proposes.
+  A maintainer picks slices on a multi-select form. The picked slices run back
+  to back, one fresh session each. After each one a script verifies the slice
+  the way the skill says: the scanner findings for the changed files, the agent
+  converter check, and the project's documented test command. A slice that
+  passes is committed on its own; one that fails is reverted, and the next one
+  still runs. The commits land in a draft pull request with a report.
+
+  Use when: adopting Codex next to Claude, sharing instructions between
+  CLAUDE.md and AGENTS.md, or generating Codex agents from Claude agents.
+  NOT for: a Codex-only target that drops Claude support, or global config.
+
+  Run with: archon workflow run TychoHenzen/dod-guard:codex-migrate
+            --branch chore/codex-migrate [--input open_pr=false]
+  Answer the form with: archon workflow answer <run-id> --occurrence <id>
+            --choose <slice-id> [--choose <slice-id>]...
+
+model: medium
+
+inputs:
+  open_pr:
+    default: "true"
+    description: '"true" pushes the branch and opens a draft pull request; anything else stops at the commits.'
+
+nodes:
+  - id: preflight
+    bash: |
+      set -euo pipefail
+      [ -z "$(git status --porcelain)" ] \
+        || { echo "checkout is not clean; each slice is verified against a clean head" >&2; git status --porcelain >&2; exit 1; }
+      git rev-parse HEAD
+
+  # The baseline lives in the artifacts, outside the project.
+  - id: inventory
+    depends_on: [preflight]
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/skills/codex-migrate/scripts/scan-agent-setup.mjs" "$(pwd)" --json > "$ARTIFACTS_DIR/baseline.json"
+      node -e 'const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); console.log(`${r.findings.length} findings in ${r.instructionFiles.length} instruction files; CLAUDE.md is ${r.claudeAdapter}`)' "$ARTIFACTS_DIR/baseline.json"
+
+  - id: propose
+    depends_on: [inventory]
+    command: propose
+    context: fresh
+    model: large
+    mutates_checkout: false
+    allowed_tools: [Read, Grep, Glob, Bash, Write]
+    settingSources: [project]
+
+  - id: list
+    depends_on: [propose]
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-codex-migrate/scripts/migrate.mjs" options --dir="$ARTIFACTS_DIR" --repo="$(pwd)"
+    output_format:
+      type: object
+      properties:
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              does: { type: string }
+            required: [id]
+        count: { type: string }
+        message: { type: string }
+      required: [options, count, message]
+
+  - id: ask
+    depends_on: [list]
+    when: "$list.output.count != '0'"
+    wait:
+      attention: "$list.output.message"
+      form: multi_select
+      options: "$list.output.options"
+      labels:
+        stage: codex-migrate
+        kind: approval
+
+  # Picking slices together approves them all; nothing asks again between them.
+  - id: approve
+    depends_on: [ask]
+    bash: |
+      set -euo pipefail
+      answer=$ask.output
+      node "$PACK_DIR/archon-codex-migrate/scripts/migrate.mjs" approve --dir="$ARTIFACTS_DIR" --repo="$(pwd)" \
+        --scanner="$PACK_DIR/skills/codex-migrate/scripts/scan-agent-setup.mjs" --answer="$answer"
+    output_format:
+      type: object
+      properties:
+        count: { type: string }
+      required: [count]
+
+  # One fresh session per slice. After each, the script verifies the slice,
+  # commits or reverts it, and queues the next.
+  - id: apply
+    depends_on: [approve]
+    when: "$approve.output.count != '0'"
+    allowed_tools: [Read, Grep, Glob, Edit, Write, Bash]
+    settingSources: [project]
+    loop:
+      command: apply-slice
+      fresh_context: true
+      max_iterations: 10
+      until_bash: >-
+        node "$PACK_DIR/archon-codex-migrate/scripts/migrate.mjs" advance --dir="$ARTIFACTS_DIR" --repo="$(pwd)"
+        --scanner="$PACK_DIR/skills/codex-migrate/scripts/scan-agent-setup.mjs"
+        --converter="$PACK_DIR/skills/codex-migrate/scripts/convert-claude-agents.mjs"
+
+  - id: report
+    depends_on: [list, approve, apply]
+    trigger_rule: none_failed_min_one_success
+    bash: |
+      set -euo pipefail
+      [ -z "$(git status --porcelain)" ] \
+        || { echo "uncommitted changes remain after the slices:" >&2; git status --porcelain >&2; exit 1; }
+      node "$PACK_DIR/archon-codex-migrate/scripts/migrate.mjs" report --dir="$ARTIFACTS_DIR"
+
+  # A public write, so a script does it and reads the result back.
+  - id: pr
+    depends_on: [report]
+    when: "$INPUTS.open_pr == 'true'"
+    bash: |
+      set -euo pipefail
+      base=$preflight.output
+      head=$(git rev-parse HEAD)
+      if [ "$head" = "$base" ]; then echo "no slice was applied; no pull request"; exit 0; fi
+      base_branch="$BASE_BRANCH"
+      [ -n "$base_branch" ] || { echo "Archon resolved no base branch for the pull request" >&2; exit 1; }
+      branch=$(git branch --show-current)
+      git push -q -u origin "$branch"
+      [ "$(git ls-remote --heads origin "$branch" | cut -f1)" = "$head" ] \
+        || { echo "the pushed head does not match $head" >&2; exit 1; }
+      gh pr create --draft --base "$base_branch" --head "$branch" --title "Codex migration" \
+        --body-file "$ARTIFACTS_DIR/report.md" > /dev/null
+      read_head=$(gh pr view "$branch" --json headRefOid --jq .headRefOid)
+      [ "$read_head" = "$head" ] || { echo "the pull request head $read_head is not $head" >&2; exit 1; }
+      read_base=$(gh pr view "$branch" --json baseRefName --jq .baseRefName)
+      [ "$read_base" = "$base_branch" ] || { echo "the pull request base $read_base is not $base_branch" >&2; exit 1; }
+      gh pr view "$branch" --json url --jq .url

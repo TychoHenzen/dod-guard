@@ -8,6 +8,7 @@
     "blind-rewrite": "archon-blind-rewrite/blind-rewrite.yaml",
     "sdlc-standards": "archon-sdlc-standards/sdlc-standards.yaml",
     "doc-reconcile": "archon-doc-reconcile/doc-reconcile.yaml",
-    "clean-house": "archon-clean-house/clean-house.yaml"
+    "clean-house": "archon-clean-house/clean-house.yaml",
+    "codex-migrate": "archon-codex-migrate/codex-migrate.yaml"
   }
 }
