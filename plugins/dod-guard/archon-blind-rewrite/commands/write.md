@@ -23,7 +23,7 @@ original is deleted. You will not see it, and you must not look for it.
   `.code-review-graph`), which hold copies of the old code.
 
 Nothing but this list stops you from opening those copies. If you open one by
-accident, say so in your report. That costs one rewrite. A
+accident, set `exposed` to true and say which in your report. That costs one rewrite. A
 copy you keep quiet about costs the whole run.
 
 ## How to write
@@ -52,7 +52,8 @@ $LOOP_PREV.gate.output
 
 `too close` means the previous replacement kept too much of the original's
 shape and was thrown away. Start again from the contract with a different
-structure.
+structure. `exposed` means the previous writer saw a copy of the original, so
+its work was thrown away unread. Start again from the contract.
 
 ## Ambiguity
 
@@ -63,6 +64,8 @@ consequence of each.
 ## Return
 
 - `status`: `done` or `ambiguous`.
+- `exposed`: true when you opened anything on the never-open list, even in
+  part. The gate then throws your work away and the next round starts fresh.
 - `report`: the one-sentence purpose, the files you wrote, which contract items
   each file carries, anything you could not carry, and any leak exposure. For
   `ambiguous`, the question and its readings.

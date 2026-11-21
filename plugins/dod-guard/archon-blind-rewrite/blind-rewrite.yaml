@@ -48,6 +48,10 @@ nodes:
         || { echo "target '$target' is not tracked by git" >&2; exit 1; }
       [ -z "$(git status --porcelain)" ] \
         || { echo "checkout is not clean; the run needs a clean start commit" >&2; git status --porcelain >&2; exit 1; }
+      # Ignored files inside the target are local data git cannot bring back.
+      ignored=$(git status --porcelain --ignored -- "$target")
+      [ -z "$ignored" ] \
+        || { printf 'the target holds ignored files that deleting it would destroy; move them out first:\n%s\n' "$ignored" >&2; exit 1; }
       git rev-parse HEAD
 
   # The only session that reads the original before the audit.
@@ -105,7 +109,12 @@ nodes:
     trigger_rule: none_failed_min_one_success
     bash: |
       cmd=$contract.output.checks
-      [ -n "$cmd" ] || exit 0
+      shape=$contract.output.shape
+      if [ -z "$cmd" ]; then
+        [ "$shape" = prose ] && exit 0
+        echo "no check command was found for a code target; nothing could verify the rewrite" >&2
+        exit 1
+      fi
       if ! bash -c "$cmd" > "$ARTIFACTS_DIR/baseline.txt" 2>&1; then
         echo "the check command fails on the original, so it cannot judge a rewrite: $cmd" >&2
         tail -n 20 "$ARTIFACTS_DIR/baseline.txt" >&2
@@ -118,7 +127,8 @@ nodes:
     bash: |
       set -euo pipefail
       git rm -r -q -- "$INPUTS_TARGET"
-      [ ! -e "$INPUTS_TARGET" ] || rm -rf -- "$INPUTS_TARGET"
+      [ ! -e "$INPUTS_TARGET" ] \
+        || { echo "files remain at $INPUTS_TARGET after git rm; leaving them alone" >&2; exit 1; }
 
   # Two write and gate cycles at most. A writer that comes back too close is
   # thrown away whole; the next one starts from the contract alone.
@@ -139,8 +149,9 @@ nodes:
               status:
                 type: string
                 enum: [done, ambiguous]
+              exposed: { type: boolean }
               report: { type: string }
-            required: [status, report]
+            required: [status, exposed, report]
             additionalProperties: false
 
         - id: gate
@@ -148,6 +159,7 @@ nodes:
           bash: |
             set -uo pipefail
             status=$writer.output.status
+            exposed=$writer.output.exposed
             report=$writer.output.report
             base=$preflight.output
             shape=$contract.output.shape
@@ -157,13 +169,19 @@ nodes:
               printf 'The writer could not settle the contract:\n%s\n' "$report" >&2
               exit 1
             fi
+            # A writer that saw a copy of the original costs its round, whatever it wrote.
+            if [ "$exposed" = true ]; then
+              rm -rf -- "$target"
+              echo exposed
+              exit 0
+            fi
             [ -e "$target" ] || { echo "the writer wrote nothing at $target" >&2; exit 1; }
             mode=code; [ "$shape" = prose ] && mode=prose
             orig="$ARTIFACTS_DIR/original-gate"
             trap 'rm -rf -- "$orig"' EXIT
             rm -rf -- "$orig"; mkdir -p "$orig"
-            # Extract from inside the folder: GNU tar reads "C:/..." after -C as a remote host.
-            git archive "$base" -- "$target" | (cd "$orig" && tar -x)
+            node "$PACK_DIR/archon-blind-rewrite/scripts/original.mjs" \
+              --commit="$base" --target="$target" --dir="$orig" > /dev/null || exit 1
             node "$PACK_DIR/skills/blind-rewrite/scripts/overlap-scan.mjs" \
               --original="$orig/$target" --rewrite="$target" --mode="$mode" \
               --whitelist="$whitelist" --contract-file="$ARTIFACTS_DIR/verbatim.txt" \
@@ -207,7 +225,8 @@ nodes:
       base=$preflight.output
       orig="$ARTIFACTS_DIR/original"
       rm -rf -- "$orig"; mkdir -p "$orig"
-      git archive "$base" -- "$INPUTS_TARGET" | (cd "$orig" && tar -x)
+      node "$PACK_DIR/archon-blind-rewrite/scripts/original.mjs" \
+        --commit="$base" --target="$INPUTS_TARGET" --dir="$orig" > /dev/null
 
   - id: audit
     depends_on: [reveal]
@@ -262,7 +281,8 @@ nodes:
       orig="$ARTIFACTS_DIR/original-final"
       trap 'rm -rf -- "$orig"' EXIT
       rm -rf -- "$orig"; mkdir -p "$orig"
-      git archive "$base" -- "$target" | (cd "$orig" && tar -x)
+      node "$PACK_DIR/archon-blind-rewrite/scripts/original.mjs" \
+        --commit="$base" --target="$target" --dir="$orig" > /dev/null || exit 1
       node "$PACK_DIR/skills/blind-rewrite/scripts/overlap-scan.mjs" \
         --original="$orig/$target" --rewrite="$target" --mode="$mode" \
         --whitelist="$whitelist" --contract-file="$ARTIFACTS_DIR/verbatim.txt" \
@@ -299,19 +319,23 @@ nodes:
       verdict=$audit.output.verdict
       target="$INPUTS_TARGET"
       issue="$INPUTS_ISSUE"
+      base_branch="$BASE_BRANCH"
+      [ -n "$base_branch" ] || { echo "Archon resolved no base branch for the pull request" >&2; exit 1; }
       branch=$(git branch --show-current)
       git push -q -u origin "$branch"
       [ "$(git ls-remote --heads origin "$branch" | cut -f1)" = "$head" ] \
         || { echo "the pushed head does not match $head" >&2; exit 1; }
       {
         printf '## Blind rewrite of `%s`\n\n' "$target"
-        printf 'Written from a behavior contract by a session that never saw the original.\n\n'
+        printf 'Written from a behavior contract by a session that reported no sight of the original.\n\n'
         printf -- '- Overlap gate: pass\n- Gap audit before repair: %s\n' "$verdict"
         printf '\n```json\n'; cat "$ARTIFACTS_DIR/overlap.json"; printf '\n```\n'
         if [ -n "$issue" ]; then printf '\nRefs #%s\n' "$issue"; fi
       } > "$ARTIFACTS_DIR/pr-body.md"
-      gh pr create --draft --head "$branch" --title "Blind rewrite of $target" \
+      gh pr create --draft --base "$base_branch" --head "$branch" --title "Blind rewrite of $target" \
         --body-file "$ARTIFACTS_DIR/pr-body.md" > /dev/null
       read_head=$(gh pr view "$branch" --json headRefOid --jq .headRefOid)
       [ "$read_head" = "$head" ] || { echo "the pull request head $read_head is not $head" >&2; exit 1; }
+      read_base=$(gh pr view "$branch" --json baseRefName --jq .baseRefName)
+      [ "$read_base" = "$base_branch" ] || { echo "the pull request base $read_base is not $base_branch" >&2; exit 1; }
       gh pr view "$branch" --json url --jq .url

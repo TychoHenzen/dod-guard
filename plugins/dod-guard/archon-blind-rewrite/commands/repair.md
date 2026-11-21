@@ -18,8 +18,9 @@ those files, and `~/.claude`), or index and cache folders that code tools keep
 in the checkout. Write each restored behavior in the rewrite's own structure;
 do not rebuild the original's.
 
-When a reported gap is not real (the contract does not hold it, or the rewrite
-already delivers it), leave it and say why.
+Restore every reported gap, including one the contract missed: the auditor
+compared the rewrite with the original itself. Leave a gap only when the
+rewrite already delivers it or `answer.md` approves the cut, and say which.
 
 Change only `$INPUTS.target`. Do not commit. Reply with each gap and what you
 did about it.
