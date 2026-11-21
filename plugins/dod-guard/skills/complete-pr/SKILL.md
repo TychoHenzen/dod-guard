@@ -85,7 +85,7 @@ Never use `--admin`, force-push, weaken repository protections, or delete a ref 
 
 Use recovery when a prior run merged the PR but stopped before cleanup; check live state first. It accepts only a merged PR with complete required checks, closed linked issues, and `Done` Project status. A merged PR that closes no issue passes only with `--no-linked-issue`, under the same rule as in "Run the helper". It deletes the remote head only if it still points at the merged head.
 
-If the helper exits unexpectedly after the merge step (stderr `complete-pr failed [<code>]`, or no result), never rerun it. Read the live pull request state. If it is not MERGED, report the observed state and restart from "Resolve the pull request". If it is MERGED, run "Finalize the parent unit" first, because recovery requires every linked issue closed and `Done` in the Project and the helper sets no Project status, then run the dry run below, then the real recovery.
+If the helper exits unexpectedly after the merge step (stderr `complete-pr failed [<code>]`, or no result), never rerun it. Read the live pull request state. If it is not MERGED, report the observed state and restart from "Resolve the pull request". If it is MERGED, run "Finalize the parent unit" first, because recovery requires every linked issue closed and `Done` in the Project and the helper sets no Project status, then run the dry run below, then the real recovery. A PR that ran with `--no-linked-issue` and closes no issue has no parent unit: go straight to the dry run, passing `--no-linked-issue` again.
 
 ```text
 node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --recover-merged --dry-run [--no-linked-issue]
