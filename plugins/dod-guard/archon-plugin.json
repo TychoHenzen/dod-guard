@@ -11,6 +11,7 @@
     "clean-house": "archon-clean-house/clean-house.yaml",
     "codex-migrate": "archon-codex-migrate/codex-migrate.yaml",
     "skill-debug": "archon-skill-debug/skill-debug.yaml",
-    "skill-migrate": "archon-skill-migrate/skill-migrate.yaml"
+    "skill-migrate": "archon-skill-migrate/skill-migrate.yaml",
+    "wiring-audit": "archon-wiring-audit/wiring-audit.yaml"
   }
 }
