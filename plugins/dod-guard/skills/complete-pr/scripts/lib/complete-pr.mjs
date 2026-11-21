@@ -7,16 +7,17 @@ import { waitForHeadConvergence } from "./head-convergence.mjs";
 import {
   inspectRequiredChecks,
   readTrustedPullRequest,
-  requireDefaultBase,
   requireNoUnresolvedThreads,
   validateInitialState,
 } from "./merge-gates.mjs";
+import { prepareMerge } from "./merge-preparation.mjs";
 import { cleanupTrustedBranch } from "./trusted-cleanup.mjs";
 
 const DEFAULT_OPTIONS = {
   ciRunPollLimit: 12,
   headPollLimit: 6,
   issuePollLimit: 6,
+  noLinkedIssue: false,
   pollLimit: 180,
   pollMs: 10_000,
   updatePollLimit: 12,
@@ -92,24 +93,14 @@ async function waitForMerge(client, completion) {
   stop("merge_timeout", `Pull request #${pullNumber} did not merge within the bounded wait.`);
 }
 
-async function markPullRequestReady(client, ready) {
-  const { acceptedHead, defaultBranch, pullNumber } = ready;
-  await client.markReady(pullNumber);
-  const pullRequest = await readTrustedPullRequest(client, { defaultBranch, pullNumber, trustedHead: acceptedHead });
-  if (pullRequest.isDraft) {
-    stop("ready_transition_failed", `Pull request #${pullNumber} remained a draft after the ready transition.`);
-  }
-  return pullRequest;
-}
-
 async function completePullRequest(client, overrides = {}) {
   const options = { ...DEFAULT_OPTIONS, ...overrides };
   const repository = await client.getRepository();
   const { defaultBranch } = repository;
   const initialPullRequest = await client.getPullRequest();
   validateInitialState(repository, initialPullRequest);
-  await requireClosingIssue(client, initialPullRequest.number);
-  let pullRequest = await waitForHeadConvergence(client, {
+  await requireClosingIssue(client, initialPullRequest.number, options);
+  const pullRequest = await waitForHeadConvergence(client, {
     expectedHead: options.pushedHead ?? null,
     initialPullRequest,
     options,
@@ -120,17 +111,7 @@ async function completePullRequest(client, overrides = {}) {
 
   const acceptedHead = pullRequest.headSha;
   const pullNumber = pullRequest.number;
-  if (pullRequest.isDraft) {
-    pullRequest = await markPullRequestReady(client, { acceptedHead, defaultBranch, pullNumber });
-  }
-
-  requireDefaultBase(pullRequest, defaultBranch);
-  await ensureCiWorkflowRun(client, pullRequest, ciRecovery);
-  if (!repository.autoMergeAllowed) {
-    await client.enableRepositoryAutoMerge();
-  }
-  pullRequest = await readTrustedPullRequest(client, { defaultBranch, pullNumber, trustedHead: acceptedHead });
-  await ensureCiWorkflowRun(client, pullRequest, ciRecovery);
+  await prepareMerge(client, { acceptedHead, ciRecovery, defaultBranch, pullNumber, pullRequest, repository });
   return waitForMerge(client, { acceptedHead, ciRecovery, defaultBranch, options, pullNumber, repository });
 }
 

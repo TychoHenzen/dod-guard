@@ -11,6 +11,7 @@ const REPO_DIR = "C:/work/repo";
 test("parses normal completion with a pushed head", () => {
   assert.deepEqual(parseArguments([...BASE, "--pushed-head", HEAD]), {
     dryRun: false,
+    noLinkedIssue: false,
     pullNumber: 24,
     pushedHead: HEAD,
     recoverMerged: false,
@@ -37,6 +38,15 @@ test("parses merged recovery with a dry run and a checkout", () => {
 
 test("leaves the dry run off unless it is requested", () => {
   assert.equal(parseArguments([...BASE, "--recover-merged"]).dryRun, false);
+});
+
+test("accepts --no-linked-issue for normal completion and for merged recovery", () => {
+  assert.equal(parseArguments([...BASE, "--pushed-head", HEAD, "--no-linked-issue"]).noLinkedIssue, true);
+  assert.equal(parseArguments([...BASE, "--recover-merged", "--no-linked-issue"]).noLinkedIssue, true);
+});
+
+test("leaves --no-linked-issue off unless it is requested", () => {
+  assert.equal(parseArguments([...BASE, "--recover-merged"]).noLinkedIssue, false);
 });
 
 const rejected = [
