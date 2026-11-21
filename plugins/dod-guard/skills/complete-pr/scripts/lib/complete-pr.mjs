@@ -17,6 +17,7 @@ const DEFAULT_OPTIONS = {
   ciRunPollLimit: 12,
   headPollLimit: 6,
   issuePollLimit: 6,
+  noLinkedIssue: false,
   pollLimit: 180,
   pollMs: 10_000,
   updatePollLimit: 12,
@@ -108,7 +109,7 @@ async function completePullRequest(client, overrides = {}) {
   const { defaultBranch } = repository;
   const initialPullRequest = await client.getPullRequest();
   validateInitialState(repository, initialPullRequest);
-  await requireClosingIssue(client, initialPullRequest.number);
+  await requireClosingIssue(client, initialPullRequest.number, options);
   let pullRequest = await waitForHeadConvergence(client, {
     expectedHead: options.pushedHead ?? null,
     initialPullRequest,

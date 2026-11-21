@@ -13,12 +13,12 @@ const USAGE = [
   "Usage: node complete-pr.mjs <owner/repository> <pull-request-number>",
   "--pushed-head <verified-head-sha> | [--recover-merged [--dry-run]]",
   // biome-ignore lint/security/noSecrets: This is a usage string, not a secret.
-  "[--repo-dir <checkout>]\n",
+  "[--no-linked-issue] [--repo-dir <checkout>]\n",
 ].join(" ");
 
 // The checkout guard runs first, so a wrong directory stops before any GitHub request.
 function run(invocation) {
-  const { dryRun, pullNumber, pushedHead, recoverMerged, repoDir, repository } = invocation;
+  const { dryRun, noLinkedIssue, pullNumber, pushedHead, recoverMerged, repoDir, repository } = invocation;
   if (repoDir) {
     process.chdir(repoDir);
   }
@@ -26,9 +26,9 @@ function run(invocation) {
   requireRepositoryCheckout(repository, localGit, process.cwd());
   const client = new GitHubClient(repository, pullNumber);
   if (recoverMerged) {
-    return recoverMergedPullRequest(client, { dryRun, localGit });
+    return recoverMergedPullRequest(client, { dryRun, localGit, noLinkedIssue });
   }
-  return completePullRequest(client, { localGit, pushedHead });
+  return completePullRequest(client, { localGit, noLinkedIssue, pushedHead });
 }
 
 function reportFailure(error) {

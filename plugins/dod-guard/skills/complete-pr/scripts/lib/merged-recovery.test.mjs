@@ -17,6 +17,10 @@ import { recoverMergedPullRequest } from "./merged-recovery.mjs";
 
 const closesRemedyPattern = /Add "Closes #<parent>"/;
 
+const missingMergeEvidencePattern = /trusted head or merge commit/;
+
+const incompleteCheckEvidencePattern = /complete required-check evidence/;
+
 test("recovers an already-merged pull request through guarded remote and local cleanup", async () => {
   const localGit = createFixtureLocalGit();
   const client = new FixtureClient({
@@ -76,6 +80,24 @@ test("recovery of a merged pull request with no closing issue does not tell the 
 
   assert.equal(failure.code, "missing_linked_issue");
   assert.doesNotMatch(failure.message, closesRemedyPattern);
+});
+
+test("with --no-linked-issue, recovery of a merged pull request with no closing issue cleans up", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    issues: [[]],
+    projectStatusReader: () => {
+      throw new Error("no linked issue has a Project status to read");
+    },
+    refs: [{ sha: "head-1" }, null],
+  });
+
+  const result = await recoverMergedPullRequest(client, { ...immediateOptions, localGit, noLinkedIssue: true });
+
+  assert.deepEqual(result.linkedIssues, []);
+  assert.equal(result.branch, "deleted");
+  assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
 });
 
 test("stops recovery when the newest run of every required check failed through the REST reader", async () => {
@@ -165,7 +187,7 @@ test("recoverMergedPullRequest stops with unverified_merge when the merge commit
 
   await assert.rejects(recoverMergedPullRequest(client, immediateOptions), {
     code: "unverified_merge",
-    message: /trusted head or merge commit/,
+    message: missingMergeEvidencePattern,
   });
 });
 
@@ -178,7 +200,7 @@ test("recoverMergedPullRequest stops with unverified_merge when required checks 
 
   await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), {
     code: "unverified_merge",
-    message: /complete required-check evidence/,
+    message: incompleteCheckEvidencePattern,
   });
   assert.deepEqual(localGit.calls, []);
 });

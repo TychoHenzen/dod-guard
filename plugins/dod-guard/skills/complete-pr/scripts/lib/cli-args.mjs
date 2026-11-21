@@ -1,6 +1,6 @@
 // Parses the complete-pr command line into one request, or null when the usage is wrong.
 const HEAD_PATTERN = /^[0-9a-f]{40}$/i;
-const SWITCHES = { "--dry-run": "dryRun", "--recover-merged": "recoverMerged" };
+const SWITCHES = { "--dry-run": "dryRun", "--no-linked-issue": "noLinkedIssue", "--recover-merged": "recoverMerged" };
 const VALUE_FLAGS = { "--pushed-head": "pushedHead", "--repo-dir": "repoDir" };
 
 function readFlag(options, rest) {
@@ -17,7 +17,7 @@ function readFlag(options, rest) {
 }
 
 function parseFlags(flags) {
-  const options = { dryRun: false, pushedHead: null, recoverMerged: false, repoDir: null };
+  const options = { dryRun: false, noLinkedIssue: false, pushedHead: null, recoverMerged: false, repoDir: null };
   const rest = [...flags];
   while (rest.length > 0) {
     if (!readFlag(options, rest)) {

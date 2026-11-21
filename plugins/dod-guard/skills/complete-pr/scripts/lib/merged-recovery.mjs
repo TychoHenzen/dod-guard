@@ -8,6 +8,7 @@ import { cleanupTrustedBranch } from "./trusted-cleanup.mjs";
 const DEFAULT_OPTIONS = {
   headPollLimit: 6,
   issuePollLimit: 6,
+  noLinkedIssue: false,
   pollMs: 10_000,
   dryRun: false,
 };
