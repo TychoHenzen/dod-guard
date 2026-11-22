@@ -14,7 +14,6 @@ import {
   checkRegeneration,
   commitMerge,
   pushMerge,
-  renderTriageRecord,
   startTriage,
   TRIAGE_GIT_SUBCOMMANDS,
   TriageStop,
@@ -26,25 +25,17 @@ import {
   createScenario,
   originHead,
   sh,
+  stopOf,
   textScenario,
   writeFiles,
 } from "./conflict-triage.test-support.mjs";
+import { renderTriageRecord } from "./triage-record.mjs";
 
 function mergeHead(scenario) {
   return spawnSync("git", ["rev-parse", "-q", "--verify", "MERGE_HEAD"], {
     cwd: scenario.work,
     encoding: "utf8",
   }).stdout.trim();
-}
-
-function stopOf(action) {
-  try {
-    action();
-  } catch (error) {
-    assert.ok(error instanceof TriageStop, error.message);
-    return error;
-  }
-  assert.fail("expected a TriageStop");
 }
 
 async function asyncStopOf(action) {

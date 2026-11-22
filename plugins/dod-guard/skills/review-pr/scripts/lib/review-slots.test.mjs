@@ -296,12 +296,23 @@ test("a lens with no question or exclusion is refused", () => {
 
 test("a slot with three questions is refused and names the limit", () => {
   const plan = PLAN();
-  plan[0].questions.push(q("F3", "review-pr-style"));
+  plan[0].questions.push(q("F3", "review-pr-feature"));
   assert.throws(() => requirePlan(plan, SLOTS), /Slot file:src\/a\.mjs has 3 questions; the limit is 2/);
 });
 
 test("a slot with two questions is accepted", () => {
   assert.doesNotThrow(() => requirePlan(PLAN(), SLOTS));
+});
+
+// A deletion-only diff with one criterion gives one slot, which must carry a
+// question for every lens.
+test("a plan with one slot may ask every lens there, and no more", () => {
+  const lone = [SLOTS[1]];
+  const lenses = ["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"];
+  const asked = lenses.map((lens, index) => q(`C${index + 1}`, lens));
+  assert.doesNotThrow(() => requirePlan([{ slot: "criterion:1", questions: asked }], lone));
+  const crowded = [{ slot: "criterion:1", questions: [...asked, q("C5", "review-pr-feature")] }];
+  assert.throws(() => requirePlan(crowded, lone), /Slot criterion:1 has 5 questions; the limit is 4/);
 });
 
 test("a question of 241 characters is refused and names the limit", () => {

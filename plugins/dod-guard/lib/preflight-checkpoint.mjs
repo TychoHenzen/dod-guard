@@ -3,7 +3,7 @@
 // json block under the heading, the same shape as the acceptance matrix. Every
 // function is pure; fetching the handoff comment belongs to the callers.
 import { lines, markdownSection, markedLines } from "./acceptance-criteria.mjs";
-import { jsonBlock } from "./issue-body-records.mjs";
+import { jsonBlock } from "./record-readers.mjs";
 
 const CHECKPOINT_HEADING = "## Preflight checkpoint";
 // A "present" or "skipped" row is the only state that lets a context pass, so

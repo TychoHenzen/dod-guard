@@ -6,9 +6,10 @@ const CHAIN =
   /\b(?:this|self)(?:\.|->)([A-Za-z_]\w*)((?:(?:\.|->)[A-Za-z_]\w*\(\)){2,})/g;
 
 export function transitiveNavigation(source, lang) {
-  const searchable = strip(source, lang).code;
+  const stripped = strip(source, lang);
+  const searchable = stripped.code;
   const starts = lineIndex(searchable);
-  const functions = findFunctions(searchable, lang, starts, source);
+  const functions = findFunctions(stripped, lang, source);
   const seen = new Set();
   return functions.flatMap((fn) => {
     const body = searchable.slice(fn.start, fn.end + 1);

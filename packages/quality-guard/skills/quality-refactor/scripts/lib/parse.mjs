@@ -1,3 +1,4 @@
+import { lineIndex } from "./offsets.mjs";
 import {
   braceLanguageFunctions,
   goFunctions,
@@ -6,23 +7,25 @@ import {
 } from "./parse-functions.mjs";
 import { pythonFunctions } from "./parse-python.mjs";
 
-// `source` is the raw text that `code` was stripped from. Every language requires
-// it, because the ts path reads quoted literals from it.
-export function findFunctions(code, lang, starts, source) {
+const FINDERS = {
+  py: pythonFunctions,
+  rs: (stripped, starts) => rustFunctions(stripped.code, starts),
+  go: (stripped, starts) => goFunctions(stripped.code, starts),
+  ts: (stripped, starts, source) =>
+    tsFunctions(stripped.code, starts, source),
+};
+
+function braceFunctions(stripped, starts) {
+  return braceLanguageFunctions(stripped.code, starts);
+}
+
+// `stripped` is what `strip(source, lang)` returned for the raw `source`.
+// Every language requires the raw text: the ts path reads quoted literals
+// from it and the py path reads indentation from it.
+export function findFunctions(stripped, lang, source) {
   if (typeof source !== "string") {
     throw new TypeError("findFunctions requires the raw source string");
   }
-  if (lang === "py") {
-    return pythonFunctions(code, starts);
-  }
-  if (lang === "rs") {
-    return rustFunctions(code, starts);
-  }
-  if (lang === "go") {
-    return goFunctions(code, starts);
-  }
-  if (lang === "ts") {
-    return tsFunctions(code, starts, source);
-  }
-  return braceLanguageFunctions(code, starts);
+  const find = FINDERS[lang] ?? braceFunctions;
+  return find(stripped, lineIndex(stripped.code), source);
 }

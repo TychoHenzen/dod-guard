@@ -5,7 +5,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./closure.mjs";
 import { capture, saved } from "./fixtures/closure-cli.mjs";
-import { fakeGitHub, recordedSnapshot } from "./lib/closure.test-support.mjs";
+import { fakeGitHub, recordedSnapshot, setField } from "./lib/closure.test-support.mjs";
 
 const SCRIPT = fileURLToPath(new URL("./closure.mjs", import.meta.url));
 const CLOSE_ORDER = [775, 776, 777, 778, 683];
@@ -105,6 +105,18 @@ test("end to end: the recorded state with #840 and #841 unmerged holds and repor
       [841, "unverified-closed"],
     ],
   );
+});
+
+test("end to end: apply sets Done for a merged issue left In Progress", async () => {
+  const snapshot = recordedSnapshot({ roots: [] });
+  setField(snapshot, 818, "Status", { name: "In Progress" });
+  snapshot.issues.find(({ number }) => number === 818).state_reason = "completed";
+  const github = fakeGitHub(snapshot);
+  const io = capture();
+  const argv = ["apply", `--snapshot=${await saved("snapshot.json", snapshot)}`];
+  assert.equal(runCli(argv, { runner: github.runner, ...io }), 0);
+  assert.equal(github.state.statuses.get("PVTI_818"), "Done");
+  assert.deepEqual(JSON.parse(io.text.out).repaired, [818]);
 });
 
 test("a stop reports its partial state and exits 1", async () => {

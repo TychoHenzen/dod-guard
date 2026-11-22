@@ -44,7 +44,10 @@ only alternate-transport decisions are:
   query made by `skills/complete-pr/scripts/linked-project.mjs`, because REST
   has no endpoint for a repository's explicit Project link. It reads at most
   100 links and exits 2 on a failed, malformed, or incompletely paginated
-  read. The fifth exception is the single-issue Project item read made by
+  read. The same read also asks each Project for
+  `items(first: 1) { totalCount }`, which the closure snapshot compares with
+  the whole-Project items list; it adds no other query. The fifth exception is
+  the single-issue Project item read made by
   `skills/complete-pr/scripts/ticket-preconditions.mjs`: one read-only
   `repository.issue.projectItems` query, because the REST Project items list
   returns unstable partial pages. It exits 2 on a failed, malformed, or
@@ -176,6 +179,16 @@ from an earlier run.
   a comment, read the comments back and confirm exactly one carries the posted
   heading before any retry. With zero, repost once and read again. With two or
   more, keep the earliest, report the duplicates, and post nothing more.
+  The one exception is `## Implementation handoff`: the newest one by the authenticated user, by creation
+  time, is the current record, never the earliest, and `skills/next-ticket/scripts/handoff-select.mjs` writes the demoted text of each older one for a `PATCH`.
+- To edit a comment, first save its text: `gh api repos/<owner>/<repo>/issues/comments/<id> --jq .body`
+  written to a UTF-8 file (from Windows PowerShell 5.1 use the Write tool or `Out-File -Encoding utf8`,
+  never `>`). Without `--jq .body` the response is the JSON object, and sending that file back
+  replaces the comment with the object. Never send a file read without `--jq .body`: check that
+  its first line is the comment heading and not `{`, change the file, send it with
+  `--method PATCH -F body=@<file>` (no `--jq` on the write; `--input` sends the file as the raw
+  request body, so it is for a JSON body only), then read the comment back with `--jq .body` and
+  confirm the heading and the change.
 - Re-read only the mutated resource for safety. Do not rebuild the whole
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.

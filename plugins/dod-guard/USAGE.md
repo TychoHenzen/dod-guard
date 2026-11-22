@@ -54,6 +54,16 @@ creates one issue.
 Backlog items are real issues, not drafts, so the Project Repository field
 stays populated. The result maps every identified feature to its issue URL.
 
+When you invoke the skill directly and your text leaves a feature's outcome
+or the split unclear, it asks one batched round: every question at once, 3 or
+4 options each with the recommended one first, a risk label, and a reply
+format. Your answers are kept word for word in the issue's `## Context`.
+An empty or partial reply never triggers a second round: unanswered points go
+under `## Open questions`, and an unsettled split becomes one issue.
+
+When another skill such as `quick-pbi` invokes it, or no user is present, it
+asks nothing and records open points under `## Open questions`.
+
 Run the complete lifecycle without intermediate confirmation:
 
 ```text
@@ -73,6 +83,10 @@ the next parent PBI with `scripts/select-next.mjs` (which classifies the
 annotated closure snapshot by `owner/name#number` through the classifier it
 shares with the closure helper), runs the `quick-pbi` stages from the one that
 parent has reached, and continues until no eligible work remains.
+Before its first pass it runs `scripts/plugin-version-check.mjs`. It stops the
+run when the loaded plugin copy is older than the release on master and lists
+the refresh commands for you to run. An unreadable version is reported and the
+run continues.
 The annotate step only overlays `activeCheckpoint` and `trustedHeadSha`
 from the completion records and leaves every relation as read. With
 `--output=<annotated-file>` it writes the annotated snapshot to that file. Each
@@ -87,6 +101,8 @@ or closure evidence is not reported. `closure.mjs apply` sets the Project item
 of such an issue to Done when the item reads as anything else, because a close
 as not planned owes no delivery. A `completed` hand close without evidence is
 still reported, and its Project status is left to `complete-pr` finalization.
+A `completed` close whose own completion record verifies gets Done from
+`closure.mjs apply` when the item reads as anything else.
 `select-next` never holds a closed `not_planned` issue as missing a delivery.
 It holds such an issue only while its Project status is not Done or its group
 is not settled, and the reason says which. A parent that needs a user answer or
@@ -137,6 +153,10 @@ and discovery evidence are verified before Todo. Material unresolved
 requirements, including unavailable or inconclusive advisor advice, keep the
 issue in Backlog until the missing decision or evidence is available.
 
+Each step plan lists the files it changes as `File:` lines and its searches for affected code as `Proxy check:` lines. The refinement proof runs those searches over the checkout and fails on any hit that the plan's `File:` lines do not name, so a forgotten caller or test is fixed in the plan before the item moves to Todo.
+
+Before a step plan is posted, refinement scans the signatures and verbatim code it plans with the target repository's own quality scanner, at the block level that repository's CI gate uses, and redesigns any planned code the gate would block. The scan runs on scratch files outside the checkout and reads the scanner's violations, not its exit status.
+
 ### Stop a `/goal` run
 
 Under Claude Code `/goal`, a small model grades only the condition text
@@ -157,7 +177,9 @@ During the run, goal-sdlc applies `standards/goal-stop.md`. It shows this
 template when the condition has no user-stop exit, and gives the grader the
 evidence each exit needs. When the goal keeps firing after the final report,
 it says once that only `/goal clear` ends it, then waits on a bounded
-background sound command to get your attention.
+background sound command to get your attention. That command keeps its PID
+record in `.dod-guard/goal-stop.pid` under your home directory, so other local
+users cannot plant or redirect it.
 
 ## Structured work
 
@@ -226,10 +248,12 @@ and work that cannot be separated safely remain stop conditions.
 `next-ticket` then:
 
 1. Resolves the GitHub repository and its explicitly linked open Project.
-2. Creates and pushes `codex/<issue>-<slug>` from the current default branch.
+2. Creates and pushes `codex/<issue>-<slug>` from the current default branch, or adopts the one existing pushed branch (see below).
 3. Assigns the issue and moves it to `In Progress`.
 4. Implements and verifies the acceptance criteria.
 5. Maps every acceptance criterion to fresh evidence, then commits and pushes.
+
+When exactly one `codex/<issue>-*` branch is already pushed, `next-ticket` adopts the one existing pushed branch instead of creating one. It does so only when every changed path is the file of a step in the issue's step plans, the issue is unassigned or assigned to you, and the branch has no closed, merged, forked, or non-draft pull request. A task the branch already delivers is not redone. Otherwise it stops with `branch-not-adoptable`, changes nothing, and names the failed condition.
 
 An unmet criterion or failed check blocks the implementation commit and push.
 The initial branch-only push remains permitted. `/review-pr` is the one
@@ -341,8 +365,9 @@ file. `MINOR` findings are
 listed under "Minor notes" in the review body, with no `GH-<id>` and no reply
 needed. The recommendation is `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES`
 for any `MAJOR`, and `APPROVE` when only `MINOR` findings or none remain.
-When the diff adds no line, there is nothing to anchor a comment on, so
-blocking findings are listed in the review body without a `GH-<id>`. It posts
+A file the pull request only trims gets its blocking comment on the
+nearest line the diff removes (side `LEFT`). If no diff line can hold a
+blocking comment, `build` refuses and posts nothing. The skill posts
 at most one review per pull request. quality-guard must be installed and enabled.
 
 Fix selected GitHub review findings:
@@ -352,9 +377,12 @@ Fix selected GitHub review findings:
 ```
 
 The skill reloads the parent PBI and linked subtasks, then rechecks each
-finding against the current head. It skips resolved or unsupported findings,
-and rechecks outdated ones instead of skipping them. It pushes the smallest
-verified fix before replying to or resolving GitHub threads.
+finding against the current head. It skips findings whose thread is already
+resolved, declines unsupported, already-fixed and stale ones with an evidence
+reply and resolves their threads, routes partly fixed or out-of-slice ones to
+an existing destination issue before resolving, and rechecks outdated ones
+instead of skipping them. It pushes the smallest verified fix before replying
+to or resolving GitHub threads.
 
 After review, explicitly accept and complete the current pull request:
 
@@ -474,16 +502,9 @@ failure, not a successful release.
 Confirm `codex plugin list` reports the released version. Do not copy files
 into either client cache manually.
 
-If the shared MCP host is managed by PM2, restart only its two apps after the
-client cache refresh succeeds:
+`quality-guard` and `knowledge-base` start over stdio from each client's plugin manifest, so `/reload-plugins` or a client restart picks up the new bundle and no process restart is needed.
 
-```text
-pm2 restart dod-guard-quality-guard dod-guard-knowledge-base --update-env
-```
-
-Do not restart them before refresh or restart unrelated PM2 processes.
-
-On Windows PowerShell, after both client refreshes and any host restart, run the checked-in
+On Windows PowerShell, after both client refreshes, run the checked-in
 read-only evidence boundary with the exact release values:
 
 ```powershell

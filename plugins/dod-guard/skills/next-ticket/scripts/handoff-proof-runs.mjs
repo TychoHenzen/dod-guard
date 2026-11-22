@@ -1,11 +1,15 @@
 // The three proofs behind handoff-proof.mjs, with no file access. Each takes
-// { body, handoff, headSha, children } and returns { outcome, remainder }.
+// { body, handoff, headSha, children, plans } and returns { outcome, remainder }.
+// Only refinement reads plans, the step plans' proxy checks run over the checkout.
 // finalization requires the handoff's ## Preflight checkpoint and fails on any
 // required context that is not present or skipped at the head; post-push checks
 // the rows only when the record exists.
+import { godotWindowRemainder } from "../../../lib/godot-window-rows.mjs";
 import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
-import { parseIssueBodyRecords, postPushInput } from "../../../lib/issue-body-records.mjs";
+import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
+import { postPushInput } from "../../../lib/post-push-input.mjs";
 import { checkpointRemainder, readPreflightCheckpoint } from "../../../lib/preflight-checkpoint.mjs";
+import { proxyRemainder } from "../../../lib/step-plan-proxy.mjs";
 import { evaluateStructuredFinalization } from "../../complete-pr/scripts/finalization-gate.mjs";
 import { evaluateConvergence } from "./structured-workflow-proof.mjs";
 
@@ -14,12 +18,21 @@ function outcomeOf(remainder) {
 }
 
 // Parse errors stop before evaluation, and acceptance-id disagreements join the
-// convergence remainder.
-function refinementProof({ body, children }) {
+// convergence remainder. Requirement-id disagreements and a head stored in a
+// lens-ownership entry join the remainder in this proof only, and so does a Godot
+// row that asks for a window, so post-push and finalization never see them.
+function refinementProof({ body, children, plans = [], godot = false }) {
   const parsed = parseIssueBodyRecords(body);
   if (parsed.errors.length > 0) return { outcome: "parse error", remainder: parsed.errors };
   const convergence = evaluateConvergence({ ...parsed.input, children });
-  return outcomeOf([...parsed.remainder, ...convergence.remainder]);
+  return outcomeOf([
+    ...parsed.remainder,
+    ...parsed.requirementRemainder,
+    ...parsed.lensHeadRemainder,
+    ...convergence.remainder,
+    ...proxyRemainder(plans),
+    ...(godot ? godotWindowRemainder(parsed.input.plannedAcceptanceMatrix) : []),
+  ]);
 }
 
 // The record is written after the draft PR, so post-push passes a handoff with no

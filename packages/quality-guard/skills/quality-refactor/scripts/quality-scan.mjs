@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import { fileURLToPath } from "node:url";
 import { buildConfig } from "./lib/config.mjs";
+import {
+  ExclusionConfigError,
+  loadExcludePaths,
+} from "./lib/exclusion-config.mjs";
 import { USAGE, parseArgs, validate } from "./quality-scan-options.mjs";
 import { run } from "./quality-scan-run.mjs";
 
@@ -14,6 +18,15 @@ function main(argv) {
   if (problem) {
     process.stderr.write(`${problem}\n\n${USAGE}\n`);
     return 3;
+  }
+  if (!options.noConfig) {
+    try {
+      options.excludes.push(...loadExcludePaths(options.root));
+    } catch (error) {
+      if (!(error instanceof ExclusionConfigError)) throw error;
+      process.stderr.write(`${error.message}\n`);
+      return 3;
+    }
   }
   return run(options, buildConfig());
 }

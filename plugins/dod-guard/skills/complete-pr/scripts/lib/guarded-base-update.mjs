@@ -1,4 +1,4 @@
-// Updates a behind pull request against the live base tip and verifies the new head.
+// Updates a behind pull request against the live base tip, verifies the new head, and stops for a fresh handoff.
 import { stop } from "./completion-error.mjs";
 import { waitForHeadConvergence } from "./head-convergence.mjs";
 import { requireDefaultBase } from "./merge-gates.mjs";
@@ -10,6 +10,19 @@ async function readBaseBranchTip(client, defaultBranch) {
     stop("base_branch_missing", `The base branch ${defaultBranch} has no remote ref to guard a branch update against.`);
   }
   return baseRef.sha;
+}
+
+async function requireGuardedMerge(client, headSha, expectedParents) {
+  const commit = await client.getCommit(headSha);
+  const parents = new Set(commit.parents);
+  const guarded = commit.parents.length === 2 && expectedParents.every((parent) => parents.has(parent));
+  if (!guarded) {
+    const [previousHead, baseHead] = expectedParents;
+    stop(
+      "untrusted_base_update",
+      `Updated head ${headSha} is not the guarded merge of ${previousHead} and ${baseHead}.`,
+    );
+  }
 }
 
 async function waitForGuardedUpdate(client, update) {
@@ -28,22 +41,24 @@ async function waitForGuardedUpdate(client, update) {
       options,
       repository,
     });
-    const commit = await client.getCommit(convergedPullRequest.headSha);
-    const parents = new Set(commit.parents);
-    if (commit.parents.length !== 2 || !parents.has(previousHead) || !parents.has(baseHead)) {
-      stop(
-        "untrusted_base_update",
-        `Updated head ${convergedPullRequest.headSha} is not the guarded merge of ${previousHead} and ${baseHead}.`,
-      );
-    }
+    await requireGuardedMerge(client, convergedPullRequest.headSha, [previousHead, baseHead]);
     return convergedPullRequest;
   }
 
   stop("base_update_timeout", "GitHub accepted the base update but did not publish its new head in time.");
 }
 
-// Returns the head the merge loop must trust after the update.
-async function updateBehindBranch(client, update) {
+function stopForSyncedBranch(previousHead, syncedHead) {
+  const rebind = `Rebind the handoff to ${syncedHead} (fix-pr-review, "Rebind the handoff")`;
+  stop(
+    "branch_synced",
+    `The branch moved from ${previousHead} to the verified sync head ${syncedHead}; nothing was merged.`,
+    `${rebind}, rerun the finalization proof at it, then rerun the helper with --pushed-head ${syncedHead}.`,
+  );
+}
+
+// Never returns: a synced head has no handoff evidence yet, so the run ends before any merge.
+async function syncBehindBranch(client, update) {
   const { defaultBranch, options, pullNumber, repository, trustedHead } = update;
   const baseHead = await readBaseBranchTip(client, defaultBranch);
   await client.updateBranch(pullNumber, trustedHead);
@@ -55,7 +70,7 @@ async function updateBehindBranch(client, update) {
     pullNumber,
     repository,
   });
-  return updatedPullRequest.headSha;
+  stopForSyncedBranch(trustedHead, updatedPullRequest.headSha);
 }
 
-export { updateBehindBranch };
+export { syncBehindBranch };

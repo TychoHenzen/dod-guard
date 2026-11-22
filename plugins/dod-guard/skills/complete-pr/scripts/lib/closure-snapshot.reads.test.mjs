@@ -90,7 +90,8 @@ test("the snapshot resolves its Project from the explicit link with one GraphQL 
 
 test("a freshly linked Project with no items still resolves, because the link decides and not membership", () => {
   const routes = fixtureRoutes();
-  const snapshot = build({ ...routes, [ENDPOINT.values(2)]: ok([[]]) });
+  const linked = linkedProjectsReply([linkedProjectNode(2)]);
+  const snapshot = build({ ...routes, [ENDPOINT.linkedProjects]: linked, [ENDPOINT.values(2)]: ok([[]]) });
   assert.equal(snapshot.project.number, 2);
   assert.deepEqual(snapshot.items, []);
 });

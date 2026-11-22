@@ -49,6 +49,17 @@ The contract's list order is not an outline. A writer that walks the claim
 list top to bottom rebuilds whatever order the old passage had. The extractor
 read the claims in that order.
 
+## Exact text
+
+The contract's Verbatim section lists text that stays as it is: code blocks,
+shell commands, URLs, flags, variable names, API paths, quoted errors and
+defined terms. Copy each item character for character into the place the claim
+it supports needs it, and write the explanation around it. Rewriting a command
+or a script into an equivalent form removes the original that a reader can run
+and check, so keep the original form. When the surrounding claims no longer
+need a listed item, list it under Not covered and leave the decision to the
+orchestrator.
+
 ## Claim strength
 
 The contract records each claim with a strength: always, usually, sometimes,
@@ -103,7 +114,7 @@ Write to these. The orchestrator gates on them.
 ### Files
 - `{path}` - {what it holds}
 ### Contract coverage
-- {claim} - {where the new text carries it}
+- {claim or Verbatim item} - {where the new text carries it}
 ### Not covered
 {contract items you could not satisfy, or none}
 ### Concerns

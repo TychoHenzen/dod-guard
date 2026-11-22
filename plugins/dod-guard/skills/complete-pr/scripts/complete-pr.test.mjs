@@ -44,7 +44,7 @@ test("rejects a malformed pushed head", () => {
 });
 
 test("a failed run prints the stop report JSON and exits 1", () => {
-  // A PATH holding no gh binary makes the gh call fail at spawn, which is a stop that needs no network.
+  // A PATH holding no git binary makes the checkout guard fail at spawn, which is a stop that needs no network.
   const env = Object.fromEntries([["PATH", import.meta.dirname]]);
   const args = ["complete-pr.mjs", "owner/repo", "24", "--pushed-head", VALID_HEAD];
   const result = spawnSync(process.execPath, args, { cwd: import.meta.dirname, encoding: "utf8", env });

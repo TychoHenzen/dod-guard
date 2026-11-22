@@ -1,3 +1,4 @@
+import { anchor, firstAnchor, requireAnchored } from "./anchor-findings.mjs";
 import { droppedBlock } from "./dropped-block.mjs";
 import { groupBy } from "./group-by.mjs";
 import { mergedFindings } from "./merge-groups.mjs";
@@ -39,58 +40,12 @@ function scannerFinding(file, violations) {
   };
 }
 
-function nearestLine(lines, wanted) {
-  return [...lines].reduce((best, line) => (Math.abs(line - wanted) < Math.abs(best - wanted) ? line : best));
-}
-
-function firstAnchor(changedLines) {
-  for (const [file, lines] of changedLines) {
-    if (lines.size > 0) {
-      return { file, line: Math.min(...lines) };
-    }
-  }
-  return null;
-}
-
-// GitHub only accepts an inline comment on a line the diff adds. Moving a
-// finding to the nearest such line keeps
-// it a review comment with its own GH-<id>, which /fix-pr-review needs to
-// select it. A caller passes no fallback for a finding that must not leave
-// its file.
-function anchor(finding, changedLines, fallback) {
-  const lines = changedLines.get(finding.file);
-  if (lines?.has(finding.line)) {
-    return { ...finding, anchored: { path: finding.file, line: finding.line } };
-  }
-  const cited = `\n\nCited location: \`${finding.file}:${finding.line}\`, which is outside the lines this PR changes.`;
-  if (lines?.size > 0) {
-    return {
-      ...finding,
-      anchored: { path: finding.file, line: nearestLine(lines, finding.line) },
-      body: finding.body + cited,
-    };
-  }
-  if (fallback) {
-    return {
-      ...finding,
-      anchored: { path: fallback.file, line: fallback.line },
-      body: finding.body + cited,
-    };
-  }
-  return { ...finding, anchored: null };
-}
-
 function countSeverities(findings) {
   const counts = { BLOCKER: 0, MAJOR: 0, MINOR: 0 };
   for (const finding of findings) {
     counts[finding.severity] += 1;
   }
   return counts;
-}
-
-function unanchoredText(finding) {
-  const heading = `### \`${finding.file}:${finding.line}\` (no added line to anchor on)`;
-  return { scanner: finding.scanner, text: ["", heading, finding.body].join("\n") };
 }
 
 function minorText(finding) {
@@ -103,18 +58,13 @@ function omissionNote(omitted) {
   return `\n${omitted} more ${files} scanner findings, listed only in the scanner findings comments.`;
 }
 
-// The scanner text shares one budget across the unanchored and minor sections,
-// so the body stays postable however many files the scanner flags.
-function fitSections(unanchored, minor) {
-  const entries = [...unanchored.map(unanchoredText), ...minor.map(minorText)];
+// The minor notes carry scanner text under one budget, so the body stays
+// postable however many files the scanner flags.
+function fitSections(minor) {
+  const entries = minor.map(minorText);
   const fitted = fitScanner(entries);
   const placed = new Set(fitted.texts);
-  const split = (list) => list.map(({ text }) => text).filter((text) => placed.has(text));
-  return {
-    unanchored: split(entries.slice(0, unanchored.length)),
-    minor: split(entries.slice(unanchored.length)),
-    omitted: fitted.omitted,
-  };
+  return { minor: entries.map(({ text }) => text).filter((text) => placed.has(text)), omitted: fitted.omitted };
 }
 
 function reviewBody({ headSha, recommendation, counts, block, sections, listed, hasMinor }) {
@@ -131,7 +81,6 @@ function reviewBody({ headSha, recommendation, counts, block, sections, listed, 
     lines.push("", "Scanner findings are summarized per file here. The full list is posted as pull request comments");
     lines.push("headed `dod-guard scanner findings`, right after this review.");
   }
-  lines.push(...sections.unanchored);
   if (hasMinor) {
     lines.push("", "### Minor notes", "", "These do not block the merge and need no reply.", ...sections.minor);
   }
@@ -167,15 +116,18 @@ function checkedInputs(input) {
 
 // Only kept violations reach the unchanged scannerFinding, so a dropped one
 // never sets a file's severity or shows in the counts.
+//
 // A scanner group describes its own file, so it never takes the cross-file
-// fallback: with no added line in that file it stays unanchored and
-// reviewBody lists it under its own file and line. Only a judged finding can
-// cite a file outside the diff by design.
-function anchoredFindings({ changedLines, judged, kept }, merge) {
-  const fallback = firstAnchor(changedLines);
+// fallback: a file the PR only trims anchors on one of its removed lines.
+// Only a judged finding can cite a file outside the diff by design.
+//
+// A blocking finding that still has no line refuses the build.
+function anchoredFindings({ changedLines, removedLines, judged, kept }, merge) {
+  const lines = { added: changedLines, removed: removedLines };
+  const fallback = firstAnchor(lines);
   const groups = [...groupBy(kept, "file")].map(([file, group]) => scannerFinding(file, group));
-  const moved = mergedFindings(merge.groups, judged).map((finding) => anchor(finding, changedLines, fallback));
-  return [...moved, ...groups.map((group) => anchor(group, changedLines, null))];
+  const moved = mergedFindings(merge.groups, judged).map((finding) => anchor(finding, lines, fallback));
+  return requireAnchored([...moved, ...groups.map((group) => anchor(group, lines, null))]);
 }
 
 function planBlocks(plan, { slots, dropped }) {
@@ -183,8 +135,7 @@ function planBlocks(plan, { slots, dropped }) {
 }
 
 function inlineComments(blocking) {
-  const comment = ({ anchored, body }) => ({ ...anchored, side: "RIGHT", body });
-  return blocking.filter((finding) => finding.anchored).map(comment);
+  return blocking.map(({ anchored, body }) => ({ ...anchored, body }));
 }
 
 function buildReview(input) {
@@ -196,10 +147,7 @@ function buildReview(input) {
   // that a caller can pass to /fix-pr-review.
   const blocking = findings.filter((finding) => finding.severity !== "MINOR");
   const minor = findings.filter((finding) => finding.severity === "MINOR");
-  const sections = fitSections(
-    blocking.filter((finding) => !finding.anchored),
-    minor,
-  );
+  const sections = fitSections(minor);
   const listed = sections.omitted > 0 || findings.some((finding) => finding.truncated);
   const body = reviewBody({
     headSha: input.headSha,
@@ -244,6 +192,7 @@ function postedFindings(reviewId, reviewComments) {
       severity: comment.body.match(SEVERITY_PREFIX)?.[1] ?? "MINOR",
       file: comment.path,
       line: comment.line ?? comment.original_line,
+      side: comment.side,
       url: comment.html_url,
     }));
 }

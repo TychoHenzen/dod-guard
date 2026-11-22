@@ -31,7 +31,12 @@ boundary. You emit a contract; the orchestrator deletes the prose.
 - Caveats, exceptions and conditions attached to a claim.
 - Text required word for word: direct quotations, proper names, figures and
   units. Also every defined term the rest of the document leans on, and every
-  heading another document links to.
+  heading another document links to. Executable content is word for word by
+  default, without being asked: every fenced code block, shell command, URL
+  and host, flag, environment variable name, API path and query parameter,
+  quoted error string, and inline code span of two or more words. A model can
+  work out a command from a description, but a paraphrase cannot be checked
+  and the original can be run.
 - Constraints the replacement must hold: audience, register, rough length, the
   section it sits in, and what the passage before and after assume it has
   established.
@@ -105,6 +110,7 @@ rejects any that survived into your prose.
 
 ### Verbatim (copy exactly)
 - {quotation, proper name, figure, unit, defined term, or heading}
+- {code block line, command, URL, flag, variable name, API path, or error string}
 
 ### Constraints
 - audience: {who reads this}
@@ -141,8 +147,11 @@ It closes with the hand-off sections:
 ```
 
 The Verbatim section feeds `overlap-scan.mjs --contract-file`, which exempts
-its lines from every metric. Anything you put there the gate will never
-penalize as copied, so put only text that truly must match word for word.
+its lines from every metric. The orchestrator removes the leading `- ` marker
+and saves one item per line, so write a multi-line block as one bullet per
+source line. Executable content belongs here by default. Anything else you put
+here the gate will not penalize as copied, so add only text that must match
+word for word.
 
 ## Rules
 

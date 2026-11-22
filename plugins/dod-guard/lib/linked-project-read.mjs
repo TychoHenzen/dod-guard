@@ -13,7 +13,7 @@ const LINKED_PROJECT_QUERY = [
   "query($owner: String!, $name: String!) {",
   "repository(owner: $owner, name: $name) {",
   "projectsV2(first: 100) {",
-  "nodes { id number title closed owner {",
+  "nodes { id number title closed items(first: 1) { totalCount } owner {",
   "__typename ... on User { login } ... on Organization { login }",
   "} }",
   "pageInfo { hasNextPage }",

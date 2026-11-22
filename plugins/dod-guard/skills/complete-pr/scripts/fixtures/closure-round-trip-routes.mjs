@@ -37,7 +37,9 @@ function projectRoutes(pages) {
       full_name: REPOSITORY,
       default_branch: "master",
     }),
-    [ENDPOINT.linkedProjects]: linkedProjectsReply([linkedProjectNode(2)]),
+    [ENDPOINT.linkedProjects]: linkedProjectsReply([
+      linkedProjectNode(2, { itemCount: pages.flat().length }),
+    ]),
     [ENDPOINT.fields(2)]: ok(fieldPages()),
     [ENDPOINT.values(2)]: ok(pages),
     ...emptyBranchRoutes(),

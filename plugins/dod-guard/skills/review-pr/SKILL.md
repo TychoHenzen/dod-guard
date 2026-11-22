@@ -12,14 +12,18 @@ Review the files a PR changes, adding what the scanner cannot judge: correctness
 
 - Read `standards/working-defaults.md` and `standards/github-request-discipline.md`. Stricter rules here win. Resolve the repository per "Resolve the repository and Project" in the second one.
 - Pass every script flag as its own native argument, per the [command-composition contract](../../docs/command-composition.md).
-- Create one empty scratch directory outside the repository (under the session scratchpad, else the OS temp directory) and save every file this review writes in it: reviews, slots, scan, violations, plan, results, merge, payload, comments. Dispatched read-only agents create no file, so the main thread writes each of these from their returned text. After posting, delete only the files this review wrote in that directory and then the directory, and never delete a path outside it or a file the review did not write. Leave any other file in place and name it in the report.
+- Read files with the Read tool, search with Grep and Glob, and list a directory with Glob. A shell `grep`, `cat`, `head`, `tail`, `sed`, `find` or `ls` run as the first command can be blocked by a hook and fail, so use a shell only for the commands this skill names.
+- Resume from files, never from memory. When your brief names the scratch directory of an earlier owner of this same review and its name carries this PR and head, trust its files: rerun steps 1 to 4, which are deterministic, reuse `plan.json` when it exists, run `pending` at Investigate and dispatch only the batches it lists, and at Judge dispatch only the lenses without a valid `judge-<lens>.json`. Never reuse a directory whose name carries another head.
+- Use one scratch directory outside the repository, named `review-pr-<pr-number>-<first 12 characters of the head SHA>` under the session scratchpad, else the OS temp directory, once step 1 has fixed the head. Create it when it is absent. When it already exists and your brief names it as the earlier owner's directory, resume from it under the rule above. When it already exists and your brief does not name it, stop and report its path: never reuse it silently and never delete it, because its files may belong to a run you cannot vouch for. Save every file this review writes in it: reviews, slots, scan, violations, plan, batches, answers, results, merge, payload, comments. The planner, the four lens judges and the merge pass are read-only and create no file, so the main thread writes the plan, results and merge files from their returned text. Only an investigator batch writes a file: the one answers file its brief names, in the answers directory. After posting, delete only the files this review wrote in that directory, including those an earlier owner of a resumed run wrote under its name, and then the directory, and never delete a path outside it or a file the review did not write. Leave any other file in place and name it in the report.
 - `<skill-dir>` is `${CLAUDE_PLUGIN_ROOT}/skills/review-pr` in Claude Code and this file's directory in Codex.
-- "Stop" means: post nothing, name the cause, and report to the dispatcher, which does not rerun the review stage.
+- "Stop" means: post nothing, name the cause, name the one next action for the user or dispatcher when this skill gives one, and report to the dispatcher, which does not rerun the review stage. Never run that action yourself; a new review runs only when the user asks.
 
 ## 1. Resolve the PR and PBI
 
 1. Take a PR URL or number. With none, use the open PR whose head is the current branch. Stop if there is none.
-2. Require local HEAD to equal the PR head SHA and `git status --porcelain` to print nothing, because the scanner and reviewers read the working tree. Otherwise stop and name the SHAs or pending paths. Never switch branches, stash, or create a worktree.
+2. Require local HEAD to equal the PR head SHA and `git status --porcelain` to print nothing, because the scanner and reviewers read the working tree. Never switch branches, stash, or create a worktree. Otherwise stop:
+   - HEAD differs: name both SHAs and report `gh pr checkout <n>` (the PR number) for the user to run from a clean tree.
+   - Pending paths: list them and report that the user must commit or discard them first; suggest no stash.
 3. Load the parent PBI, with its acceptance criteria and sub-issues, from the PR's closing issue or the issue in the branch name `codex/<issue>-<slug>`. Stop and name the missing PBI if none resolves.
 
 ## 2. One review per PR
@@ -40,7 +44,7 @@ gh api --paginate --slurp "repos/{owner}/{repo}/issues/{n}/sub_issues?per_page=1
 node "<skill-dir>/scripts/review-findings.mjs" slots --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --out=<slots.json>
 ```
 
-Diff against the merge base with the PR base branch. The explicit prefixes override user git config. Scripts read changed files and added lines from this diff alone.
+Diff against the merge base with the PR base branch. The explicit prefixes override user git config. Scripts read changed files, added lines and removed lines from this diff alone.
 
 Slots are `file:<path>` per changed file with an added line, `criterion:<n>` per checkbox under `## Acceptance criteria` (checked or not), and `sub-issue:<owner/name>#<number>` per linked sub-issue. A PBI without sub-issues is valid. Slots are fixed: the planner cannot add, drop, or rename one. Generated files (paths with a `dist`, `dist-test`, or `node_modules` segment) and `.uid` or `.import` sidecars are skipped before slots are numbered; a diff with only such files stops with "The diff names no changed files". Stop on a script error.
 
@@ -53,9 +57,9 @@ node "<skill-dir>/scripts/review-findings.mjs" scan --client=<claude|codex> --re
 node "<skill-dir>/scripts/review-findings.mjs" violations --scan=<scan.json> --diff=<unified0.diff> --out=<violations.json>
 ```
 
-Save the client's plugin list and check its exit status. Write it from a POSIX shell (`claude plugin list --json > plugins.json`), or in PowerShell with `claude plugin list --json | Out-File -Encoding utf8 plugins.json`. `scan` also reads the UTF-8 BOM and UTF-16 BOM that Windows PowerShell 5.1 `>` writes, and refuses any other encoding with the file path in its message. `scan` finds the installed quality-guard from it. Stop if quality-guard is missing or the scan fails. When the Claude list shows it installed but disabled, the scan error names `claude plugin enable <id>`: report that command and stop; never enable the plugin yourself. Never guess a cache path. The scan covers the whole repository, since a changed-files-only scan would call every export dead. It skips the checkout's gitignored paths, so build output such as `dist-test/` is never judged.
+Save the client's plugin list and check its exit status. Write it from a POSIX shell (`claude plugin list --json > plugins.json`), or in PowerShell with `claude plugin list --json | Out-File -Encoding utf8 plugins.json`. `scan` also reads the UTF-8 BOM and UTF-16 BOM that Windows PowerShell 5.1 `>` writes, and refuses any other encoding with the file path in its message. `scan` finds the installed quality-guard from it. Stop if quality-guard is missing or the scan fails. When the Claude list shows it disabled or absent, the scan error ends with the one command to run, `claude plugin enable <id>` or `claude plugin install quality-guard@<marketplace>`: report that command verbatim for the user or dispatcher to run, and never enable or install the plugin yourself. Never guess a cache path. The scan covers the whole repository, since a changed-files-only scan would call every export dead. It skips the checkout's gitignored paths, so build output such as `dist-test/` is never judged.
 
-`scan` then applies the repository's own limits in place of the scanner's defaults (width 80, file length 100), and prints what it removed. A `line-length` finding on a file with no formatter width is rejudged at the width the root `.editorconfig` `max_line_length` sets for that file (`off` removes it). Each `--rule-block-on=<rule>:<severity>` flag that a `.github/workflows/*.yml` step running `quality-pr-gate.mjs` passes removes that rule's findings below the severity; comment lines are ignored. The gate's global `--block-on` and its `--root` scopes are not applied. Never pass gate flags to `scan`: it takes only `--client`, `--registry`, `--root` (the repository), and `--out`, and reads the rest from the repository.
+`scan` then applies the repository's own limits in place of the scanner's defaults (width 80, file length 100), and prints what it removed. A `line-length` finding on a file with no formatter width is rejudged at the width the root `.editorconfig` `max_line_length` sets for that file (`off` removes it). Each `--rule-block-on=<rule>:<severity>` flag that a `.github/workflows/*.yml` step running `quality-pr-gate.mjs` passes removes that rule's findings below the severity; comment lines are ignored. The gate's global `--block-on` is not applied. The scan also honors excludePaths from the repository's .quality-guard.json, the same setting the CI gate uses, so both judge one scope. Never pass gate flags to `scan`: it takes only `--client`, `--registry`, `--root` (the repository), and `--out`, and reads the rest from the repository.
 
 Structural rules cover each whole changed file, including pre-PR content. Line-level rules (`line-length`, comment rules) cover only added lines. `violations` numbers the in-scope ones S1..Sn.
 
@@ -67,48 +71,69 @@ Every stage gets one brief: PR number and URL, base and head SHAs, slots file, d
 
 ### Plan
 
-One `dod-guard:read-standard` planner returns a JSON array with one entry per slot, copying slot ids exactly. Each entry has `slot` and either `questions` or `excluded`, never both.
+One foreground `dod-guard:read-standard` planner returns a JSON array with one entry per slot, copying slot ids exactly. Each entry has `slot` and either `questions` or `excluded`, never both.
 
 - A question has `id` (unique across lenses), `lens`, `question`, `files` (never empty), and the targeted risk.
-- A slot holds at most 2 questions, and a question is at most 240 characters.
+- A question is neutral. It asks what the code, test or document shows and names no suspected defect, expected answer or verdict. The targeted risk names the failure the question probes, never a conclusion about it.
+- A slot holds at most 2 questions, and a question is at most 240 characters. The one exception is a plan with fewer slots than half the lenses, such as a deletion-only diff with one criterion: its slots may hold as many questions as covering every lens needs.
 - Sizing: with at most 3 file slots, ask one question per lens in total, placed on the slot that lens most concerns, and give every other slot one exclusion with its reason; otherwise ask at most 2 per slot.
-- An exclusion has `lens` and `reason`.
-- The lenses are `dod-guard:review-pr-feature` (F), `dod-guard:review-pr-design` (D), `dod-guard:review-pr-reliability` (R), and `dod-guard:review-pr-hygiene` (H). Each gets at least one question or exclusion.
-- For a file slot with in-scope violations, ask exactly one scanner check question, with a `scanner` array naming every S id of that file. It asks whether the violation shows at the reviewed head, whether the repository itself excludes the path, and whether the rule's own condition holds; generated paths are already skipped. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file. It also refuses two scanner questions in one file slot and a question that omits an S id of its file.
+- An exclusion is one object, `"excluded": { "lens": "review-pr-hygiene", "reason": "..." }`, never an array.
+- The lenses are `review-pr-feature` (F), `review-pr-design` (D), `review-pr-reliability` (R), and `review-pr-hygiene` (H). Write each in `lens` as shown. The build also accepts the `dod-guard:` prefix the Agent tool takes and reads it as the bare name; it refuses any other name. Each gets at least one question or exclusion.
+- For a file slot with in-scope violations, ask exactly one scanner check question, with a `scanner` array naming every S id of that file. It asks whether the violation shows at the reviewed head, whether the repository itself excludes the path, and whether the rule's own condition holds; generated paths are already skipped. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file. It also refuses two scanner questions in one file slot and a question that omits an S id of its file. Put each covered violation's rule, line, and message text in the question itself, so an investigator never needs the scanner output.
 
 After the planner returns, run: `node "<skill-dir>/scripts/review-findings.mjs" check-plan --slots=<slots.json> --violations=<violations.json> --plan=<plan.json>`. On failure, send the exact message back to the planner once for a corrected plan; a second failure stops the review with that message.
 
 ### Investigate
 
-`dod-guard:read-cheap` investigators answer every question, batched by slot, at most eight per investigator and a report under 20 KB, as "Plan, investigate, judge" in `standards/model-routing.md` says. Dispatch all batches in one message so they run in parallel. Skip exclusions. Each answer gives slot, question id, cited path and line, and the fact found. Every brief states the scanner's line-length rule: a line is medium above the width N printed in its violation message (width N) and high above the larger of N and 120.
+Cut the saved plan into batch files:
+
+```
+node "<skill-dir>/scripts/review-findings.mjs" batches --plan=<plan.json> --head=<full 40-character head SHA> --out-dir=<batches-dir>
+```
+
+The command first checks the plan's shape and refuses a malformed entry before it writes any batch file, so a bad plan fails before any investigator runs. It then skips exclusions, keeps each slot's questions together, caps a batch at eight questions, and stamps every batch file with the plan hash and the head. Run one `dod-guard:stage-cheap` investigator per batch (`dod_guard_stage_cheap` in Codex) in waves of at most 10, each wave dispatched in one message so its batches run in parallel. Before each wave run `node "<skill-dir>/scripts/review-findings.mjs" pending --plan=<plan.json> --head=<full 40-character head SHA> --answers-dir=<answers-dir>`, which prints the `done` and `pending` batches from the answers files on disk, and dispatch at most 10 of the `pending` ones. When `pending` is empty, go on to Verify. A batch whose file is missing, truncated, stamped for another plan or head, or short of an answer is pending, so a resumed owner never reruns a finished batch and never trusts a file that is not whole. Dispatch them in the foreground and wait for every report; never in the background. Investigators write their own files because the main thread would otherwise retype every answer. Each brief follows "Stage brief" in `standards/model-routing.md`: its first line is `Read <plugin-root>/skills/review-pr/SKILL.md, then follow only #### Investigator batch.`, then it names the batch file, the answers file `<answers-dir>/<batch>.json`, the head SHA and the checkout path, and asks for the answers file path and the answer counts as the evidence to return.
+
+#### Investigator batch
+
+Read the batch file. For each question, read the files it names and whatever else you need. Write one file, the answers file your brief names, and no other file. Edit nothing in the checkout, make no Git or provider change, and run no command that writes. The file is a JSON object with `planHash`, `headSha` and `batch` copied from the batch file and an `answers` array with one entry per question: `{ "slot", "id", "status": "answered", "path", "line", "fact" }` with the path and line you read and the fact found there, or `{ "slot", "id", "status": "unanswered", "searched" }` when the repository does not answer it, naming what you searched. The scanner's line-length rule: a line is medium above the width N printed in its violation message (width N) and high above the larger of N and 120. Give no verdict, severity or fix. Return the answers file path and the counts of answered and unanswered entries, and nothing else.
 
 ### Verify
 
-Before judging, check every answer under the cheap-output rule in `standards/model-routing.md`, with the reviewed head as accepted head. Send a failed batch back once with the exact gap. On a second failure, rerun it once on `dod-guard:read-standard` with the failure record, per "Escalation". On a third failure of the same check, stop and name the batch.
+Merge and check the answers files, then check the checkout:
 
-Save the plan with a status per question: `verified`, `repaired` (verified after the one repair), or `unanswered` (the repo does not answer it).
+```
+node "<skill-dir>/scripts/review-findings.mjs" answers --plan=<plan.json> --head=<full 40-character head SHA> --answers-dir=<answers-dir> --out=<answers.json>
+git status --porcelain
+```
+
+`answers` refuses a missing, unreadable, stale or incomplete file and lists every problem. `git status --porcelain` must print nothing, and the answers directory must hold only the batch answers files. Otherwise stop and name the path, because an investigator wrote outside its file.
+
+Then check every answer under the cheap-output rule in `standards/model-routing.md`, with the reviewed head as accepted head. Send a failed batch back once to the same agent with the exact gap and the same batch and answers paths, and rerun `answers`. On a second failure, rerun it once on `dod-guard:stage-standard` with the failure record, per "Escalation". On a third failure of the same check, stop and name the batch. When the plan changes, its hash changes: cut new batches and rerun the investigators, because `answers` refuses every old file.
+
+Save the plan with a status per question: `verified`, `repaired` (verified after the one repair), or `unanswered` (the repo does not answer it). Saving statuses does not change the plan hash.
 
 ### Judge
 
-Dispatch the four lens reviewers at once. Each gets the brief plus its lens's slots with questions, answers, statuses, or exclusions, and judges from that evidence. A slot belongs to a lens when it has a question or exclusion naming it.
+You, the owner, dispatch the four lens reviewers yourself, each at its agent's standard tier whatever your own tier is, because no other thread holds this stage. Dispatch them at once in the foreground (never in the background): a child's reply goes to the thread that dispatched it, so a background reply would reach your dispatcher and leave you waiting. Save each result to `<scratch>/judge-<lens>.json` as it arrives. A valid file is a JSON object whose `reviewer` is that lens, with `rulings` and `findings` arrays. Each judge brief is the shared brief plus, for each slot assigned to its lens, only the slot id, each question's id, text and status or the exclusion's lens and reason, and the path of `<answers.json>`, which the judge reads. A slot belongs to a lens when it has a question or exclusion naming it. The brief holds no owner conclusion, suspected defect, severity guess, earlier finding or other reviewer's output. A judge that returns one of those as a finding gets the one correction request below.
 
+- Paste this result shape into every judge brief and set `reviewer` to that lens: `{"reviewer":"review-pr-feature","rulings":[{"slot":"criterion:1","status":"FINDING","evidence":"..."}],"findings":[{"slot":"criterion:1","severity":"MAJOR","file":"src/a.mjs","line":12,"problem":"...","impact":"...","requirement":"...","correction":"...","rootCause":"...","evidence":"..."}]}`. A finding without all ten fields is refused.
 - Each returns `{ reviewer, rulings, findings }`: one ruling `{ slot, status, evidence }` per assigned
   slot, status `VERIFIED` or `FINDING`, and findings with severity `BLOCKER`, `MAJOR`, or `MINOR`. Each
   finding names its `slot`, one assigned to that lens and ruled `FINDING`. Every `FINDING` ruling has at
   least one finding naming its slot. Build refuses a finding that names no slot, an unassigned slot, or a
   slot ruled `VERIFIED`, and a `FINDING` ruling no finding names.
-- Settle each `unanswered` question from the files it names, or report the gap as a finding. Never count one as passing. Report an exclusion as a finding when its reason fails.
-- On malformed JSON, send one correction request in the exact format. On a second failure, stop and name the reviewer. Never escalate a format failure to another tier: the review posts once, so a missing angle cannot be added later.
+- Settle each `unanswered` question only from the files it names, and read no other file for it. Record the answer in that slot's ruling evidence, or report the gap as a finding. Never count one as passing, and change no plan status after dispatch. Report an exclusion as a finding when its reason fails.
+- On malformed JSON, send one correction request in the exact format, as a fresh foreground dispatch of the same lens with the same brief, the quoted refusal, and the path of the file that holds its previous result. Never resume an earlier judge: its reply would go to your dispatcher. A finding that lacks a field is a format failure too: `candidates` refuses it and names the reviewer and the missing fields, so quote that error in the one correction request. On a second failure, stop and name the reviewer. Never escalate a format failure to another tier: the review posts once, so a missing angle cannot be added later.
 
-Save the four results as one JSON array.
+Assemble the four `judge-<lens>.json` files into one JSON array in `results.json`.
 
 ### Merge
 
 ```
-node "<skill-dir>/scripts/review-findings.mjs" candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --out=<candidates.json>
+node "<skill-dir>/scripts/review-findings.mjs" candidates --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --answers=<answers.json> --out=<candidates.json>
 ```
 
-`candidates` numbers judged findings J1..Jn. One `dod-guard:read-standard` pass (`dod_guard_read_standard` in Codex) reads that file and the plan and returns the merge JSON: `{ "groups": [{ "members": ["J1"], "representative": "J1" }], "scanner": [{ "ids": ["S1"], "status": "KEEP" }] }`.
+`candidates` numbers judged findings J1..Jn. One foreground `dod-guard:read-standard` pass (`dod_guard_read_standard` in Codex) reads that file and the plan and returns the merge JSON: `{ "groups": [{ "members": ["J1"], "representative": "J1" }], "scanner": [{ "ids": ["S1"], "status": "KEEP" }] }`.
 
 - Put every J id in exactly one group. A group needs at least one member. Group only findings citing the same defect in the same file. The representative is a member.
 - Put every S id in exactly one scanner ruling. Use KEEP unless `not-at-head`, `excluded-path`, or `rule-misfire` holds and a verified or repaired scanner question listing that S id shows it. A DROP adds `"reason"` and `"answer": "<question id>"`. A ruling needs at least one id. A KEEP carries no `reason` or `answer`; the build refuses one that does.
@@ -119,15 +144,15 @@ With no finding and no violation, write `{ "groups": [], "scanner": [] }` and sk
 ## 6. Build and post
 
 ```
-node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --out=<payload.json> --scanner-comments-out=<scanner-comments.json>
+node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --merge=<merge.json> --answers=<answers.json> --out=<payload.json> --scanner-comments-out=<scanner-comments.json>
 gh api --method POST "repos/{owner}/{repo}/pulls/{n}/reviews" --input <payload.json>
 ```
 
 `build` regenerates ids and slots from its own inputs, validates the plan, results, and merge file, and prints the recommendation and severity counts. Scanner findings are summarized per file in the body and inline comments (counts by severity and rule, the first five by line), under a fixed budget. When anything was summarized, `build` also writes the full kept-violation list to `<scanner-comments.json>`, a JSON array of `{ "body": ... }` parts that each start with a `<!-- dod-guard:review-pr-scanner head=<sha> part=<i>/<n> -->` marker; an empty array means nothing was summarized. Dropped scanner findings are listed in a collapsed block as counts and S id ranges per file, rule, and cited answer, with cited question text shortened, under a fixed 12000-character budget; files past it are counted in one overflow line. If the body would still pass 65536 characters, it refuses: shorten question text in the saved plan and rebuild.
 
-BLOCKER and MAJOR findings are inline comments, each with a `GH-<id>` that the label step appends to the comment body after the post. MINOR findings go in "Minor notes" in the body. A file's scanner findings are MAJOR when any is `high`, else MINOR. Any BLOCKER gives `BLOCK`, else any MAJOR gives `REQUEST_CHANGES`, else `APPROVE`. The body carries the marker `<!-- dod-guard:review-pr head=<sha> recommendation=<REC> -->` that step 2 detects.
+BLOCKER and MAJOR findings are inline comments, each with a `GH-<id>` that the label step appends to the comment body after the post. Each comment sits on a line of the finding's own file: the nearest line the diff adds (side `RIGHT`), or, for a file the pull request only trims, the nearest line it removes (side `LEFT`, numbered in the base file). A comment that moved ends with a `Cited location` note that names the line the finding cited. A judged finding in a file the diff does not touch moves to the first added line of the diff, else its first removed line. When no diff line can hold a BLOCKER or MAJOR comment, `build` refuses, names those findings, and writes no payload: nothing was posted, so stop and report the cited locations. Every BLOCKER and MAJOR finding gets its own thread and `GH-<id>`. MINOR findings go in "Minor notes" in the body. A file's scanner findings are MAJOR when any is `high`, else MINOR. Any BLOCKER gives `BLOCK`, else any MAJOR gives `REQUEST_CHANGES`, else `APPROVE`. The body carries the marker `<!-- dod-guard:review-pr head=<sha> recommendation=<REC> -->` that step 2 detects.
 
-Reread the PR head and stop if it moved. Post the payload as one review with event `COMMENT`. A post is ambiguous when it returns a 5xx status, times out, or returns a body you cannot read, because the review may exist even though the call failed. After any failed or ambiguous post, rerun step 2 before any retry and act on its result:
+Reread the PR head with `gh pr view <number> --json headRefOid` (no `--jq`). If it differs from the PR head SHA of step 1, stop and name both SHAs; report that the user can ask for a review of the new head. Post the payload as one review with event `COMMENT`. A post is ambiguous when it returns a 5xx status, times out, or returns a body you cannot read, because the review may exist even though the call failed. After any failed or ambiguous post, rerun step 2 before any retry and act on its result:
 
 - `found: false`: post the same payload once more.
 - `found: true` with `headSha` equal to the reviewed head: that review is the one you posted. Do not post. Continue at "Post the scanner comment parts" below with its `reviewId`, then step 7.

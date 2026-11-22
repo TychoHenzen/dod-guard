@@ -39,7 +39,7 @@ function routesAfter(change) {
   const extra = change?.(pages) ?? {};
   return {
     [ENDPOINT.repository]: ok({ full_name: REPO, default_branch: "master" }),
-    [ENDPOINT.linkedProjects]: linkedProjectsReply([linkedProjectNode(2)]),
+    [ENDPOINT.linkedProjects]: linkedProjectsReply([linkedProjectNode(2, { itemCount: pages.flat().length })]),
     [ENDPOINT.fields(2)]: ok(fieldPages()),
     [VALUES]: ok(pages),
     ...emptyBranchRoutes(),

@@ -139,4 +139,4 @@ function closureEvidence(context, number, { seen = new Set(), purpose = "justifi
   return issueEvidence(context, number, seen, purpose);
 }
 
-export { closureEvidence, hierarchyReasons, parentReasons };
+export { closureEvidence, hierarchyReasons, parentReasons, recordGroup };

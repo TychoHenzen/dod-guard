@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import process from "node:process";
 import { test } from "node:test";
+import { parsePowerShellFile } from "./harness/maintenance-harness.mjs";
 import { createRealHelperFixture } from "./harness/real-helper-fixture.mjs";
 import { releaseVerificationPath, runReleaseVerification } from "./harness/release-harness.mjs";
-import { parsePowerShellFile } from "./maintenance-harness.mjs";
 
 test("release verification parses and proves the complete read-only evidence boundary", {
   skip: process.platform !== "win32",

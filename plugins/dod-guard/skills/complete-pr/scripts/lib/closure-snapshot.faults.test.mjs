@@ -75,6 +75,7 @@ for (const [variant, expected, label = variant] of FAULTS) {
         items: 4,
         issues: 3,
         pullRequests: 3,
+        unlinkedPullRequests: 1,
       });
       assert.deepEqual(JSON.parse(await readFile(healthy.output, "utf8")), build(fixtureRoutes()));
       assert.deepEqual(await readdir(dir), ["snapshot.json"]);

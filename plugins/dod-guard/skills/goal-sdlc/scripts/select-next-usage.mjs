@@ -21,6 +21,12 @@ The snapshot is one JSON object:
                   openPullRequest}, true when an open pull request of the
                   repository has it as its head. A snapshot without the key
                   holds nothing.
+  unlinkedPullRequests
+                  optional; every open pull request of the repository that no
+                  Issue item lists as linked, as [{number, headRef}]. The report
+                  lists each with a reason, never changes the selection, and
+                  keeps an otherwise empty queue held instead of exhausted. A
+                  snapshot without the key reports an empty list.
 
 A merged delivery counts as complete only with activeCheckpoint false on
 every issue and trustedHeadSha equal to head.sha; otherwise it is held.
@@ -53,5 +59,5 @@ A Todo root whose body has a missing or unreadable refinement record, or
 acceptance ids that disagree with its checkboxes, is reported with kind
 needs-refinement and its reasons. It is never selected; run
 /refine-backlog-item on it, which leaves its Status as Todo.
-queueState is ready, held, or exhausted. A null selection with held work is
-not an exhausted queue.`;
+queueState is ready, held, or exhausted. A null selection with held work or an
+unlinked open pull request is not an exhausted queue.`;

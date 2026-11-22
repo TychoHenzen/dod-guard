@@ -1,10 +1,25 @@
-import { lineIndex, matchBracket } from "../offsets.mjs";
+import { matchBracket } from "../offsets.mjs";
 import { findFunctions } from "../parse.mjs";
 import { splitParams } from "../parse-parameters.mjs";
 import { strip } from "../strip.mjs";
 
-const CONFIGURATION_PARAMETER =
-  /(?:config|settings?|options?|timeout|deadline|retry|backoff|limit|threshold|capacity|size|batch|page(?:Size)?|host|port|url|path|directory|file|format|mode|enabled|disabled|region|connection|pool|cache|buffer|delay|interval|parallel|concurrency|max|min)/i;
+const CONFIGURATION_WORDS = [
+  "config", "settings?", "options?",
+  "timeout", "deadline", "retry", "backoff", "delay", "interval",
+  "limit", "threshold", "capacity", "size", "batch", "page(?:Size)?",
+  "max", "min", "parallel", "concurrency",
+  "host", "port", "url", "region", "connection", "pool",
+  "path", "directory", "file", "format", "mode", "enabled", "disabled",
+  "cache", "buffer",
+];
+const CONFIGURATION_PARAMETER = new RegExp(
+  `(?:${CONFIGURATION_WORDS.join("|")})`,
+  "i",
+);
+const NUMBER = String.raw`[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?[uUlLfFdDmM]*`;
+const KEYWORD_LITERAL = "true|false|null|undefined|none|nil";
+const NUMBER_OR_KEYWORD = new RegExp(`^(?:${NUMBER}|${KEYWORD_LITERAL})$`, "i");
+const QUOTED = /^(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')$/s;
 
 function parameterText(source, fn) {
   const open = source.indexOf("(", fn.headerStart);
@@ -50,10 +65,7 @@ function parameterName(left, lang) {
 
 function literalDefault(value) {
   const trimmed = value.trim();
-  const numberOrBoolean =
-    /^(?:[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?[uUlLfFdDmM]*|true|false|null|undefined|none|nil)$/i;
-  const quoted = /^(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')$/s;
-  return numberOrBoolean.test(trimmed) || quoted.test(trimmed)
+  return NUMBER_OR_KEYWORD.test(trimmed) || QUOTED.test(trimmed)
     ? trimmed
     : undefined;
 }
@@ -65,18 +77,14 @@ function defaultFact(parameter, fn, lang) {
   if (!name || !CONFIGURATION_PARAMETER.test(name)) return [];
   const value = literalDefault(parameter.slice(split + 1));
   if (!value) return [];
-  return [{ method: fn.name, parameter: name, defaultValue: value, line: fn.line }];
+  return [
+    { method: fn.name, parameter: name, defaultValue: value, line: fn.line },
+  ];
 }
 
 export function configurationDefaults(source, lang) {
   if (lang === "rs") return [];
-  const searchable = strip(source, lang).code;
-  const functions = findFunctions(
-    searchable,
-    lang,
-    lineIndex(searchable),
-    source,
-  );
+  const functions = findFunctions(strip(source, lang), lang, source);
   return functions.flatMap((fn) =>
     parameterText(source, fn).flatMap((parameter) =>
       defaultFact(parameter, fn, lang),

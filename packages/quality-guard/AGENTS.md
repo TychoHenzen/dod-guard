@@ -15,7 +15,7 @@ not persist a quality decision.
 | Part | Where | Role |
 |------|-------|------|
 | Scanner | `skills/quality-refactor/scripts/` | Zero-dependency structural scanner. The single implementation. |
-| Pull-request gate | `skills/quality-refactor/scripts/quality-pr-gate.mjs` | CI check. Scans changed files at the merge base and at HEAD. Fails on new medium/high findings, or when the pull request removes fewer than one medium/high (or three low) pre-existing findings. Writes one full report and one comment body. Runs in CI, never on writes. |
+| Pull-request gate | `skills/quality-refactor/scripts/quality-pr-gate.mjs` | CI check. Scans the whole checkout at the merge base and at HEAD and compares the changed files. Fails on new medium/high findings, or when the pull request removes fewer than one medium/high (or three low) pre-existing findings. Writes one full report and one comment body. Runs in CI, never on writes. |
 | Gate comment | `skills/quality-refactor/scripts/quality-pr-gate-comment.mjs` | Best-effort: posts the gate's comment body once per pull request and updates it on later pushes. |
 | Script entrypoint | `scripts/quality-guard.mjs` | File-local feedback script. Not registered as a hook. |
 | Reports | `src/` and `scripts/` | Current-state structural, test-quality, and readability evidence. |
@@ -31,7 +31,7 @@ stored acceptance state.
 The supported CLI paths are:
 
 - `skills/quality-refactor/scripts/quality-scan.mjs` for structural diagnostics.
-- `skills/quality-refactor/scripts/quality-pr-gate.mjs --base=<ref> --root=<dir>` for the pull-request gate.
+- `skills/quality-refactor/scripts/quality-pr-gate.mjs --base=<ref>` for the pull-request gate.
 - `quality-guard report` for current-state report evidence.
 - `quality-guard test-quality` for explicit Clean Code test evidence.
 - `quality-guard readability --stdin` for complete plaintext supplied by an
@@ -106,6 +106,11 @@ already applies to rules the repository turned on as errors.
 
 - The pull-request gate fails closed. An internal error exits 2 and leaves the
   check red; it never reports a pass.
+- The pull-request gate never runs `git worktree`. `lib/merge-base-tree.mjs`
+  exports the merge base with `git read-tree` into a private `GIT_INDEX_FILE`
+  and `git checkout-index --prefix`, so the gate also runs in a repository
+  that forbids worktrees and never touches the caller's index. A worktree call
+  would turn the check of such a repository red.
 - Per-file scans cannot decide `duplicate-block`, `dead-export` or
   `test-only-export`. Those need whole-project reachability, so a per-file run
   would call every export dead. `FILE_RULES` in
@@ -120,6 +125,10 @@ already applies to rules the repository turned on as errors.
   class, so the scanner still sees a long class after its members are
   moved into another `partial` file. Generated `*.g.cs` and designer files
   are not counted.
+- `.quality-guard.json` `excludePaths` (a substring of "/" plus the
+  repository-relative path) lists code that is not the repository's own. The
+  gate reads it from the merge base for both scans, exits 2 on an invalid file
+  or on a HEAD scan of zero files, and lists changed files it skipped.
 - Point `--root` at the repository, not at the target directory. Manifest
   files such as Godot scenes are collected from the root, and a scene that
   wires a class usually sits above the scanned subdirectory.
@@ -137,6 +146,21 @@ already applies to rules the repository turned on as errors.
   (`config.mjs`), which is the only reason the corpus never trips the
   structural diagnostic. Rename the directory and it starts scanning
   deliberately bad fixture code as a real regression.
+- The pull-request gate sources (`quality-pr-gate.mjs`, `lib/pr-gate-*.mjs`,
+  `lib/finding-symbol.mjs` under `skills/quality-refactor/scripts/`) are in
+  `biome.json` `formatter.includes` with a `lineWidth` of 80 override. Width 80
+  is the scanner's own `line-length` limit, so the files that enforce the
+  limit must meet it themselves, or the gate would report findings on its own
+  code. The
+  scanner takes a file's line-length width from Biome only when the file is in
+  both `files.includes` and `formatter.includes`; a file in neither is judged
+  at the default 80 and the preflight never reflows it. Add a new gate module
+  under a name that matches the glob.
+- The pull-request gate identifies a finding by rule, `symbol` (the innermost
+  function around it, which the scanner stamps on per-file findings inside a
+  function; file-length and project-level findings carry none) and the message
+  with digits masked. Two findings of one rule and message in different
+  functions are separate findings, so a move between functions is not hidden.
 
 Use `apply_patch` for edits. Keep documentation and tests focused on the
 current advisory/report-only contract; do not revive retired decision-ledger

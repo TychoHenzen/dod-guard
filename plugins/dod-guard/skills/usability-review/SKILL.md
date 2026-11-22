@@ -40,11 +40,11 @@ Take only what the request and the repository establish. Never infer a visual su
 | Static visual | screenshots or mockups |
 | Running interface | live interaction: behavior, focus, responsive layout, loading, and recovery |
 
-Use the live row only when something live exists. When a surface is missing, record that as a limit and review what remains. A gap in evidence is a result of the review, not a reason to stop.
+Use the live row only when something live exists. When a surface is missing, record that as a limit and review what remains. A gap in evidence is a result of the review, not a reason to stop. For each journey question or accessibility check with no evidence, write `not observed`. Never write `passes` or `no issues` for it.
 
 ## What to ask along the journey
 
-Follow the user from first contact to finished task. Ask each question only for states that apply to this feature.
+Follow the user from first contact to finished task. Ask each question only for states that apply to this feature. A state applies if the code, docs, or screenshots show it, such as a loading branch or an error path. List the states that do not apply in one line, under `Inapplicable states:` in the report.
 
 - Discoverability: Can the user find the feature, and do they see what it is for?
 - Hierarchy and wording: Do the labels, instructions, and choices read clearly?
@@ -66,6 +66,8 @@ Apply these checks only to a graphical or interactive surface, and only with evi
 - responsive behavior
 - reduced motion
 
+For each check, cite the measured or observed value with its source: the contrast ratio, the target size in px, or the behavior seen, each with the file and line, screenshot region, or interaction it came from. A check with no such value is `not observed`. This skill sets no numeric threshold and does not decide pass or fail against a formal standard.
+
 A CLI, an API, or a document gets the matching checks for clarity and operability. It gets none of the visual ones.
 
 ## AI trust cues
@@ -80,7 +82,7 @@ If the feature uses AI, check how it handles consent, disclosure, cost, uncertai
 
 ## Write the report
 
-Keep it short and put the findings with the most user impact first. Show which parts of the journey and which states you covered, even when you found no problems. Flag anything you could not observe.
+Keep it short and put the findings with the most user impact first. Show which parts of the journey and which states you covered, even when you found no problems. Flag anything you could not observe. `Evidence unavailable:` names a whole surface or artifact you lacked, and `Not observed:` names each journey question or accessibility check that had no evidence.
 
 ```text
 ## Usability review
@@ -89,6 +91,8 @@ Intended user and task: <who, and what they are trying to do>
 Surface: <CLI | API | docs | GUI | other>
 Evidence used: <what you read or saw>
 Evidence unavailable: <what you could not observe, or none>
+Not observed: <each journey question or accessibility check with no evidence, or none>
+Inapplicable states: <states this feature never shows, in one line, or none>
 
 ### Findings
 

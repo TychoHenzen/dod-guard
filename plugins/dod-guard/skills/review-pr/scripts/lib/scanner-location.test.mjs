@@ -75,3 +75,58 @@ test("a disabled Claude install names the one enable command, and nothing else d
     (error) => FOUND_TWO_PATTERN.test(error.message) && !error.message.includes("plugin enable"),
   );
 });
+
+test("a Claude list with no quality-guard entry names the install command", () => {
+  assert.throws(
+    () => scannerPath("claude", []),
+    (error) =>
+      error.message.includes("found 0") && error.message.includes("claude plugin install quality-guard@dod-guard"),
+  );
+  assert.throws(
+    () => scannerPath("claude", [{ id: "dod-guard@market-x", enabled: true, installPath: "a" }]),
+    (error) => error.message.includes("claude plugin install quality-guard@market-x"),
+  );
+});
+
+test("a malformed Claude list gets the install command with the default marketplace", () => {
+  const malformed = [null, {}, [{ enabled: true }], [{ id: "dod-guard@", enabled: true, installPath: "a" }]];
+  for (const registry of malformed) {
+    assert.throws(
+      () => scannerPath("claude", registry),
+      (error) =>
+        error.message.includes("found 0") &&
+        error.message.includes("claude plugin install quality-guard@dod-guard") &&
+        !(error instanceof TypeError),
+    );
+  }
+});
+
+test("no install command is named when an entry exists or the client is Codex", () => {
+  const disabled = [{ id: "quality-guard@dod-guard", enabled: false, installPath: "a" }];
+  assert.throws(
+    () => scannerPath("claude", disabled),
+    (error) => error.message.includes("plugin enable") && !error.message.includes("plugin install"),
+  );
+  const noPath = [{ id: "quality-guard@dod-guard", enabled: true }];
+  assert.throws(
+    () => scannerPath("claude", noPath),
+    (error) => error.message.includes("found 0") && !error.message.includes("plugin install"),
+  );
+  const twice = [
+    { id: "quality-guard@a", enabled: true, installPath: "a" },
+    { id: "quality-guard@b", enabled: true, installPath: "b" },
+  ];
+  assert.throws(
+    () => scannerPath("claude", twice),
+    (error) => error.message.includes("found 2") && !error.message.includes("plugin install"),
+  );
+  assert.throws(
+    () => scannerPath("codex", { installed: [], available: [] }),
+    (error) => error.message.includes("found 0") && !error.message.includes("plugin install"),
+  );
+});
+
+test("an enabled install resolves the scanner after the install command was followed", () => {
+  const registry = [{ id: "quality-guard@dod-guard", enabled: true, installPath: "C:\\cache\\quality-guard" }];
+  assert.equal(scannerPath("claude", registry), `C:/cache/quality-guard/${SCANNER}`);
+});

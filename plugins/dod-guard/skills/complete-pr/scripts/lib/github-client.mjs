@@ -42,7 +42,7 @@ export class GitHubClient {
   }
 
   mergePullRequest(pullNumber, expectedHead) {
-    return mergePullRequest(this.repository, pullNumber, expectedHead, this.#commandRunner);
+    return mergePullRequest({ repository: this.repository, pullNumber, expectedHead }, this.#commandRunner);
   }
 
   getRequiredChecks(pullRequest) {
@@ -58,7 +58,7 @@ export class GitHubClient {
   }
 
   updateBranch(pullNumber, expectedHead) {
-    updateBranch(this.repository, pullNumber, expectedHead, this.#commandRunner);
+    updateBranch({ repository: this.repository, pullNumber, expectedHead }, this.#commandRunner);
   }
 
   getCommit(sha) {

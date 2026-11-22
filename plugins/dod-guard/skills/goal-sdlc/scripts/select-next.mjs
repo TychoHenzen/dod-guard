@@ -8,6 +8,7 @@ import { pathToFileURL } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
 import { localDate } from "../../../lib/friction-log.mjs";
 import { classifyQueue } from "../../../lib/queue-classifier.mjs";
+import { unlinkedPullRequestsOf, unlinkedReason } from "../../../lib/queue-unlinked-pulls.mjs";
 import { readJsonFile } from "../../../lib/read-text.mjs";
 import { USAGE } from "./select-next-usage.mjs";
 
@@ -19,10 +20,12 @@ function groupSummary({ rootIssueNumber, decision }) {
 
 const HELD_KINDS = new Set(["hold", "needs-refinement"]);
 
-// A null selection with held work or missing evidence is not an exhausted queue.
-function queueStateOf({ groups, selected, missingEvidence }) {
+// A null selection with held work or missing evidence is not an exhausted queue. An unlinked open
+// pull request keeps an empty queue from reading as exhausted.
+function queueStateOf({ groups, selected, missingEvidence }, unlinked) {
   if (selected) return "ready";
-  const held = missingEvidence.length > 0 || groups.some(({ decision }) => HELD_KINDS.has(decision.kind));
+  const heldGroup = groups.some(({ decision }) => HELD_KINDS.has(decision.kind));
+  const held = missingEvidence.length > 0 || unlinked.length > 0 || heldGroup;
   return held ? "held" : "exhausted";
 }
 
@@ -30,8 +33,9 @@ function selectNext(input, today) {
   const snapshot = { ...EMPTY_SNAPSHOT, ...input };
   const queue = classifyQueue(snapshot, { today });
   const { groups, selected, counts, missingEvidence } = queue;
+  const unlinked = unlinkedPullRequestsOf(input);
   return {
-    queueState: queueStateOf(queue),
+    queueState: queueStateOf(queue, unlinked),
     selected: selected && {
       rootIssueNumber: selected.rootIssueNumber,
       status: selected.decision.status,
@@ -40,6 +44,7 @@ function selectNext(input, today) {
     groups: groups.map(groupSummary),
     counts,
     missingEvidence,
+    unlinkedPullRequests: unlinked.map((pull) => ({ ...pull, reason: unlinkedReason(pull) })),
   };
 }
 

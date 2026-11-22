@@ -28,12 +28,17 @@ test("an unchanged tree reports no changed files and writes nothing", (t) => {
 
 test("a base that cannot be resolved is an error, not a pass", (t) => {
   const repo = pullRequest(t, { base: `${SHORT}\n`, head: `${LONG}\n` });
-  const result = runBareGate(repo, "--base=nope", "--root=src");
+  const result = runBareGate(repo, "--base=nope");
   assert.equal(result.status, 2);
 });
 
+// HEAD must keep a source file, because a HEAD scan of zero files exits 2 (see
+// the scope test "a scan of zero files fails closed").
 test("deleting a file that carried a finding pays the cleanup quota", (t) => {
-  const repo = pullRequest(t, { base: `${LONG}\n`, head: `${SHORT}\n` });
+  const repo = pullRequest(t, {
+    base: { "src/a.js": `${LONG}\n`, "src/keep.js": `${SHORT}\n` },
+    head: `${SHORT}\n`,
+  });
   git(repo, "rm", "-q", "src/a.js");
   git(repo, "commit", "-q", "-m", "delete");
   const result = runGate(repo);
@@ -48,12 +53,7 @@ test("renaming the source dir does not make its findings new", (t) => {
   });
   git(repo, "mv", "src", "lib");
   git(repo, "commit", "-q", "-m", "rename");
-  const result = runGate(
-    repo,
-    "--root=lib",
-    "--fix-medium-high=0",
-    "--fix-low=0",
-  );
+  const result = runGate(repo, "--fix-medium-high=0", "--fix-low=0");
   assert.equal(result.status, 0, result.stderr);
   assert.doesNotMatch(result.stderr, /line-length/);
 });

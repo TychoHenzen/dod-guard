@@ -46,4 +46,34 @@ this PR changed. When the defect sits on a line the PR did not change, cite
 that real line anyway; the review posts the finding on the nearest changed
 line and names your cited location. Do not report taste, praise, summaries, or
 speculative risks.
+
+The result has exactly this shape. Every finding carries all ten fields, and
+`line` is a positive integer:
+
+```json
+{
+  "reviewer": "review-pr-design",
+  "rulings": [
+    { "slot": "criterion:1", "status": "FINDING", "evidence": "Final-state evidence for the ruling" },
+    { "slot": "file:src/a.mjs", "status": "VERIFIED", "evidence": "Final-state evidence for the ruling" }
+  ],
+  "findings": [
+    {
+      "slot": "criterion:1",
+      "severity": "MAJOR",
+      "file": "src/a.mjs",
+      "line": 12,
+      "problem": "What is wrong",
+      "impact": "Who or what it breaks",
+      "requirement": "The criterion or rule it violates",
+      "correction": "The smallest change that fixes it",
+      "rootCause": "Why it happened",
+      "evidence": "The line or output that shows it"
+    }
+  ]
+}
+```
+
+The review cannot post while a finding lacks a field, so check each finding
+against this list before you return.
 '''

@@ -36,6 +36,12 @@
       "description": "Two output styles. Natural: plain prose, common words, short sentences, active voice, no filler. Neurodivergent: tuned for an AuDHD reader with demand avoidance - choice-first, memoryless, no obligations, interest-first ordering. Both keep Claude Code's built-in coding behavior. No MCP server, no skills, no hooks.",
       "source": "./plugins/natural-output-style",
       "category": "writing"
+    },
+    {
+      "name": "readability-gate",
+      "description": "A Stop hook that checks the final message of each turn answers the owner in plain spoken English, using the talk-normal rules: the answer first, no names or numbers the owner has not seen, none of Claude's own process, and every decision explained. A reader model writes the message the owner wanted; a message fails when the owner cannot act on it or when that draft is much shorter, and goes back for one rewrite with the draft as the target. The same rules are added to Claude's context at session start. Fails open with a visible warning. Claude Code only. No MCP server, no skills.",
+      "source": "./plugins/readability-gate",
+      "category": "writing"
     }
   ]
 }

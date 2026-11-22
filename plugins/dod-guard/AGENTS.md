@@ -24,8 +24,10 @@ agent definitions. It has no package workspace, MCP server, or bundle.
   GitHub review with a recommendation. It never changes the reviewed branch.
 - Use `/fix-pr-review` to revalidate selected review findings, fix the
   actionable ones, and decline the rest with an evidence reply. It resolves
-  each declined finding's thread itself, with no per-PR confirmation, and
-  updates provider state for a fix only after the verified commit is pushed.
+  each declined finding's thread itself, with no per-PR confirmation, routes a
+  partly fixed or out-of-slice finding to an existing destination issue (it
+  never creates one) before resolving its thread, and updates provider state
+  for a fix only after the verified commit is pushed.
 - Use `/complete-pr` as the final acceptance gate after implementation, review,
   remediation, and current-head checks. It owns guarded ready, REST merge,
   issue confirmation, and remote branch deletion; it verifies completion rather

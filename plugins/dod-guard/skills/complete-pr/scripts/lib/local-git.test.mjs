@@ -42,19 +42,23 @@ function createGitFixture(entries) {
   };
 }
 
+// The commands that precede any cleanup of the branch the checkout is on.
+function currentBranchEntries(status = result(), branchExists = [result()]) {
+  return [
+    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
+    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], branchExists],
+    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
+    [["-C", CURRENT_ROOT, "status", "--porcelain"], [status]],
+  ];
+}
+
 function hasWorktreeCommand(calls) {
   return calls.some((args) => args.includes("worktree"));
 }
 
 test("moves a clean current checkout before deleting the merged local branch", () => {
   const fixture = createGitFixture([
-    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
-    [
-      ["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`],
-      [result(), result("", 1)],
-    ],
-    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
-    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result()]],
+    ...currentBranchEntries(result(), [result(), result("", 1)]),
     [["fetch", "--no-tags", "origin", "master"], [result()]],
     [["merge-base", "--is-ancestor", "master", "origin/master"], [result()]],
     [["switch", "master"], [result()]],
@@ -70,12 +74,7 @@ test("moves a clean current checkout before deleting the merged local branch", (
 });
 
 test("preserves the current branch and dirty files", () => {
-  const fixture = createGitFixture([
-    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
-    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result()]],
-    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
-    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result(" M user-work.txt\n")]],
-  ]);
+  const fixture = createGitFixture(currentBranchEntries(result(" M user-work.txt\n")));
   const git = new LocalGit(fixture.runner);
 
   const cleanup = git.cleanupBranch(TARGET_BRANCH, "master");
@@ -106,12 +105,7 @@ test("retains a local branch when Git refuses deletion", () => {
 });
 
 test("dry run describes current-checkout cleanup without mutating Git", () => {
-  const fixture = createGitFixture([
-    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
-    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result()]],
-    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
-    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result()]],
-  ]);
+  const fixture = createGitFixture(currentBranchEntries());
   const git = new LocalGit(fixture.runner);
 
   const cleanup = git.cleanupBranch(TARGET_BRANCH, "master", { dryRun: true });
@@ -141,10 +135,7 @@ test("does not delete a missing local branch", () => {
 
 test("preserves the local branch when the default branch cannot fast-forward", () => {
   const fixture = createGitFixture([
-    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
-    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result()]],
-    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
-    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result()]],
+    ...currentBranchEntries(),
     [["fetch", "--no-tags", "origin", "master"], [result()]],
     [["merge-base", "--is-ancestor", "master", "origin/master"], [result("", 1)]],
   ]);
@@ -166,10 +157,7 @@ test("preserves the local branch when the default branch cannot fast-forward", (
 
 test("restores the feature checkout if fast-forward fails after the switch", () => {
   const fixture = createGitFixture([
-    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
-    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result()]],
-    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
-    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result()]],
+    ...currentBranchEntries(),
     [["fetch", "--no-tags", "origin", "master"], [result()]],
     [["merge-base", "--is-ancestor", "master", "origin/master"], [result()]],
     [["switch", "master"], [result()]],
@@ -186,4 +174,29 @@ test("restores the feature checkout if fast-forward fails after the switch", () 
     fixture.calls.some((args) => args[0] === "branch" && args[1] === "-d"),
     false,
   );
+});
+
+test("originUrl returns the trimmed origin remote", () => {
+  const fixture = createGitFixture([
+    [["remote", "get-url", "origin"], [result("https://github.com/owner/repo.git\n")]],
+  ]);
+
+  assert.equal(new LocalGit(fixture.runner).originUrl(), "https://github.com/owner/repo.git");
+});
+
+test("originUrl is null outside a checkout and when origin is missing", () => {
+  const notRepository = createGitFixture([
+    [["remote", "get-url", "origin"], [new Error("fatal: not a git repository")]],
+  ]);
+  const noOrigin = createGitFixture([[["remote", "get-url", "origin"], [result("")]]]);
+
+  assert.equal(new LocalGit(notRepository.runner).originUrl(), null);
+  assert.equal(new LocalGit(noOrigin.runner).originUrl(), null);
+});
+
+test("originUrl rethrows a missing git binary instead of reporting no checkout", () => {
+  const missing = Object.assign(new Error("spawnSync git ENOENT"), { code: "ENOENT" });
+  const fixture = createGitFixture([[["remote", "get-url", "origin"], [missing]]]);
+
+  assert.throws(() => new LocalGit(fixture.runner).originUrl(), { code: "ENOENT" });
 });

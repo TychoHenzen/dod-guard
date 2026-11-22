@@ -2,9 +2,11 @@
 // record holds pullRequest, mergeCommit, trustedHeadSha, requiredChecks ("pass"), pendingRows (empty)
 // and legacy: true. It refuses any ticket that carries a structured record or handoff, so the
 // structured path stays the only way to record a ticket that has one. Reads run before the single write.
-import { ClosureStop, FULL_SHA, gh, readComments, upsertRecord } from "./closure-apply.mjs";
+import { FULL_SHA, upsertRecord } from "./closure-completion.mjs";
+import { gh, readComments } from "./closure-github.mjs";
 import { legacyRefusals } from "./closure-legacy-refusals.mjs";
 import { renderCompletionRecord } from "./closure-records.mjs";
+import { ClosureStop } from "./closure-stop.mjs";
 import { readMergedRequiredChecks } from "./required-checks.mjs";
 import { guardedRunner } from "./snapshot-runner.mjs";
 
@@ -31,7 +33,7 @@ function readLive({ runner, repository, pull, issue }) {
     defaultBranch: gh(runner, ["api", `repos/${repository}`])?.default_branch ?? null,
     pull: pullRecord,
     issue: gh(runner, ["api", `repos/${repository}/issues/${issue}`]),
-    comments: readComments(runner, repository, issue),
+    comments: readComments({ runner, repository }, issue),
     checks: readChecks(runner, repository, pullRecord),
   };
 }
@@ -53,7 +55,7 @@ function recordLegacyDelivery({ repository, pull, issue, runner }) {
     pendingRows: [],
     legacy: true,
   });
-  return { records: [upsertRecord(runner, repository, issue, body)], legacy: true };
+  return { records: [upsertRecord({ runner, repository }, issue, body)], legacy: true };
 }
 
 export { recordLegacyDelivery };

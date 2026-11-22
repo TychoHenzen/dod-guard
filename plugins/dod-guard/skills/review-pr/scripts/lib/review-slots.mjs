@@ -1,5 +1,6 @@
 import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
 import { API_REPOSITORY_URL, urlRepository } from "../../../../lib/repository-identity.mjs";
+import { canonicalLens, oneLine, requireEntryShape, requireQuestion } from "./plan-entry.mjs";
 import { REVIEWERS } from "./reviewer-results.mjs";
 
 function isObject(value) {
@@ -95,89 +96,30 @@ function reviewSlots({ changedLines, pbi, subIssues }) {
   ];
 }
 
-// After the main thread checks an investigator's answer, a question is
-// verified, verified after the one allowed repair, or reported as not
-// answerable from the repository.
-const STATUSES = Object.freeze(["verified", "repaired", "unanswered"]);
-
-// A slot holds at most two questions, and each question fits one 240-character
-// line of the review body.
-const MAX_QUESTIONS_PER_SLOT = 2;
-const MAX_QUESTION_CHARS = 240;
-
-function oneLine(value) {
-  return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
-}
-
 // Text that contains HTML could close the details block early.
 function escapeHtml(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
-function namesFiles(question) {
-  return (
-    Array.isArray(question?.files) && question.files.length > 0 && question.files.every((file) => oneLine(file) !== "")
-  );
-}
-
-function isCompleteQuestion(question) {
-  return (
-    REVIEWERS.includes(question?.lens) &&
-    oneLine(question?.id) !== "" &&
-    oneLine(question?.question) !== "" &&
-    namesFiles(question) &&
-    STATUSES.includes(question?.status)
-  );
-}
-
-function isCompleteExclusion(excluded) {
-  return REVIEWERS.includes(excluded?.lens) && oneLine(excluded?.reason) !== "";
-}
-
-// A slot ends the plan with questions or with one exclusion, never both and
-// never neither.
-function requireEntryShape(entry) {
-  const { slot } = entry;
-  const asked = entry.questions !== undefined;
-  const excluded = entry.excluded !== undefined;
-  if (asked && excluded) {
-    throw new Error(`Slot ${slot} has both questions and an exclusion`);
-  }
-  if (!(asked || excluded)) {
-    throw new Error(`Slot ${slot} has neither questions nor an exclusion`);
-  }
-  if (excluded && !isCompleteExclusion(entry.excluded)) {
-    throw new Error(`The exclusion for slot ${slot} needs a reviewer lens and a reason`);
-  }
-  if (asked && !(Array.isArray(entry.questions) && entry.questions.length > 0)) {
-    throw new Error(`Slot ${slot} needs a non-empty questions array`);
-  }
-}
-
-function requireQuestion(question, slot, ids) {
-  if (!isCompleteQuestion(question)) {
-    throw new Error(
-      `Question ${JSON.stringify(question?.id ?? null)} in slot ${slot} ` +
-        "needs an id, a reviewer lens, a question, a files list, " +
-        `and a status of ${STATUSES.join(", ")}`,
-    );
-  }
-  const id = oneLine(question.id);
-  const length = oneLine(question.question).length;
-  if (length > MAX_QUESTION_CHARS) {
-    throw new Error(`Question ${id} in slot ${slot} is ${length} characters; the limit is ${MAX_QUESTION_CHARS}`);
-  }
-  if (ids.has(id)) {
-    throw new Error(`Question ${id} appears more than once`);
-  }
-  ids.add(id);
-}
-
 function entryLenses(entry) {
-  return entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
+  const lenses = entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
+  return lenses.map(canonicalLens);
+}
+
+// A slot holds at most two questions, so the investigation stays sized to the
+// diff.
+const MAX_QUESTIONS_PER_SLOT = 2;
+
+// ASSUMPTION: every lens needs a question or an exclusion, and a slot holds
+// questions or one exclusion, so a plan with fewer slots than half the lenses
+// (a deletion-only diff with one criterion gives one slot) may put more than
+// two questions on a slot, up to what covering every lens needs.
+function questionLimit(slotCount) {
+  return Math.max(MAX_QUESTIONS_PER_SLOT, Math.ceil(REVIEWERS.length / Math.max(slotCount, 1)));
 }
 
 function requirePlanEntries(plan, generated) {
+  const limit = questionLimit(generated.size);
   const planned = new Set();
   const ids = new Set();
   for (const entry of plan) {
@@ -192,8 +134,8 @@ function requirePlanEntries(plan, generated) {
     }
     planned.add(slot);
     requireEntryShape(entry);
-    if (Array.isArray(entry.questions) && entry.questions.length > MAX_QUESTIONS_PER_SLOT) {
-      throw new Error(`Slot ${slot} has ${entry.questions.length} questions; the limit is ${MAX_QUESTIONS_PER_SLOT}`);
+    if (entry.questions && entry.questions.length > limit) {
+      throw new Error(`Slot ${slot} has ${entry.questions.length} questions; the limit is ${limit}`);
     }
     for (const question of entry.questions ?? []) {
       requireQuestion(question, slot, ids);
@@ -232,12 +174,12 @@ function slotHeading(item) {
 function entryLines(entry) {
   if (entry.excluded) {
     const { lens, reason } = entry.excluded;
-    return [`- excluded for ${lens}: ${escapeHtml(oneLine(reason))}`];
+    return [`- excluded for ${canonicalLens(lens)}: ${escapeHtml(oneLine(reason))}`];
   }
   return entry.questions.map((question) => {
     const id = escapeHtml(oneLine(question.id));
     const text = escapeHtml(oneLine(question.question));
-    return `- ${id} ${question.lens} (${question.status}): ${text}`;
+    return `- ${id} ${canonicalLens(question.lens)} (${question.status}): ${text}`;
   });
 }
 
@@ -265,13 +207,4 @@ function slotsByLens(plan) {
   return byLens;
 }
 
-export {
-  MAX_QUESTION_CHARS,
-  MAX_QUESTIONS_PER_SLOT,
-  pbiIssue,
-  requirePlan,
-  reviewSlots,
-  slotsBlock,
-  slotsByLens,
-  subIssueList,
-};
+export { pbiIssue, requirePlan, reviewSlots, slotsBlock, slotsByLens, subIssueList };

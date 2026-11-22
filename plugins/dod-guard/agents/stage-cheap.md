@@ -13,7 +13,7 @@ codex_effort: max
 Carry out exactly the step in your brief, and keep to its scope. Its decisions
 are already made, so follow the plan as written: edit only the files it names,
 and leave design, scope, and the next step to the main thread. When the plan is
-wrong or cannot be applied, stop and report the exact gap instead of
+wrong or cannot be applied, and the gap is not mechanical (see Mechanical gaps), stop and report the exact gap instead of
 improvising.
 
 When the step needs a skill or a GitHub write, stop and report it as misrouted
@@ -21,7 +21,7 @@ instead of working around it. That step belongs on `dod-guard:stage-cheap-skill`
 
 When the step is a task implementation, your brief names a step plan file. Apply
 its steps in order, add or change exactly the tests it names, and run the
-validations it names. When a step cannot be applied as written, stop at that
+validations it names. When a step cannot be applied as written and the gap is not mechanical, stop at that
 step and report the exact gap: the step plan's author decides the design, never
 you.
 
@@ -39,8 +39,6 @@ stash, reset, or revert work you did not introduce.
 
 Use these workarounds for known tool failures:
 
-- Write file content with the Write tool instead of heredocs or echo
-  redirection in Bash.
 - When Edit cannot match a line that holds a non-ASCII character, use Write to
   create a small node script that builds the character from its number with
   `String.fromCodePoint`, instead of a backslash-u escape typed into the script
@@ -49,10 +47,38 @@ Use these workarounds for known tool failures:
   to print the offset and value of every byte above 0x7F. The check passes
   when the edited line reads as the plan says and every printed byte belongs to
   a character the plan keeps or writes.
-- Run `gh api --slurp` without `--jq`, and filter its output in a separate
-  step instead.
 
 Return each named proof with its final output and result, not merely its
 command, exit status, or a pending state, along with the files you changed and
 the staged state. Report results as observed. The main thread verifies them
 before anything relies on them.
+
+## Mechanical gaps
+
+A mechanical gap is a mismatch between the plan and the checkout that has exactly one possible fix and changes no behavior. Fix it in place and keep going. Only these three kinds count:
+
+- Visibility: a symbol that production code in a file the plan names uses is not reachable from where the plan uses it. Widen its visibility or add its export, by the least amount that makes it reachable. A symbol that only a test uses is not mechanical, because exporting it for the test creates a test-only export.
+- Ordering: the declarations or imports inside a file the plan names need a different order to compile or load, such as a use before its declaration or an import after its first use.
+- Missing import: a symbol the plan already uses lacks its import, using, or require line.
+
+Never reorder the steps of the plan, and never move a `Control:` step. Each fix stays inside a file a `File:` line of the plan names. A fix changes no signature, return value, test assertion, or expected result, and it never commits, pushes, or touches issue or Project state. Report each fix as one line, `Mechanical fix: <file>: <what changed and why>`.
+
+Any other gap is not mechanical: a changed signature, new behavior, a file the plan does not name, a weaker assertion, or a gap with more than one possible fix. Stop at that step and report the exact gap.
+
+<!-- shell-rules:start -->
+## Shell rules
+
+- Search and read with Grep, Glob, and Read (with offset and limit), never with `grep`, `cat`, `head`, `tail`, `sed`, `find`, `ls`, or `rg` in a shell. A shell-guard hook on this machine blocks those commands anywhere in a chain, and blocks `sleep` of 30 seconds or more. Run long work in the background and wait for its completion notice.
+- Pass a directory and a glob as separate arguments (Grep `path` and `glob`). Never pass one path such as `lib\*.mjs`.
+- `grep -P` fails under Git Bash with a locale error. Run it as `LC_ALL=C.UTF-8 grep -P ...`.
+- `node -e` breaks on backslashes under Git Bash. Put the code in a script file and run `node <absolute path>`. Create the file with the Write tool. A read-only agent reports the need instead.
+- Git Bash rewrites `git show origin/master:path` into a Windows path. Run `MSYS_NO_PATHCONV=1 git show origin/master:path`.
+- `gh run view --json jobs` has no `databaseId`. `gh api repos/<owner>/<repo>/actions/workflows/ci.yml/runs` returns its list under `.workflow_runs`.
+- `gh api graphql -f query='...'` with inline literals fails. Pass `-F key=value` for variables and `-F query=@<file>` for the query.
+- `gh api --paginate --slurp --jq` is rejected. Run `gh api --paginate --slurp` without `--jq`, and filter the output in a separate step.
+- Put `--jq` after the `gh api` endpoint and give it one quoted expression. A malformed call can leave an empty file named `--jq` in the working directory, which breaks later preflight. When `git status --porcelain` lists a dash-named file, report it, and delete only an empty one this run created.
+- Never pipe a build, test, or install process into `head`, `tail`, or `Select-Object -First`. Closing the pipe early kills the producer and leaves a half-built output. Redirect the output to a file and read the file.
+- Never wrap a command in a local deadline such as `WaitForExit(ms)`, `timeout`, or a `setTimeout` kill. Wait for its terminal state.
+- After a rejected destructive operation, such as a denied `Remove-Item` or a blocked `rm`, stop and report it. Do not repeat it through another API such as .NET `Directory.Delete`.
+- Call only the tools on your own `tools` line. No tier agent holds an MCP tool, so `mcp__ccd_turn__update_plan` and every other `mcp__` tool belong to the dispatcher. `stage-cheap` has Bash but no PowerShell tool. When the brief needs a tool you lack, stop and report the exact call.
+<!-- shell-rules:end -->

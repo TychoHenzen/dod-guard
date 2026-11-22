@@ -34,14 +34,20 @@ function unresolvedReviewThread(node) {
   };
 }
 
-function reviewThreadConnection(data) {
+function requireNoGraphqlErrors(data) {
   if (Array.isArray(data?.errors) && data.errors.length > 0) {
     throw new Error(`GraphQL response carried errors: ${JSON.stringify(data.errors)}`);
   }
+}
+
+function isConnection(value) {
+  return isPlainObject(value) && Array.isArray(value.nodes) && isPlainObject(value.pageInfo);
+}
+
+function reviewThreadConnection(data) {
+  requireNoGraphqlErrors(data);
   const reviewThreads = data?.data?.repository?.pullRequest?.reviewThreads;
-  const hasConnection =
-    isPlainObject(reviewThreads) && Array.isArray(reviewThreads.nodes) && isPlainObject(reviewThreads.pageInfo);
-  if (!hasConnection) {
+  if (!isConnection(reviewThreads)) {
     throw new Error("GraphQL response has no reviewThreads object with nodes and pageInfo");
   }
   return reviewThreads;
@@ -91,6 +97,16 @@ function reviewThreadsArgs(repository, pullNumber, cursor) {
   return args;
 }
 
+// Returns the cursor for the next page, and fails when the server repeats one or sends none, because
+// following it would loop or stop early.
+function nextCursor(endCursor, usedCursors) {
+  if (typeof endCursor !== "string" || endCursor.length === 0 || usedCursors.has(endCursor)) {
+    throw new Error("pagination is incomplete: hasNextPage is true without a new endCursor");
+  }
+  usedCursors.add(endCursor);
+  return endCursor;
+}
+
 function readThreadPages(repository, pullNumber, commandRunner) {
   const threads = [];
   const usedCursors = new Set();
@@ -98,16 +114,10 @@ function readThreadPages(repository, pullNumber, commandRunner) {
   let hasNextPage = true;
   while (hasNextPage) {
     const { data } = ghJson(reviewThreadsArgs(repository, pullNumber, cursor), [0], commandRunner);
-    const { endCursor, hasNextPage: morePages, threads: pageThreads } = readReviewThreadsPage(data);
-    threads.push(...pageThreads);
-    hasNextPage = morePages;
-    if (hasNextPage) {
-      if (typeof endCursor !== "string" || endCursor.length === 0 || usedCursors.has(endCursor)) {
-        throw new Error("pagination is incomplete: hasNextPage is true without a new endCursor");
-      }
-      usedCursors.add(endCursor);
-      cursor = endCursor;
-    }
+    const page = readReviewThreadsPage(data);
+    threads.push(...page.threads);
+    hasNextPage = page.hasNextPage;
+    cursor = hasNextPage ? nextCursor(page.endCursor, usedCursors) : cursor;
   }
   return threads;
 }
