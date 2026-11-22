@@ -1,19 +1,42 @@
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import { closeSync, fstatSync, openSync, readFileSync } from "node:fs";
+import { closeSync, fstatSync, openSync, readFileSync, realpathSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import path from "node:path";
 
 const NEWLINE = 10;
 
-// A cited path must stay under the checkout; an absolute path inside it is fine.
-function insideRoot(root, cited) {
-  const file = path.resolve(root, cited);
+function contains(root, file) {
   const relative = path.relative(root, file);
-  const escapes = path.isAbsolute(relative) || relative.split(path.sep)[0] === "..";
-  if (escapes) {
+  return !(path.isAbsolute(relative) || relative.split(path.sep)[0] === "..");
+}
+
+// Follows every symlink in the path, or returns null when the path does not exist.
+function realPath(file) {
+  try {
+    return realpathSync(file);
+  } catch {
     return null;
   }
-  return file;
+}
+
+// A cited path must stay under the checkout; an absolute path inside it is fine.
+// Containment is checked on the path as written and again after following
+// symlinks, so a link inside the checkout cannot point at a file outside it.
+// Returns the real path to read, the written path when nothing exists there, or
+// null when the path leaves the checkout.
+function insideRoot(root, realRoot, cited) {
+  const file = path.resolve(root, cited);
+  if (!contains(root, file)) {
+    return null;
+  }
+  const real = realPath(file);
+  if (real === null) {
+    return file;
+  }
+  if (!contains(realRoot, real)) {
+    return null;
+  }
+  return real;
 }
 
 // Returns the number of lines of a regular file, or null when the path is not a readable file.
@@ -48,9 +71,10 @@ function linesOf(file, cache) {
 // Builds the check for one checkout. It reads each cited file once.
 function citationCheck(root) {
   const cache = new Map();
+  const realRoot = realPath(root) ?? root;
   return (cited, line) => {
     const named = JSON.stringify(cited);
-    const file = insideRoot(root, cited);
+    const file = insideRoot(root, realRoot, cited);
     if (file === null) {
       return `${named} is outside the checkout`;
     }
