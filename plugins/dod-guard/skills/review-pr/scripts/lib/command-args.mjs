@@ -3,6 +3,7 @@ const REQUIRED = {
   existing: ["reviews"],
   slots: ["diff", "pbi", "sub-issues", "out"],
   violations: ["scan", "diff", "out"],
+  "check-plan": ["slots", "violations", "plan"],
   batches: ["plan", "head", "out-dir"],
   answers: ["plan", "head", "answers-dir", "root", "out"],
   pending: ["plan", "head", "answers-dir", "root"],

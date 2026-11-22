@@ -8,6 +8,7 @@ import { readJsonFile, readTextFile } from "../../../lib/read-text.mjs";
 import { answers, batches, pending } from "./lib/batch-commands.mjs";
 import { candidates, pbiInputs, violations } from "./lib/candidate-commands.mjs";
 import { validArgs } from "./lib/command-args.mjs";
+import { checkPlan } from "./lib/plan-check.mjs";
 import { requireFreshAnswers } from "./lib/review-batches.mjs";
 import { buildReview, existingReview, postedFindings } from "./lib/review-findings.mjs";
 import { reviewSlots } from "./lib/review-slots.mjs";
@@ -46,6 +47,7 @@ const COMMANDS = {
   pending,
   violations,
   candidates,
+  "check-plan": checkPlan,
   build: (args) => {
     requireFreshAnswers(readJsonFile(args.answers), readJsonFile(args.plan), args.head);
     const review = buildReview({

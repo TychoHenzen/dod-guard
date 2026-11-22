@@ -115,6 +115,23 @@ test("build without --answers prints usage", () => {
   });
 });
 
+// The answers file is stamped for the crowded plan, so only the cap can refuse it.
+test("build refuses an over-limit plan and writes nothing", () => {
+  withDir((dir) => {
+    const [first, ...others] = PLAN;
+    const crowded = [{ ...first, questions: [...first.questions, { ...first.questions[0], id: "F3" }] }, ...others];
+    const paths = {
+      ...buildFlags(dir),
+      plan: write(dir, "crowded-plan.json", crowded),
+      answers: write(dir, "answers.json", { planHash: planHash(crowded), headSha: HEAD, answers: [] }),
+    };
+    const result = run(["build", ...buildArgs(paths)]);
+    assert.notEqual(result.status, 0);
+    assert.ok(result.stderr.includes("the limit is 2"), result.stderr);
+    assert.equal(existsSync(paths.out), false);
+  });
+});
+
 test("build names a malformed sub-issue file", () => {
   withDir((dir) => {
     const paths = buildFlags(dir);

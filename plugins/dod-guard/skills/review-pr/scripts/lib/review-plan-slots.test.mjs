@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
+import { requirePostableBody } from "./review-findings.mjs";
 import { findingsFixture } from "./review-pr.test-support.mjs";
 
 const { FIX, UNICODE, SUB_SLOT, PBI, PLAN, scan, question, review } = findingsFixture;
@@ -62,17 +63,15 @@ test("the build refuses a judge result missing a ruling for an assigned slot", (
   );
 });
 
+// The question caps keep a planned body far below the limit, so the guard is
+// proven on the body check itself.
 test("a body over the GitHub limit stops the build before posting", () => {
-  const long = {
-    ...question("F1", "review-pr-feature"),
-    question: "x".repeat(70_000),
-  };
-  const plan = [
-    {
-      slot: `file:${FIX}`,
-      questions: [long, question("D1", "review-pr-design")],
-    },
-    ...PLAN.slice(1),
-  ];
-  assert.throws(() => review([], { scan, plan }), /over the 65536-character limit, with 4 slots/);
+  assert.throws(() => requirePostableBody("x".repeat(65_537), 4), /over the 65536-character limit, with 4 slots/);
+  assert.equal(requirePostableBody("x".repeat(65_536), 4).length, 65_536);
+});
+
+test("an over-long question is refused before the body is built", () => {
+  const long = { ...question("F1", "review-pr-feature"), question: "x".repeat(70_000) };
+  const plan = [{ slot: `file:${FIX}`, questions: [long, question("D1", "review-pr-design")] }, ...PLAN.slice(1)];
+  assert.throws(() => review([], { scan, plan }), /is 70000 characters; the limit is 240/);
 });

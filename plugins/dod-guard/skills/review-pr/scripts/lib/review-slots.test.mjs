@@ -139,6 +139,26 @@ test("an empty diff stops slot generation", () => {
   assert.throws(() => slotsFor(""), /The diff names no changed files/);
 });
 
+test("stops when every changed file is generated", () => {
+  const DistOnly = [
+    "diff --git a/packages/a/dist/bundle.js b/packages/a/dist/bundle.js",
+    "--- a/packages/a/dist/bundle.js",
+    "+++ b/packages/a/dist/bundle.js",
+    "@@ -0,0 +1 @@",
+    "+built",
+    "",
+  ].join("\n");
+  assert.throws(
+    () =>
+      reviewSlots({
+        changedLines: parseChangedLines(DistOnly),
+        pbi: pbiIssue(PBI_JSON, "pbi.json"),
+        subIssues: [],
+      }),
+    /The diff names no changed files/,
+  );
+});
+
 const SLOTS = [
   { slot: "file:src/a.mjs", kind: "file", text: "src/a.mjs" },
   {
@@ -219,6 +239,11 @@ test("a slot with both questions and an exclusion is refused", () => {
   assert.throws(() => requirePlan(plan, SLOTS), /Slot criterion:1 has both questions and an exclusion/);
 });
 
+const INCOMPLETE_QUESTION = [
+  "needs an id, a reviewer lens, a question, a files list,",
+  "and a status of verified, repaired, unanswered",
+].join(" ");
+
 test("an incomplete question is refused and names its slot", () => {
   const incomplete = [
     { id: " " },
@@ -235,7 +260,7 @@ test("an incomplete question is refused and names its slot", () => {
     plan[0].questions[0] = q("F1", "review-pr-feature", change);
     assert.throws(
       () => requirePlan(plan, SLOTS),
-      /in slot file:src\/a\.mjs needs an id, a reviewer lens, a question, a files list, and a status of verified, repaired, unanswered/,
+      (error) => error.message.includes(`in slot file:src/a.mjs ${INCOMPLETE_QUESTION}`),
     );
   }
   const plan = PLAN();
@@ -272,6 +297,39 @@ test("a lens with no question or exclusion is refused", () => {
   const plan = PLAN();
   plan[2].excluded.lens = "review-pr-design";
   assert.throws(() => requirePlan(plan, SLOTS), /No question or exclusion for review-pr-hygiene/);
+});
+
+test("a slot with three questions is refused and names the limit", () => {
+  const plan = PLAN();
+  plan[0].questions.push(q("F3", "review-pr-feature"));
+  assert.throws(() => requirePlan(plan, SLOTS), /Slot file:src\/a\.mjs has 3 questions; the limit is 2/);
+});
+
+test("a slot with two questions is accepted", () => {
+  assert.doesNotThrow(() => requirePlan(PLAN(), SLOTS));
+});
+
+// A deletion-only diff with one criterion gives one slot, which must carry a
+// question for every lens.
+test("a plan with one slot may ask every lens there, and no more", () => {
+  const lone = [SLOTS[1]];
+  const lenses = ["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"];
+  const asked = lenses.map((lens, index) => q(`C${index + 1}`, lens));
+  assert.doesNotThrow(() => requirePlan([{ slot: "criterion:1", questions: asked }], lone));
+  const crowded = [{ slot: "criterion:1", questions: [...asked, q("C5", "review-pr-feature")] }];
+  assert.throws(() => requirePlan(crowded, lone), /Slot criterion:1 has 5 questions; the limit is 4/);
+});
+
+test("a question of 241 characters is refused and names the limit", () => {
+  const plan = PLAN();
+  plan[1].questions[0].question = "x".repeat(241);
+  assert.throws(() => requirePlan(plan, SLOTS), /is 241 characters; the limit is 240/);
+});
+
+test("a question of 240 characters is accepted", () => {
+  const plan = PLAN();
+  plan[1].questions[0].question = "x".repeat(240);
+  assert.doesNotThrow(() => requirePlan(plan, SLOTS));
 });
 
 test("slotsBlock lists every slot with its questions or exclusion, escaped", () => {

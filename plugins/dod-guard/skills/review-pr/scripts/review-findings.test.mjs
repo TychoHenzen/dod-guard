@@ -85,3 +85,13 @@ test("slots without a required flag prints usage", () => {
     assert.match(result.stderr, /Usage:/);
   });
 });
+
+test("check-plan without --plan prints usage", () => {
+  withDir((dir) => {
+    const slots = write(dir, "slots.json", []);
+    const violations = write(dir, "violations.json", []);
+    const result = run(["check-plan", `--slots=${slots}`, `--violations=${violations}`]);
+    assert.equal(result.status, 3);
+    assert.ok(result.stderr.includes("check-plan"), result.stderr);
+  });
+});

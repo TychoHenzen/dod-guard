@@ -46,7 +46,7 @@ node "<skill-dir>/scripts/review-findings.mjs" slots --diff=<unified0.diff> --pb
 
 Diff against the merge base with the PR base branch. The explicit prefixes override user git config. Scripts read changed files, added lines and removed lines from this diff alone.
 
-Slots are `file:<path>` per changed file with an added line, `criterion:<n>` per checkbox under `## Acceptance criteria` (checked or not), and `sub-issue:<owner/name>#<number>` per linked sub-issue. A PBI without sub-issues is valid. Slots are fixed: the planner cannot add, drop, or rename one. Stop on a script error.
+Slots are `file:<path>` per changed file with an added line, `criterion:<n>` per checkbox under `## Acceptance criteria` (checked or not), and `sub-issue:<owner/name>#<number>` per linked sub-issue. A PBI without sub-issues is valid. Slots are fixed: the planner cannot add, drop, or rename one. Generated files (paths with a `dist`, `dist-test`, or `node_modules` segment) and `.uid` or `.import` sidecars are skipped before slots are numbered; a diff with only such files stops with "The diff names no changed files". Stop on a script error.
 
 ## 4. Scan
 
@@ -73,11 +73,15 @@ Every stage gets one brief: PR number and URL, base and head SHAs, slots file, d
 
 One foreground `dod-guard:read-standard` planner returns a JSON array with one entry per slot, copying slot ids exactly. Each entry has `slot` and either `questions` or `excluded`, never both.
 
-- A question has `id` (unique across lenses), `lens`, `question`, `files`, and the targeted risk.
+- A question has `id` (unique across lenses), `lens`, `question`, `files` (never empty), and the targeted risk.
 - A question is neutral. It asks what the code, test or document shows and names no suspected defect, expected answer or verdict. The targeted risk names the failure the question probes, never a conclusion about it.
+- A slot holds at most 2 questions, and a question is at most 240 characters, except a scanner check question, which holds every violation of its file. The one exception to the 2-question limit is a plan with fewer slots than half the lenses, such as a deletion-only diff with one criterion: its slots may hold as many questions as covering every lens needs.
+- Sizing: with at most 3 file slots, ask one question per lens in total, placed on the slot that lens most concerns, and give every other slot one exclusion with its reason; otherwise ask at most 2 per slot.
 - An exclusion is one object, `"excluded": { "lens": "review-pr-hygiene", "reason": "..." }`, never an array.
 - The lenses are `review-pr-feature` (F), `review-pr-design` (D), `review-pr-reliability` (R), and `review-pr-hygiene` (H). Write each in `lens` as shown. The build also accepts the `dod-guard:` prefix the Agent tool takes and reads it as the bare name; it refuses any other name. Each gets at least one question or exclusion.
-- For a file slot with in-scope violations, add scanner check questions with a `scanner` array of the S ids covered. They ask whether the violation shows at the reviewed head, whether the path is generated or excluded, and whether the rule's own condition holds. List only S ids from that slot's file. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file. Put each covered violation's rule, line, and message text in the question itself, so an investigator never needs the scanner output.
+- For a file slot with in-scope violations, ask exactly one scanner check question, with a `scanner` array naming every S id of that file. It asks whether the violation shows at the reviewed head, whether the repository itself excludes the path, and whether the rule's own condition holds; generated paths are already skipped. The build refuses a question whose `scanner` is not an array of S ids, sits in a slot that is not a file slot, or names an unknown S id or one from another file. It also refuses two scanner questions in one file slot and a question that omits an S id of its file. Put each covered violation's rule, line, and message text in the question itself, so an investigator never needs the scanner output.
+
+After the planner returns, run: `node "<skill-dir>/scripts/review-findings.mjs" check-plan --slots=<slots.json> --violations=<violations.json> --plan=<plan.json>`. On failure, send the exact message back to the planner once for a corrected plan; a second failure stops the review with that message.
 
 ### Investigate
 
@@ -91,7 +95,7 @@ The command first checks the plan's shape and refuses a malformed entry before i
 
 #### Investigator batch
 
-Read the batch file. For each question, read the files it names and whatever else you need. Write one file, the answers file your brief names, and no other file. Edit nothing in the checkout, make no Git or provider change, and run no command that writes. The file is a JSON object with `planHash`, `headSha` and `batch` copied from the batch file and an `answers` array with one entry per question: `{ "slot", "id", "status": "answered", "path", "line", "fact" }` with the path and line you read, as a file in the checkout and a line that exists in it (never a description such as "earlier reads"), and the fact found there, or `{ "slot", "id", "status": "unanswered", "searched" }` when the repository does not answer it, naming what you searched. Give no verdict, severity or fix. Return the answers file path and the counts of answered and unanswered entries, and nothing else.
+Read the batch file. For each question, read the files it names and whatever else you need. Write one file, the answers file your brief names, and no other file. Edit nothing in the checkout, make no Git or provider change, and run no command that writes. The file is a JSON object with `planHash`, `headSha` and `batch` copied from the batch file and an `answers` array with one entry per question: `{ "slot", "id", "status": "answered", "path", "line", "fact" }` with the path and line you read, as a file in the checkout and a line that exists in it (never a description such as "earlier reads"), and the fact found there, or `{ "slot", "id", "status": "unanswered", "searched" }` when the repository does not answer it, naming what you searched. The scanner's line-length rule: a line is medium above the width N printed in its violation message (width N) and high above the larger of N and 120. Give no verdict, severity or fix. Return the answers file path and the counts of answered and unanswered entries, and nothing else.
 
 ### Verify
 

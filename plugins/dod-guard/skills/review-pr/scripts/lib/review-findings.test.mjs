@@ -177,6 +177,27 @@ test("a clean review approves and carries the marker", () => {
   assert.deepEqual(existingReview([{ id: 1, body: "LGTM" }]), { found: false });
 });
 
+test("existingReview ignores empty-bodied and null-bodied reviews around the marked one", () => {
+  const { payload } = review([]);
+  const reviews = [
+    { id: 1, body: "" },
+    { id: 2, body: null },
+    { id: 3, body: payload.body, html_url: "u" },
+    { id: 4, body: "" },
+  ];
+  assert.deepEqual(existingReview(reviews), {
+    found: true,
+    reviewId: 3,
+    headSha: HEAD,
+    recommendation: "APPROVE",
+    url: "u",
+  });
+});
+
+test("existingReview reports not found when only empty reviews exist", () => {
+  assert.deepEqual(existingReview([{ id: 1, body: "" }, { id: 2 }]), { found: false });
+});
+
 test("an empty diff or one written with other prefixes stops the build", () => {
   // diff.mnemonicPrefix writes c/ and w/ where the parser expects a/ and b/.
   const prefixed = diff

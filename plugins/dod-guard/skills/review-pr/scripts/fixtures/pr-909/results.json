@@ -6,8 +6,7 @@
         "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
         "status": "FINDING",
         "evidence": "F1: line 90 compares the whole result object"
-      },
-      { "slot": "criterion:1", "status": "VERIFIED", "evidence": "F2: line 92 names the record" }
+      }
     ],
     "findings": [
       {
@@ -39,7 +38,7 @@
     "reviewer": "review-pr-reliability",
     "rulings": [
       {
-        "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
+        "slot": "criterion:1",
         "status": "VERIFIED",
         "evidence": "R1: withTempFile removes the file in a finally block"
       }
@@ -50,7 +49,7 @@
     "reviewer": "review-pr-hygiene",
     "rulings": [
       {
-        "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
+        "slot": "criterion:1",
         "status": "FINDING",
         "evidence": "H1: line 90 pins the full JSON shape"
       }
@@ -58,7 +57,7 @@
     "findings": [
       {
         "severity": "MINOR",
-        "slot": "file:plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mjs",
+        "slot": "criterion:1",
         "file": "plugins\\dod-guard\\skills\\next-ticket\\scripts\\handoff-proof.test.mjs",
         "line": 90,
         "problem": "The test pins every field of the JSON the command prints",

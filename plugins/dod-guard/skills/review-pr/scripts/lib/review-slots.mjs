@@ -73,7 +73,7 @@ function subIssueList(value, source) {
 function reviewSlots({ changedLines, pbi, subIssues }) {
   // Approving a review that saw no changed file would be false.
   if (changedLines.size === 0) {
-    throw new Error("The diff names no changed files");
+    throw new Error("The diff names no changed files (generated files and sidecars are skipped)");
   }
   const criteria = acceptanceCriteria(pbi.body);
   if (criteria.length === 0) {
@@ -106,7 +106,26 @@ function entryLenses(entry) {
   return lenses.map(canonicalLens);
 }
 
+// A slot holds at most two questions, so the investigation stays sized to the
+// diff.
+const MAX_QUESTIONS_PER_SLOT = 2;
+
+// ASSUMPTION: every lens needs a question or an exclusion, and a slot holds
+// questions or one exclusion, so a plan with fewer slots than half the lenses
+// (a deletion-only diff with one criterion gives one slot) may put more than
+// two questions on a slot, up to what covering every lens needs.
+function questionLimit(slotCount) {
+  return Math.max(MAX_QUESTIONS_PER_SLOT, Math.ceil(REVIEWERS.length / Math.max(slotCount, 1)));
+}
+
+function requireQuestionCount(slot, questions, limit) {
+  if (questions.length > limit) {
+    throw new Error(`Slot ${slot} has ${questions.length} questions; the limit is ${limit}`);
+  }
+}
+
 function requirePlanEntries(plan, generated) {
+  const limit = questionLimit(generated.size);
   const planned = new Set();
   const ids = new Set();
   for (const entry of plan) {
@@ -121,7 +140,9 @@ function requirePlanEntries(plan, generated) {
     }
     planned.add(slot);
     requireEntryShape(entry);
-    for (const question of entry.questions ?? []) {
+    const questions = entry.questions ?? [];
+    requireQuestionCount(slot, questions, limit);
+    for (const question of questions) {
       requireQuestion(question, slot, ids);
     }
   }

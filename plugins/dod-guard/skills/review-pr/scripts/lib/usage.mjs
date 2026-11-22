@@ -8,6 +8,8 @@ const USAGE = [
   "    --sub-issues=<sub-issues.json> --out=<slots.json>",
   "  review-findings.mjs violations --scan=<scan.json> --diff=<unified0.diff>",
   "    --out=<violations.json>",
+  "  review-findings.mjs check-plan --slots=<slots.json> --violations=<violations.json>",
+  "    --plan=<plan.json>",
   "  review-findings.mjs batches --plan=<plan.json> --head=<sha> --out-dir=<batches-dir>",
   "  review-findings.mjs answers --plan=<plan.json> --head=<sha> --answers-dir=<answers-dir> --root=<checkout>",
   "    --out=<answers.json>",
