@@ -148,11 +148,11 @@ function applyRepoLimits(scan, { widthFor, floors }) {
   const kept = [];
   for (const violation of scan.violations) {
     const judged = withWidth(violation, widthFor);
-    if (judged === null || belowFloor(judged, floors)) {
-      removed[violation.rule] = (removed[violation.rule] ?? 0) + 1;
-    } else {
+    if (judged !== null && !belowFloor(judged, floors)) {
       kept.push(judged);
+      continue;
     }
+    removed[violation.rule] = (removed[violation.rule] ?? 0) + 1;
   }
   return { scan: { ...scan, violations: kept }, removed };
 }

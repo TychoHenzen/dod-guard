@@ -62,36 +62,57 @@ function characterSet(content) {
   return `[${escapeClass(content)}]`;
 }
 
+// Each reader turns the token at `i` into [regex source, characters used],
+// or null when the token is not its kind.
+function globstar(glob, i) {
+  if (glob[i] !== "*" || glob[i + 1] !== "*") return null;
+  return glob[i + 2] === "/" ? ["(?:.*/)?", 3] : [".*", 2];
+}
+
+function wildcard(glob, i) {
+  if (glob[i] === "*") return ["[^/]*", 1];
+  if (glob[i] === "?") return ["[^/]", 1];
+  return null;
+}
+
+// An empty "[]" or an unclosed "[" is a literal bracket.
+function bracket(glob, i) {
+  if (glob[i] !== "[") return null;
+  const end = glob.indexOf("]", i + 1);
+  if (end <= i + 1) return null;
+  return [characterSet(glob.slice(i + 1, end)), end + 1 - i];
+}
+
+function brace(glob, i) {
+  if (glob[i] !== "{") return null;
+  const end = closingBrace(glob, i);
+  if (end === -1) return null;
+  return [braceBody(glob.slice(i + 1, end)), end + 1 - i];
+}
+
+function escaped(glob, i) {
+  if (glob[i] !== "\\" || i + 1 >= glob.length) return null;
+  return [escapeRegex(glob[i + 1]), 2];
+}
+
+const READERS = [globstar, wildcard, bracket, brace, escaped];
+
+// Any token no reader claims is a literal character.
+function readToken(glob, i) {
+  for (const read of READERS) {
+    const token = read(glob, i);
+    if (token !== null) return token;
+  }
+  return [escapeRegex(glob[i]), 1];
+}
+
 function translate(glob) {
   let out = "";
   let i = 0;
   while (i < glob.length) {
-    const ch = glob[i];
-    if (ch === "*" && glob[i + 1] === "*") {
-      const slash = glob[i + 2] === "/";
-      out += slash ? "(?:.*/)?" : ".*";
-      i += slash ? 3 : 2;
-    } else if (ch === "*") {
-      out += "[^/]*";
-      i += 1;
-    } else if (ch === "?") {
-      out += "[^/]";
-      i += 1;
-    } else if (ch === "[" && glob.indexOf("]", i + 1) > i + 1) {
-      const end = glob.indexOf("]", i + 1);
-      out += characterSet(glob.slice(i + 1, end));
-      i = end + 1;
-    } else if (ch === "{" && closingBrace(glob, i) !== -1) {
-      const end = closingBrace(glob, i);
-      out += braceBody(glob.slice(i + 1, end));
-      i = end + 1;
-    } else if (ch === "\\" && i + 1 < glob.length) {
-      out += escapeRegex(glob[i + 1]);
-      i += 2;
-    } else {
-      out += escapeRegex(ch);
-      i += 1;
-    }
+    const [source, length] = readToken(glob, i);
+    out += source;
+    i += length;
   }
   return out;
 }

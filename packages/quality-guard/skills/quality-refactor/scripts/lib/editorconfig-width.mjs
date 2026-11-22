@@ -8,30 +8,46 @@ import { matchesSection } from "./editorconfig-glob.mjs";
 
 const FILE_NAME = ".editorconfig";
 
+const isBlankOrComment = (line) =>
+  line === "" || line.startsWith("#") || line.startsWith(";");
+
+// The pattern of a "[pattern]" header line, or null for any other line.
+const headerPattern = (line) =>
+  line.startsWith("[") && line.endsWith("]") ? line.slice(1, -1) : null;
+
+function keyValue(line) {
+  const eq = line.indexOf("=");
+  if (eq === -1) return null;
+  const key = line.slice(0, eq).trim().toLowerCase();
+  return { key, value: line.slice(eq + 1).trim() };
+}
+
+// Before the first section only root counts; inside one, max_line_length.
+function applyPair(config, section, { key, value }) {
+  if (section !== null) {
+    if (key === "max_line_length") section.maxLineLength = value;
+    return;
+  }
+  if (key === "root" && value.toLowerCase() === "true") config.root = true;
+}
+
 // Keeps the last value per section and whether the preamble sets root = true.
 function parseEditorconfig(text) {
-  let root = false;
-  const sections = [];
+  const config = { root: false, sections: [] };
   let current = null;
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
-    if (line === "" || line.startsWith("#") || line.startsWith(";")) continue;
-    if (line.startsWith("[") && line.endsWith("]")) {
-      current = { pattern: line.slice(1, -1), maxLineLength: undefined };
-      sections.push(current);
+    if (isBlankOrComment(line)) continue;
+    const pattern = headerPattern(line);
+    if (pattern !== null) {
+      current = { pattern, maxLineLength: undefined };
+      config.sections.push(current);
       continue;
     }
-    const eq = line.indexOf("=");
-    if (eq === -1) continue;
-    const key = line.slice(0, eq).trim().toLowerCase();
-    const value = line.slice(eq + 1).trim();
-    if (current === null) {
-      if (key === "root" && value.toLowerCase() === "true") root = true;
-    } else if (key === "max_line_length") {
-      current.maxLineLength = value;
-    }
+    const pair = keyValue(line);
+    if (pair !== null) applyPair(config, current, pair);
   }
-  return { root, sections };
+  return config;
 }
 
 // Only a positive integer is a width. "off" and anything else is no value.

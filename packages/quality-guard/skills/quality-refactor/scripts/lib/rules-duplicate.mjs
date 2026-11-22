@@ -4,8 +4,12 @@ import { suggestionFor } from "./rule-suggestions.mjs";
 const TRIVIAL_LINE = /^[\s{}()[\];,]*$/;
 const COMMENT_LINE = /^\s*(\/\/|#|\*|\/\*)/;
 const IMPORT_LINE = /^\s*(import|export)\b[^;]*\bfrom\b/;
-// Only directive forms match; "using var x = ..." and "using (...)" are statements and fail the single-name-then-semicolon shape.
-const CS_USING = /^\s*(?:global\s+)?using\s+(?:static\s+)?(?:\w+\s*=\s*)?[\w.:]+(?:<[^>]*>)?\s*;\s*$/;
+// Only directive forms match; "using var x = ..." and "using (...)" are
+// statements and fail the single-name-then-semicolon shape.
+const CS_USING = new RegExp(
+  String.raw`^\s*(?:global\s+)?using\s+(?:static\s+)?` +
+    String.raw`(?:\w+\s*=\s*)?[\w.:]+(?:<[^>]*>)?\s*;\s*$`,
+);
 const MIN_DISTINCT_LINES = 4;
 
 function normalizeLines(file) {
