@@ -56,17 +56,20 @@ function realScan(root) {
 
 const summary = (scan) => scan.violations.map(({ rule, line, severity }) => `${rule}:${line}:${severity}`).sort();
 
+// The scanner reads .editorconfig itself (issue 988), so the 103-char line is
+// never flagged and the 133-char one already carries width 120.
 test("the real scan of a width-120 repository keeps only what its own limits flag", () => {
   const root = limitedRepository();
   try {
     const raw = realScan(root);
-    assert.deepEqual(summary(raw), ["file-length:1:medium", "line-length:3:medium", "line-length:4:high"]);
+    assert.deepEqual(summary(raw), ["file-length:1:medium", "line-length:4:high"]);
+    assert.equal(raw.violations.find(({ rule }) => rule === "line-length").widthSource, ".editorconfig");
     const limits = repoLimits(root);
     assert.deepEqual(limits.floors, { "line-length": "high", "file-length": "high" });
     const { scan, removed } = applyRepoLimits(raw, limits);
     assert.deepEqual(summary(scan), ["line-length:4:high"]);
     assert.equal(scan.violations[0].message, "line is 133 chars (width 120)");
-    assert.deepEqual(removed, { "file-length": 1, "line-length": 1 });
+    assert.deepEqual(removed, { "file-length": 1 });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -98,4 +101,14 @@ test("a line-length finding at a formatter width is left alone", () => {
   const limits = { widthFor: () => 120, floors: {} };
   assert.deepEqual(applyRepoLimits({ violations: [formatted] }, limits).scan.violations, [formatted]);
   assert.deepEqual(applyRepoLimits({ violations: [violation] }, limits).scan.violations, []);
+});
+
+// A scanner older than issue 988 reports .editorconfig files at the default
+// width, so the review still rejudges those findings itself.
+test("a default-width line-length finding is rejudged at the editorconfig width", () => {
+  const violation = { file: "a.cs", line: 4, rule: "line-length", severity: "medium", metric: 133 };
+  const limits = { widthFor: () => 120, floors: {} };
+  const [judged] = applyRepoLimits({ violations: [violation] }, limits).scan.violations;
+  assert.equal(judged.severity, "high");
+  assert.equal(judged.message, "line is 133 chars (width 120)");
 });
