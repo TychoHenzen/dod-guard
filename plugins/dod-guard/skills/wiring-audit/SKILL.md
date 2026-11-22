@@ -42,13 +42,15 @@ Classify each relevant surface as `verified`, `missing`, `contradicted`, `unveri
 
 Cite evidence with a precise path and line, heading, symbol, route, command, or configuration key. A vague pointer such as "the docs" does not count.
 
+Before you mark a surface `missing`, run Grep for the feature's identifier (command name, flag, or config key) over the source, `README*`, `docs/`, and the plugin or package manifest. Record every path you searched under `Evidence limits:`. Record a location that does not exist as absent, and never read an empty result from a location you did not search as proof of absence. A surface with an absent or unsearchable location is `unverified`, not `missing`.
+
 If a required surface cannot be inspected, mark it `unverified` and name the evidence you lack. An empty search proves nothing until you have checked both the source and the documentation locations.
 
 ## Report
 
 Tag each finding as required, optional, or unverified. Report the verified coverage for each stage of the path.
 
-Every finding carries three fields: `Evidence limits:` for what you could not check, `Minimal next action:` for the smallest change that closes the gap, and `Verification:` for how to confirm the change worked. Do not implement the finding. Hand it back and stop.
+Every finding carries three fields: `Evidence limits:` for what you could not check and, for a `missing` surface, the paths you searched, `Minimal next action:` for the smallest change that closes the gap, and `Verification:` for how to confirm the change worked. Do not implement the finding. Hand it back and stop.
 
 Use this shape:
 

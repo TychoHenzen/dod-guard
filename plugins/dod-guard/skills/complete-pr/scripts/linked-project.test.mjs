@@ -79,7 +79,7 @@ test("R1: one open link prints resolved, every field, exit 0", () => {
   assert.deepEqual(JSON.parse(result.out), {
     outcome: "resolved",
     repository: REPOSITORY,
-    project: { ...OWNER, number: 2, title: ALL_REPOSITORIES, id: "PVT_2" },
+    project: { ...OWNER, number: 2, title: ALL_REPOSITORIES, id: "PVT_2", itemCount: 0 },
   });
   assertOneDocumentedRead(result.calls);
 });

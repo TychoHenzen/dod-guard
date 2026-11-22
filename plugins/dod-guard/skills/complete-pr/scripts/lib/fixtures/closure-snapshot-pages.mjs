@@ -94,7 +94,14 @@ function valuePages() {
 
 // The repository's explicit links. Project 3 is closed, so it is dropped before
 // counting and never read.
-const LINKED = [linkedProjectNode(2), linkedProjectNode(3, { closed: true })];
+// The linked-Project answer for items pages: one open Project whose count is
+// the rows served, and a closed one.
+function linkedFor(pages) {
+  return [
+    linkedProjectNode(2, { itemCount: pages.flat().length }),
+    linkedProjectNode(3, { closed: true }),
+  ];
+}
 
 function setStatus(pages, nodeId, value) {
   const entry = pages.flat().find((item) => item.node_id === nodeId);
@@ -251,7 +258,7 @@ export {
   COMMENT_BODY,
   EPIC_BODY,
   HEAD,
-  LINKED,
+  linkedFor,
   MERGE,
   PAGE_VARIANTS,
   REJECTED_NAMES,

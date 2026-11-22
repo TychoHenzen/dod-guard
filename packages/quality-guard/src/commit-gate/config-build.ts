@@ -9,6 +9,7 @@ import {
   parseStrings,
   record,
 } from "./config-parse.js";
+import { excludePathList } from "./config-parse-paths.js";
 
 const CONFIG_KEYS = [
   "pathGroups",
@@ -16,6 +17,7 @@ const CONFIG_KEYS = [
   "directTypeLimit",
   "genericBuckets",
   "generatedPaths",
+  "excludePaths",
   "testPaths",
   "lowLevelPathGroups",
   "fluentMarkers",
@@ -28,6 +30,7 @@ function optionalPaths(input: Record<string, unknown>) {
       input.generatedPaths === undefined
         ? []
         : parseStrings(input.generatedPaths, [], "generatedPaths"),
+    excludePaths: excludePathList(input.excludePaths),
     testPaths:
       input.testPaths === undefined
         ? []

@@ -1,21 +1,17 @@
 // The checks handoff-build.mjs runs on the evidence file, which supplies only
 // what was observed: tasks[] of { id, commit, files[], result } and rows{} keyed
-// by row id of { observed, status, reason? }. Every planned task and row needs
+// by row id of { observed, status, reason?, carryForward? } where carryForward is
+// { fromHead, paths } (handoff-build.mjs --root checks it). Every planned task and row needs
 // exactly one entry, and no entry may name a task or row the body does not plan
 // or carry another field. Each check returns one message per problem.
-import { ACCEPTANCE_MATRIX_STATUSES } from "../../../lib/acceptance-matrix.mjs";
+
+import { isPlainObject, isText, isTextList } from "../../../lib/handoff-values.mjs";
+import { ACCEPTANCE_MATRIX_STATUSES } from "../../../lib/matrix-observed-status.mjs";
+import { carryEntryProblems } from "./handoff-carry-shape.mjs";
 
 const STATUSES = new Set(ACCEPTANCE_MATRIX_STATUSES);
-const ROW_FIELDS = new Set(["observed", "status", "reason"]);
+const ROW_FIELDS = new Set(["observed", "status", "reason", "carryForward"]);
 const TASK_FIELDS = new Set(["id", "commit", "files", "result"]);
-
-function isPlainObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function isText(value) {
-  return typeof value === "string" && value.trim() !== "";
-}
 
 // ASSUMPTION: an entry that is not a JSON object counts as missing, since the
 // plan names no error for it and reading its fields would throw.
@@ -40,11 +36,12 @@ function rowProblems(id, entry) {
   if (Object.hasOwn(entry, "reason") && !isText(entry.reason)) {
     problems.push(`row ${id} entry reason must be non-empty text`);
   }
+  problems.push(...carryEntryProblems(id, entry));
   return problems;
 }
 
 function hasFiles(entry) {
-  return Array.isArray(entry.files) && entry.files.length > 0 && entry.files.every(isText);
+  return isTextList(entry.files);
 }
 
 function taskEntryProblems(entry) {
@@ -96,4 +93,4 @@ function rowSetProblems(planned, rows) {
   ];
 }
 
-export { isPlainObject, rowSetProblems, taskProblems };
+export { rowSetProblems, taskProblems };

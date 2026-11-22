@@ -9,6 +9,10 @@ import test from "node:test";
 import { planHash } from "./lib/plan-hash.mjs";
 import { buildArgs, buildFlags, HEAD, PLAN } from "./lib/review-findings-build.test-support.mjs";
 import { run, withDir, write } from "./lib/review-findings-cli.test-support.mjs";
+import { unanchoredInputs } from "./lib/review-findings-unanchored.test-support.mjs";
+import { pbiJson } from "./lib/review-pr.test-support.mjs";
+
+const ONE_CRITERION = "## Acceptance criteria\n\n- [ ] AC-01 The review posts once\n";
 
 test("build writes a COMMENT payload with the slot block", () => {
   withDir((dir) => {
@@ -45,6 +49,28 @@ test("build refuses a scanner DROP for a pre-existing reason and writes nothing"
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /do not post: .*S1 DROP reason "pre-existing"/);
     assert.equal(existsSync(paths.out), false);
+  });
+});
+
+test("build refuses a MAJOR finding with no diff line and writes no payload", () => {
+  withDir((dir) => {
+    const { plan, results, merge, diff } = unanchoredInputs("MAJOR");
+    const base = buildFlags(dir);
+    const answers = write(dir, "answers.json", { planHash: planHash(plan), headSha: HEAD, answers: [] });
+    const paths = {
+      ...base,
+      plan: write(dir, "plan.json", plan),
+      results: write(dir, "results.json", results),
+      merge: write(dir, "merge.json", merge),
+      diff: write(dir, "unified0.diff", diff),
+      pbi: write(dir, "one-criterion-pbi.json", pbiJson({ body: ONE_CRITERION })),
+      answers,
+    };
+    const result = run(["build", ...buildArgs(paths)]);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /No diff line can hold an inline comment for 1 BLOCKER or MAJOR finding/);
+    assert.equal(existsSync(paths.out), false);
+    assert.equal(existsSync(paths.comments), false);
   });
 });
 

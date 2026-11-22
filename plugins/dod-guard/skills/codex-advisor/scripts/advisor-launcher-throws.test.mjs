@@ -35,7 +35,7 @@ test("a throw inside resolveCodexExecutable escapes as a rejection", async (t) =
   const env = { PATH: undefined, Path: undefined };
   await assert.rejects(
     runAdvisor({ env, platform: "win32", prompt: "Problem", tempRoot: root, spawnImpl }),
-    (error) => error instanceof TypeError && /split/.test(error.message) && /codex-launch-contract/.test(error.stack),
+    (error) => error instanceof TypeError && /split/.test(error.message) && /codex-executable/.test(error.stack),
   );
   assert.equal(calls.length, 0);
 });

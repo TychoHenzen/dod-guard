@@ -39,7 +39,8 @@ the structured handoff existed. It refuses any ticket that has a structured hand
 and any ticket or pull request that does not verify, and it writes nothing on a refusal.
 snapshot builds that closure snapshot for one repository from GitHub REST GET
 requests and the one read-only GraphQL read that resolves the explicitly linked
-Project, as linked-project.mjs does. The command removes any earlier output
+Project, as linked-project.mjs does. It stops when the items list is shorter or
+longer than the Project's own item count. The command removes any earlier output
 first and writes the new one in one step, so a failed read leaves no file at
 that path.`;
 

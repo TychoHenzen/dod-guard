@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { parseChangedLines } from "./unified-diff.mjs";
+import { parseChangedLines, parseDiffLines } from "./unified-diff.mjs";
 
 // Captured from `git diff --unified=0` with Git's default core.quotePath=true.
 const SPECIAL_PATH_DIFF = [
@@ -74,4 +74,23 @@ test("records final-state lines for special-character paths", () => {
   assert.deepEqual([...changed.get("docs x/p & ü.md")], [1]);
   assert.deepEqual([...changed.get("sp ace.md")], [3]);
   assert.equal(changed.has("gone.md"), false);
+});
+
+test("records the original-state lines a diff removes, per post-image path", () => {
+  const { added, removed } = parseDiffLines(SPECIAL_PATH_DIFF);
+
+  assert.deepEqual(
+    [...removed.values()].map((lines) => [...lines]),
+    [[1], []],
+  );
+  assert.equal(removed.has("gone.md"), false);
+  assert.deepEqual([...removed.keys()], [...added.keys()]);
+});
+
+test("numbers removed lines from the hunk's original start and skips context lines", () => {
+  const diff = ["--- a/x.js", "+++ b/x.js", "@@ -3,2 +3,0 @@", "-a", "-b", "@@ -9,3 +7,1 @@", "-c", " d", "-e"].join(
+    "\n",
+  );
+
+  assert.deepEqual([...parseDiffLines(diff).removed.get("x.js")], [3, 4, 9, 11]);
 });

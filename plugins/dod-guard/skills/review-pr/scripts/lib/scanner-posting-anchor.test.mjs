@@ -6,14 +6,14 @@ import { scannerReview } from "./scanner-review.test-support.mjs";
 
 const REMOVED = "plugins/dod-guard/skills/review-pr/scripts/lib/removed-only.mjs";
 const ADDED = "plugins/dod-guard/skills/review-pr/scripts/lib/added-lines.mjs";
+const keep = (ids) => ({ ids, status: "KEEP" });
 
-test("a MAJOR scanner group on a file with no added line stays in the review body", () => {
+test("a MAJOR scanner group on a file with no added line gets a thread on that file's removed line", () => {
   const message = "file is 600 lines";
   const violations = [
     { file: REMOVED, line: 600, rule: "file-length", severity: "high", message },
     { file: ADDED, line: 10, rule: "line-length", severity: "medium", message: "line is 85 chars" },
   ];
-  const keep = (ids) => ({ ids, status: "KEEP" });
   const files = [ADDED, REMOVED];
   const { payload, counts, recommendation } = scannerReview({
     files,
@@ -24,10 +24,13 @@ test("a MAJOR scanner group on a file with no added line stays in the review bod
   });
   assert.equal(recommendation, "REQUEST_CHANGES");
   assert.deepEqual(counts, { BLOCKER: 0, MAJOR: 1, MINOR: 1 });
-  assert.deepEqual(payload.comments, []);
-  const cited = `\`${REMOVED}:600\` \\(no added line to anchor on\\)`;
-  const heading = "\\*\\*MAJOR\\*\\* quality-guard structural findings \\(1\\)";
-  assert.match(payload.body, new RegExp(`${cited}\\n${heading}`));
+  assert.deepEqual(
+    payload.comments.map((comment) => [comment.path, comment.line, comment.side]),
+    [[REMOVED, 4, "LEFT"]],
+  );
+  assert.match(payload.comments[0].body, /^\*\*MAJOR\*\* quality-guard structural findings \(1\)/);
+  assert.match(payload.comments[0].body, /Cited location: `[^`]*removed-only\.mjs:600`\. This PR only removes lines/);
+  assert.doesNotMatch(payload.body, /no added line/);
 });
 
 test("a MAJOR scanner group on a file with added lines moves to that file's nearest added line", () => {
@@ -35,16 +38,16 @@ test("a MAJOR scanner group on a file with added lines moves to that file's near
     { file: REMOVED, line: 600, rule: "file-length", severity: "high", message: "file is 600 lines" },
     { file: ADDED, line: 600, rule: "file-length", severity: "high", message: "file is 700 lines" },
   ];
-  const keep = (ids) => ({ ids, status: "KEEP" });
   const files = [ADDED, REMOVED];
   const { payload } = scannerReview({ files, line: 10, violations, rule: keep, removed: [REMOVED] });
   assert.deepEqual(
-    payload.comments.map((comment) => [comment.path, comment.line]),
-    [[ADDED, 10]],
+    payload.comments.map((comment) => [comment.path, comment.line, comment.side]),
+    [
+      [ADDED, 10, "RIGHT"],
+      [REMOVED, 4, "LEFT"],
+    ],
   );
   const cited = `Cited location: \`${ADDED}:600\`, which is outside the lines this PR changes\\.`;
   assert.match(payload.comments[0].body, new RegExp(cited));
-  assert.ok(payload.comments.every((comment) => comment.path !== REMOVED));
-  const unanchored = `\`${ADDED}:600\` (no added line to anchor on)`;
-  assert.ok(!payload.body.includes(unanchored));
+  assert.doesNotMatch(payload.body, /no added line/);
 });

@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""Stop hook: checks that the final message of a turn answers the owner in
+plain spoken English, with no more than they need.
+
+The owner reads almost only the last assistant message of each turn, often as
+a phone notification. A reader model plays the owner (gate_reader.py, rules in
+prompts/reader.md) and writes the message the owner wanted. The message fails
+when the owner cannot act on it, or when that draft is much shorter
+(gate_verdict.py). A failing message goes back once, with the draft as the
+target. At session start the same rules go into Claude's context
+(prompts/guide.md). Fails open on any error, with a visible warning. Set
+READABILITY_GATE=off to skip. See README.md.
+"""
+import json
+import os
+import sys
+import time
+
+from gate_reader import TOKEN_PATH, load_prompt, review
+from gate_state import load_state, log, save_state
+from gate_transcript import read_transcript
+
+MIN_CHARS = 80
+# A second block mostly brought new nitpicks instead of a better message, and
+# each one costs the owner another wait.
+MAX_BLOCKS_PER_TURN = 1
+
+
+def feedback(result):
+    text = load_prompt('feedback').replace('{wanted}', result.wanted)
+    return text.replace('{notes}', result.notes)
+
+
+def gate(message, session_id, seen):
+    """Block the stop at most MAX_BLOCKS_PER_TURN times when the reader's
+    review fails the message."""
+    state = load_state(session_id, seen.turn)
+    if state['blocks'] >= MAX_BLOCKS_PER_TURN:
+        return
+    tag = '%s turn=%s' % (session_id[:8], seen.turn[:8])
+    started = time.time()
+    result = review(message, seen)
+    if not result.reason:
+        log('passed %s in %.1fs, %s'
+            % (tag, time.time() - started, result.size))
+        return
+    state['blocks'] += 1
+    save_state(session_id, state)
+    log('blocked %s #%d, %s, %s: %s'
+        % (tag, state['blocks'], result.reason, result.size,
+           result.notes.replace('\n', ' | ')[:500]))
+    print(json.dumps({'decision': 'block', 'reason': feedback(result)}))
+
+
+def handle_stop(data):
+    message = (data.get('last_assistant_message') or '').strip()
+    session_id = data.get('session_id', '')
+    transcript = data.get('transcript_path', '')
+    if len(message) >= MIN_CHARS and session_id and transcript:
+        gate(message, session_id, read_transcript(transcript))
+
+
+def handle_session_start(_data):
+    """Put the writing rules in Claude's context before the first draft:
+    talk-normal works this way, a prompt read before writing."""
+    context = dict(
+        hookEventName='SessionStart', additionalContext=load_prompt('guide'))
+    print(json.dumps({'hookSpecificOutput': context}))
+
+
+HANDLERS = {'SessionStart': handle_session_start, 'Stop': handle_stop}
+
+
+def fail_open(error):
+    log('error: %r' % (error,))
+    # Failing open silently made a dead gate look like a passing one.
+    hint = ''
+    if not os.path.exists(TOKEN_PATH):
+        hint = ' Fix: run `claude setup-token` and save the token in %s.' % (
+            TOKEN_PATH)
+    notice = 'Readability check did not run: %s%s' % (error, hint)
+    print(json.dumps({'systemMessage': notice}))
+
+
+def main():
+    if os.environ.get('READABILITY_GATE', '').lower() == 'off':
+        return
+    try:
+        data = json.loads(sys.stdin.read().lstrip(chr(0xFEFF)))
+        handler = HANDLERS.get(data.get('hook_event_name'))
+        if handler:
+            handler(data)
+    except Exception as e:  # fail open: never trap the session on a gate error
+        fail_open(e)
+
+
+if __name__ == '__main__':
+    main()

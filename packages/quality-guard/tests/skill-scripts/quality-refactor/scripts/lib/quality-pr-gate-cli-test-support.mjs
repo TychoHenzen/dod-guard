@@ -1,6 +1,6 @@
 // Builds throwaway git repositories under the OS temp directory and runs the
 // gate CLI in them, because the gate shells out to git and scans a merge-base
-// worktree that only a real repository can provide.
+// tree that only a real repository can provide.
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -54,7 +54,6 @@ export function runGate(repo, ...extra) {
   const args = [
     GATE,
     "--base=main",
-    "--root=src",
     `--report=${report}`,
     `--comment=${comment}`,
     ...extra,

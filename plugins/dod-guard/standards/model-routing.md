@@ -12,7 +12,8 @@ of effort but low intelligence, sonnet only for tasks that need the added
 intelligence, and opus only when sonnet or haiku cannot figure it out.
 
 The cheap tier is for work that needs a lot of effort but low intelligence:
-implementing one task from its written step plan, applying a written
+implementing one task from its written step plan (unless the plan holds the
+line `Tier: standard`, which makes it standard-tier work below), applying a written
 plan, running validations, regenerating artifacts, reading files to answer
 planned questions, capturing backlog items, and running a stage whose gates
 are fail-closed scripts and named stop codes that the dispatcher re-verifies,
@@ -25,6 +26,14 @@ The standard tier is for tasks that need the added intelligence: planning what
 to look for, deciding scope and acceptance, writing step plans (in
 `dod-guard:refine-backlog-item`), judging evidence into findings, designing
 remediation, and owning a stage whose thread must carry out a failed row.
+
+A task whose step plan holds the line `Tier: standard` is standard-tier work from
+its first dispatch. `dod-guard:refine-backlog-item` writes that line for a task
+that restructures or splits code to clear scanner findings, because a cheap run
+of such a task once guessed an error constant, applied a change its plan
+forbade, and left Biome errors. A plan without the line, or with any other
+`Tier:` value, is cheap work. The `dod-guard:next-ticket` owner reads the line
+and judges nothing.
 
 The strong tier is for escalation only. No stage starts on it; a stage reaches
 it through "Escalation" below.
@@ -50,6 +59,25 @@ A stage that changes files uses the write-capable agent. A stage that only
 plans, reads, or judges uses the read-only agent, or the stage owner's own
 agent when it has one. The one exception is a review-pr investigator batch,
 which runs on the write-capable cheap agent so it writes its own answers file.
+
+## Tool sets
+
+Each tier agent's `tools` line is its whole tool set, and
+`skills/goal-sdlc/scripts/model-routing.test.mjs` pins every line. A brief names
+only a tool its receiving agent holds.
+
+| Agent | Tools |
+|---|---|
+| `dod-guard:stage-standard`, `dod-guard:stage-cheap-skill` | Read, Grep, Glob, Bash, PowerShell, Edit, Write, Agent, Skill, SendMessage, WebSearch, WebFetch |
+| `dod-guard:stage-cheap` | Read, Grep, Glob, Bash, Edit, Write (no PowerShell, Skill, or Agent) |
+| `dod-guard:read-cheap`, `dod-guard:read-standard` | Read, Grep, Glob, Bash (no Edit or Write) |
+
+No tier agent holds an MCP tool, so `mcp__ccd_turn__update_plan` and every other
+`mcp__` tool belong to the dispatcher, which holds the session's own tools. A
+strong-tier row runs on `dod-guard:stage-standard`, so it holds the same tools
+as the standard row and no MCP tool either. A step that needs a tool its agent
+lacks is misrouted: the worker stops and reports the exact call, and the
+dispatcher makes the call or reroutes the step.
 
 ## Applying a tier
 
@@ -143,7 +171,7 @@ the skill-capable agent of the stage's tier: `dod-guard:stage-standard`, or
 `dod-guard:next-ticket` and `dod-guard:review-pr` owners. Those two are the only tier agents that hold the Agent and
 Skill tools. That stage worker is the owner's main thread: it dispatches each
 row at its tier and runs the verification below. A worker dispatched for one row
-never dispatches further, even on a skill-capable agent. In Codex, when a
+never dispatches further, even on a skill-capable agent. The `dod-guard:review-pr` owner dispatches its planner, investigators, judges and merge pass itself, each at that stage's tier even when the tier is above its own, and in the foreground, because a child's reply goes to the thread that dispatched it. In Codex, when a
 spawned agent cannot spawn agents of its own, goal-sdlc's main thread runs that
 owner's procedure itself and dispatches each row directly. In this standard, "main thread" means the thread
 that dispatched the work.
@@ -172,11 +200,24 @@ shape and no other:
    Every later sentence of the row's cell follows as the next line of the brief.
    The dispatcher writes absolute paths: `<plugin-root>` is the plugin root it
    resolved from the directory of the skill it loaded itself, in Claude Code
-   and in Codex alike.
+   and in Codex alike. In the dod-guard source repository, where
+   `plugins/dod-guard/.claude-plugin/plugin.json` exists in the checkout being
+   worked, `<plugin-root>` is that checkout's absolute `plugins/dod-guard` path
+   and not the installed plugin cache, because a cached copy can lag the
+   checkout (a cached `handoff-proof.mjs` once offered only the `refinement`
+   mode). The worker runs every `node <plugin-root>/...` command from it.
 2. The live facts the worker cannot read from the plugin: the repository, the
    issue, the pull request, the branch, the head SHA, the checkpoint a resumed
-   stage starts from, and the attribution line when the stage commits.
+   stage starts from, the checkout plugin root when the previous paragraph
+   names one, and the attribution line when the stage commits.
 3. The evidence to return, as the skill's own result section names it.
+
+4. This closing sentence, verbatim, so every worker receives the rules that
+   cost a failed run when missing: "Run every build and test to completion with
+   its output redirected to a file, and never pipe it into head, tail, or
+   Select-Object -First. Wait for each command's terminal state and wrap none in
+   a deadline. Return no interim statement: your report is complete only when
+   it carries every section named above."
 
 A brief never restates, summarizes, shortens, or replaces any part of a skill,
 and the skill file is the only procedure. A thread never writes a template, a
@@ -193,9 +234,20 @@ dispatcher. A skill-capable worker loads the skill as its first tool call (the
 Skill tool in Claude Code, a read of the skill file in Codex) and
 starts its report with the line `Skill loaded: dod-guard:<name>`, or
 `Standard followed: <path>` for a row that names a standard. A report without
-that line is a failed check. A read-only agent and `dod-guard:stage-cheap` hold
+that line is a failed check. A `dod-guard:stage-standard` worker on a row that
+reads `Follow the step plan in <file>` starts its report with
+`Standard followed: <file>`, the saved plan path. A read-only agent and
+`dod-guard:stage-cheap` hold
 no Skill tool, so their brief is the one the owning skill defines, and they
 return their output as that skill says.
+
+A report that ends in an interim statement such as "waiting for the worker", or
+that lacks a section the brief requested, is a failed check under the two
+verification sections below. The dispatcher does not accept it as a return: it
+sends the stage back once with the exact gap, under the failed-check rule in
+those sections. A validation that ran inside a wrapper with a local deadline, or
+through a pipe that truncates its output, is also a failed check, and its proof
+is run again.
 
 ## Plan, investigate, judge
 
@@ -223,7 +275,7 @@ Cap each investigator at eight questions and ask for a report under 20 KB.
 When a stage has more questions, split them into batches by slot or file. If a
 report comes back over the cap, split that batch and rerun it; never accept the
 long report. Dispatch independent batches in one message (in Codex, in one
-turn) so they run in parallel: investigators share no state and each returns or writes only its own batch.
+turn), at most 10 at a time, so they run in parallel; send further batches only after that message's reports return. Investigators share no state and each returns or writes only its own batch.
 
 ## Verify cheap-tier output
 
@@ -235,7 +287,10 @@ thread checks that:
 - every answer maps to a planned question or plan step;
 - every cited path and line exists at the accepted head and says what the
   answer claims it says;
-- nothing claims a verdict, or a change the step did not ask for;
+- nothing claims a verdict, or a change the step did not ask for, except a
+  `Mechanical fix:` line that names a kind in the "Mechanical gaps" section of
+  `agents/stage-cheap.md` and a file a `File:` line of the step plan names. A
+  mechanical fix of any other kind is a failed check;
 - the changed files and staged state match the diff the step describes, and at
   least one named proof passes when the main thread reruns it;
 - a readback of any issue, pull request, or Project state the step wrote
@@ -253,7 +308,9 @@ planned step or row never commits or pushes, whatever its tier or agent; the
 dispatching main thread does. A run that owns a skill's procedure, such as
 `dod-guard:complete-pr` or `dod-guard:fix-pr-review`, is that skill's main thread even on the
 cheap model, so it commits and pushes as the skill directs, and its dispatcher
-checks every commit and push it reports by reading them back.
+checks every commit and push it reports by reading them back. It reads a push
+back with `git ls-remote --heads origin <branch>`, which must print the reported
+commit SHA.
 
 A failed check sends the same stage back once with the exact gap, under the
 failure-recovery rule in `standards/working-defaults.md`, with no commit or
@@ -272,7 +329,8 @@ A standard worker returns judgements, not citations, so the per-answer check
 above does not apply. Before any later stage relies on standard-tier or
 strong-tier output, the main thread checks that:
 
-- every commit the stage reports exists, is pushed, and matches the diff the
+- every commit the stage reports exists, is pushed (`git ls-remote --heads origin <branch>`
+  prints its SHA), and matches the diff the
   stage describes;
 - the stage's own named proof passes, and was run at the accepted head;
 - a readback of any issue, pull request, or Project state the stage wrote shows
@@ -292,6 +350,11 @@ failure.
 The strong tier is a recovery path. A stage never starts on it: it climbs from
 the cheap tier to the standard tier, and from the standard tier to the strong
 tier, one rung at a time. Each stage climbs a given rung at most once.
+
+A task whose step plan holds `Tier: standard` starts on the standard rung, so
+the cheap-to-standard rung never applies to it. After its one same-tier
+send-back, a second failure climbs straight to the strong rung, by the numbered
+order below.
 
 A stage climbs only after its normal repair has been tried, on one of these
 triggers:
@@ -344,7 +407,11 @@ cheap-to-standard rung skips the advisor. When the sonnet run fails, the
 dispatcher sends it back once, asks `/codex-advisor` its one question, applies
 advice that names a repair at the standard tier, and otherwise runs the stage on
 `model: opus` with the strong effort. A failure on the opus run stops the stage
-as a blocker.
+as a blocker. When the failure record is a task marked `Tier: standard` that
+already failed twice on `dod-guard:stage-standard`, the dispatcher skips the haiku send-back and
+the sonnet rerun, asks `/codex-advisor` its one question, applies advice that
+names a repair at the standard tier, and otherwise runs the stage on `model: opus`
+with the strong effort.
 
 Dispatching a review investigator batch one rung up is not carrying out a failed row. The
 `dod-guard:review-pr` owner reruns a failed investigator batch once on

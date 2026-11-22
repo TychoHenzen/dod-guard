@@ -9,6 +9,9 @@ export const FLAG_HANDLERS = {
   },
   exclude: (options, value) => options.excludes.push(value),
   "test-path": (options, value) => options.testPaths.push(value),
+  "no-config": (options) => {
+    options.noConfig = true;
+  },
   root: (options, value) => {
     options.root = resolve(value);
   },

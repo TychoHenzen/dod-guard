@@ -34,6 +34,23 @@ destructive action.
   `/codex-advisor`: Claude's advisor tool in Claude Code, otherwise Codex with
   `gpt-5.6-sol` at `max` effort. Its advice never replaces the invoking
   skill's repair or proof.
+- Confirm every push. After `git push`, run
+  `git ls-remote --heads origin <branch>` and `git rev-parse HEAD`: the first
+  must print the SHA of the second. A push that exits non-zero is not yet a
+  failed delivery. Read the remote first, because a push that reached origin
+  needs nothing more. When it did not, and the error is a transient connection
+  error such as `Failed to connect to github.com port 443`, retry the push with
+  at most 5 attempts in all, pausing 5, 10, 20, and 20 seconds between attempts
+  (`node -e "setTimeout(()=>{},5000)"` waits 5 seconds; change the number for the
+  others) and reading the remote after each. This is the one exception to the single
+  retry above, because pushing the same commits again is idempotent. An
+  authorization, rejected-update, or non-fast-forward error is not transient:
+  stop at once. When the remote still lacks the head after the last attempt,
+  report the commits as unpushed work with both SHAs, and never call the branch pushed.
+  A checkpoint or handoff comment waits for the confirmed head and is posted
+  without a rescue once the head is on origin. When a skill stops after a task
+  commit, first push the verified commits the same way, or
+  name each commit that stays unpushed.
 - For a skill that commits or pushes, inspect a dirty worktree first. Treat
   ordinary, clearly in-scope pending changes as input to its normal commit
   step: stage only reviewed in-scope paths and commit them on the target
@@ -50,6 +67,9 @@ destructive action.
   unavailable, or holds an active or unsafe user-owned branch, stop and report
   the reason, affected checkout, and recovery path. Never create, switch to, or
   remove a Git worktree.
+  A worktree other than the first entry belongs to someone else. A check for
+  worktrees reads `git worktree list --porcelain` and never fails because
+  another one exists, and nothing touches it.
   The maintenance-only `/publish` route stays in the existing primary checkout
   and never runs a Git worktree command. Classify every pending path first and
   continue only when all paths are clearly release-scoped. Stop and preserve
@@ -60,8 +80,12 @@ destructive action.
   gate is not deferred as "pre-existing". Fix it, or record evidence that it
   is unrelated together with a recovery decision.
 - Never edit an installed plugin cache, such as `~/.claude/plugins/` or a
-  Codex plugin install; an update overwrites it. Fix a defective dod-guard
-  skill in its source repository.
+  Codex plugin install; an update overwrites it. Fix a defective skill in its
+  source checkout, and edit and commit only there. Find the checkout in this
+  order: the current repository when its `.claude-plugin/marketplace.json`
+  lists the plugin, then `~/mcp-servers/dod-guard` for a dod-guard skill, then
+  the skill's own source repository. When none exists, make no edit and report
+  the paths you looked for.
 - When a clear contract and a test disagree, update the stale expectation and
   rerun it. Fix the implementation when it violates the contract. Never
   weaken or delete a test only to make it pass.

@@ -52,11 +52,11 @@ Repository research at master 119d2c30. The strong main thread wrote five questi
 
 ### requirements
 
-- As a maintainer on this machine, the `validate-plugins` output and every `scripts/ci/` source file hold only ASCII, so nothing double-encodes on re-read.
-- As CI, `npm test` fails and names `path:line U+XXXX` when a non-ASCII character is added to any tracked `scripts/ci/` file.
-- As a later implementer (#892), a pure helper exists that reports non-ASCII code points for any `{ path, text }`.
-- Constraints: message wording is unchanged apart from the separator character. Exit codes are unchanged (0 for OK, 1 for FAILED). Authored files and commit messages are ASCII only.
-- Non-goals: see Scope.
+- R-1 As a maintainer on this machine, the `validate-plugins` output and every `scripts/ci/` source file hold only ASCII, so nothing double-encodes on re-read.
+- R-2 As CI, `npm test` fails and names `path:line U+XXXX` when a non-ASCII character is added to any tracked `scripts/ci/` file.
+- R-3 As a later implementer (#892), a pure helper exists that reports non-ASCII code points for any `{ path, text }`.
+- R-4 Constraints: message wording is unchanged apart from the separator character. Exit codes are unchanged (0 for OK, 1 for FAILED). Authored files and commit messages are ASCII only.
+- R-5 Non-goals: see Scope.
 
 ### clarifications
 
@@ -154,11 +154,11 @@ Refinement convergence proof: the closing refinement comment records the pre-pus
 
 ## Acceptance criteria
 
-- [ ] AC-1 `node scripts/ci/validate-plugins.mjs` exits 0 and prints `plugin configuration OK - <summary>`. Every stdout byte is at most 0x7E apart from LF. `scripts/ci/validate-plugins.mjs` holds no byte above 0x7E, and the message wording is unchanged apart from the separator.
-- [ ] AC-2 With a planted violation, `node scripts/ci/validate-plugins.mjs` exits 1 and prints `plugin configuration FAILED - <n> violation(s) across <summary>` in ASCII. The planted violation is removed afterwards.
-- [ ] AC-3 No tracked file under `scripts/ci/` holds a byte above 0x7E. The diff of the touched files shows only em-dash to hyphen replacements.
-- [ ] AC-4 A pure helper (for example `scripts/ci/lib/ascii-check.mjs`) returns `path:line U+XXXX` for each non-ASCII code point and nothing for ASCII text with tab, LF, or CRLF. A test listed in `test:ci-scripts` unit-tests the helper on inline fixtures, and runs it over `git ls-files scripts/ci` with no rows. A character planted in a tracked `scripts/ci/` file makes `npm run test:ci-scripts` fail and name it. Reverting the plant restores the pass. CI runs the test through `npm test` (`.github/workflows/ci.yml:51`).
-- [ ] AC-5 These all pass with no drift: `npm test`, `npm run test:ci-scripts`, `node --test scripts/ci/validate-plugins.test.mjs`, `node scripts/ci/validate-plugins.mjs`, the repository Biome check, and `npm run preflight:static-analysis`. Authored files and commit messages are ASCII only.
+- [ ] AC-1 (R-1, R-4) `node scripts/ci/validate-plugins.mjs` exits 0 and prints `plugin configuration OK - <summary>`. Every stdout byte is at most 0x7E apart from LF. `scripts/ci/validate-plugins.mjs` holds no byte above 0x7E, and the message wording is unchanged apart from the separator.
+- [ ] AC-2 (R-1, R-4) With a planted violation, `node scripts/ci/validate-plugins.mjs` exits 1 and prints `plugin configuration FAILED - <n> violation(s) across <summary>` in ASCII. The planted violation is removed afterwards.
+- [ ] AC-3 (R-1, R-5) No tracked file under `scripts/ci/` holds a byte above 0x7E. The diff of the touched files shows only em-dash to hyphen replacements.
+- [ ] AC-4 (R-2, R-3) A pure helper (for example `scripts/ci/lib/ascii-check.mjs`) returns `path:line U+XXXX` for each non-ASCII code point and nothing for ASCII text with tab, LF, or CRLF. A test listed in `test:ci-scripts` unit-tests the helper on inline fixtures, and runs it over `git ls-files scripts/ci` with no rows. A character planted in a tracked `scripts/ci/` file makes `npm run test:ci-scripts` fail and name it. Reverting the plant restores the pass. CI runs the test through `npm test` (`.github/workflows/ci.yml:51`).
+- [ ] AC-5 (R-4) These all pass with no drift: `npm test`, `npm run test:ci-scripts`, `node --test scripts/ci/validate-plugins.test.mjs`, `node scripts/ci/validate-plugins.mjs`, the repository Biome check, and `npm run preflight:static-analysis`. Authored files and commit messages are ASCII only.
 
 ## Verification
 

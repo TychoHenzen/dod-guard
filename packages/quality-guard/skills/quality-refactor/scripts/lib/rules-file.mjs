@@ -1,4 +1,5 @@
 import { lineIndex } from "./offsets.mjs";
+import { stampSymbols } from "./finding-symbol.mjs";
 import { findTypes } from "./parse-types.mjs";
 import { findFunctions } from "./parse.mjs";
 import { checkComments } from "./rules-comments.mjs";
@@ -18,9 +19,10 @@ export { inTestRegion };
  * line-length thresholds.
  */
 export function scanFile(file, config, widthFor) {
-  const { code, comments, interpolations } = strip(file.source, file.lang);
+  const stripped = strip(file.source, file.lang);
+  const { code, comments, interpolations } = stripped;
   const starts = lineIndex(code);
-  const functions = findFunctions(code, file.lang, starts, file.source);
+  const functions = findFunctions(stripped, file.lang, file.source);
   const types = findTypes(code, file.lang, starts);
   const spans = file.lang === "py" ? [] : classSpans(code, types, file.lang);
   const testRegions = file.lang === "rs" ? findRustTestRegions(code) : [];
@@ -30,14 +32,13 @@ export function scanFile(file, config, widthFor) {
   checkPartialTypes({ file, config, code, types, out });
   checkTuples({ file, config, code, starts, out });
   checkComments({ file, config, comments, codeLines: code.split("\n"), out });
-  const context = { starts, spans, code, interpolations };
+  const context = { file, starts, spans, code, interpolations, functions };
   for (const fn of functions) {
     if (inTestRegion(testRegions, fn.headerStart)) continue;
     checkFunction({ file, config, fn, context, out });
   }
-
   return {
-    violations: out,
+    violations: stampSymbols(out, functions, starts),
     code,
     comments,
     starts,

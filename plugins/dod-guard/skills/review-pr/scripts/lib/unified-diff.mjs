@@ -18,7 +18,7 @@ const OCTAL_RADIX = 8;
 const SIDE_PREFIX = /^[ab]\//u;
 const TRAILING_TERMINATOR = /\t?\r?$/u;
 const SIDE_LINE_PREFIX_LENGTH = 4;
-const HUNK_HEADER = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/u;
+const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/u;
 const NEWLINE = /\r?\n/u;
 
 // Octal escapes are raw bytes of one UTF-8 sequence, so decode bytes, not
@@ -66,32 +66,51 @@ function selectDiffFile(line, changed) {
   if (file === null) {
     return;
   }
-  if (!changed.has(file)) {
-    changed.set(file, new Set());
+  if (!changed.added.has(file)) {
+    changed.added.set(file, new Set());
+    changed.removed.set(file, new Set());
   }
   return file;
 }
 
 function startHunk(state, hunk) {
-  state.oldLeft = Number(hunk[1] ?? 1);
-  state.finalLine = Number(hunk[2]);
-  state.newLeft = Number(hunk[3] ?? 1);
+  state.oldLine = Number(hunk[1]);
+  state.oldLeft = Number(hunk[2] ?? 1);
+  state.finalLine = Number(hunk[3]);
+  state.newLeft = Number(hunk[4] ?? 1);
+}
+
+const FINAL_SIDE = new Set(["+", " "]);
+const OLD_SIDE = new Set(["-", " "]);
+
+function advanceHunk(state, marker) {
+  if (FINAL_SIDE.has(marker)) {
+    state.finalLine += 1;
+    state.newLeft -= 1;
+  }
+  if (OLD_SIDE.has(marker)) {
+    state.oldLine += 1;
+    state.oldLeft -= 1;
+  }
+}
+
+function addLine(lines, file, number) {
+  if (file) {
+    lines.get(file).add(number);
+  }
 }
 
 // Inside a hunk only the first character classifies a line, so an added `++i;`
 // is content, not a header.
 function recordHunkLine(state, line, changed) {
   const marker = line[0];
-  if (marker === "+" || marker === " ") {
-    if (marker === "+" && state.file) {
-      changed.get(state.file).add(state.finalLine);
-    }
-    state.finalLine += 1;
-    state.newLeft -= 1;
+  if (marker === "+") {
+    addLine(changed.added, state.file, state.finalLine);
   }
-  if (marker === "-" || marker === " ") {
-    state.oldLeft -= 1;
+  if (marker === "-") {
+    addLine(changed.removed, state.file, state.oldLine);
   }
+  advanceHunk(state, marker);
 }
 
 function recordDiffLine(state, line, changed) {
@@ -109,14 +128,19 @@ function recordDiffLine(state, line, changed) {
   }
 }
 
-// Maps each post-image path to the final-state line numbers the diff adds.
-function parseChangedLines(diff) {
-  const changed = new Map();
-  const state = { file: undefined, finalLine: 0, oldLeft: 0, newLeft: 0 };
+// Maps each post-image path to the final-state line numbers the diff adds
+// (`added`) and to the original-state line numbers it removes (`removed`).
+function parseDiffLines(diff) {
+  const changed = { added: new Map(), removed: new Map() };
+  const state = { file: undefined, finalLine: 0, oldLine: 0, oldLeft: 0, newLeft: 0 };
   for (const line of diff.split(NEWLINE)) {
     recordDiffLine(state, line, changed);
   }
   return changed;
 }
 
-export { parseChangedLines };
+function parseChangedLines(diff) {
+  return parseDiffLines(diff).added;
+}
+
+export { parseChangedLines, parseDiffLines };

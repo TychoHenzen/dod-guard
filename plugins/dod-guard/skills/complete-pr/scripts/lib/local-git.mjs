@@ -71,12 +71,38 @@ export class LocalGit {
     return "deleted";
   }
 
+  // Null when the directory is not a checkout or has no origin; a missing git binary still throws.
+  originUrl() {
+    try {
+      return this.#run(["remote", "get-url", "origin"]).stdout.trim() || null;
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        throw error;
+      }
+      return null;
+    }
+  }
+
   currentBranch() {
     return this.#run(["branch", "--show-current"]).stdout.trim();
   }
 
   hasLocalBranch(branchName) {
     return this.#run(["show-ref", "--verify", "--quiet", `refs/heads/${branchName}`], [0, 1]).status === 0;
+  }
+
+  #cleanupCurrentBranch(branchName, defaultBranch, dryRun) {
+    if (this.#currentCheckoutIsDirty()) {
+      return { branch: "retained_dirty", currentCheckout: "unchanged" };
+    }
+    if (dryRun) {
+      return { branch: "would_delete", currentCheckout: "would_switch_to_default" };
+    }
+    const moved = this.#moveCurrentCheckoutToDefault(branchName, defaultBranch);
+    if (moved.branch) {
+      return moved;
+    }
+    return { branch: this.#deleteBranch(branchName), currentCheckout: moved.currentCheckout };
   }
 
   cleanupBranch(branchName, defaultBranch, { dryRun = false } = {}) {
@@ -87,27 +113,12 @@ export class LocalGit {
     if (branchName === defaultBranch) {
       return { branch: "delete_refused", currentCheckout: "unchanged" };
     }
-
-    let currentCheckout = "unchanged";
     if (currentBranch === branchName) {
-      if (this.#currentCheckoutIsDirty()) {
-        return { branch: "retained_dirty", currentCheckout };
-      }
-      if (dryRun) {
-        return { branch: "would_delete", currentCheckout: "would_switch_to_default" };
-      }
-      const { branch: movedBranch, currentCheckout: movedCheckout } = this.#moveCurrentCheckoutToDefault(
-        branchName,
-        defaultBranch,
-      );
-      if (movedBranch) {
-        return { branch: movedBranch, currentCheckout: movedCheckout };
-      }
-      currentCheckout = movedCheckout;
-    } else if (dryRun) {
-      return { branch: "would_delete", currentCheckout };
+      return this.#cleanupCurrentBranch(branchName, defaultBranch, dryRun);
     }
-
-    return { branch: this.#deleteBranch(branchName), currentCheckout };
+    if (dryRun) {
+      return { branch: "would_delete", currentCheckout: "unchanged" };
+    }
+    return { branch: this.#deleteBranch(branchName), currentCheckout: "unchanged" };
   }
 }

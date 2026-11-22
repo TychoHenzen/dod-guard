@@ -5,7 +5,7 @@ import { join } from "node:path";
 import process from "node:process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { runPowerShell } from "./maintenance-harness.mjs";
+import { runPowerShell } from "./harness/maintenance-harness.mjs";
 
 test("the shared native command helper keeps stderr out of stdout and returns the real exit status", {
   skip: process.platform !== "win32",

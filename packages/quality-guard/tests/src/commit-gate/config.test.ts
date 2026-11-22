@@ -86,3 +86,29 @@ test("rejects inherited path-group names", () => {
     ConfigError,
   );
 });
+
+test("keeps excludePaths as written with slashes normalized", () => {
+  assert.deepEqual(
+    parseQualityConfig(
+      JSON.stringify({ excludePaths: ["/vendor/", "\\gen\\"] }),
+    ).excludePaths,
+    ["/vendor/", "/gen/"],
+  );
+  assert.deepEqual(parseQualityConfig("{}").excludePaths, []);
+});
+
+test("accepts an empty excludePaths list", () => {
+  assert.deepEqual(
+    parseQualityConfig(JSON.stringify({ excludePaths: [] })).excludePaths,
+    [],
+  );
+});
+
+test("rejects a malformed excludePaths", () => {
+  for (const excludePaths of ["x", [1], [""]]) {
+    assert.throws(
+      () => parseQualityConfig(JSON.stringify({ excludePaths })),
+      ConfigError,
+    );
+  }
+});

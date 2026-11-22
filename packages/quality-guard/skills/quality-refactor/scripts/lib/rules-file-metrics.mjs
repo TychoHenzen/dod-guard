@@ -1,6 +1,14 @@
 import { lineAt } from "./offsets.mjs";
 
 const RUST_BOOLEAN_OR = /(?<!\b(?:move|return)\s{0,3})(?<=[\w)\]])\s{0,3}\|\|/g;
+// A ternary `?` follows a space or `)`. A `?` glued to the token before it is
+// a nullable type, and `??` is a null fallback, so neither is a branch.
+const TERNARY = /(?<![\w>\]?])\?(?![.?:])/g;
+// `x? y : z` has no space before `?`, so it looks like a nullable type. A real
+// ternary reaches its `:` before any `;`, brace or assignment; a nullable
+// declaration (`int? w = F();`, `List<int?> v;`) does not.
+const GLUED_TERNARY =
+  /(?<=[\w>\]])\?(?![.?:=[])(?=(?:[^;{}=:]|[=!<>]=)*:)/g;
 const DECISION_PATTERNS = {
   common: [
     /\bif\b/g,
@@ -10,8 +18,8 @@ const DECISION_PATTERNS = {
     /\bcatch\b/g,
     /&&/g,
   ],
-  ts: [/\?\?/g, /\?(?![.?:])/g, /\|\|/g],
-  cs: [/\?\?/g, /\?(?![.?:])/g, /\bwhen\b/g, /\|\|/g],
+  ts: [TERNARY, GLUED_TERNARY, /\|\|/g],
+  cs: [TERNARY, GLUED_TERNARY, /\bwhen\b/g, /\|\|/g],
   rs: [/=>/g, RUST_BOOLEAN_OR],
   py: [/\belif\b/g, /\band\b/g, /\bor\b/g],
   go: [/\bselect\b/g, /\|\|/g],
@@ -39,12 +47,22 @@ export function complexityOf(body, lang) {
   );
 }
 
-function indentNesting(fn) {
+// `indents` starts with the def line, then one entry per logical line of the
+// body. The stack holds the indentation of each open block, the way Python's
+// own tokenizer does, so 2-space and 4-space files count the same. The body
+// itself is level 0, matching braceNesting, which drops the function's own
+// braces.
+function indentNesting(indents) {
+  const open = [indents[0]];
   let max = 0;
-  for (const line of fn.body.split("\n").slice(1)) {
-    if (line.trim() === "") continue;
-    const indent = /^[ \t]*/.exec(line)[0].replace(/\t/g, "    ").length;
-    max = Math.max(max, Math.floor((indent - fn.baseIndent) / 4));
+  for (const indent of indents.slice(1)) {
+    while (open.length > 1 && indent < open.at(-1)) {
+      open.pop();
+    }
+    if (indent > open.at(-1)) {
+      open.push(indent);
+    }
+    max = Math.max(max, open.length - 2);
   }
   return max;
 }
@@ -64,7 +82,9 @@ function braceNesting(body) {
 }
 
 export function maxNesting(fn) {
-  return fn.indentBased ? indentNesting(fn) : braceNesting(fn.body);
+  return fn.logicalIndents
+    ? indentNesting(fn.logicalIndents)
+    : braceNesting(fn.body);
 }
 
 export function functionLines(fn, starts) {

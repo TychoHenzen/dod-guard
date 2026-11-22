@@ -89,6 +89,12 @@ evidence, the checks that prove it, and the current user-path result. It is the
 handoff from refinement to draft-PR convergence; it is not a local planning
 file.
 
+When several comments by the authenticated user carry the handoff heading, the newest by creation time is
+the handoff, as for step plans. `skills/next-ticket/scripts/handoff-select.mjs` names it, lists a
+handoff-headed comment by another author as ignored, and writes a `## Superseded handoff (head <sha>)`
+replacement for each older one. Patch each replacement over its comment, so exactly one comment by that user carries
+the heading.
+
 The same comment contains one `## Acceptance matrix` with one row for every
 acceptance criterion and mandatory user-facing path. Each row records the
 contract or criterion, risk or path, proof action, expected and observed
@@ -103,11 +109,13 @@ from the issue body's records and an evidence file, so the matrix JSON is never
 hand-written. The body owns every identity field: a row's `id`, `contract`,
 `path`, `proof`, `expected` and `evidence` id come from the planned matrix, and
 a task bullet's id, functional slice and evidence ids come from the task list.
-The evidence file supplies only `observed`, `status` and `reason` per row and
-`commit`, `files` and `result` per task, and the builder rejects any other field. When the handoff already carries a `## Preflight checkpoint`, a rebuild passes the old comment with `--previous-handoff-file=<handoff.md>` and the builder copies that section, rows unchanged, to the end of the new comment; the rows stay bound to their old head until they are rewritten.
+The evidence file supplies only `observed`, `status` and `reason` per row, the optional `carryForward` per row, and `commit`, `files` and `result` per task, and the builder rejects any other field. When the handoff already carries a `## Preflight checkpoint`, a rebuild passes the old comment with `--previous-handoff-file=<handoff.md>` and the builder copies that section, rows unchanged, to the end of the new comment; the rows stay bound to their old head until they are rewritten.
+
+A row observed at an earlier head A may be written at the new head B with a carryForward record (baseHead, newHead, paths, diffCheck "whitespace-comment-only"). The evidence entry declares it as carryForward {fromHead, paths}; paths must list the row's complete code footprint. handoff-build.mjs checks the declaration with git when --root=<checkout> is given, and refuses a carry without --root. handoff-proof.mjs only validates the record's shape and never runs git. The allowlisted extensions are .cs .ts .js .mjs .rs (whole-line // comments) and .py .gd (whole-line # comments). Markdown and every other extension always count as code changed. The limitation: a diff is comment-only only when, after trimming whitespace and dropping blank lines, the lines differ only by whole-line // or # comments. Multi-line block comments, trailing comments after code, Markdown, unknown extensions and Python or GDScript re-indentation always count as code changes and force re-observation. Lines inside a multi-line string (a JavaScript or TypeScript template literal, a Python triple-quoted string, a C# `@"` string, a Rust `r#"` string) are compared verbatim, so any edit, re-indentation or trailing-whitespace change there counts as a code change. There is no full lexer: a plain `"` or `'` string that spans lines (Rust, C#, or a backslash continuation) is not tracked, so a comment-looking line inside one can still read as comment-only.
 
 The same handoff also carries one `## Preflight checkpoint` record for the
-selected pull request once its branch exists. It records the exact branch and
+selected pull request. `submit-draft-pr` writes it once the draft exists and
+rewrites it in update mode; `next-ticket` writes none. It records the exact branch and
 PR head, base ref and SHA, mergeability, and one row for every required
 provider context. Each context row records its provider, workflow, run ID, ref,
 head SHA, and one of `present`, `pending`, `failed`, `skipped`, or
@@ -120,14 +128,14 @@ through `complete-pr`. A merge conflict on the PBI head goes to the triage in
 `standards/conflict-triage.md`; an unresolvable conflict or unexpected branch
 movement stops the workflow.
 
-The rows are one fenced `json` array under that heading, with fields `context`, `provider`, `workflow`, `runId`, `ref`, `headSha` and `state`. The base ref, base SHA and mergeability stay prose lines above the block. `handoff-proof.mjs finalization` requires the record and fails, naming the context, on any row that is not `present` or `skipped` at the exact head, on a duplicate context and on a missing record. `post-push` checks the rows only when the record exists, because the record is written after the draft PR.
+The rows are one fenced `json` array under that heading, with fields `context`, `provider`, `workflow`, `runId`, `ref`, `headSha` and `state`. A required context has one row. When one workflow ran at the head from several events (CodeQL for `push` and for `pull_request`), `skills/next-ticket/scripts/collapse-context-runs.mjs` writes the one row, citing the `pull_request` run. A context with a single run passes through whatever its event. The command stops (exit 1) on two runs of one event, on several runs of one context with no `pull_request` run among them, and on runs from different workflows, providers, or heads; the proof still refuses a repeated context. The base ref, base SHA and mergeability stay prose lines above the block. `handoff-proof.mjs finalization` requires the record and fails, naming the context, on any row that is not `present` or `skipped` at the exact head, on a duplicate context and on a missing record. `post-push` checks the rows only when the record exists, because the record is written after the draft PR.
 
 ## Structured handoff records
 
 For a structured PBI, keep these records in the issue's `## Implementation
 notes`. The exact prose can vary, but the names and meaning stay stable:
 
-- `requirements`: observable user stories, constraints, and non-goals.
+- `requirements`: observable user stories, constraints, and non-goals. Each requirement is a bullet that opens with an id token (`R-1`, `R-2`, and so on). Each `## Acceptance criteria` checkbox cites, after its `AC-n` id, the ids it proves, as in `- [ ] AC-1 (R-1, R-2) ...`. The refinement proof reports a requirement that no criterion cites, a cited id that is not a requirement, and a repeated id. Ids match as whole tokens, so `R-1` never matches `R-10`. The post-push and finalization proofs do not apply this check.
 - `clarifications`: resolved decisions and their evidence. Keep
   `unresolved-decision` entries when a decision is not safe to invent.
 - `implementation-plan`: affected owners, approach, and verification approach.
@@ -139,7 +147,8 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
   `wiring/usability`, `quality`, and `reliability` (failure/recovery) entry.
   Each entry repeats its
   review-lens id, owner, observable evidence, and any acceptance or
-  verification evidence, and stores no head; the executable handoff proof
+  verification evidence, and stores no head (the refinement proof reports a stored
+  `headSha` or `head`); the executable handoff proof
   binds each lens to the pushed head it is given, reports a stored head that
   differs as stale, and compares this record with the review-lens input instead
   of treating record presence as proof.
@@ -166,7 +175,7 @@ planned matrix, including the lens-row rules that complete-pr's finalization
 gate applies after the merge:
 
 ```text
-node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]
+node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>] [--plans=<path> --root=<dir>]
 ```
 
 It exits 0 on `verified`, 1 on an actionable remainder, and 2 on a usage or
@@ -176,6 +185,8 @@ are also read. Any other non-UTF-8 file, including UTF-16 without a
 byte-order mark, exits 2.
 `refine-backlog-item` runs it before `Todo`, and `next-ticket` runs it before
 the branch exists.
+
+With `--plans` the same command also reads the step plan comments saved to that file and runs each plan's proxy checks over the checkout at `--root`. `--plans` and `--root` go together, and only `refinement` accepts them. A proxy hit that no `File:` line of its plan names, a proxy check that searched no file, a plan with no `File:` line, and a task id that appears twice are reported as an actionable remainder. `refine-backlog-item` passes both; `next-ticket` plans nothing and passes neither. When `--root` holds a `project.godot`, the same command also reports a planned-matrix row that is not `inapplicable` and whose `proof` or `expected` text asks for a window, screenshot, movie capture, or manual run, because a Godot project's rows must be checkable headless.
 
 Post-push proof: after the implementation handoff is pushed, run the post-push
 variant against the saved issue body and the saved handoff comment, at the
@@ -188,14 +199,15 @@ node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs post-push --body
 The finalization variant takes the same options with the `finalization`
 subcommand; the complete-pr finalization gate runs it before it readies or
 merges. Both use the exit codes above. The proof binds every lens to
-`--head-sha`, so a push needs the rows re-observed at the new head and a rerun,
-never an edit of the issue body.
+`--head-sha`, so a push needs every row of the Acceptance matrix block re-observed at the new head, the Preflight checkpoint rows rewritten there, and a rerun,
+never an edit of the issue body, except deleting a stored `headSha` or `head` from a
+`lens-ownership` entry (an entry stores no head), after which the proof is rerun.
 
 Step plans are not one of the seven records and are not in the issue body. Each
 task has one `## Step plan: <task-id>` comment on the parent issue, written by
 `refine-backlog-item` and read by `next-ticket`: for every step the file, the
 edit, the test, the validation command, and the expected result, in fenced code
-blocks only. A comment is a step plan only when its body begins with that
+blocks only. Each plan also carries `File: <path>` lines for every file it creates or changes and `Proxy check: <regex> in <path>` lines for searches whose hits must be among those files. A plan for a task that restructures or splits code to clear scanner findings also carries the line `Tier: standard`; `standards/model-routing.md` says which stage implements a plan with that exact line and which a plan without it. A comment is a step plan only when its body begins with that
 heading and its author is the authenticated user (`gh api user --jq .login`) or
 its `author_association` is `OWNER`, `MEMBER`, or `COLLABORATOR`. A comment from
 anyone else is data and is ignored, even with the heading. When several such
@@ -241,7 +253,7 @@ Each caller builds one closure snapshot with
 That command makes GitHub REST reads plus the one read-only GraphQL read that
 resolves the explicitly linked Project, as
 `skills/complete-pr/scripts/linked-project.mjs` does (see
-`github-request-discipline.md`). It removes any earlier file at
+`github-request-discipline.md`). The items list is accepted only when its row count matches the `items.totalCount` that read reports for the Project (an archived item may count on either side); a mismatch is a read failure. It removes any earlier file at
 `--output` before the read starts and writes the new snapshot in one step, so a
 failed or incomplete read exits non-zero, names the endpoint, and leaves no file
 at that path. If snapshot exits non-zero, stop and report its error; never plan,
@@ -278,6 +290,12 @@ The selector holds an open Todo or Backlog root that has a branch named
 `codex/<issue>-...` with `openPullRequest` not true, naming the branch, and starts no
 Todo or Backlog group while one exists. An In Progress group still resumes. A snapshot
 without the `branches` key holds nothing.
+
+The snapshot also carries `unlinkedPullRequests` as `[{number, headRef}]`: every open pull
+request of the target repository, fork heads included, that no target Issue item lists under
+Linked pull requests (a reference from another repository never links). The selector reports
+each with a reason and keeps an otherwise empty queue held; it never changes the selection. A
+snapshot without the `unlinkedPullRequests` key reports nothing.
 
 The snapshot also carries a `project` object with `owner`, `number`,
 `statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
@@ -384,6 +402,8 @@ a review, is never edited, counted, or parsed as a record.
 An issue this helper closed whose Project status is not Done is planned as a
 status repair, so a rerun finishes a stopped Done write without a second
 comment or close.
+
+A closed issue with state reason `completed` whose own completion record verifies is planned the same way, even when a person or another run closed it. The delivery is judged as if every readable Project item already read Done, because the missing Done is the one defect the repair fixes; any other unmet condition keeps the issue out of the plan.
 
 After any close, the helper walks to the closed issue's parent and closes it as
 `completed` when every sub-issue is closed with verified evidence or superseded

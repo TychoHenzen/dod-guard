@@ -39,6 +39,12 @@ function isWellFormedNode(node, base) {
   return isObject(node) && hasProjectFields(node) && owned;
 }
 
+// The Project's total item count from the same read, or null when the node carries none.
+function itemCountOf(node) {
+  const count = node.items?.totalCount;
+  return Number.isInteger(count) && count >= 0 ? count : null;
+}
+
 function projectOf(node) {
   const base = OWNER_BASE.get(node?.owner?.__typename);
   // ASSUMPTION: a null node (a Project the token cannot see) is malformed
@@ -58,6 +64,7 @@ function projectOf(node) {
       number: node.number,
       title: node.title,
       id: node.id,
+      itemCount: itemCountOf(node),
     },
   };
 }

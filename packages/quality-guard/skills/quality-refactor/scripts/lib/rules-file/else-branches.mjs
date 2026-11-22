@@ -1,4 +1,4 @@
-import { indentOf } from "../parse-python.mjs";
+import { indentOf } from "../parse-python-lines.mjs";
 
 // Counts the "else" tokens in a function body that close an if branch. Rust and
 // Python also spell other constructs with "else" (let-else, loop else, try

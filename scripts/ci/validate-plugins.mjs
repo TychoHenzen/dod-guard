@@ -40,8 +40,8 @@ function summarize(packages, standalone, counts) {
   const skillCount = packages.reduce((n, p) => n + p.skills.length, counts.standaloneSkillCount);
   const agentCount = packages.reduce((n, p) => n + p.agents.length, counts.standaloneAgentCount);
   const pluginCount = packages.length + standalone.length;
-  const { styleCount, jsonCount, contentCount } = counts;
-  return `${pluginCount} plugins, ${skillCount} skills, ${agentCount} agents, ${styleCount} output styles, ${jsonCount} JSON files, ${contentCount} shipped docs`;
+  const { styleCount, hookCount, jsonCount, contentCount } = counts;
+  return `${pluginCount} plugins, ${skillCount} skills, ${agentCount} agents, ${styleCount} output styles, ${hookCount} standalone hooks, ${jsonCount} JSON files, ${contentCount} shipped docs`;
 }
 
 function emitResult(scanned) {
@@ -63,12 +63,18 @@ async function main() {
   }
 
   const isTracked = createTrackedPredicate(ROOT, report);
-  const { checkPackage, checkMarketplace, checkOpenCodeAdapter } = createPluginChecks(report, isTracked);
+  const { checkPackage, checkMarketplace, checkOpenCodeAdapter, checkStandaloneHooks } = createPluginChecks(
+    report,
+    isTracked,
+  );
   for (const pkg of packages) checkPackage(pkg, packages);
   checkMarketplace(join(ROOT, ".claude-plugin", "marketplace.json"), packages, true);
 
   const standaloneCounts = checkStandalonePlugins(standalone, report);
-  for (const plugin of standalone) await checkOpenCodeAdapter(plugin);
+  for (const plugin of standalone) {
+    checkStandaloneHooks(plugin);
+    await checkOpenCodeAdapter(plugin);
+  }
   const checkedFiles = listCheckedFiles(ROOT, report) ?? [];
   const jsonCount = checkJsonSyntax(ROOT, report, checkedFiles);
   checkOrphanPluginContent(ROOT, report, checkedFiles);
@@ -78,6 +84,7 @@ async function main() {
   return emitResult(
     summarize(packages, standalone, {
       styleCount: standaloneCounts.styleCount,
+      hookCount: standaloneCounts.hookCount,
       standaloneSkillCount: standaloneCounts.skillCount,
       standaloneAgentCount: standaloneCounts.agentCount,
       jsonCount,

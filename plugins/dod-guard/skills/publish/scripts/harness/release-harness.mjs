@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { runPowerShell } from "../maintenance-harness.mjs";
+import { runPowerShell } from "./maintenance-harness.mjs";
 
 export const releaseVerificationPath = fileURLToPath(new URL("../release-verification.ps1", import.meta.url));
 

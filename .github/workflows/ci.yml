@@ -66,9 +66,13 @@ jobs:
         run: >-
           node --test
           plugins/dod-guard/skills/publish/scripts/maintenance-wrapper.test.mjs
+          plugins/dod-guard/skills/publish/scripts/maintenance-wrapper-restore.test.mjs
+          plugins/dod-guard/skills/publish/scripts/maintenance-wrapper-gates.test.mjs
+          plugins/dod-guard/skills/publish/scripts/maintenance-wrapper-responses.test.mjs
           plugins/dod-guard/skills/publish/scripts/release-verification.test.mjs
           plugins/dod-guard/skills/publish/scripts/release-verification-helper.test.mjs
           plugins/dod-guard/skills/publish/scripts/release-native-command.test.mjs
+          plugins/dod-guard/skills/publish/scripts/maintenance-native.test.mjs
 
   # Not a required check: these tests start a real OpenCode server, pinned to
   # the CLI version the plugin's @opencode/plugin dependency targets.
@@ -156,10 +160,11 @@ jobs:
       # Fails when this pull request adds a high quality-guard finding to a file it changes, or does not remove
       # at least one pre-existing medium/high finding from those files. New medium findings do not block but are
       # counted and listed in the report; tighten with --block-on=medium. Same policy as CardCleaner.
+      # The gate scans every source file of the checkout, and code that is not ours is listed under excludePaths in .quality-guard.json.
       - name: Block new findings in changed files
         run: >-
           node packages/quality-guard/skills/quality-refactor/scripts/quality-pr-gate.mjs
-          --base=${{ github.event.pull_request.base.sha }} --root=packages
+          --base=${{ github.event.pull_request.base.sha }}
           --block-on=high --report=quality-gate-report.md
       - name: Upload the quality gate report
         if: always()

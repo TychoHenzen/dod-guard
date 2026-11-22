@@ -422,5 +422,12 @@ export function createPluginChecks(report, isTracked) {
     }
   }
 
-  return { checkPackage, checkMarketplace, checkOpenCodeAdapter };
+  /** A code-free plugin's hooks live in its plugin.json, as a package's do. */
+  function checkStandaloneHooks(plugin) {
+    const file = join(plugin.dir, ".claude-plugin", "plugin.json");
+    const manifest = readJson(file, false);
+    if (manifest) checkHookTargets(plugin, file, manifest);
+  }
+
+  return { checkPackage, checkMarketplace, checkOpenCodeAdapter, checkStandaloneHooks };
 }

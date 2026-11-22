@@ -3,7 +3,8 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import * as gate from "../../complete-pr/scripts/finalization-gate.mjs";
 import { recordsWithRequiredKeys } from "./convergence-builders.mjs";
-import { issue855Shape, observedFromPlanned } from "./structured-workflow-fixtures.mjs";
+import { issue855Shape } from "./issue855-shape.mjs";
+import { observedFromPlanned } from "./structured-workflow-fixtures.mjs";
 import { evaluateConvergence } from "./structured-workflow-proof.mjs";
 
 const { evaluateStructuredFinalization } = gate;

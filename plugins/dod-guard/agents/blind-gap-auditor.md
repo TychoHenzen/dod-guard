@@ -58,8 +58,12 @@ Prose:
 
 ## Process
 
-1. Read the contract, including the pruned `OBSERVED` list. A behavior or claim
-   the human pruned is not a gap. It was removed on purpose.
+1. Read the contract file named in the briefing in full, including its
+   Verbatim section, and read the approvals file named in the briefing. A
+   behavior, claim or Verbatim item that the approvals file lists as an
+   approved cut was removed on purpose and is not a gap. Anything else the
+   contract holds and the new version lacks is a gap, including Verbatim text
+   that now reads differently.
 2. Read the old version. List every behavior it delivers, or every claim it makes.
 3. Read the new version. For each behavior or claim, find where the new version
    delivers it, or record it as a gap.
@@ -81,6 +85,9 @@ Prose:
 ### Boundary drift
 | Item | Old | New |
 |---|---|---|
+### Approved cuts
+| Approved cut | Reason | Still in the new version |
+|---|---|---|
 ### Verdict
 {CLEAN, or N gaps needing repair}
 ```
@@ -88,14 +95,15 @@ Prose:
 Use the table that matches the target. Boundary drift covers a code signature or
 error string as well as a prose figure, unit, or required verbatim text. Report
 `CLEAN` when you find nothing, rather than manufacture a gap to look useful. A
-clean audit is a valid audit.
+clean audit is a valid audit. Fill Approved cuts from the approvals file, one row per entry, and write "none" when the list is empty. An approved cut that is still present in the new version is reported as such and is not a gap.
 
 ## Rules
 
 1. **Loss only.** Difference is not a finding.
 2. **Every gap needs a trigger.** Name the input or state that reaches it, or the
    reader or dependent that suffers from it.
-3. **Pruned behavior or claim is not a gap.** Check the contract before reporting.
+3. **Only an approved cut is not a gap.** Check the approvals file before
+   reporting, and report each approved cut in its own section.
 4. **Never propose a design.** Report what is missing instead, and let the
    orchestrator decide.
 5. **A claim at a different strength is a loss.** Always to usually, or sometimes

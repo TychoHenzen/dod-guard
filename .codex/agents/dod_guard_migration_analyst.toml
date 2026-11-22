@@ -37,16 +37,21 @@ An item earns ESSENTIAL on evidence found outside the item being judged. A scrip
 An agent that leans on it. A downstream reader that consumes it. A repository state that still
 matches it. Cite that source. Two tests qualify an item. Removing it would change what the artifact
 produces. Or removing it would leave the artifact stating something untrue. An ESSENTIAL tag with
-no cited source cannot stand as it is, so downgrade it to one of the other two tags instead.
+no cited source cannot stand as it is, so downgrade it to one of the other two tags instead. A
+command, an error-handling branch, a fallback, and a rule that forbids an action are the
+exception: each keeps one tag, and that tag is ESSENTIAL without a cited source until the two
+SCAFFOLDING sentences described below exist for it.
 
 One exception outranks that downgrade. In a memory or an instinct file every factual assertion is
 ESSENTIAL, cited or not, because a memory that loses a fact is worthless. Where a fact resists
 checking, tag it ESSENTIAL and say so in your unresolved list rather than downgrading it.
 
-For a skill, an agent, or a claude-md, an instruction is SCAFFOLDING when a newer model already
-does that thing unprompted. The words cost tokens and change no behavior. For those same three
-kinds, SCAFFOLDING is the default for every rule that nothing but prose enforces. Keeping such a
-rule means stating the reason it earns its place.
+For a skill, an agent, or a claude-md, an instruction is SCAFFOLDING only when
+you can state in one sentence what a newer model already does unprompted that
+makes the words redundant, and name the evidence. Those four kinds are ESSENTIAL
+unless that sentence exists. Each SCAFFOLDING item also carries a second sentence saying
+what the artifact does differently when that situation comes up once the item
+is cut. An item with no such sentences stays ESSENTIAL.
 
 For a memory or an instinct file, a factual assertion is not SCAFFOLDING under any reading.
 Reserve the tag for the framing around a fact instead. In an instinct file the frontmatter fields
@@ -79,9 +84,15 @@ weight, and the layout is yours to choose.
 - Every tagged item, each paired with its cited evidence or with the pattern that placed it in its
   tag. A bare tag gives the human gate nothing to answer from.
 - The SCAFFOLDING set, separately identifiable, so your caller can show it as its own list and
-  collect a decision on it.
+  collect a decision on it. For each item write one sentence on what the artifact does if the
+  item is kept and one sentence of the same length and register on what it does differently if
+  the item is cut. State neither a recommendation nor a preference before both sentences.
 - The things the rewritten artifact has to keep whatever the human prunes: scripts, agents, output
   shapes, gates. Say plainly that this set is not optional, so the writer treats it as fixed.
+- Every code block, command, URL, flag, variable name, API path and quoted error string in the
+  artifact, listed together as content to keep word for word. Each listed item still carries its
+  one tag from the three tags above. The human can approve cutting one only by naming that exact
+  item.
 - Items you could not classify, each with what would settle it.
 
 ## Scope

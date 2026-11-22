@@ -1,11 +1,10 @@
 import { matchSpan } from "./strip-lexical.mjs";
 import {
-  blankTemplateChar,
   closeInterp,
   closeTemplate,
   consumePlain,
   consumeSpan,
-  consumeTemplateEscape,
+  consumeTemplateText,
   openInterp,
   openTemplate,
   trackBrace,
@@ -37,13 +36,9 @@ function stepInterp(state, frame) {
 }
 
 function stepTemplate(state) {
-  const { source, cursor, parts } = state;
-  const ch = source[cursor.index];
-  if (ch === "\\") return consumeTemplateEscape(state);
-  if (ch === "`") return closeTemplate(state);
+  if (state.source[state.cursor.index] === "`") return closeTemplate(state);
   if (opensInterp(state)) return openInterp(state);
-  parts.push(blankTemplateChar(ch));
-  cursor.index += 1;
+  consumeTemplateText(state);
 }
 
 export function dispatch(state) {

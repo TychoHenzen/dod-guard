@@ -5,7 +5,8 @@
 // rule would pass vacuously without ever being tested.
 
 import { deepStrictEqual, match, ok, strictEqual } from "node:assert";
-import { readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { cliWorkspaceTree, invalidPluginWorkspaceTree } from "./fixtures/cli-workspace.mjs";
@@ -18,6 +19,7 @@ import {
   write,
 } from "./fixtures/plugin-tracked.mjs";
 import { createPluginChecks } from "./lib/plugin-checks.mjs";
+import { checkStandalonePlugins, loadStandalonePlugins } from "./lib/standalone-checks.mjs";
 import { discoverPluginWorkspaces } from "./lib/workspace-discovery.mjs";
 
 const temps = [];
@@ -59,6 +61,33 @@ async function collectOpenCode(root, isTracked = alwaysTracked) {
 }
 
 const alwaysTracked = () => true;
+
+const HOOK_PLUGIN = "hook-only";
+
+/** A code-free plugin whose only content is a Stop hook declared in its plugin.json. */
+function hookOnlyTree({ hooks = true, script = true } = {}) {
+  const root = mkdtempSync(join(tmpdir(), "standalone-hooks-"));
+  temps.push(root);
+  const manifest = { name: HOOK_PLUGIN, description: "A hook-only plugin." };
+  if (hooks) {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: the literal variable Claude Code expands
+    const command = 'python "${CLAUDE_PLUGIN_ROOT}/hooks/gate.py"';
+    manifest.hooks = { Stop: [{ hooks: [{ type: "command", command }] }] };
+  }
+  write(root, `plugins/${HOOK_PLUGIN}/.claude-plugin/plugin.json`, JSON.stringify(manifest));
+  if (script) write(root, `plugins/${HOOK_PLUGIN}/hooks/gate.py`, "print('ok')\n");
+  return root;
+}
+
+function collectStandalone(root, isTracked = alwaysTracked) {
+  const violations = [];
+  const report = (file, message) => violations.push({ file, message });
+  const plugins = loadStandalonePlugins(root);
+  const counts = checkStandalonePlugins(plugins, report);
+  const { checkStandaloneHooks } = createPluginChecks(report, isTracked);
+  for (const plugin of plugins) checkStandaloneHooks(plugin);
+  return { violations, counts };
+}
 
 describe("validate-plugins: git-tracked rules", () => {
   it("reports nothing on a clean tree with everything tracked", () => {
@@ -105,6 +134,35 @@ describe("validate-plugins: git-tracked rules", () => {
     const violations = collect(pkg, alwaysTracked);
     strictEqual(violations.length, 1, JSON.stringify(violations));
     match(violations[0].message, /package-level marketplace is forbidden/);
+  });
+});
+
+describe("validate-plugins: code-free plugin hooks", () => {
+  it("accepts a plugin whose only content is a hook in its plugin.json", () => {
+    const { violations, counts } = collectStandalone(hookOnlyTree());
+    deepStrictEqual(violations, []);
+    strictEqual(counts.hookCount, 1);
+  });
+
+  it("fails when the hook command names a missing file", () => {
+    const { violations } = collectStandalone(hookOnlyTree({ script: false }));
+    strictEqual(violations.length, 1, JSON.stringify(violations));
+    match(violations[0].message, /hook command targets missing file: hooks\/gate\.py/);
+  });
+
+  it("fails when the hook command names a file git does not track", () => {
+    const root = hookOnlyTree();
+    const script = join(root, "plugins", HOOK_PLUGIN, "hooks", "gate.py");
+    const { violations } = collectStandalone(root, (file) => file !== script);
+    strictEqual(violations.length, 1, JSON.stringify(violations));
+    match(violations[0].message, /hook command targets untracked file: hooks\/gate\.py/);
+  });
+
+  it("still fails a plugin that ships no hook, style, skill, or agent", () => {
+    const { violations, counts } = collectStandalone(hookOnlyTree({ hooks: false }));
+    strictEqual(violations.length, 1, JSON.stringify(violations));
+    match(violations[0].message, /ships no output style, skill, agent, or hook/);
+    strictEqual(counts.hookCount, 0);
   });
 });
 
