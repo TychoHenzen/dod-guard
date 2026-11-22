@@ -4,8 +4,8 @@ const REQUIRED = {
   slots: ["diff", "pbi", "sub-issues", "out"],
   violations: ["scan", "diff", "out"],
   batches: ["plan", "head", "out-dir"],
-  answers: ["plan", "head", "answers-dir", "out"],
-  pending: ["plan", "head", "answers-dir"],
+  answers: ["plan", "head", "answers-dir", "root", "out"],
+  pending: ["plan", "head", "answers-dir", "root"],
   candidates: ["scan", "diff", "pbi", "sub-issues", "plan", "results", "answers", "out"],
   build: [
     "head",

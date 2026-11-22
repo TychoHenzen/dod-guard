@@ -12,9 +12,10 @@ function answeredProblem(answer) {
   return present(answer.fact) ? null : "answered without a fact";
 }
 
-function answerProblem(answer) {
+// `cites` runs only once the shape checks pass, so it never sees a missing path or line.
+function answerProblem(answer, cites) {
   if (answer.status === "answered") {
-    return answeredProblem(answer);
+    return answeredProblem(answer) ?? cites(answer.path, answer.line);
   }
   if (answer.status === "unanswered") {
     return present(answer.searched) ? null : "unanswered without searched";
@@ -42,7 +43,7 @@ function strayProblems(byId, questions) {
     .map((id) => `answer for ${JSON.stringify(id ?? null)} is not a question of this batch`);
 }
 
-function questionProblems(question, answer) {
+function questionProblems(question, answer, cites) {
   if (!answer) {
     return [`missing answer for ${question.id}`];
   }
@@ -51,19 +52,19 @@ function questionProblems(question, answer) {
     const named = JSON.stringify(answer.slot ?? null);
     problems.push(`${question.id} names slot ${named}, expected ${question.slot}`);
   }
-  const problem = answerProblem(answer);
+  const problem = answerProblem(answer, cites);
   if (problem) {
     problems.push(`${question.id}: ${problem}`);
   }
   return problems;
 }
 
-function coverageProblems(batch, answers) {
+function coverageProblems(batch, answers, cites) {
   const { byId, problems } = indexAnswers(answers);
   return [
     ...problems,
     ...strayProblems(byId, batch.questions),
-    ...batch.questions.flatMap((question) => questionProblems(question, byId.get(question.id))),
+    ...batch.questions.flatMap((question) => questionProblems(question, byId.get(question.id), cites)),
   ];
 }
 

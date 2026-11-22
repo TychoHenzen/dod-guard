@@ -8,7 +8,7 @@ function stampProblems(doc, expected) {
 
 // `doc` is the parsed answers file, or a string that says why it could not be
 // read.
-function batchProblems({ batch, doc, hash, headSha }) {
+function batchProblems({ batch, doc, hash, headSha, cites }) {
   if (typeof doc === "string") {
     return [`${batch.batch}: ${doc}`];
   }
@@ -16,7 +16,7 @@ function batchProblems({ batch, doc, hash, headSha }) {
     return [`${batch.batch}: the file must be an object with an answers array`];
   }
   const stamp = { planHash: hash, headSha, batch: batch.batch };
-  const problems = [...stampProblems(doc, stamp), ...coverageProblems(batch, doc.answers)];
+  const problems = [...stampProblems(doc, stamp), ...coverageProblems(batch, doc.answers, cites)];
   return problems.map((problem) => `${batch.batch}: ${problem}`);
 }
 
