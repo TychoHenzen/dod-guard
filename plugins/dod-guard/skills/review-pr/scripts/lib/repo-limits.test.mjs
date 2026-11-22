@@ -68,7 +68,10 @@ test("the real scan of a width-120 repository keeps only what its own limits fla
     assert.deepEqual(limits.floors, { "line-length": "high", "file-length": "high" });
     const { scan, removed } = applyRepoLimits(raw, limits);
     assert.deepEqual(summary(scan), ["line-length:4:high"]);
-    assert.deepEqual(scan.violations[0], raw.violations.find(({ rule }) => rule === "line-length"));
+    assert.deepEqual(
+      scan.violations[0],
+      raw.violations.find(({ rule }) => rule === "line-length"),
+    );
     assert.deepEqual(removed, { "file-length": 1 });
   } finally {
     rmSync(root, { recursive: true, force: true });
