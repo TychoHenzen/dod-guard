@@ -1,6 +1,6 @@
 {
   "name": "quality-guard",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "Advisory structural code diagnostics with fail-open file-local feedback, current-state reports, plaintext readability checks, test-quality evidence, and an MCP server. Ships 1 skill: /quality-refactor.",
   "type": "module",
   "imports": {
@@ -8,6 +8,10 @@
     "#quality-guard-reachability-shadows": "./skills/quality-refactor/scripts/lib/rules-reachability-shadows.mjs",
     "#quality-guard-severity": "./skills/quality-refactor/scripts/lib/severity.mjs",
     "#quality-guard-config": "./skills/quality-refactor/scripts/lib/config.mjs",
+    "#quality-guard-file-metrics": "./skills/quality-refactor/scripts/lib/rules-file-metrics.mjs",
+    "#quality-guard-parse": "./skills/quality-refactor/scripts/lib/parse.mjs",
+    "#quality-guard-rules-file": "./skills/quality-refactor/scripts/lib/rules-file.mjs",
+    "#quality-guard-strip": "./skills/quality-refactor/scripts/lib/strip.mjs",
     "#quality-guard-formatter-width": "./skills/quality-refactor/scripts/lib/formatter-width.mjs",
     "#quality-guard-rules-project": "./skills/quality-refactor/scripts/lib/rules-project.mjs",
     "#quality-guard-scan-run": "./skills/quality-refactor/scripts/quality-scan-run.mjs"

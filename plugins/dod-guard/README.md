@@ -67,6 +67,138 @@ Every skill applies the shared working defaults in
 dirty worktree changes use the normal commit path, stale tests follow the
 current contract, and explicit safety or authority boundaries remain.
 
+## Archon
+
+This directory is also an Archon workflow pack (`archon-plugin.json`). Install
+it once for every project on the machine:
+
+```bash
+archon plugin add TychoHenzen/dod-guard/plugins/dod-guard
+```
+
+It ships nine workflows. Each one is the Archon form of the dod-guard skill of
+the same name, and it reads that skill, its scripts and its agent instructions
+from this directory, so the skill stays the one source of the method. Archon
+supplies what the skill used to ask a session to hold to: fresh read-only
+sessions, scripts that check their output, multi-select forms for the choices a
+maintainer makes, and draft pull requests. Every workflow's description in its
+YAML file says when to use it and how to answer its form.
+
+### sdlc-standards
+
+In a repository that Archon's bundled SDLC pack delivers, the pack's own queues
+run the lifecycle that goal-sdlc runs elsewhere: `archon-intake` triages,
+`archon-build-queue` builds and reviews, `archon-merge-queue` merges. This
+workflow gives those queues dod-guard's standards instead of replacing them:
+
+```bash
+archon workflow run TychoHenzen/dod-guard:sdlc-standards --branch chore/dod-guard-standards
+```
+
+It writes one marked block into each file the pack reads after its defaults:
+`engineering.md` (the implementer reads it before writing code, and reviewers
+cite it for any finding about taste), and `.archon/sdlc/policy/triage.md` and
+`build.md`. A rerun replaces only the block. The standards take effect once its
+draft pull request merges and the checkout you launch the queues from has
+pulled it, because intake and the build queue's routing read the policy files
+from that checkout.
+
+What carried over: building only what the contract names, reachability from the
+user's entrypoint, test rules (no weakened tests, "pre-existing" is not an
+excuse), the four reviewer lenses as citable sections, falsifiable acceptance.
+What Archon's pack does its own way, so dod-guard leaves it: queue order (triage
+urgency, importance and size instead of GitHub Project order), labels, branch
+names, the issue contract's shape, review and merge records, model routing, and
+when the merge queue asks a maintainer. Where the two disagree, such as size
+alone forcing a split, the pack's default stands.
+
+### blind-rewrite
+
+The Archon form of the `/blind-rewrite` skill for one tracked file or directory:
+
+```bash
+archon workflow run TychoHenzen/dod-guard:blind-rewrite \
+  --branch rewrite/<slug> --input target=<repo-relative path>
+```
+
+A session writes the behavior contract while it can still see the original,
+the target is deleted, and a fresh session with no shell writes the
+replacement. While a writer runs, the original is in neither the run's
+checkout nor its artifacts folder: scripts bring it out of git for the overlap
+gate and the gap audit and remove it again. Other copies remain on the machine
+(the source checkout, Archon run logs, Claude Code transcripts); the writer is
+told not to open them, but nothing enforces that. The checks must pass on the
+original before anything is deleted. The workflow reuses the
+skill's overlap scanner and the `blind-*` agent instructions from this
+directory. It ends with a draft pull request (`--input open_pr=false` stops at
+the commit). A code target needs tests around it; the workflow stops on a
+target with no seam and on a dependency swap across call sites.
+
+### Cleanup and migration
+
+These four change the repository and end with a draft pull request
+(`--input open_pr=false` stops at the commits):
+
+```bash
+archon workflow run TychoHenzen/dod-guard:doc-reconcile --branch docs/reconcile
+archon workflow run TychoHenzen/dod-guard:clean-house --branch chore/clean-house
+archon workflow run TychoHenzen/dod-guard:codex-migrate --branch chore/codex-migrate
+archon workflow run TychoHenzen/dod-guard:skill-debug \
+  --branch fix/skill-debug-<name> --input skill=<name>
+```
+
+- doc-reconcile judges each candidate pair of documentation claims in a fresh
+  session and edits only where `git log -L` dates the two sides decisively.
+- clean-house surveys duplicate and obsolete implementations read-only, offers
+  each Strong or Fair pair on a form, and deletes only what the maintainer
+  picks, in one revertible commit.
+- codex-migrate proposes slices, runs each picked slice in its own session,
+  and commits a slice only when its verification passes.
+- skill-debug scores a skill's recent runs from the session transcripts and
+  turns each finding the maintainer accepts into one verified edit.
+
+After every session that edits, a script compares what it changed with the
+plan or the approval, and an edit that strays outside them is undone.
+
+### skill-migrate
+
+```bash
+archon workflow run TychoHenzen/dod-guard:skill-migrate \
+  --branch migrate/<name> --input target=<repo-relative path>
+```
+
+It blind-rewrites one skill, agent definition, CLAUDE.md, memory file or
+instinct file for newer models. A maintainer picks the scaffolding to cut on a
+form. The writer never sees the target, and a script rejects any writer input
+that repeats the original's wording. skill-migrate's own overlap, regression
+and finish checks gate the draft. The target is restored byte for byte;
+nothing is committed, and the draft and its report stay in the run's artifacts.
+
+### wiring-audit and usability-review
+
+```bash
+archon workflow run TychoHenzen/dod-guard:wiring-audit \
+  --branch audit/<name> --input request="<the feature and its goal>"
+archon workflow run TychoHenzen/dod-guard:usability-review \
+  --branch review/<name> --input request="<the feature and its user>"
+```
+
+Both are read-only and add `--input issue=<number>` to read the PBI. A session
+writes structured findings, and a script checks every citation against the
+checkout. wiring-audit also confirms that each surface it calls missing is
+absent from the paths it says it searched. usability-review refuses a verdict
+in place of an observed value and gives a CLI, API or document no visual
+checks; it has no browser, so a GUI report lists live states as unobserved.
+The report is the run's output.
+
+### What stays a skill
+
+`/setup-repository` has no workflow. It runs once per project, and each step
+changes the GitHub account, the repository's visibility or its Project link,
+so every step is a choice for the person at the keyboard rather than a check a
+script can make. The lifecycle skills, such as goal-sdlc, map onto Archon's SDLC
+pack through sdlc-standards rather than a workflow of their own.
+
 ## Repository setup
 
 `/setup-repository` connects a local project to GitHub, creates a new target as

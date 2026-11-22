@@ -62,7 +62,7 @@ Exit 0 with `verified` continues. Exit 1 or 2 stops with the printed remainder b
 Pass repository and PR number as separate native arguments. Keep a non-zero preflight result.
 
 ```text
-node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha> [--repo-dir <checkout>]
+node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha> [--no-linked-issue] [--repo-dir <checkout>]
 ```
 
 The helper can wait about 30 minutes. For a foreground limit shorter than that, start it with `node <skill-dir>/scripts/run-detached.mjs start <state-dir> -- node <skill-dir>/scripts/complete-pr.mjs ...`, then call `node <skill-dir>/scripts/run-detached.mjs wait <state-dir> --seconds 240` until it prints `exited`; its exitCode is the helper's. Wait on the same state directory, never start a second copy, never kill it. On a stop the helper also writes `{ok:false, code, message, recovery}` to stdout.
@@ -70,7 +70,8 @@ The helper can wait about 30 minutes. For a foreground limit shorter than that, 
 Pass the exact pushed head SHA already verified. The helper never adopts a mutable provider head as its first acceptance signal. It readies the draft, dispatches CI if needed, waits for every required check, merges through REST with the expected head SHA, confirms the linked issue, and deletes the remote branch. Local cleanup touches only the current checkout, and only when it is clean and fast-forwardable; report any preserved checkout state or local ref, and never touch another checkout. A successful workflow run alone is not acceptance.
 
 - `merge_conflict`: see "Triage a merge conflict".
-- `missing_linked_issue`: the PR closes no issue. The helper stops before any ready, auto-merge, CI, or merge step. Add `Closes #<parent>` to the PR body, or split the undelivered scope into its own issue and narrow the parent so this PR delivers all of it, then rerun. There is no partial-delivery mode: a PR closes its parent.
+- `missing_linked_issue`: the PR closes no issue. The helper stops before any ready, auto-merge, CI, or merge step. For a PBI PR, add `Closes #<parent>` to the PR body, or split the undelivered scope into its own issue and narrow the parent so this PR delivers all of it, then rerun. There is no partial-delivery mode: a PR closes its parent.
+- `--no-linked-issue`: only for a PR the user deliberately opened without a backlog issue (a one-off doc or tooling change). The helper then merges and cleans up a PR that closes no issue and returns an empty `linkedIssues`; a PR that does link issues still gets them confirmed closed. Never pass it for a `next-ticket`, `quick-pbi` or `goal-sdlc` PR, and never to get past `missing_linked_issue` on one: that stop means the PR body lost its `Closes #<parent>`.
 - `duplicate_ci_workflow_run`: follow the printed recovery (rerun the failed run), then rerun this skill.
 - `missing_required_checks`: the base branch reports no required checks at all (branch protection absent or empty), so no head can satisfy it and waiting on the head cannot help. Report it and end the run. Repairing protection is the owner's decision; this skill never weakens it.
 - `unknown_check_state`: a required context returned no run or an unsupported state on the exact head. If the workflow was draft-skipped, use the dispatch recovery in "Preflight checkpoint" once, read back run, workflow, ref, and head, and rerun this skill. Otherwise report it and end the run.
@@ -82,13 +83,13 @@ Never use `--admin`, force-push, weaken repository protections, or delete a ref 
 
 ## Recover a merged PR
 
-Use recovery when a prior run merged the PR but stopped before cleanup; check live state first. It accepts only a merged PR with complete required checks, closed linked issues, and `Done` Project status. It deletes the remote head only if it still points at the merged head.
+Use recovery when a prior run merged the PR but stopped before cleanup; check live state first. It accepts only a merged PR with complete required checks, closed linked issues, and `Done` Project status. A merged PR that closes no issue passes only with `--no-linked-issue`, under the same rule as in "Run the helper". It deletes the remote head only if it still points at the merged head.
 
-If the helper exits unexpectedly after the merge step (stderr `complete-pr failed [<code>]`, or no result), never rerun it. Read the live pull request state. If it is not MERGED, report the observed state and restart from "Resolve the pull request". If it is MERGED, run "Finalize the parent unit" first, because recovery requires every linked issue closed and `Done` in the Project and the helper sets no Project status, then run the dry run below, then the real recovery.
+If the helper exits unexpectedly after the merge step (stderr `complete-pr failed [<code>]`, or no result), never rerun it. Read the live pull request state. If it is not MERGED, report the observed state and restart from "Resolve the pull request". If it is MERGED, run "Finalize the parent unit" first, because recovery requires every linked issue closed and `Done` in the Project and the helper sets no Project status, then run the dry run below, then the real recovery. A PR that ran with `--no-linked-issue` and closes no issue has no parent unit: go straight to the dry run, passing `--no-linked-issue` again.
 
 ```text
-node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --recover-merged --dry-run
-node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --recover-merged
+node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --recover-merged --dry-run [--no-linked-issue]
+node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --recover-merged [--no-linked-issue]
 ```
 
 A dry run deletes and switches nothing.
@@ -104,7 +105,7 @@ When the helper stops with `merge_conflict` on the trusted PBI head, triage per 
 
 ## Finalize the parent unit
 
-Start only after the helper returns a verified merge result. Never alter unrelated Project items.
+Start only after the helper returns a verified merge result. Never alter unrelated Project items. When a run with `--no-linked-issue` returns an empty `linkedIssues`, there is no parent unit: skip this section and "Record completion and close replaced issues", and report the merge and branch cleanup.
 
 1. Read the linked parent PBI, its linked children, and their one shared Project. For a structured parent, each child must match one independently delivered and verified functional slice. No fixed child count or category set applies.
 2. Finalize every linked child and every parent-level task owning implementation, wiring and end-to-end usability, code quality, or failure/recovery.

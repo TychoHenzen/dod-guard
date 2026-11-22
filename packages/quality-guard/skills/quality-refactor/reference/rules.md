@@ -367,8 +367,16 @@ correctness boundary.
 
 ## `nesting-depth` - 3 preferred, 5 hard
 
-**Detects:** maximum brace depth inside a function body (indent levels in
-Python).
+**Detects:** maximum brace depth inside a function body. The function's own
+braces do not count, so a statement directly in the body is at depth 0.
+
+Python counts block levels instead, the same way: each `if`, `for`, `with`
+or other block opened inside the body is one level. Only logical lines are
+measured. A line that begins inside an open bracket, after a backslash, or
+inside a multi-line string continues the statement above it and is skipped,
+so a long call, a list of strings or a test's multi-line text adds nothing.
+Levels come from the indentation stack, not from dividing by four, so
+2-space and 4-space files count the same.
 
 **Why this is a diagnostic signal:** each level is a condition the reader has
 to hold. Depth 5 can mean five simultaneous conditions to understand the

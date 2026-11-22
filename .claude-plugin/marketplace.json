@@ -39,7 +39,7 @@
     },
     {
       "name": "readability-gate",
-      "description": "A Stop hook that checks the final message of each turn reads on its own for an owner who reads nothing else: no restating recent final messages, no hard-to-read phrasing, and no names or numbers left unexplained. A failing message goes back for a rewrite, at most twice per turn. Fails open with a visible warning. Claude Code only. No MCP server, no skills.",
+      "description": "A Stop hook that checks the final message of each turn answers the owner in plain spoken English, using the talk-normal rules: the answer first, no names or numbers the owner has not seen, none of Claude's own process, and every decision explained. A reader model writes the message the owner wanted; a message fails when the owner cannot act on it or when that draft is much shorter, and goes back for one rewrite with the draft as the target. The same rules are added to Claude's context at session start. Fails open with a visible warning. Claude Code only. No MCP server, no skills.",
       "source": "./plugins/readability-gate",
       "category": "writing"
     }

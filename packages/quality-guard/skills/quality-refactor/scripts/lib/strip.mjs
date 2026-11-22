@@ -8,6 +8,7 @@ function createState(source, lang) {
     parts: [],
     comments: [],
     interpolations: [],
+    literalLines: new Set(),
     previous: { char: "\n", word: "" },
     stack: [{ kind: "code" }],
   };
@@ -20,6 +21,11 @@ function advanceLine(source, cursor) {
   }
 }
 
+/**
+ * `literalLines` holds the 1-based numbers of the lines that begin inside a
+ * string, comment or template literal opened on an earlier line. Blanking
+ * hides that: such a line looks like code with extra indentation.
+ */
 export function strip(source, lang) {
   const state = createState(source, lang);
   while (state.cursor.index < state.source.length) {
@@ -30,5 +36,6 @@ export function strip(source, lang) {
     code: state.parts.join(""),
     comments: state.comments,
     interpolations: state.interpolations,
+    literalLines: state.literalLines,
   };
 }

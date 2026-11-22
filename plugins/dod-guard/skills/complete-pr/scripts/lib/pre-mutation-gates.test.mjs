@@ -187,6 +187,7 @@ test("an unresolved thread stops before the ci.yml run is read", async () => {
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "unresolved-review-threads" });
   assert.equal(
+    // biome-ignore lint/security/noSecrets: This is a fixture method name, not a secret.
     client.calls.some(([name]) => name === "getCiWorkflowRuns"),
     false,
   );

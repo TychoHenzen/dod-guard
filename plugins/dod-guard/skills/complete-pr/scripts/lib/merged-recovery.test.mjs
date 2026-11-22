@@ -16,6 +16,8 @@ import { protectedRestReader } from "./complete-pr-flows.test-support.mjs";
 import { recoverMergedPullRequest } from "./merged-recovery.mjs";
 
 const closesRemedyPattern = /Add "Closes #<parent>"/;
+const missingMergeEvidencePattern = /trusted head or merge commit/;
+const incompleteCheckEvidencePattern = /complete required-check evidence/;
 
 test("recovers an already-merged pull request through guarded remote and local cleanup", async () => {
   const localGit = createFixtureLocalGit();
@@ -165,7 +167,7 @@ test("recoverMergedPullRequest stops with unverified_merge when the merge commit
 
   await assert.rejects(recoverMergedPullRequest(client, immediateOptions), {
     code: "unverified_merge",
-    message: /trusted head or merge commit/,
+    message: missingMergeEvidencePattern,
   });
 });
 
@@ -178,7 +180,7 @@ test("recoverMergedPullRequest stops with unverified_merge when required checks 
 
   await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), {
     code: "unverified_merge",
-    message: /complete required-check evidence/,
+    message: incompleteCheckEvidencePattern,
   });
   assert.deepEqual(localGit.calls, []);
 });

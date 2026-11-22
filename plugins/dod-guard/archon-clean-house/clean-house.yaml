@@ -1,0 +1,225 @@
+name: clean-house
+description: |
+  Hunt duplicate and obsolete implementations with git archaeology, then delete
+  the dead side of each superseded pair a maintainer approves. A read-only
+  session surveys the repository with clean-house's stages 1 to 3: candidate
+  pairs from two independent signals, dating, and a sweep that proves removal
+  safe. Each Strong pair, and each Fair pair with its gap named, becomes one
+  choice on a multi-select form; a Weak pair is reported and never offered.
+  Only what the maintainer picks is deleted. Shared fixes owed to the newer
+  side are ported and committed first, on their own. After every session that
+  edits, a script reverts any change the approval did not name. The checks
+  must pass before and after; a failure may only restore the file it names. The
+  deletion lands as one commit, so one revert undoes it, in a draft pull
+  request.
+
+  Use when: there are v1 and v2 or old and new variants of one thing, dead
+  implementations, duplicated modules, or a high duplication report.
+  NOT for: published libraries and SDKs, a facade over the thing it wraps, or
+  code with no check command to prove a deletion safe.
+
+  Run with: archon workflow run TychoHenzen/dod-guard:clean-house
+            --branch chore/clean-house [--input scope=<path>]
+            [--input open_pr=false]
+  Answer the form with: archon workflow answer <run-id> --occurrence <id>
+            --choose <item-id> [--choose <item-id>]...
+
+model: medium
+
+inputs:
+  scope:
+    default: ""
+    description: A repository-relative path to survey. Empty surveys the whole repository.
+  open_pr:
+    default: "true"
+    description: '"true" pushes the branch and opens a draft pull request; anything else stops at the commit.'
+
+nodes:
+  - id: preflight
+    bash: |
+      set -euo pipefail
+      [ -z "$(git status --porcelain)" ] \
+        || { echo "checkout is not clean; the run commits only approved deletions" >&2; git status --porcelain >&2; exit 1; }
+      git rev-parse HEAD
+
+  # Deleting a live implementation is the worst outcome, so the survey gets
+  # the strongest model and no way to change the checkout.
+  - id: survey
+    depends_on: [preflight]
+    command: survey
+    context: fresh
+    model: large
+    mutates_checkout: false
+    allowed_tools: [Read, Grep, Glob, Bash, Write]
+    settingSources: [project]
+
+  - id: list
+    depends_on: [survey]
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-clean-house/scripts/clean.mjs" options --dir="$ARTIFACTS_DIR" --repo="$(pwd)"
+    output_format:
+      type: object
+      properties:
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              does: { type: string }
+            required: [id]
+        count: { type: string }
+        message: { type: string }
+      required: [options, count, message]
+
+  # The checks must pass before anything is deleted, or a failure afterwards
+  # says nothing about the deletion.
+  - id: baseline
+    depends_on: [list]
+    when: "$list.output.count != '0'"
+    bash: |
+      set -uo pipefail
+      cmd=$(node "$PACK_DIR/archon-clean-house/scripts/clean.mjs" checks --dir="$ARTIFACTS_DIR")
+      [ -n "$cmd" ] || { echo "the survey found no check command; nothing could prove a deletion safe" >&2; exit 1; }
+      if ! bash -c "$cmd" > "$ARTIFACTS_DIR/baseline.txt" 2>&1; then
+        echo "the checks fail before any deletion, so they cannot judge one: $cmd" >&2
+        tail -n 30 "$ARTIFACTS_DIR/baseline.txt" >&2
+        exit 1
+      fi
+
+  - id: ask
+    depends_on: [list, baseline]
+    wait:
+      attention: "$list.output.message"
+      form: multi_select
+      options: "$list.output.options"
+      labels:
+        stage: clean-house
+        kind: approval
+
+  - id: approve
+    depends_on: [ask]
+    bash: |
+      set -euo pipefail
+      answer=$ask.output
+      node "$PACK_DIR/archon-clean-house/scripts/clean.mjs" approve --dir="$ARTIFACTS_DIR" --answer="$answer"
+    output_format:
+      type: object
+      properties:
+        count: { type: string }
+        ports: { type: string }
+      required: [count, ports]
+
+  - id: port
+    depends_on: [approve]
+    when: "$approve.output.ports != '0'"
+    command: port
+    context: fresh
+    allowed_tools: [Read, Grep, Glob, Edit, Write, Bash]
+    settingSources: [project]
+
+  # Ports are earlier, separate commits, so reverting the deletion keeps them.
+  - id: commit-ports
+    depends_on: [approve, port]
+    trigger_rule: none_failed_min_one_success
+    when: "$approve.output.count != '0'"
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-clean-house/scripts/clean.mjs" ports --dir="$ARTIFACTS_DIR" --repo="$(pwd)"
+      if [ -z "$(git status --porcelain)" ]; then echo "no ports"; exit 0; fi
+      cmd=$(node "$PACK_DIR/archon-clean-house/scripts/clean.mjs" checks --dir="$ARTIFACTS_DIR")
+      bash -c "$cmd" > "$ARTIFACTS_DIR/ports-checks.txt" 2>&1 \
+        || { echo "the checks fail after porting; nothing is committed" >&2; tail -n 30 "$ARTIFACTS_DIR/ports-checks.txt" >&2; exit 1; }
+      git add -A
+      printf 'Port shared fixes before the clean-house deletion\n\nWritten by the dod-guard clean-house workflow.\n' > "$ARTIFACTS_DIR/ports-message.txt"
+      git commit -q -F "$ARTIFACTS_DIR/ports-message.txt"
+      git rev-parse HEAD
+
+  - id: delete
+    depends_on: [commit-ports]
+    command: delete
+    context: fresh
+    allowed_tools: [Read, Grep, Glob, Edit, Bash]
+    settingSources: [project]
+
+  - id: gate
+    depends_on: [delete]
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-clean-house/scripts/clean.mjs" gate --dir="$ARTIFACTS_DIR" --repo="$(pwd)"
+
+  - id: checks
+    depends_on: [gate]
+    bash: |
+      cmd=$(node "$PACK_DIR/archon-clean-house/scripts/clean.mjs" checks --dir="$ARTIFACTS_DIR")
+      if bash -c "$cmd" > "$ARTIFACTS_DIR/checks.txt" 2>&1; then echo PASS; else echo FAIL; fi
+
+  - id: recover
+    depends_on: [checks]
+    when: "$checks.output == 'FAIL'"
+    command: recover
+    context: fresh
+    allowed_tools: [Read, Grep, Glob, Bash]
+    settingSources: [project]
+
+  # The last word belongs to scripts: the approval still bounds the change,
+  # and the checks pass.
+  - id: final
+    depends_on: [checks, recover]
+    trigger_rule: none_failed_min_one_success
+    bash: |
+      set -uo pipefail
+      node "$PACK_DIR/archon-clean-house/scripts/clean.mjs" gate --dir="$ARTIFACTS_DIR" --repo="$(pwd)" || exit 1
+      cmd=$(node "$PACK_DIR/archon-clean-house/scripts/clean.mjs" checks --dir="$ARTIFACTS_DIR")
+      if ! bash -c "$cmd" > "$ARTIFACTS_DIR/checks.txt" 2>&1; then
+        echo "the checks still fail; nothing is committed. Deleted paths:" >&2
+        git status --porcelain >&2
+        tail -n 40 "$ARTIFACTS_DIR/checks.txt" >&2
+        exit 1
+      fi
+
+  - id: report
+    depends_on: [list, approve, final]
+    trigger_rule: none_failed_min_one_success
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-clean-house/scripts/clean.mjs" report --dir="$ARTIFACTS_DIR" --repo="$(pwd)"
+
+  # One deletion commit with its reference updates and dependency removals,
+  # so one revert undoes the batch. Prints the head, or "unchanged".
+  - id: commit
+    depends_on: [report]
+    bash: |
+      set -euo pipefail
+      base=$preflight.output
+      if [ -n "$(git status --porcelain)" ]; then
+        git add -A
+        printf 'Delete superseded implementations\n\nApproved in the dod-guard clean-house workflow. Revert this commit to\nrestore the whole batch; ported fixes are in earlier commits.\n' > "$ARTIFACTS_DIR/commit-message.txt"
+        git commit -q -F "$ARTIFACTS_DIR/commit-message.txt"
+      fi
+      head=$(git rev-parse HEAD)
+      if [ "$head" = "$base" ]; then echo unchanged; else echo "$head"; fi
+
+  # A public write, so a script does it and reads the result back.
+  - id: pr
+    depends_on: [commit]
+    when: "$INPUTS.open_pr == 'true'"
+    bash: |
+      set -euo pipefail
+      head=$commit.output
+      if [ "$head" = unchanged ]; then echo "nothing was deleted; no pull request"; exit 0; fi
+      base_branch="$BASE_BRANCH"
+      [ -n "$base_branch" ] || { echo "Archon resolved no base branch for the pull request" >&2; exit 1; }
+      branch=$(git branch --show-current)
+      git push -q -u origin "$branch"
+      [ "$(git ls-remote --heads origin "$branch" | cut -f1)" = "$head" ] \
+        || { echo "the pushed head does not match $head" >&2; exit 1; }
+      gh pr create --draft --base "$base_branch" --head "$branch" --title "Clean house: delete superseded implementations" \
+        --body-file "$ARTIFACTS_DIR/report.md" > /dev/null
+      read_head=$(gh pr view "$branch" --json headRefOid --jq .headRefOid)
+      [ "$read_head" = "$head" ] || { echo "the pull request head $read_head is not $head" >&2; exit 1; }
+      read_base=$(gh pr view "$branch" --json baseRefName --jq .baseRefName)
+      [ "$read_base" = "$base_branch" ] || { echo "the pull request base $read_base is not $base_branch" >&2; exit 1; }
+      gh pr view "$branch" --json url --jq .url

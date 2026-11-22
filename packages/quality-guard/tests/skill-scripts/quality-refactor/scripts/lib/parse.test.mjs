@@ -1,12 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { lineIndex } from "../../../../../skills/quality-refactor/scripts/lib/offsets.mjs";
-import { findFunctions } from "../../../../../skills/quality-refactor/scripts/lib/parse.mjs";
-import { strip } from "../../../../../skills/quality-refactor/scripts/lib/strip.mjs";
+import { findFunctions } from "#quality-guard-parse";
+import { strip } from "#quality-guard-strip";
 
 function namesIn(source, lang) {
-  const { code } = strip(source, lang);
-  return findFunctions(code, lang, lineIndex(code), source)
+  return findFunctions(strip(source, lang), lang, source)
     .map((fn) => fn.name)
     .sort();
 }
@@ -53,8 +51,7 @@ test("a plain Rust fn is a definition", () => {
 });
 
 test("findFunctions requires the raw source string for every language", () => {
-  assert.throws(
-    () => findFunctions("function f() {}", "ts", lineIndex("function f() {}")),
-    { name: "TypeError" },
-  );
+  assert.throws(() => findFunctions(strip("function f() {}", "ts"), "ts"), {
+    name: "TypeError",
+  });
 });

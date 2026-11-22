@@ -1,0 +1,158 @@
+name: skill-debug
+description: |
+  Debug a skill from the sessions that ran it. Scripts find the skill's recent
+  runs in the session transcripts and pull each one as a full numbered trace.
+  A read-only session writes the scoring standard from the SKILL.md first,
+  then scores every trace against it and writes each divergence with its cause
+  and a fix that cites real step numbers; a script rejects any finding whose
+  cited steps do not exist. A maintainer accepts findings on a multi-select
+  form. Each accepted finding becomes one edit by a fresh session to the one
+  file it names, verified and committed by a script, in a draft pull request
+  whose body carries no transcript text.
+
+  Use when: a skill misbehaved, ignored its own steps, or needs fixing from
+  what it actually did. Run it in the skill's source repository.
+  NOT for: writing a new skill, or a bug in code a skill happened to touch.
+
+  Run with: archon workflow run TychoHenzen/dod-guard:skill-debug
+            --branch fix/skill-debug-<name> --input skill=<name>
+            [--input days=30] [--input runs=3] [--input open_pr=false]
+  Answer the form with: archon workflow answer <run-id> --occurrence <id>
+            --choose <finding-id> [--choose <finding-id>]...
+
+model: medium
+
+inputs:
+  skill:
+    default: ""
+    description: The skill to debug, bare or plugin-qualified (next-ticket or dod-guard:next-ticket).
+  days:
+    default: "30"
+    description: How many days of transcripts to search first; the search widens if it finds no run.
+  runs:
+    default: "3"
+    description: How many of the newest runs to pull, between 2 and 6.
+  open_pr:
+    default: "true"
+    description: '"true" pushes the branch and opens a draft pull request; anything else stops at the commits.'
+
+nodes:
+  - id: preflight
+    bash: |
+      set -euo pipefail
+      [ -n "$INPUTS_SKILL" ] || { echo "name the skill: --input skill=<name>" >&2; exit 1; }
+      [ -z "$(git status --porcelain)" ] \
+        || { echo "checkout is not clean; each accepted edit is committed on its own" >&2; git status --porcelain >&2; exit 1; }
+      git rev-parse HEAD
+
+  # Edits land in the skill's source checkout, never in an installed copy.
+  - id: target
+    depends_on: [preflight]
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-skill-debug/scripts/debug.mjs" target --dir="$ARTIFACTS_DIR" --repo="$(pwd)" --skill="$INPUTS_SKILL"
+
+  - id: gather
+    depends_on: [target]
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-skill-debug/scripts/debug.mjs" gather --dir="$ARTIFACTS_DIR" --skill="$INPUTS_SKILL" \
+        --days="$INPUTS_DAYS" --runs="$INPUTS_RUNS" --scripts="$PACK_DIR/skills/skill-debug/scripts"
+
+  - id: diagnose
+    depends_on: [gather]
+    command: diagnose
+    context: fresh
+    model: large
+    mutates_checkout: false
+    allowed_tools: [Read, Grep, Glob, Write]
+    settingSources: [project]
+
+  - id: list
+    depends_on: [diagnose]
+    bash: |
+      set -euo pipefail
+      node "$PACK_DIR/archon-skill-debug/scripts/debug.mjs" options --dir="$ARTIFACTS_DIR" --repo="$(pwd)"
+    output_format:
+      type: object
+      properties:
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              does: { type: string }
+            required: [id]
+        count: { type: string }
+        message: { type: string }
+      required: [options, count, message]
+
+  # Changing a shipped skill is the maintainer's call.
+  - id: ask
+    depends_on: [list]
+    when: "$list.output.count != '0'"
+    wait:
+      attention: "$list.output.message"
+      form: multi_select
+      options: "$list.output.options"
+      labels:
+        stage: skill-debug
+        kind: approval
+
+  - id: approve
+    depends_on: [ask]
+    bash: |
+      set -euo pipefail
+      answer=$ask.output
+      node "$PACK_DIR/archon-skill-debug/scripts/debug.mjs" approve --dir="$ARTIFACTS_DIR" --repo="$(pwd)" --answer="$answer"
+    output_format:
+      type: object
+      properties:
+        count: { type: string }
+      required: [count]
+
+  # One accepted finding per fresh session, one edit each.
+  - id: apply
+    depends_on: [approve]
+    when: "$approve.output.count != '0'"
+    allowed_tools: [Read, Grep, Glob, Edit]
+    settingSources: [project]
+    loop:
+      command: apply-finding
+      fresh_context: true
+      max_iterations: 20
+      until_bash: 'node "$PACK_DIR/archon-skill-debug/scripts/debug.mjs" advance --dir="$ARTIFACTS_DIR" --repo="$(pwd)"'
+
+  - id: report
+    depends_on: [list, approve, apply]
+    trigger_rule: none_failed_min_one_success
+    bash: |
+      set -euo pipefail
+      [ -z "$(git status --porcelain)" ] \
+        || { echo "uncommitted changes remain after the edits:" >&2; git status --porcelain >&2; exit 1; }
+      node "$PACK_DIR/archon-skill-debug/scripts/debug.mjs" report --dir="$ARTIFACTS_DIR"
+
+  # A public write, so a script does it and reads the result back.
+  - id: pr
+    depends_on: [report]
+    when: "$INPUTS.open_pr == 'true'"
+    bash: |
+      set -euo pipefail
+      base=$preflight.output
+      head=$(git rev-parse HEAD)
+      if [ "$head" = "$base" ]; then echo "no finding was applied; no pull request"; exit 0; fi
+      base_branch="$BASE_BRANCH"
+      [ -n "$base_branch" ] || { echo "Archon resolved no base branch for the pull request" >&2; exit 1; }
+      branch=$(git branch --show-current)
+      git push -q -u origin "$branch"
+      [ "$(git ls-remote --heads origin "$branch" | cut -f1)" = "$head" ] \
+        || { echo "the pushed head does not match $head" >&2; exit 1; }
+      gh pr create --draft --base "$base_branch" --head "$branch" --title "Skill debug: $INPUTS_SKILL" \
+        --body-file "$ARTIFACTS_DIR/pr-body.md" > /dev/null
+      read_head=$(gh pr view "$branch" --json headRefOid --jq .headRefOid)
+      [ "$read_head" = "$head" ] || { echo "the pull request head $read_head is not $head" >&2; exit 1; }
+      read_base=$(gh pr view "$branch" --json baseRefName --jq .baseRefName)
+      [ "$read_base" = "$base_branch" ] || { echo "the pull request base $read_base is not $base_branch" >&2; exit 1; }
+      gh pr view "$branch" --json url --jq .url
