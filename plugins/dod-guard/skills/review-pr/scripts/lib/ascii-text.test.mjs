@@ -8,7 +8,9 @@ import { asciiText } from "./ascii-text.mjs";
 const chars = (...codes) => String.fromCodePoint(...codes);
 
 test("maps dashes, quotes, ellipsis and arrows", () => {
-  const input = `a${chars(0x2014)}b${chars(0x2013)}c ${chars(0x2018)}x${chars(0x2019)} ${chars(0x201c)}y${chars(0x201d)}${chars(0x2026, 0x2192, 0x2190)}`;
+  const dashes = `a${chars(0x2014)}b${chars(0x2013)}c`;
+  const quotes = `${chars(0x2018)}x${chars(0x2019)} ${chars(0x201c)}y${chars(0x201d)}`;
+  const input = `${dashes} ${quotes}${chars(0x2026, 0x2192, 0x2190)}`;
   assert.equal(asciiText(input), "a-b-c 'x' \"y\"...-><-");
 });
 

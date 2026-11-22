@@ -30,7 +30,8 @@ const SCAN = {
 };
 
 test("folds a scanner message to ASCII", () => {
-  const message = `too long ${String.fromCodePoint(0x2014)} see ${String.fromCodePoint(0x201c)}docs${String.fromCodePoint(0x201d)}`;
+  const [dash, open, close] = [0x2014, 0x201c, 0x201d].map((code) => String.fromCodePoint(code));
+  const message = `too long ${dash} see ${open}docs${close}`;
   const scan = { violations: [violation({ file: A, line: 3, rule: "line-length", message })] };
   const [item] = scannerCandidates(scan, CHANGED);
   assert.equal(item.message, 'too long - see "docs"');

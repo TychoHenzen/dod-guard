@@ -118,6 +118,12 @@ function questionLimit(slotCount) {
   return Math.max(MAX_QUESTIONS_PER_SLOT, Math.ceil(REVIEWERS.length / Math.max(slotCount, 1)));
 }
 
+function requireQuestionCount(slot, questions, limit) {
+  if (questions.length > limit) {
+    throw new Error(`Slot ${slot} has ${questions.length} questions; the limit is ${limit}`);
+  }
+}
+
 function requirePlanEntries(plan, generated) {
   const limit = questionLimit(generated.size);
   const planned = new Set();
@@ -134,10 +140,9 @@ function requirePlanEntries(plan, generated) {
     }
     planned.add(slot);
     requireEntryShape(entry);
-    if (entry.questions && entry.questions.length > limit) {
-      throw new Error(`Slot ${slot} has ${entry.questions.length} questions; the limit is ${limit}`);
-    }
-    for (const question of entry.questions ?? []) {
+    const questions = entry.questions ?? [];
+    requireQuestionCount(slot, questions, limit);
+    for (const question of questions) {
       requireQuestion(question, slot, ids);
     }
   }

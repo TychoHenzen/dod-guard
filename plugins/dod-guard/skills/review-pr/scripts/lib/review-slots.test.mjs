@@ -239,6 +239,11 @@ test("a slot with both questions and an exclusion is refused", () => {
   assert.throws(() => requirePlan(plan, SLOTS), /Slot criterion:1 has both questions and an exclusion/);
 });
 
+const INCOMPLETE_QUESTION = [
+  "needs an id, a reviewer lens, a question, a files list,",
+  "and a status of verified, repaired, unanswered",
+].join(" ");
+
 test("an incomplete question is refused and names its slot", () => {
   const incomplete = [
     { id: " " },
@@ -255,7 +260,7 @@ test("an incomplete question is refused and names its slot", () => {
     plan[0].questions[0] = q("F1", "review-pr-feature", change);
     assert.throws(
       () => requirePlan(plan, SLOTS),
-      /in slot file:src\/a\.mjs needs an id, a reviewer lens, a question, a files list, and a status of verified, repaired, unanswered/,
+      (error) => error.message.includes(`in slot file:src/a.mjs ${INCOMPLETE_QUESTION}`),
     );
   }
   const plan = PLAN();
