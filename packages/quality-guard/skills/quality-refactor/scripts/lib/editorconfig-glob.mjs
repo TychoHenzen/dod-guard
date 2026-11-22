@@ -14,46 +14,62 @@ import { DIRECTORIES, parseGlob } from "./editorconfig-glob-parse.mjs";
 const cache = new Map();
 const isDigit = (c) => c >= "0" && c <= "9";
 
-// Each state is a list of edges: { kind: "eps", to } consumes nothing,
-// { kind: "char", test, to } one character, { kind: "range", range, to } a
-// whole number.
+// nfa.states[i] lists the edges leaving state i: { kind: "eps", to }
+// consumes nothing, { kind: "char", test, to } one character, and
+// { kind: "range", range, to } a whole number.
+const newState = (nfa) => nfa.states.push([]) - 1;
+const link = (nfa, from, out) => nfa.states[from].push(out);
+
+// Each step adds one token after state `from` and returns its end state.
+function charStep(nfa, token, from) {
+  const to = newState(nfa);
+  link(nfa, from, { kind: "char", test: token.test, to });
+  return to;
+}
+
+// A fresh state per repeat, so "[a]*[b]*" cannot accept "ba".
+function repeatStep(nfa, token, from) {
+  const loop = newState(nfa);
+  link(nfa, from, { kind: "eps", to: loop });
+  link(nfa, loop, { kind: "char", test: token.test, to: loop });
+  return loop;
+}
+
+function altStep(nfa, token, from) {
+  const join = newState(nfa);
+  for (const option of token.options) {
+    const start = newState(nfa);
+    link(nfa, from, { kind: "eps", to: start });
+    link(nfa, buildSequence(nfa, option, start), { kind: "eps", to: join });
+  }
+  return join;
+}
+
+function rangeStep(nfa, token, from) {
+  const to = newState(nfa);
+  link(nfa, from, { kind: "range", range: token, to });
+  return to;
+}
+
+const STEPS = {
+  char: charStep,
+  repeat: repeatStep,
+  alt: altStep,
+  range: rangeStep,
+};
+
+function buildSequence(nfa, tokens, start) {
+  return tokens.reduce(
+    (at, token) => STEPS[token.kind](nfa, token, at),
+    start,
+  );
+}
+
 function buildNfa(tokens) {
-  const states = [];
-  const newState = () => states.push([]) - 1;
-  const edge = (from, kind, to, extra) =>
-    states[from].push({ kind, to, ...extra });
-  const steps = {
-    char(token, from) {
-      const to = newState();
-      edge(from, "char", to, { test: token.test });
-      return to;
-    },
-    // A fresh state per repeat, so "[a]*[b]*" cannot accept "ba".
-    repeat(token, from) {
-      const loop = newState();
-      edge(from, "eps", loop);
-      edge(loop, "char", loop, { test: token.test });
-      return loop;
-    },
-    alt(token, from) {
-      const join = newState();
-      for (const option of token.options) {
-        const start = newState();
-        edge(from, "eps", start);
-        edge(sequence(option, start), "eps", join);
-      }
-      return join;
-    },
-    range(token, from) {
-      const to = newState();
-      edge(from, "range", to, { range: token });
-      return to;
-    },
-  };
-  const sequence = (run, first) =>
-    run.reduce((at, token) => steps[token.kind](token, at), first);
-  const start = newState();
-  return { states, start, accept: sequence(tokens, start) };
+  const nfa = { states: [], start: 0, accept: 0 };
+  nfa.start = newState(nfa);
+  nfa.accept = buildSequence(nfa, tokens, nfa.start);
+  return nfa;
 }
 
 // Adds `state` and every state reachable from it by "eps" edges.
@@ -91,18 +107,22 @@ const MOVES = {
   range: (out, path, at) => numberEnds(path, at, out.range),
 };
 
+// Follows edge `out` from position `at` and marks what it reaches as live.
+function reach({ nfa, path, live }, out, at) {
+  for (const end of MOVES[out.kind](out, path, at)) {
+    addClosure(nfa, live[end], out.to);
+  }
+}
+
 function accepts(nfa, path) {
   const live = Array.from({ length: path.length + 1 }, () => new Set());
+  const walk = { nfa, path, live };
   addClosure(nfa, live[0], nfa.start);
   // Every move consumes at least one character, so a set is complete before
   // the walk reaches its position.
   for (let at = 0; at <= path.length; at += 1) {
     for (const state of live[at]) {
-      for (const out of nfa.states[state]) {
-        for (const end of MOVES[out.kind](out, path, at)) {
-          addClosure(nfa, live[end], out.to);
-        }
-      }
+      for (const out of nfa.states[state]) reach(walk, out, at);
     }
   }
   return live[path.length].has(nfa.accept);
