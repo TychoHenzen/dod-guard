@@ -3,8 +3,10 @@
 // `[seq]` is a character set. A name with a "/" is anchored to the directory
 // holding the .editorconfig; a name without one matches at any depth.
 
-// ASSUMPTION: a numeric range wider than this never matches. Real sections
-// use small ranges, and an enumerated range of a billion would exhaust memory.
+// ASSUMPTION: a numeric range wider than this, or with an endpoint past
+// Number.MAX_SAFE_INTEGER, never matches. Real sections use small ranges; an
+// enumerated range of a billion would exhaust memory, and past the safe range
+// n + 1 rounds back to n, so the enumeration would never end.
 const MAX_RANGE = 1000;
 const NUMERIC_RANGE = /^(-?\d+)\.\.(-?\d+)$/;
 const cache = new Map();
@@ -41,6 +43,7 @@ function topLevelParts(inner) {
 }
 
 function numericAlternatives(low, high) {
+  if (!Number.isSafeInteger(low) || !Number.isSafeInteger(high)) return "(?!)";
   const from = Math.min(low, high);
   const to = Math.max(low, high);
   if (to - from > MAX_RANGE) return "(?!)";
