@@ -51,5 +51,10 @@ export function renderComment({
     ...commentSummary({ gate, classified, link, skipped, settingChanged }),
     "",
     ...section("New findings that block", gate.blocking, MAX_COMMENT_FINDINGS),
+    ...section(
+      "Pre-existing findings removed by this pull request",
+      classified.resolved,
+      MAX_COMMENT_FINDINGS,
+    ),
   ].join("\n");
 }

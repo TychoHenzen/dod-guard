@@ -18,6 +18,12 @@ function bullet(finding) {
   );
 }
 
+// Bullet lines for removed pre-existing findings, in the same order and
+// format the full log uses.
+export function removedLines(resolved) {
+  return sortFindings(resolved).map(bullet);
+}
+
 export function section(title, findings, limit = Number.POSITIVE_INFINITY) {
   if (findings.length === 0) return [];
   const more =

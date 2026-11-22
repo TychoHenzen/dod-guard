@@ -4,6 +4,7 @@ import { referenceCounts } from "./rules-reachability-evidence.mjs";
 import {
   EXPORT_BLOCK,
   EXPORT_PATTERNS,
+  hasGlobalClassAttribute,
 } from "./rules-reachability-exports.mjs";
 import { suggestionFor } from "./rule-suggestions.mjs";
 function namesFromBlock(code) {
@@ -37,7 +38,10 @@ function directExports(file, scan) {
   for (const pattern of EXPORT_PATTERNS[file.lang] ?? []) {
     for (const match of matchesFor(pattern, scan.code)) {
       const offset = match.index + match[0].lastIndexOf(match[1]);
-      found.set(match[1], { line: lineAt(scan.starts, match.index), offset });
+      const info = { line: lineAt(scan.starts, match.index), offset };
+      if (file.lang === "cs")
+        info.registered = hasGlobalClassAttribute(scan.code, match.index);
+      found.set(match[1], info);
     }
   }
   return found;
@@ -55,6 +59,7 @@ function exportsOf(file, scan) {
   );
 }
 function violationForSymbol({ file, corpus, config, symbol }) {
+  if (symbol.registered) return null;
   const { prod, test } = referenceCounts(symbol.name, corpus, {
     file: file.rel,
     offset: symbol.offset,

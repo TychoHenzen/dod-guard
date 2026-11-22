@@ -1,8 +1,11 @@
-// The scanner judges every repository at its built-in limits (line width 80,
-// file length 100). A reviewed repository states its own: `.editorconfig`
-// `max_line_length`, and the `--rule-block-on` floors its quality-pr-gate CI
-// step passes. The review applies those to the scan, so it never reports what
-// the repository's own gate was told to accept.
+// The scanner judges every repository at its built-in limits (file length
+// 100, and line width 80 unless a formatter or, since issue 988, an
+// `.editorconfig` sets one). A reviewed repository states its own:
+// `.editorconfig` `max_line_length`, and the `--rule-block-on` floors its
+// quality-pr-gate CI step passes. The review applies those to the scan, so it
+// never reports what the repository's own gate was told to accept. The width
+// half matters for an installed scanner older than issue 988, and for `off`,
+// which that scanner treats as no width set.
 
 // biome-ignore lint/correctness/noNodejsModules: This skill helper reads repository files under Node.js.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -145,11 +148,11 @@ function applyRepoLimits(scan, { widthFor, floors }) {
   const kept = [];
   for (const violation of scan.violations) {
     const judged = withWidth(violation, widthFor);
-    if (judged === null || belowFloor(judged, floors)) {
-      removed[violation.rule] = (removed[violation.rule] ?? 0) + 1;
-    } else {
+    if (judged !== null && !belowFloor(judged, floors)) {
       kept.push(judged);
+      continue;
     }
+    removed[violation.rule] = (removed[violation.rule] ?? 0) + 1;
   }
   return { scan: { ...scan, violations: kept }, removed };
 }
