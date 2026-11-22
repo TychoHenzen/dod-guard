@@ -33,3 +33,10 @@ export const EXPORT_PATTERNS = {
   ],
   py: [/^(?:async\s+)?def\s+([a-zA-Z]\w*)/gm, /^class\s+([A-Za-z]\w*)/gm],
 };
+
+// Godot registers a [GlobalClass] type with the engine by attribute, so no scene or script references it.
+export function hasGlobalClassAttribute(code, index) {
+  const before = code.slice(0, index);
+  const cut = Math.max(before.lastIndexOf(";"), before.lastIndexOf("{"), before.lastIndexOf("}"));
+  return /\[[^\]]*\bGlobalClass\b[^\]]*\]/.test(before.slice(cut + 1));
+}

@@ -51,7 +51,7 @@ function runGate(options, cwd, { out, err }) {
   });
   const gate = evaluateGate(classified, options);
   writeOutputs(options, summarize({ gate, classified, files, base }));
-  reportToConsole(gate, err, out);
+  reportToConsole(gate, classified, err, out);
   return gate.passed ? 0 : 1;
 }
 

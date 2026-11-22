@@ -4,6 +4,7 @@ import { CONFIG_FILE } from "./exclusion-config.mjs";
 import { isGenerated } from "./pr-gate-paths.mjs";
 import { quotaText } from "./pr-gate-quota.mjs";
 import { renderComment, renderReport } from "./pr-gate-report.mjs";
+import { removedLines } from "./pr-gate-sections.mjs";
 
 export function writeOutputs(options, summary) {
   if (options.report) writeFileSync(options.report, renderReport(summary));
@@ -14,7 +15,14 @@ export function writeOutputs(options, summary) {
     );
 }
 
-export function reportToConsole(gate, err, out) {
+export function reportToConsole(gate, classified, err, out) {
+  if (classified.resolved.length > 0) {
+    out.write(
+      `quality-pr-gate: removed ${classified.resolved.length} ` +
+        "pre-existing finding(s):\n",
+    );
+    out.write(`${removedLines(classified.resolved).join("\n")}\n`);
+  }
   for (const finding of gate.blocking) {
     err.write(
       `${finding.file}:${finding.line} ${finding.rule}: ${finding.message}\n`,
