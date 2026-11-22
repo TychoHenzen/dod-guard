@@ -191,8 +191,8 @@ convergence check. The canonical records and handoffs are in
 | Stage | Owner | GitHub-backed artifact | Handoff |
 | --- | --- | --- | --- |
 | Principles | `/setup-repository` | Repository instructions | Existing rules guide capture and refinement. |
-| Problem | `/add-backlog-idea` | Issue in `Backlog` with concise outcome and scope | Refine one coherent issue. |
-| Requirements | `/refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
+| Problem | `/add-backlog-idea` | Issue in `Backlog` with a concise problem (why) and intended change (what changes) | Refine one coherent issue. |
+| Requirements | `/refine-backlog-item` | Issue `Why`, `What Changes`, `Design`, the `requirements` record, and checked `Acceptance criteria`, validated by `openspec validate --strict` | Clarify gaps, then plan. |
 | Clarification | `/refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
 | Plan | `/refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
 | Tasks | `/refine-backlog-item` | `task-list` record and functional-slice child PBIs when independent delivery warrants them | `Todo` PBI hands every slice and parent task evidence to implementation on one branch and PR. |

@@ -109,6 +109,22 @@ The emergency case deliberately has tiny effort: urgency must not inflate size.
 | Godot headless rows | The checkout holds a project.godot, and a draft row says the owner confirms in a window that the shelf looks right. | The row is rewritten as a headless state assertion, or the judgement becomes an owner note in Implementation notes. |
 | Godot window lint | The same checkout, and a planned-matrix row reads "windowed screenshot of the shelf". | `handoff-proof.mjs refinement --plans --root` exits 1 and names the row. A headless row passes, and the same row in a checkout without project.godot is not judged. |
 
+## Body shape cases
+
+The reference body is `plugins/dod-guard/lib/fixtures/openspec-shaped-body.md`.
+Run the format check on each readback body with
+`node <plugin-root>/skills/refine-backlog-item/scripts/openspec-format-check.mjs --body-file=<path>`.
+
+| Case | Input variation | Expected result |
+|---|---|---|
+| New body shape | A feature issue refined from scratch. | The body holds `## Why`, `## What Changes` (capabilities and non-goals), `## Design`, `## Implementation notes`, `## Acceptance criteria`, and `## Verification`, in that order, and no `## Outcome` or `## Scope`. Each `requirements` bullet reads `- R-<n> (<operation>, <capability>) <name>: <statement>` with SHALL or MUST, and each checkbox reads `- [ ] AC-<n> (<ids>) <scenario>: WHEN ... THEN ...`. The format check exits 0 and prints `openspec <version>`, and the version is recorded in `research-source`. |
+| Small clear fix | A one-line documentation fix. | The body still holds the six sections, `## Design` may say that no design decision is needed, and the `requirements` record holds one tagged requirement that a checkbox cites. The format check exits 0. |
+| Uncited requirement | A `requirements` bullet that no checkbox cites. | The format check exits 1 and names the requirement id. The issue stays in its Status until the body is corrected and both checks rerun. |
+| Requirement without SHALL | A statement written as "The game rejects a draw ...". | The format check exits 1 and names the requirement id. |
+| Rename | A requirement is renamed. | The body writes `REMOVED` of the old name and `ADDED` of the new one. A `RENAMED` bullet makes the format check exit 1 and name the id. |
+| OpenSpec missing | The `openspec` command is not on PATH. | The format check exits 2 and names `openspec`. Refinement stops before the Todo move and reports it. |
+| Old body shape | A Todo issue refined before this change, with `## Outcome`, `## Scope`, and untagged requirements. | Re-refinement rewrites it into the six sections and the two grammars. Until then `complete-pr`, `review-pr`, and `fix-pr-review` read it as before. |
+
 ## Live GitHub exercise
 
 Create an explicitly named disposable verification issue in the target

@@ -17,11 +17,19 @@ and pull request as the source of truth.
 - Existing repository instructions in `AGENTS.md` and `CLAUDE.md` are the
   project-principles source. Preserve both when both exist and follow the
   repository's existing import convention. Do not add a second constitution.
-- The GitHub issue holds the outcome, requirements, decisions, plan, tasks,
-  acceptance criteria, and verification. Project Status records lifecycle.
-  Branch history and the pull request hold implementation and review evidence.
-- OpenSpec material is historical reference only. It is not an active runtime,
-  dependency, or source of truth.
+- The GitHub issue owns the plan: its Why, What Changes, design, requirements,
+  decisions, tasks, acceptance criteria, and verification. Project Status
+  records lifecycle. Branch history and the pull request hold implementation
+  and review evidence.
+- The committed `openspec/specs/` tree owns how the system behaves. A pull
+  request merges its issue's requirement deltas into that tree, and the tree
+  is not a planning file.
+- A local OpenSpec change folder under `openspec/changes/` (written by
+  HagiCode or by the OpenSpec CLI) is an ignored working copy and never the
+  source of truth. When the issue body and a local change folder or its
+  `tasks.md` disagree, follow the issue body.
+- The OpenSpec CLI validates the issue's format during refinement and merges
+  spec deltas on the ticket branch. It is not a planning store.
 - PBI #59 owns forgiving defaults, dirty-worktree handling, stale-test policy,
   and functional-style guidance. This map composes with those rules instead of
   replacing or duplicating them.
@@ -34,8 +42,8 @@ and pull request as the source of truth.
 | Stage | Owner | GitHub-backed artifact | Handoff |
 | --- | --- | --- | --- |
 | Principles | `setup-repository` | Repository instructions | Existing rules guide capture and refinement. |
-| Problem | `add-backlog-idea` | Issue in `Backlog` with concise outcome and scope | Refine one coherent issue. |
-| Requirements | `refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
+| Problem | `add-backlog-idea` | Issue in `Backlog` with a concise problem (why) and intended change (what changes) | Refine one coherent issue. |
+| Requirements | `refine-backlog-item` | Issue `Why`, `What Changes`, `Design`, the `requirements` record, and checked `Acceptance criteria`, validated by `openspec validate --strict` | Clarify gaps, then plan. |
 | Clarification | `refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
 | Plan | `refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
 | Tasks | `refine-backlog-item` | `task-list` record and functional-slice child PBIs when independent delivery warrants them | `Todo` PBI hands every slice and parent task evidence to implementation on one branch and PR. |
@@ -135,7 +143,7 @@ The rows are one fenced `json` array under that heading, with fields `context`, 
 For a structured PBI, keep these records in the issue's `## Implementation
 notes`. The exact prose can vary, but the names and meaning stay stable:
 
-- `requirements`: observable user stories, constraints, and non-goals. Each requirement is a bullet that opens with an id token (`R-1`, `R-2`, and so on). Each `## Acceptance criteria` checkbox cites, after its `AC-n` id, the ids it proves, as in `- [ ] AC-1 (R-1, R-2) ...`. The refinement proof reports a requirement that no criterion cites, a cited id that is not a requirement, and a repeated id. Ids match as whole tokens, so `R-1` never matches `R-10`. The post-push and finalization proofs do not apply this check.
+- `requirements`: the observable behavior the issue adds, changes, or removes, one OpenSpec requirement per bullet, in the form `- R-<n> (<operation>, <capability>) <requirement name>: <statement>`. The operation is `ADDED`, `MODIFIED`, or `REMOVED`, the capability names `openspec/specs/<capability>/`, and the statement uses SHALL or MUST. Non-goals live in `## What Changes`, not here. Each `## Acceptance criteria` checkbox cites, after its `AC-n` id, the ids it proves, and states one scenario, as in `- [ ] AC-1 (R-1, R-2) <scenario name>: WHEN <condition> THEN <outcome>`. `skills/refine-backlog-item/scripts/openspec-format-check.mjs` validates both grammars with `openspec validate --strict`. A body refined before this form keeps untagged bullets, and every reader still accepts it. The refinement proof reports a requirement that no criterion cites, a cited id that is not a requirement, and a repeated id. Ids match as whole tokens, so `R-1` never matches `R-10`. The post-push and finalization proofs do not apply this check.
 - `clarifications`: resolved decisions and their evidence. Keep
   `unresolved-decision` entries when a decision is not safe to invent.
 - `implementation-plan`: affected owners, approach, and verification approach.

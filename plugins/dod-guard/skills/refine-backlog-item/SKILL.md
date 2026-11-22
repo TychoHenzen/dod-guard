@@ -7,7 +7,7 @@ description: Research a backlog item and give it justified priority, Fibonacci e
 
 Turn one existing Backlog or Todo issue into an implementation-ready parent PBI, in the issue's own target repository. Never create a branch, assign the PBI, set In Progress, implement code, or open a PR.
 
-Never run `closure.mjs apply` without a `closure.mjs plan` output from the same snapshot that shows no holds. Never delete or rename repository labels. Never edit a PBI body outside the five sections and the records in Implementation notes.
+Never run `closure.mjs apply` without a `closure.mjs plan` output from the same snapshot that shows no holds. Never delete or rename repository labels. Never edit a PBI body outside the six sections and the records in Implementation notes.
 
 Resolve the plugin root from this skill's directory. Read and apply `standards/working-defaults.md` and `standards/github-request-discipline.md`. Where this skill is stricter, it wins. After a failed or ambiguous write, read the resource back before you retry.
 
@@ -15,13 +15,20 @@ Resolve the plugin root from this skill's directory. Read and apply `standards/w
 
 1. Resolve the repository, linked Project, and Backlog and Todo statuses per the discipline standard ("Resolve the repository and Project"). Get the Project from `node <plugin-root>/skills/complete-pr/scripts/linked-project.mjs --repository=<owner/name>`. Stop on outcome `none` or `several`, or on exit 2.
 2. Verify the issue is in the repository, is in that Project, and has Status `Backlog` or `Todo`. Drafts are not accepted.
-   - A `Todo` parent is refined in place, for example after `select-next` reported it as `needs-refinement`. Run the whole skill, leave its Status `Todo`, and skip step 6 of "Apply labels and verify".
+   - A `Todo` parent is refined in place, for example after `select-next` reported it as `needs-refinement`. Run the whole skill, leave its Status `Todo`, and skip step 7 of "Apply labels and verify".
    - Exception: a parent in `Todo` or `In Progress` after `dod-guard:next-ticket` stopped with `step-plan-missing`. Run only "Write the step plans", leave Status unchanged, and change nothing else.
 3. Fetch all live labels with descriptions: GitHub MCP, else `gh api --paginate "repos/{owner}/{repo}/labels?per_page=100"`.
 4. Check that each label below has exactly one exact-name match and a nonempty description. Otherwise stop before any mutation.
    - Priority: `Prio 1 - Emergency`, `Prio 2 - Urgent`, `Prio 3 - Standard`, `Prio 4 - Non-Urgent`, `Prio 5 - Planned`, `Prio 6 - Unknown`
    - Effort: `Effort 1 - Trivial`, `Effort 2 - Easy`, `Effort 3 - Medium`, `Effort 5 - Large`, `Effort 8 - Huge`, `Effort 13 - Epic`
    - Standard: `bug`, `documentation`, `duplicate`, `enhancement`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`
+
+5. When the user gives a local OpenSpec change folder for the issue, such as one a HagiCode proposal session wrote, publish it before research.
+   1. Run `node <plugin-root>/skills/refine-backlog-item/scripts/openspec-publish.mjs plan --change=<dir> --issue=<n>`. Exit 1 prints `invalid` with the `openspec validate --strict` issues and the mapper problems: report them and stop before any issue write, because the folder needs another proposal round. Exit 2 stops the same way.
+   2. Write the plan's `body` as the issue's Why, What Changes, Design, Implementation notes, and Acceptance criteria sections. Keep any existing `## Verification` and the other Implementation notes records; research fills them next.
+   3. For each entry of `slices`, list the parent's sub-issues and look for one whose body holds the slice's `<!-- openspec-slice: <slice> -->` marker. Update that sub-issue's title and body when it differs. Create and link a new one only when no sub-issue holds the marker, so a second publish creates nothing.
+   4. Put each task of `parentTasks` into the `task-list` record with the task text as its `title`, so the sync step finds it.
+   5. Read back the body and every slice sub-issue. A second plan run over the unchanged folder must print the same plan, and the readback must match it. Then continue with research, labels, and the format check as for any other issue.
 
 Never create labels, duplicate labels, Project fields, or another estimation scale. On any missing or ambiguous value, stop and report it. Never infer product decisions.
 
@@ -39,7 +46,7 @@ Run triage again after every interview, research, advisor, or debate round. Neve
 - User constraints, interactive: ask in ordinary conversation after research. Put all currently independent questions in one round, each with several concrete options and a marked recommended default. Hold dependent questions for a later round, and wait for the round's answers before using any answer-dependent option. Record the result as an `interview-contract` note.
 - User constraints, active goal or non-interactive: invoke exactly one fresh `dod-guard:codex-advisor` instead of asking (it owns the model: `gpt-5.6-sol` at `max` reasoning effort, Codex fallback only). Brief it with only the batched independent questions, candidates and a recommended default, repo and PBI context, researched evidence, and the affected acceptance boundary and constraints. It gives advice only and cannot replace user authority. Never invoke another advisor to retry, vote, or refine. Record an `advisor-decision` note. If it cannot settle a user-authority question, fails, or returns something unusable, record an `unresolved-decision` (with the exact failure). Never depend on a provider-specific AskUserQuestion tool.
 - Genuine tradeoff: debate one concrete decision, only after facts and user constraints are known. Use three to five named real experts whose documented positions match the competing concerns. Run at least two rounds (position, then challenge to the strongest opposing position), then a synthesis. Record the result as `debate-synthesis`, `accepted-option`, and `rejected-option` notes. Record a new tradeoff the debate exposes and continue the same decision. Keep raw scratch files outside the repository. Never turn expert speculation into a requirement.
-- Unresolved items: keep the issue in Backlog when a material requirement cannot be stated without inventing it. Document the exact gap, fallback, impact, and next step. An unresolved item does not block Todo if the PBI is independently deliverable, outcome, scope, and criteria are coherent, and no requirement was invented.
+- Unresolved items: keep the issue in Backlog when a material requirement cannot be stated without inventing it. Document the exact gap, fallback, impact, and next step. An unresolved item does not block Todo if the PBI is independently deliverable, Why, What Changes, and criteria are coherent, and no requirement was invented.
 
 ## Repository gate preflight
 
@@ -55,7 +62,21 @@ The live label descriptions are the classification contract. Pick exactly one pr
 
 ## Refine the PBI body
 
-Give the parent issue `## Outcome` (the observable result), `## Scope` (included behavior and explicit non-goals), `## Implementation notes`, `## Acceptance criteria` (checkboxes with observable outcomes), and `## Verification` (checks that can prove each criterion).
+Give the parent issue these six sections, in this order:
+
+1. `## Why`: the problem and why it matters now.
+2. `## What Changes`: the behavior added or changed, a list of the capabilities it adds or changes, and explicit non-goals.
+3. `## Design`: the decisions and the alternatives rejected. A small clear fix may say that no design decision is needed.
+4. `## Implementation notes`.
+5. `## Acceptance criteria`: checkboxes with observable outcomes.
+6. `## Verification`: checks that can prove each criterion.
+
+A newly refined body has no `## Outcome` or `## Scope`. An older body keeps them until it is refined again; every script reads it as before.
+
+Two bullet grammars put OpenSpec's requirements and scenarios inside those sections, so the format check in "Apply labels and verify" can validate the body with OpenSpec:
+
+- Each bullet of the `requirements` record is `- R-<n> (<operation>, <capability>) <requirement name>: <statement>`, for example `- R-1 (ADDED, card-rules) Hand size limit: The game SHALL reject a draw that would take the hand past seven cards.` The operation is `ADDED`, `MODIFIED`, or `REMOVED`. The capability is a kebab-case name that matches `openspec/specs/<capability>/`. The requirement name holds no colon, and the statement uses SHALL or MUST. The grammar has no place for the old name of a `RENAMED` requirement, so the format check refuses `RENAMED`; write a rename as `REMOVED` of the old name plus `ADDED` of the new one.
+- Each `## Acceptance criteria` checkbox is `- [ ] AC-<n> (<requirement ids>) <scenario name>: WHEN <condition> THEN <outcome>`. The checkbox becomes a scenario of every requirement it cites, and every requirement is cited by at least one checkbox. OpenSpec replaces a `MODIFIED` requirement whole, so cite every scenario it keeps.
 
 Implementation notes hold the triage and record summaries (one short entry each, fields per `standards/project-workflow.md`), code, caller, and test evidence, the priority and effort rationale tied to label descriptions, and the standard-label rationale. When a version bump is in scope, list its carriers by grepping the exact `"version"` key of the plugin manifests (`plugin.json`, `package.json`), never a bare version string, which also matches dependency ranges and lockfiles.
 
@@ -68,12 +89,35 @@ Ask only if the missing choice alters the wording of an acceptance checkbox. Oth
 - Each slice leaves the system working with tests green. The first is the thinnest end-to-end path through the supported surface. Name a slice by the behavior it adds. One nameable only by position or layer is mis-cut.
 - For repeated variants, the first slice introduces the shared boundary and converts one variant. The rest are local slices behind it.
 - Keep a concept's validation and error behavior in its slice. A slice that replaces old structure also migrates callers and deletes obsolete parts. Add nothing for speculative variants.
+- Task categories such as domain rules, wiring, tests, and docs are checklist headings inside a slice sub-issue, never sub-issues of their own. A "Tests" sub-issue can never leave the system working alone, so put each test task in the slice whose behavior it tests. A category heading appears only when the slice has a task under it.
+- A slice whose whole work is one trivial task, such as a one-line doc fix, gets no sub-issue. Its task stays in the parent's `task-list` record.
+
+A slice sub-issue body follows this template. The marker line names the slice, so a second publish reuses the sub-issue and the sync step finds it. Task ids follow the change folder's `tasks.md` numbering when there is one.
+
+```markdown
+<!-- openspec-slice: hand-size-limit -->
+Part of #42. This slice ships working, with its tests passing.
+
+## Tasks
+
+### Domain rules
+
+- [ ] 1.1 Refuse a draw that would take the hand past seven cards
+
+### Tests
+
+- [ ] 2.1 Add the draw-at-limit test to the rules-engine suite
+
+### Docs
+
+- [ ] 3.1 Describe the hand size limit in the rules page
+```
 
 **One parent, one closing PR.** A parent's scope must be what a single PR can fully deliver, because `dod-guard:complete-pr` finishes only a PR that closes its parent. Never refine a parent whose scope is meant for several PRs, and never plan a partial delivery. Split the scope into separately deliverable issues first.
 
 Every structured PBI assesses four lenses: implementation; wiring and end-to-end usability (proof it is reachable from its intended UI or user-facing surface); refactoring and code quality; and failure and recovery reliability. Attach each lens to the child or parent-level task that owns it, with observable acceptance and verification. Lenses are not child categories. A sub-issue being refined into a PBI gets the same research, sections, and label rules.
 
-**Feature records.** For feature work or material ambiguity, read `standards/project-workflow.md` from the plugin root. Never assume the target checkout has it. Keep these as distinct subsections of Implementation notes, with discovery markers as evidence inside them: `requirements`, `clarifications`, `implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, `planned-acceptance-matrix`. Small, clear fixes need none of them. Open every `requirements` bullet with an id token (`R-1`, `R-2`, and so on) and cite, in each acceptance checkbox after its `AC-n` id, the ids it proves, as in `- [ ] AC-1 (R-1, R-2) text`. `handoff-proof.mjs refinement` reports a requirement that no criterion cites and a cited id that is not a requirement.
+**Feature records.** For feature work or material ambiguity, read `standards/project-workflow.md` from the plugin root. Never assume the target checkout has it. Keep these as distinct subsections of Implementation notes, with discovery markers as evidence inside them: `requirements`, `clarifications`, `implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, `planned-acceptance-matrix`. Small, clear fixes need only the `requirements` record, because the format check reads its bullets. Open every `requirements` bullet with an id token (`R-1`, `R-2`, and so on) and cite, in each acceptance checkbox after its `AC-n` id, the ids it proves, as in `- [ ] AC-1 (R-1, R-2) text`. `handoff-proof.mjs refinement` reports a requirement that no criterion cites and a cited id that is not a requirement.
 
 - `acceptance-evidence` gives each acceptance checkbox id its evidence id. `planned-acceptance-matrix` plans every row before any proof runs.
 - The task list names dependencies, marks a task `independent` only if it can be committed and closed separately, keeps order stable, and maps each task to a functional slice or to a parent-level task with `parentLevel: "convergence"`. A task with no sub-issue is never `independent`; the refinement proof reports it.
@@ -139,7 +183,11 @@ Post as the authenticated user. Write a plan for every task lacking a comment th
 3. Read back the body, labels, linked sub-issues, step-plan comments, and Project status. Confirm the sections, evidence, a step-plan comment per task, linked sub-issues, Status unchanged (`Backlog` for a Backlog parent, `Todo` for a Todo parent), exactly one label per scale plus a standard label, and effort below 13. An unknown priority must explain the missing evidence.
 4. For a structured PBI also confirm that the seven records are coherent, each linked child matches one independently deliverable slice and is actionable and Todo, and each lens has an owner.
 5. Save the readback body as a UTF-8 file and run `node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>] --plans=<path> --root=<dir>`, passing `outcome: "verified"`. Save the newest accepted step plan comment of each task, each starting with its `## Step plan: <task-id>` heading, to one UTF-8 file for `--plans`, and pass the target checkout for `--root`. Exit 1 lists each proxy hit that no `File:` line names, a proxy check that searched no file, a malformed or invalid proxy check, a plan with no `File:` line, a task id that appears twice, and a Godot-project planned row that asks for a window, screenshot, movie capture, or manual run; correct the plan by posting a new comment, or the row in the body, and rerun. Write and read back the step plan comments before this step, because the proof needs them. With children, `--children` is a JSON array of slice id and evidence per child. Exit 0 is ok, 1 is an actionable remainder, 2 is a missing or invalid record or argument (including a file that is neither UTF-8 nor UTF-16 with a BOM). On exit 1 or 2, correct the records and rerun. Stop on any actionable remainder.
-6. Move to Todo only on exit 0 with outcome `verified`, using `node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <todo-option-id> Todo <item-id>`; `Todo` is the Status to set and the readback target (see that script's `--help`). A parent already in `Todo` skips the move. Read back the final Project status: it must read `Todo`. Otherwise report the partial state and never claim readiness.
+6. Run the OpenSpec format check on the same readback body file: `node <plugin-root>/skills/refine-backlog-item/scripts/openspec-format-check.mjs --body-file=<path>`. It maps the body into a change folder in a temporary root outside the checkout and runs `openspec validate --strict` there.
+   - Exit 0 prints `format check: passed` and the `openspec <version>` line. Record that version line in `research-source` and in the final report. That edit touches no requirement or criterion, so the check need not run again.
+   - Exit 1 lists each problem with the `R-n` or `AC-n` id it came from. Correct those bullets in the body, read the body back, and rerun steps 5 and 6. The Status stays where it is.
+   - Exit 2 is a bad argument, an unreadable file, or an `openspec` command that cannot be started. Stop before the Todo move and report it. Never skip the check because the CLI is missing.
+7. Move to Todo only when step 5 exits 0 with outcome `verified` and step 6 exits 0, using `node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <todo-option-id> Todo <item-id>`; `Todo` is the Status to set and the readback target (see that script's `--help`). A parent already in `Todo` skips the move. Read back the final Project status: it must read `Todo`. Otherwise report the partial state and never claim readiness.
 
 If an edit fails or a readback taken before the status change disagrees, stop before the status change, report the actual partial state, and never claim readiness.
 

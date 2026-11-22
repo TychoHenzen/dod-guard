@@ -57,6 +57,21 @@ node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs finalization --b
 
 Exit 0 with `verified` continues. Exit 1 or 2 stops with the printed remainder before any ready, auto-merge, CI dispatch, or merge. The `--head-sha` must equal the `--pushed-head` passed to the helper in "Run the helper"; a mismatch stops the run.
 
+## Spec merge check
+
+Run this for every parent PBI, at the same verified head, before "Run the helper". Save the parent body to a UTF-8 file (`gh api repos/<owner>/<repo>/issues/<n> --jq .body`), then run:
+
+```text
+node <skill-dir>/scripts/spec-merge-check.mjs --body-file=<body> --head-sha=<verified-head-sha> --root=<checkout>
+```
+
+It reads `openspec/specs/<capability>/spec.md` from git at that head and compares its `### Requirement:` names with the body's requirement bullets: every ADDED or MODIFIED requirement must be present, and every REMOVED one absent.
+
+- Exit 0 with `ok`, or with `skipped` for a legacy body whose requirements carry no operation and capability: continue.
+- Exit 1 with `spec-merge-missing`: stop before any ready, auto-merge, CI dispatch, or merge. Report each finding's id, name, and spec path. The remedy is the "Merge the spec deltas" step of `dod-guard:next-ticket` on the branch, then a fresh handoff and rerun of this skill at the new head.
+- Exit 1 with `invalid`: the body no longer maps to a change. Stop the same way and report the printed problems; the parent body needs refinement, not this branch.
+- Exit 2: stop the same way and report the printed error.
+
 ## Run the helper
 
 Pass repository and PR number as separate native arguments. Keep a non-zero preflight result.
