@@ -1,130 +1,117 @@
-// Matches an EditorConfig section name against a file path. `*` and `?` never
-// cross a "/", `**` does, `{a,b}` and `{n1..n2}` list alternatives, and
-// `[seq]` is a character set. A name with a "/" is anchored to the directory
-// holding the .editorconfig; a name without one matches at any depth.
+// Matches an EditorConfig section name against a file path. A name with a "/"
+// is anchored to the directory holding the .editorconfig; a name without one
+// matches at any depth. editorconfig-glob-parse.mjs defines the syntax.
+//
+// The section name comes from the scanned repository, so it is untrusted. A
+// backtracking regex would take exponential time on names such as thirty "*"
+// in a row. Instead the tokens become a Thompson NFA, and the match walks the
+// path once, keeping the set of states live at each position. The cost is
+// about states x path length; a numeric range adds a scan of the digit run
+// at each position it is live.
 
-// ASSUMPTION: a numeric range wider than this, or with an endpoint past
-// Number.MAX_SAFE_INTEGER, never matches. Real sections use small ranges; an
-// enumerated range of a billion would exhaust memory, and past the safe range
-// n + 1 rounds back to n, so the enumeration would never end.
-const MAX_RANGE = 1000;
-const NUMERIC_RANGE = /^(-?\d+)\.\.(-?\d+)$/;
+import { DIRECTORIES, parseGlob } from "./editorconfig-glob-parse.mjs";
+
 const cache = new Map();
+const isDigit = (c) => c >= "0" && c <= "9";
 
-const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const escapeClass = (text) => text.replace(/[\\[\]^]/g, "\\$&");
-
-// Index of the "}" closing the "{" at `open`, or -1 when none closes it.
-function closingBrace(glob, open) {
-  let depth = 0;
-  for (let i = open; i < glob.length; i += 1) {
-    if (glob[i] === "{") depth += 1;
-    if (glob[i] === "}") depth -= 1;
-    if (depth === 0) return i;
-  }
-  return -1;
+// Each state is a list of edges: { kind: "eps", to } consumes nothing,
+// { kind: "char", test, to } one character, { kind: "range", range, to } a
+// whole number.
+function buildNfa(tokens) {
+  const states = [];
+  const newState = () => states.push([]) - 1;
+  const edge = (from, kind, to, extra) =>
+    states[from].push({ kind, to, ...extra });
+  const steps = {
+    char(token, from) {
+      const to = newState();
+      edge(from, "char", to, { test: token.test });
+      return to;
+    },
+    // A fresh state per repeat, so "[a]*[b]*" cannot accept "ba".
+    repeat(token, from) {
+      const loop = newState();
+      edge(from, "eps", loop);
+      edge(loop, "char", loop, { test: token.test });
+      return loop;
+    },
+    alt(token, from) {
+      const join = newState();
+      for (const option of token.options) {
+        const start = newState();
+        edge(from, "eps", start);
+        edge(sequence(option, start), "eps", join);
+      }
+      return join;
+    },
+    range(token, from) {
+      const to = newState();
+      edge(from, "range", to, { range: token });
+      return to;
+    },
+  };
+  const sequence = (run, first) =>
+    run.reduce((at, token) => steps[token.kind](token, at), first);
+  const start = newState();
+  return { states, start, accept: sequence(tokens, start) };
 }
 
-// Splits brace contents on the commas that sit outside nested braces.
-function topLevelParts(inner) {
-  const parts = [];
-  let depth = 0;
-  let start = 0;
-  for (let i = 0; i < inner.length; i += 1) {
-    if (inner[i] === "{") depth += 1;
-    if (inner[i] === "}") depth -= 1;
-    if (inner[i] === "," && depth === 0) {
-      parts.push(inner.slice(start, i));
-      start = i + 1;
+// Adds `state` and every state reachable from it by "eps" edges.
+function addClosure(nfa, live, state) {
+  const pending = [state];
+  while (pending.length > 0) {
+    const next = pending.pop();
+    if (live.has(next)) continue;
+    live.add(next);
+    for (const out of nfa.states[next]) {
+      if (out.kind === "eps") pending.push(out.to);
     }
   }
-  parts.push(inner.slice(start));
-  return parts;
 }
 
-function numericAlternatives(low, high) {
-  if (!Number.isSafeInteger(low) || !Number.isSafeInteger(high)) return "(?!)";
-  const from = Math.min(low, high);
-  const to = Math.max(low, high);
-  if (to - from > MAX_RANGE) return "(?!)";
-  const numbers = [];
-  for (let n = from; n <= to; n += 1) numbers.push(String(n));
-  return `(?:${numbers.join("|")})`;
-}
-
-function braceBody(inner) {
-  const range = NUMERIC_RANGE.exec(inner);
-  if (range) return numericAlternatives(Number(range[1]), Number(range[2]));
-  const parts = topLevelParts(inner);
-  if (parts.length === 1) return `\\{${translate(inner)}\\}`;
-  return `(?:${parts.map(translate).join("|")})`;
-}
-
-function characterSet(content) {
-  if (content.startsWith("!")) return `[^${escapeClass(content.slice(1))}]`;
-  return `[${escapeClass(content)}]`;
-}
-
-// Each reader turns the token at `i` into [regex source, characters used],
-// or null when the token is not its kind.
-function globstar(glob, i) {
-  if (glob[i] !== "*" || glob[i + 1] !== "*") return null;
-  return glob[i + 2] === "/" ? ["(?:.*/)?", 3] : [".*", 2];
-}
-
-function wildcard(glob, i) {
-  if (glob[i] === "*") return ["[^/]*", 1];
-  if (glob[i] === "?") return ["[^/]", 1];
-  return null;
-}
-
-// An empty "[]" or an unclosed "[" is a literal bracket.
-function bracket(glob, i) {
-  if (glob[i] !== "[") return null;
-  const end = glob.indexOf("]", i + 1);
-  if (end <= i + 1) return null;
-  return [characterSet(glob.slice(i + 1, end)), end + 1 - i];
-}
-
-function brace(glob, i) {
-  if (glob[i] !== "{") return null;
-  const end = closingBrace(glob, i);
-  if (end === -1) return null;
-  return [braceBody(glob.slice(i + 1, end)), end + 1 - i];
-}
-
-function escaped(glob, i) {
-  if (glob[i] !== "\\" || i + 1 >= glob.length) return null;
-  return [escapeRegex(glob[i + 1]), 2];
-}
-
-const READERS = [globstar, wildcard, bracket, brace, escaped];
-
-// Any token no reader claims is a literal character.
-function readToken(glob, i) {
-  for (const read of READERS) {
-    const token = read(glob, i);
-    if (token !== null) return token;
+// Ends of every "-?digits" run starting at `from` whose value is in range.
+// ASSUMPTION: numbers compare by value, so "01" is in {1..3}, as in
+// editorconfig-core; BigInt keeps huge endpoints exact.
+function numberEnds(path, from, { low, high }) {
+  const ends = [];
+  const digits = path[from] === "-" ? from + 1 : from;
+  for (let end = digits + 1; end <= path.length; end += 1) {
+    if (!isDigit(path[end - 1])) break;
+    const value = BigInt(path.slice(from, end));
+    if (low <= value && value <= high) ends.push(end);
   }
-  return [escapeRegex(glob[i]), 1];
+  return ends;
 }
 
-function translate(glob) {
-  let out = "";
-  let i = 0;
-  while (i < glob.length) {
-    const [source, length] = readToken(glob, i);
-    out += source;
-    i += length;
+// Positions an edge leaving `at` can reach.
+const MOVES = {
+  eps: () => [],
+  char: (out, path, at) =>
+    at < path.length && out.test(path[at]) ? [at + 1] : [],
+  range: (out, path, at) => numberEnds(path, at, out.range),
+};
+
+function accepts(nfa, path) {
+  const live = Array.from({ length: path.length + 1 }, () => new Set());
+  addClosure(nfa, live[0], nfa.start);
+  // Every move consumes at least one character, so a set is complete before
+  // the walk reaches its position.
+  for (let at = 0; at <= path.length; at += 1) {
+    for (const state of live[at]) {
+      for (const out of nfa.states[state]) {
+        for (const end of MOVES[out.kind](out, path, at)) {
+          addClosure(nfa, live[end], out.to);
+        }
+      }
+    }
   }
-  return out;
+  return live[path.length].has(nfa.accept);
 }
 
 function compile(pattern) {
   const anchored = pattern.includes("/");
-  const body = translate(anchored ? pattern.replace(/^\//, "") : pattern);
-  const prefix = anchored ? "" : "(?:.*/)?";
-  return new RegExp(`^${prefix}${body}$`);
+  const tokens = parseGlob(anchored ? pattern.replace(/^\//, "") : pattern);
+  return buildNfa(anchored ? tokens : [DIRECTORIES, ...tokens]);
 }
 
 /**
@@ -139,6 +126,6 @@ export function matchesSection(pattern, relFromConfigDir) {
       cache.set(pattern, null);
     }
   }
-  const regex = cache.get(pattern);
-  return regex !== null && regex.test(relFromConfigDir);
+  const nfa = cache.get(pattern);
+  return nfa !== null && accepts(nfa, relFromConfigDir);
 }
