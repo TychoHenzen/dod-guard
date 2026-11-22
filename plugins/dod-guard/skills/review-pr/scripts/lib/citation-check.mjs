@@ -1,5 +1,5 @@
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import { readFileSync, statSync } from "node:fs";
+import { closeSync, fstatSync, openSync, readFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import path from "node:path";
 
@@ -17,17 +17,24 @@ function insideRoot(root, cited) {
 }
 
 // Returns the number of lines of a regular file, or null when the path is not a readable file.
+// The type check and the read go through one descriptor, so the file cannot be swapped between them.
 function countLines(file) {
+  let fd = null;
   try {
-    if (!statSync(file).isFile()) {
+    fd = openSync(file, "r");
+    if (!fstatSync(fd).isFile()) {
       return null;
     }
-    const bytes = readFileSync(file);
+    const bytes = readFileSync(fd);
     const breaks = bytes.filter((byte) => byte === NEWLINE).length;
     const endsMidLine = bytes.length > 0 && bytes.at(-1) !== NEWLINE;
     return breaks + Number(endsMidLine);
   } catch {
     return null;
+  } finally {
+    if (fd !== null) {
+      closeSync(fd);
+    }
   }
 }
 
