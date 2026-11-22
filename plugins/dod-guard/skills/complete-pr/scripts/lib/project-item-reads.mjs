@@ -9,8 +9,10 @@ function isStatusField(field, statusFieldId) {
 }
 
 function statusFieldsOf(item, statusFieldId) {
-  const fields = Array.isArray(item?.fields) ? item.fields : [];
-  return fields.filter((field) => isStatusField(field, statusFieldId));
+  if (!Array.isArray(item?.fields)) {
+    return [];
+  }
+  return item.fields.filter((field) => isStatusField(field, statusFieldId));
 }
 
 function readProjectItemStatus(item, itemId, statusFieldId) {
@@ -23,6 +25,17 @@ function readProjectItemStatus(item, itemId, statusFieldId) {
     throw new Error(`Project item ${itemId} readback did not include one non-contradictory Status field/value.`);
   }
   return name;
+}
+
+// The read before a write. An item added to the Project moments ago carries its Status field with a
+// null value until its first write, so null here means no Status yet. The readback after a write uses
+// readProjectItemStatus, where null still fails.
+function readStartingStatus(item, itemId, statusFieldId) {
+  const statusFields = statusFieldsOf(item, statusFieldId);
+  if (statusFields.length === 1 && statusFields[0].value === null) {
+    return null;
+  }
+  return readProjectItemStatus(item, itemId, statusFieldId);
 }
 
 function readProjectItems(listRead) {
@@ -75,4 +88,4 @@ function readBackItem({ listRead, readSingle }, itemId, identity) {
   return findReadbackProjectItem([item], itemId, identity);
 }
 
-export { projectItemReads, readProjectItemStatus };
+export { projectItemReads, readProjectItemStatus, readStartingStatus };

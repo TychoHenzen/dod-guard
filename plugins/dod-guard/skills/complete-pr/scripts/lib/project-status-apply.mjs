@@ -1,5 +1,5 @@
 import { projectItemIdentity } from "./project-item-identity.mjs";
-import { readProjectItemStatus } from "./project-item-reads.mjs";
+import { readProjectItemStatus, readStartingStatus } from "./project-item-reads.mjs";
 import { missingItemError } from "./project-item-single-read.mjs";
 
 function runStatusMutation(commandRunner, command) {
@@ -27,7 +27,7 @@ function resolveProjectItemInputs(itemIds, statusFieldId, readTarget) {
       throw new Error(`Project item ${firstInput} and ${itemId} resolve to the same Project item ${identity.nodeId}.`);
     }
     inputByNodeId.set(identity.nodeId, itemId);
-    resolved.set(itemId, { identity, status: readProjectItemStatus(item, itemId, statusFieldId) });
+    resolved.set(itemId, { identity, status: readStartingStatus(item, itemId, statusFieldId) });
   }
   return resolved;
 }

@@ -35,13 +35,13 @@ export function projectFields() {
   ];
 }
 
+// A null status is an item with no Status yet, which REST sends as a null value.
 function statusFieldValue(status) {
-  return {
-    id: STATUS_FIELD_ID,
-    name: "Status",
-    data_type: "single_select",
-    value: { id: STATUS_OPTION_ID, name: { raw: status } },
-  };
+  const field = { id: STATUS_FIELD_ID, name: "Status", data_type: "single_select", value: null };
+  if (status !== null) {
+    field.value = { id: STATUS_OPTION_ID, name: { raw: status } };
+  }
+  return field;
 }
 
 export function projectItems(statuses) {
