@@ -81,3 +81,19 @@ test("a corrected plan passes after a refused one", () => {
     assert.deepEqual(readdirSync(dir).sort(), ["plan.json", "slots.json", "violations.json"]);
   });
 });
+
+test("a scanner question may exceed the length cap to carry every violation", () => {
+  const violations = Array.from({ length: 8 }, (_, i) => ({ id: `S${i + 1}`, file: "src/a.mjs" }));
+  const evidence = violations.map(({ id }, i) => `${id} line-length line ${i + 10}: line exceeds 120 characters`);
+  const scanning = { ...ask("D1", "review-pr-design"), scanner: violations.map(({ id }) => id) };
+  scanning.question = `Do these show at head, sit on an excluded path, or misfire? ${evidence.join("; ")}`;
+  assert.ok(scanning.question.length > 240);
+  const plan = [{ ...PLAN[0], questions: [PLAN[0].questions[0], scanning] }, PLAN[1]];
+  withFiles(plan, ({ args, put }) => {
+    const checked = { ...args, violations: put("violations.json", violations) };
+    assert.deepEqual(checkPlan(checked), { slots: 2, questions: 4, exclusions: 0 });
+    const plain = [{ ...PLAN[0], questions: [PLAN[0].questions[0], { ...scanning, scanner: undefined }] }, PLAN[1]];
+    put("plan.json", plain);
+    assert.throws(() => checkPlan({ ...checked, violations: put("violations.json", []) }), /the limit is 240/);
+  });
+});

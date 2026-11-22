@@ -75,7 +75,7 @@ One foreground `dod-guard:read-standard` planner returns a JSON array with one e
 
 - A question has `id` (unique across lenses), `lens`, `question`, `files` (never empty), and the targeted risk.
 - A question is neutral. It asks what the code, test or document shows and names no suspected defect, expected answer or verdict. The targeted risk names the failure the question probes, never a conclusion about it.
-- A slot holds at most 2 questions, and a question is at most 240 characters. The one exception is a plan with fewer slots than half the lenses, such as a deletion-only diff with one criterion: its slots may hold as many questions as covering every lens needs.
+- A slot holds at most 2 questions, and a question is at most 240 characters, except a scanner check question, which holds every violation of its file. The one exception to the 2-question limit is a plan with fewer slots than half the lenses, such as a deletion-only diff with one criterion: its slots may hold as many questions as covering every lens needs.
 - Sizing: with at most 3 file slots, ask one question per lens in total, placed on the slot that lens most concerns, and give every other slot one exclusion with its reason; otherwise ask at most 2 per slot.
 - An exclusion is one object, `"excluded": { "lens": "review-pr-hygiene", "reason": "..." }`, never an array.
 - The lenses are `review-pr-feature` (F), `review-pr-design` (D), `review-pr-reliability` (R), and `review-pr-hygiene` (H). Write each in `lens` as shown. The build also accepts the `dod-guard:` prefix the Agent tool takes and reads it as the bare name; it refuses any other name. Each gets at least one question or exclusion.

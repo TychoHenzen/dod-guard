@@ -9,8 +9,14 @@ const AGENT_PREFIX = "dod-guard:";
 // answerable from the repository.
 const STATUSES = Object.freeze(["verified", "repaired", "unanswered"]);
 
-// A question fits one 240-character line of the review body.
+// A question fits one 240-character line of the review body. A scanner check
+// question is exempt: it must carry every violation's rule, line, and message
+// for its file, so its length grows with the violation count.
 const MAX_QUESTION_CHARS = 240;
+
+function isScannerQuestion(question) {
+  return Array.isArray(question.scanner) && question.scanner.length > 0;
+}
 
 function oneLine(value) {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
@@ -84,7 +90,7 @@ function requireQuestion(question, slot, ids) {
   }
   const id = oneLine(question.id);
   const { length } = oneLine(question.question);
-  if (length > MAX_QUESTION_CHARS) {
+  if (length > MAX_QUESTION_CHARS && !isScannerQuestion(question)) {
     throw new Error(`Question ${id} in slot ${slot} is ${length} characters; the limit is ${MAX_QUESTION_CHARS}`);
   }
   if (ids.has(id)) {
