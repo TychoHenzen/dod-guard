@@ -1,86 +1,16 @@
-// The scanner judges every repository at its built-in limits (file length
-// 100, and line width 80 unless a formatter or, since issue 988, an
-// `.editorconfig` sets one). A reviewed repository states its own:
-// `.editorconfig` `max_line_length`, and the `--rule-block-on` floors its
-// quality-pr-gate CI step passes. The review applies those to the scan, so it
-// never reports what the repository's own gate was told to accept. The width
-// half matters for an installed scanner older than issue 988, and for `off`,
-// which that scanner treats as no width set.
+// The scanner judges every repository at its built-in severities. A reviewed
+// repository's CI step that runs quality-pr-gate may pass `--rule-block-on`
+// floors that let a rule's lower severities through. The review applies those
+// floors to the scan, so it never reports what the repository's own gate was
+// told to accept. Line widths need nothing here: the scanner reads
+// `.editorconfig` itself, the same way the gate sees it.
 
 // biome-ignore lint/correctness/noNodejsModules: This skill helper reads repository files under Node.js.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper reads repository files under Node.js.
 import { join } from "node:path";
 
-// ASSUMPTION: the scanner's high line-length bound is 120 (config-values.mjs
-// in quality-guard); a wider formatter or editorconfig width raises it, as
-// lineBounds in rules-file-line-check.mjs does.
-const SCANNER_HIGH_WIDTH = 120;
 const SEVERITY_RANK = { low: 1, medium: 2, high: 3 };
-
-// Glob syntax to regular expression; any other character is matched literally.
-const GLOB_TOKENS = [
-  // "**/" also matches zero directories, so [**/*.cs] covers a root file.
-  ["**/", "(?:.*/)?"],
-  ["**", ".*"],
-  ["*", "[^/]*"],
-  ["?", "[^/]"],
-  ["{", "(?:"],
-  ["}", ")"],
-  [",", "|"],
-];
-
-function globSource(glob) {
-  let source = "";
-  let index = 0;
-  while (index < glob.length) {
-    const token = GLOB_TOKENS.find(([syntax]) => glob.startsWith(syntax, index));
-    const [syntax, replacement] = token ?? [glob[index], glob[index].replace(/[.+^$()|[\]\\]/g, "\\$&")];
-    source += replacement;
-    index += syntax.length;
-  }
-  return source;
-}
-
-// A section glob without a slash matches a file name in any directory; one
-// with a slash is anchored to the .editorconfig directory.
-function sectionMatcher(glob) {
-  const anchored = glob.includes("/");
-  const body = globSource(anchored ? glob.replace(/^\//, "") : glob);
-  return new RegExp(anchored ? `^${body}$` : `(?:^|/)${body}$`);
-}
-
-function parseEditorconfig(text) {
-  const sections = [];
-  for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim();
-    const header = /^\[(.+)\]$/.exec(line);
-    const pair = /^([\w-]+)\s*=\s*(.*)$/.exec(line);
-    if (header) {
-      sections.push({ matches: sectionMatcher(header[1]), width: undefined });
-    } else if (pair && sections.length > 0 && pair[1].toLowerCase() === "max_line_length") {
-      const value = pair[2].trim().toLowerCase();
-      sections.at(-1).width = value === "off" ? null : Number.parseInt(value, 10);
-    }
-  }
-  return sections;
-}
-
-// Returns a function from a root-relative path to the width the repository
-// sets for it: a number, null for `off`, or undefined when nothing sets one.
-// Later sections win, as editorconfig specifies.
-function editorconfigWidths(text) {
-  const sections = parseEditorconfig(text).filter((section) => section.width !== undefined);
-  return (path) => {
-    let width;
-    for (const section of sections) {
-      if (section.matches.test(path)) {
-        width = Number.isNaN(section.width) ? width : section.width;
-      }
-    }
-    return width;
-  };
-}
 
 // The text of each step that runs quality-pr-gate, without comment lines, so a
 // flag quoted in a YAML comment is never read as one the gate receives.
@@ -115,41 +45,17 @@ function gateRuleFloors(workflows) {
   return floors;
 }
 
-function lineLengthAt(violation, width) {
-  const high = Math.max(width, SCANNER_HIGH_WIDTH);
-  const severity = violation.metric > high ? "high" : "medium";
-  return { ...violation, severity, message: `line is ${violation.metric} chars (width ${width})` };
-}
-
-// A line-length finding at a formatter width (widthSource other than
-// "default") already follows the repository and is left as it is.
-function withWidth(violation, widthFor) {
-  const defaultWidth = (violation.widthSource ?? "default") === "default";
-  if (violation.rule !== "line-length" || !defaultWidth) {
-    return violation;
-  }
-  const width = widthFor(violation.file);
-  if (width === undefined) {
-    return violation;
-  }
-  if (width === null || !(violation.metric > width)) {
-    return null;
-  }
-  return lineLengthAt(violation, width);
-}
-
 function belowFloor(violation, floors) {
   const floor = floors[violation.rule];
   return floor !== undefined && SEVERITY_RANK[violation.severity] < SEVERITY_RANK[floor];
 }
 
-function applyRepoLimits(scan, { widthFor, floors }) {
+function applyRepoLimits(scan, { floors }) {
   const removed = {};
   const kept = [];
   for (const violation of scan.violations) {
-    const judged = withWidth(violation, widthFor);
-    if (judged !== null && !belowFloor(judged, floors)) {
-      kept.push(judged);
+    if (!belowFloor(violation, floors)) {
+      kept.push(violation);
       continue;
     }
     removed[violation.rule] = (removed[violation.rule] ?? 0) + 1;
@@ -157,15 +63,11 @@ function applyRepoLimits(scan, { widthFor, floors }) {
   return { scan: { ...scan, violations: kept }, removed };
 }
 
-// ASSUMPTION: only the root .editorconfig is read; nested ones are rare in the
-// repositories this skill reviews and would need per-directory resolution.
 function repoLimits(root) {
-  const editorconfig = join(root, ".editorconfig");
-  const widthFor = existsSync(editorconfig) ? editorconfigWidths(readFileSync(editorconfig, "utf8")) : () => undefined;
   const directory = join(root, ".github", "workflows");
   const names = existsSync(directory) ? readdirSync(directory).filter((name) => /\.ya?ml$/.test(name)) : [];
   const floors = gateRuleFloors(names.map((name) => readFileSync(join(directory, name), "utf8")));
-  return { widthFor, floors };
+  return { floors };
 }
 
-export { applyRepoLimits, editorconfigWidths, gateRuleFloors, repoLimits };
+export { applyRepoLimits, gateRuleFloors, repoLimits };

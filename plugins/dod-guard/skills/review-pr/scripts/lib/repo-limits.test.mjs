@@ -14,7 +14,7 @@ import process from "node:process";
 import test from "node:test";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { fileURLToPath } from "node:url";
-import { applyRepoLimits, editorconfigWidths, gateRuleFloors, repoLimits } from "./repo-limits.mjs";
+import { applyRepoLimits, gateRuleFloors, repoLimits } from "./repo-limits.mjs";
 
 const REPOSITORY = fileURLToPath(new URL("../../../../../../", import.meta.url));
 const SCANNER = resolve(REPOSITORY, "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs");
@@ -68,24 +68,11 @@ test("the real scan of a width-120 repository keeps only what its own limits fla
     assert.deepEqual(limits.floors, { "line-length": "high", "file-length": "high" });
     const { scan, removed } = applyRepoLimits(raw, limits);
     assert.deepEqual(summary(scan), ["line-length:4:high"]);
-    assert.equal(scan.violations[0].message, "line is 133 chars (width 120)");
+    assert.deepEqual(scan.violations[0], raw.violations.find(({ rule }) => rule === "line-length"));
     assert.deepEqual(removed, { "file-length": 1 });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
-});
-
-test("editorconfigWidths lets the last matching section win and honours off", () => {
-  const widthFor = editorconfigWidths(
-    "[*]\nmax_line_length = 100\n[*.{md,txt}]\nmax_line_length = off\n[src/**.cs]\nmax_line_length=140\n",
-  );
-  assert.equal(widthFor("lib/a.mjs"), 100);
-  assert.equal(widthFor("docs/readme.md"), null);
-  assert.equal(widthFor("src/Game/a.cs"), 140);
-  assert.equal(widthFor("tests/a.cs"), 100);
-  assert.equal(editorconfigWidths("[**/*.cs]\nmax_line_length = 120\n")("Wide.cs"), 120);
-  assert.equal(editorconfigWidths("[src/**/*.cs]\nmax_line_length = 120\n")("src/a.cs"), 120);
-  assert.equal(editorconfigWidths("[*.cs]\nindent_size = 4\n")("a.cs"), undefined);
 });
 
 test("gateRuleFloors reads only the gate step and skips comment lines", () => {
@@ -95,20 +82,21 @@ test("gateRuleFloors reads only the gate step and skips comment lines", () => {
   assert.deepEqual(gateRuleFloors([trailing]), {});
 });
 
-test("a line-length finding at a formatter width is left alone", () => {
-  const violation = { file: "a.mjs", line: 2, rule: "line-length", severity: "medium", metric: 100 };
-  const formatted = { ...violation, widthSource: "biome.json" };
-  const limits = { widthFor: () => 120, floors: {} };
-  assert.deepEqual(applyRepoLimits({ violations: [formatted] }, limits).scan.violations, [formatted]);
-  assert.deepEqual(applyRepoLimits({ violations: [violation] }, limits).scan.violations, []);
-});
-
-// A scanner older than issue 988 reports .editorconfig files at the default
-// width, so the review still rejudges those findings itself.
-test("a default-width line-length finding is rejudged at the editorconfig width", () => {
-  const violation = { file: "a.cs", line: 4, rule: "line-length", severity: "medium", metric: 133 };
-  const limits = { widthFor: () => 120, floors: {} };
-  const [judged] = applyRepoLimits({ violations: [violation] }, limits).scan.violations;
-  assert.equal(judged.severity, "high");
-  assert.equal(judged.message, "line is 133 chars (width 120)");
+// The review leaves widths to the scanner, so it reports what the CI gate
+// sees, even for a section name that once made the review's own glob
+// matcher backtrack for minutes.
+test("a line-length finding passes through whatever the editorconfig says", () => {
+  const root = mkdtempSync(join(tmpdir(), "repo-limits-"));
+  try {
+    const sections = [`[${"**/".repeat(30)}x]`, "max_line_length = off", "[a,b]", "max_line_length = 200"];
+    writeFileSync(join(root, ".editorconfig"), `${sections.join("\n")}\n`);
+    const violation = { file: "a/b/c/a", line: 4, rule: "line-length", severity: "medium", metric: 133 };
+    const started = Date.now();
+    const limited = applyRepoLimits({ violations: [violation] }, repoLimits(root));
+    assert.ok(Date.now() - started < 1000);
+    assert.deepEqual(limited.scan.violations, [violation]);
+    assert.deepEqual(limited.removed, {});
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
