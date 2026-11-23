@@ -90,7 +90,9 @@ function reviewBody({ headSha, recommendation, counts, block, sections, listed, 
   }
   if (deferred.length > 0) {
     lines.push("", "### Deferred findings", "");
-    lines.push(`Only the ${MAX_FIX_THREADS} worst findings get a thread to fix in this pull request. These need no reply.`);
+    lines.push(
+      `Only the ${MAX_FIX_THREADS} worst findings get a thread to fix in this pull request. These need no reply.`,
+    );
     lines.push("", ...deferredLines(deferred));
   }
   if (hasMinor) {
@@ -140,11 +142,14 @@ function reviewFindings({ judged, kept }, merge) {
 // fallback: a file the PR only trims anchors on one of its removed lines.
 // Only a judged finding can cite a file outside the diff by design.
 //
-// A thread that still has no line refuses the build.
+// A thread that still has no line refuses the build. Scanner groups are never
+// BLOCKER and rank after judged findings, so listing them last keeps the order.
 function anchoredThreads({ changedLines, removedLines }, threads) {
   const lines = { added: changedLines, removed: removedLines };
   const fallback = firstAnchor(lines);
-  return requireAnchored(threads.map((finding) => anchor(finding, lines, finding.scanner ? null : fallback)));
+  const judged = threads.filter((finding) => !finding.scanner).map((finding) => anchor(finding, lines, fallback));
+  const groups = threads.filter((finding) => finding.scanner).map((finding) => anchor(finding, lines, null));
+  return requireAnchored([...judged, ...groups]);
 }
 
 function planBlocks(plan, { slots, dropped }) {

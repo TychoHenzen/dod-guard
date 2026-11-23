@@ -1,3 +1,5 @@
+import { SEVERITY_RANK } from "./reviewer-results.mjs";
+
 // A review asks for fixes to its few worst findings only. Every BLOCKER and MAJOR used to get a thread
 // that the fix stage had to fix or decline, so a pull request whose code is still moving paid for
 // polish on each one; the review of one 213-file move held 16 MAJOR scanner groups, all in files
@@ -24,8 +26,8 @@ function lensRank(finding) {
 }
 
 function worstFirst(left, right) {
-  const severity = (finding) => (finding.severity === "BLOCKER" ? 0 : 1);
-  return severity(left) - severity(right) || lensRank(left) - lensRank(right);
+  const bySeverity = SEVERITY_RANK[right.severity] - SEVERITY_RANK[left.severity];
+  return bySeverity || lensRank(left) - lensRank(right);
 }
 
 // Every BLOCKER keeps its thread however many there are, because a deferred one would never be

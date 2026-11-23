@@ -19,9 +19,15 @@ test("only the five worst MAJOR findings get a thread; the rest are listed as de
   assert.equal(recommendation, "REQUEST_CHANGES");
   assert.deepEqual(counts, { BLOCKER: 0, MAJOR: 7, MINOR: 0 });
   assert.equal(deferred, 2);
-  assert.deepEqual(threadProblems(payload), [1, 2, 3, 4, 5].map((n) => `**MAJOR** Problem ${n}`));
+  assert.deepEqual(
+    threadProblems(payload),
+    [1, 2, 3, 4, 5].map((n) => `**MAJOR** Problem ${n}`),
+  );
   assert.match(payload.body, /### Deferred findings\n\nOnly the 5 worst findings get a thread to fix/);
-  assert.match(payload.body, /`plugins\/dod-guard\/skills\/fix-pr-review\/scripts\/lib\/fix-support\.mjs:72` \*\*MAJOR\*\* Problem 6/);
+  assert.match(
+    payload.body,
+    /`plugins\/dod-guard\/skills\/fix-pr-review\/scripts\/lib\/fix-support\.mjs:72` \*\*MAJOR\*\* Problem 6/,
+  );
   assert.match(payload.body, /\*\*MAJOR\*\* Problem 7/);
 });
 
@@ -53,7 +59,9 @@ test("a BLOCKER outranks a MAJOR, and a feature finding outranks a hygiene one",
 });
 
 test("a judged MAJOR outranks a scanner MAJOR, which is deferred past the cap", () => {
-  const scan = { violations: [{ file: FIX, line: 72, rule: "line-length", severity: "high", message: "line is 132 chars" }] };
+  const scan = {
+    violations: [{ file: FIX, line: 72, rule: "line-length", severity: "high", message: "line is 132 chars" }],
+  };
   const results = [{ reviewer: "review-pr-design", findings: numbered(5, {}) }];
   const { payload, deferred } = review(results, { scan });
   assert.equal(deferred, 1);
