@@ -59,22 +59,37 @@ function omissionNote(omitted) {
   return `\n${omitted} more ${files} scanner findings, listed only in the scanner findings comments.`;
 }
 
-// The minor notes carry scanner text under one budget, so the body stays
-// postable however many files the scanner flags.
-function fitSections(minor) {
-  const entries = minor.map(minorText);
-  const fitted = fitScanner(entries);
-  const placed = new Set(fitted.texts);
-  return { minor: entries.map(({ text }) => text).filter((text) => placed.has(text)), omitted: fitted.omitted };
+// ASSUMPTION: GitHub rejects a pull request review body over 65536 characters.
+// The review is posted once, so the build refuses before that single attempt.
+const MAX_REVIEW_BODY = 65_536;
+
+// Room kept for the omission note, which is added after the fit.
+const NOTES_RESERVE = 1000;
+
+// One line per deferred finding, its location and its headline, so each entry stays short.
+function deferredLine(finding) {
+  return `\`${finding.file}:${finding.line}\` ${finding.body.split("\n")[0]}`;
 }
 
-// One line per deferred finding, its location and its headline, so the list stays short however
-// many there are.
-function deferredLines(deferred) {
-  return deferred.map((finding) => `\`${finding.file}:${finding.line}\` ${finding.body.split("\n")[0]}`);
+// Deferred findings and minor notes share what the rest of the body leaves, so a
+// plan with many slots or a move with many flagged files still posts. Judged
+// entries always render, so their text is counted first. A scanner group, deferred
+// or minor, renders only while there is room: the scanner comments list them all.
+function fitSections(fixedBody, { deferred, minor }) {
+  const entries = {
+    deferred: deferred.map((finding) => ({ scanner: finding.scanner, text: deferredLine(finding) })),
+    minor: minor.map(minorText),
+  };
+  const all = [...entries.deferred, ...entries.minor];
+  const judged = all.filter((entry) => !entry.scanner).reduce((sum, entry) => sum + entry.text.length + 1, 0);
+  const room = Math.max(0, MAX_REVIEW_BODY - fixedBody.length - judged - NOTES_RESERVE);
+  const fitted = fitScanner(all, room);
+  const placed = new Set(fitted.placed);
+  const texts = (list) => list.filter((entry) => placed.has(entry)).map(({ text }) => text);
+  return { deferred: texts(entries.deferred), minor: texts(entries.minor), omitted: fitted.omitted };
 }
 
-function reviewBody({ headSha, recommendation, counts, block, sections, listed, hasMinor, deferred }) {
+function reviewBody({ headSha, recommendation, counts, block, sections, listed, hasMinor, hasDeferred }) {
   const lines = [
     marker(headSha, recommendation),
     "## dod-guard review",
@@ -88,12 +103,12 @@ function reviewBody({ headSha, recommendation, counts, block, sections, listed, 
     lines.push("", "Scanner findings are summarized per file here. The full list is posted as pull request comments");
     lines.push("headed `dod-guard scanner findings`, right after this review.");
   }
-  if (deferred.length > 0) {
+  if (hasDeferred) {
     lines.push("", "### Deferred findings", "");
     lines.push(
       `Only the ${MAX_FIX_THREADS} worst findings get a thread to fix in this pull request. These need no reply.`,
     );
-    lines.push("", ...deferredLines(deferred));
+    lines.push("", ...sections.deferred);
   }
   if (hasMinor) {
     lines.push("", "### Minor notes", "", "These do not block the merge and need no reply.", ...sections.minor);
@@ -103,10 +118,6 @@ function reviewBody({ headSha, recommendation, counts, block, sections, listed, 
   }
   return lines.join("\n");
 }
-
-// ASSUMPTION: GitHub rejects a pull request review body over 65536 characters.
-// The review is posted once, so the build refuses before that single attempt.
-const MAX_REVIEW_BODY = 65_536;
 
 function requirePostableBody(body, slotCount) {
   if (body.length > MAX_REVIEW_BODY) {
@@ -170,18 +181,14 @@ function buildReview(input) {
   const recommendation = recommendationFor(threads.map((finding) => finding.severity));
   const counts = countSeverities(findings);
   const minor = findings.filter((finding) => finding.severity === "MINOR");
-  const sections = fitSections(minor);
+  const parts = { headSha: input.headSha, recommendation, counts, block: planBlocks(input.plan, checked) };
+  // The body without its deferred and minor entries, with every heading they could add.
+  const empty = { deferred: [], minor: [], omitted: 0 };
+  const fixed = reviewBody({ ...parts, sections: empty, listed: true, hasMinor: true, hasDeferred: true });
+  const sections = fitSections(fixed, { deferred, minor });
   const listed = sections.omitted > 0 || findings.some((finding) => finding.truncated);
-  const body = reviewBody({
-    headSha: input.headSha,
-    recommendation,
-    counts,
-    block: planBlocks(input.plan, checked),
-    sections,
-    listed,
-    hasMinor: minor.length > 0,
-    deferred,
-  });
+  const shown = { hasMinor: minor.length > 0, hasDeferred: deferred.length > 0 };
+  const body = reviewBody({ ...parts, sections, listed, ...shown });
   const payload = {
     commit_id: input.headSha,
     event: "COMMENT",

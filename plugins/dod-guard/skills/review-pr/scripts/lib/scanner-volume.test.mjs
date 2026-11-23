@@ -69,6 +69,34 @@ test("many flagged files stay under the body budget and name the omitted ones", 
   assertFullListReachable(result);
 });
 
+// CardCleaner PR 490: 142 plan slots plus 30000 characters of scanner notes passed the limit, so a
+// review of a large move could never post. Scanner groups take only the space the plan leaves.
+function bigPlanReview(high) {
+  const { files, violations } = synthetic({ fileCount: 150, perFile: 3, high });
+  const ask = (file) => `Do the scanner violations listed for ${file} show at the reviewed head? ${"x".repeat(200)}`;
+  const review = scannerReview({ files, line: 10, violations, rule: keep, ask });
+  assert.ok(review.payload.body.length < LIMIT, `body is ${review.payload.body.length} characters`);
+  assert.match(
+    review.payload.body,
+    /\d+ more files have scanner findings, listed only in the scanner findings comments\./,
+  );
+  assertFullListReachable({ review, violations });
+  return review;
+}
+
+test("a plan with many slots leaves deferred scanner groups only the space that is left", () => {
+  const review = bigPlanReview(true);
+  assert.equal(review.payload.comments.length, 5);
+  assert.equal(review.deferred, 145);
+  assert.match(review.payload.body, /### Deferred findings/);
+});
+
+test("a plan with many slots leaves minor scanner notes only the space that is left", () => {
+  const review = bigPlanReview(false);
+  assert.equal(review.payload.comments.length, 0);
+  assert.match(review.payload.body, /### Minor notes/);
+});
+
 test("a small scanner review posts no scanner comments", () => {
   const result = build({ fileCount: 2, perFile: 3 });
   assert.deepEqual(result.review.scannerComments, []);
