@@ -42,20 +42,24 @@ function scannerBody(severity, sorted) {
 }
 
 // Scanner entries take body space until the budget is used; later ones are
-// counted instead of rendered. Other entries always render.
-function fitScanner(entries, budget = BODY_BUDGET) {
+// counted instead of rendered. Other entries always render. `room` is the space
+// the rest of the body leaves, so the budget is the smaller of the two. An entry
+// costs its text and the line break that joins it to the next.
+function fitScanner(entries, room) {
+  const budget = Math.min(room, BODY_BUDGET);
   let used = 0;
-  let omitted = 0;
-  const texts = [];
-  for (const { scanner, text } of entries) {
-    if (scanner && used + text.length > budget) {
-      omitted += 1;
-    } else {
-      used += scanner ? text.length : 0;
-      texts.push(text);
+  const placed = entries.filter((entry) => {
+    if (!entry.scanner) {
+      return true;
     }
-  }
-  return { texts, omitted };
+    const cost = entry.text.length + 1;
+    const fits = used + cost <= budget;
+    if (fits) {
+      used += cost;
+    }
+    return fits;
+  });
+  return { placed, omitted: entries.length - placed.length };
 }
 
 function fileSection([file, violations]) {

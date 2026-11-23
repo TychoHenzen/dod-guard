@@ -68,6 +68,7 @@ function mergedFinding(members, representative) {
     severity,
     file: representative.file,
     line: representative.line,
+    reviewers,
     body: [
       `**${severity}** ${representative.problem}`,
       "",

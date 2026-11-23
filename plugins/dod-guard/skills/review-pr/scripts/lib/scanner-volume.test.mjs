@@ -6,6 +6,7 @@ import { scannerReview } from "./scanner-review.test-support.mjs";
 
 const LIMIT = 65_536;
 const RULES = ["function-length", "complexity", "duplicate-block", "dead-export"];
+const OMITTED = /\d+ more files have scanner findings, listed only in the scanner findings comments\./;
 const keep = (ids) => ({ ids, status: "KEEP" });
 
 function synthetic({ fileCount, perFile, high = true }) {
@@ -52,7 +53,9 @@ test("more than 557 kept violations in a few files keep the body postable and th
   assert.ok(result.violations.length > 557, "need more violations than disc-golf PR 42");
   assert.ok(result.review.payload.body.length < LIMIT, `body is ${result.review.payload.body.length} characters`);
   assert.deepEqual(result.review.counts, { BLOCKER: 0, MAJOR: 8, MINOR: 0 });
-  assert.equal(result.review.payload.comments.length, 8);
+  // The five worst get a thread; the other three are listed as deferred.
+  assert.equal(result.review.payload.comments.length, 5);
+  assert.equal(result.review.deferred, 3);
   assert.match(result.review.payload.comments[0].body, /By severity: medium x75, high x25\./);
   assertFullListReachable(result);
 });
@@ -60,11 +63,32 @@ test("more than 557 kept violations in a few files keep the body postable and th
 test("many flagged files stay under the body budget and name the omitted ones", () => {
   const result = build({ fileCount: 200, perFile: 3, high: false });
   assert.ok(result.review.payload.body.length < LIMIT, `body is ${result.review.payload.body.length} characters`);
-  assert.match(
-    result.review.payload.body,
-    /\d+ more files have scanner findings, listed only in the scanner findings comments\./,
-  );
+  assert.match(result.review.payload.body, OMITTED);
   assertFullListReachable(result);
+});
+
+// CardCleaner PR 490: 142 plan slots plus 30000 characters of scanner notes passed the limit, so a
+// review of a large move could never post. Scanner groups take only the space the plan leaves.
+function bigPlanReview(high) {
+  const { files, violations } = synthetic({ fileCount: 150, perFile: 3, high });
+  const ask = (file) => `Do the scanner violations listed for ${file} show at the reviewed head? ${"x".repeat(200)}`;
+  const review = scannerReview({ files, line: 10, violations, rule: keep, ask });
+  assert.ok(review.payload.body.length < LIMIT, `body is ${review.payload.body.length} characters`);
+  assert.match(review.payload.body, OMITTED);
+  assertFullListReachable({ review, violations });
+  return review;
+}
+
+test("a plan with many slots leaves deferred scanner groups only the space that is left", () => {
+  const review = bigPlanReview(true);
+  assert.deepEqual([review.payload.comments.length, review.deferred], [5, 145]);
+  assert.match(review.payload.body, /### Deferred findings/);
+});
+
+test("a plan with many slots leaves minor scanner notes only the space that is left", () => {
+  const review = bigPlanReview(false);
+  assert.equal(review.payload.comments.length, 0);
+  assert.match(review.payload.body, /### Minor notes/);
 });
 
 test("a small scanner review posts no scanner comments", () => {
