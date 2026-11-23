@@ -6,7 +6,8 @@ import test from "node:test";
 import { fixture, run, usage, withTempFile } from "./testing/handoff-proof-harness.mjs";
 
 const CORRECTED = fixture("issue-855-shape-corrected-body.md");
-const PLAN = (files) => `## Step plan: T1\n\n\`\`\`text\n${files}\nProxy check: alpha in lib\n\`\`\`\n`;
+const PLAN = (files) =>
+  `## Step plan: T1\n\nCommit: fix: plan T1\n\n\`\`\`text\n${files}\nProxy check: alpha in lib\n\`\`\`\n`;
 
 async function withRoot(use) {
   const root = await mkdtemp(path.join(tmpdir(), "handoff-proof-root-"));

@@ -17,6 +17,9 @@ function planProblems(plan) {
   if (plan.files.length === 0) {
     problems.push(`step plan ${plan.task} has no File line`);
   }
+  if (plan.commit === "") {
+    problems.push(`step plan ${plan.task} has no 'Commit: <subject>' line`);
+  }
   return [...problems, ...plan.proxies.flatMap((proxy) => proxyProblems(plan, proxy))];
 }
 

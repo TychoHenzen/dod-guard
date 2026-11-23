@@ -64,7 +64,7 @@ Skip labels, body sections, and step plans. The final report names the case, the
 
 When the issue lists owner files, or the work edits files that the repository's PR gate scans, find the gate the repository itself runs. Read the repository instructions (`AGENTS.md`, `CLAUDE.md`) and the CI workflow that holds its required checks. Run the scanner that gate uses over the owner files, with the exact flags CI uses. A gate that diffs a base against HEAD sees only committed changes, so scan the files themselves rather than waiting for a diff. Never write another repository's command, patch or root into a plan.
 
-Record in Implementation notes the exact command, the flags, the result, and any cleanup the gate's quota requires. Carry the command into the step plan of each task that edits an owner file. A finding the required gate would block on is planned cleanup before the item reaches Todo. When the repository documents no PR gate, record that and plan none. When the gate cannot run here, record the reason and the command that would run it.
+Record in Implementation notes the exact command, the flags, the result, and any cleanup the gate's quota requires. Keep the command out of the step plans: it diffs committed work, and the worker that runs a plan never commits. `dod-guard:next-ticket` runs the recorded command on the committed head after each task commit and before the push. A finding the required gate would block on is planned cleanup before the item reaches Todo. When the repository documents no PR gate, record that and plan none. When the gate cannot run here, record the reason and the command that would run it.
 
 For extraction or helper-splitting work, state the layer of each planned helper (domain, application, I/O boundary, or the repository's own layering) in Implementation notes.
 
@@ -128,6 +128,8 @@ Per step, give the file, the edit (symbol and intent), the test to add or change
 
 **Tier line.** Give the plan of a task that restructures or splits code to clear scanner findings (extracting a helper, splitting a file or function, moving a symbol, or redesigning a signature so that a finding goes away) one plain line, `Tier: standard`, outside any fenced block and beside the `File:` lines. Write no `Tier:` line in any other plan, and no other value. `dod-guard:next-ticket` reads that exact line and implements the task on `dod-guard:stage-standard`; a plan without it runs on the cheap tier. A task that carries the cleanup recorded by the Repository gate preflight is the usual cause. The refinement proof does not read the line.
 
+**Commit line.** Give every plan one plain line, `Commit: <subject>`, outside any fenced block and beside the `File:` lines. The subject is a commit subject of at most 72 characters in the repository's own style that names the task's outcome and the issue, such as `refactor: move tile loading out of Core (#476)`. The worker that runs a plan never commits: the thread that dispatched it commits the plan's `File:` paths under this subject. So a plan has no commit, staging, or push step, and no step whose validation needs a committed head, a clean tree, or the pushed branch, such as the PR gate that diffs a base against HEAD or a CI run dispatched on the branch. Record those in Implementation notes and the acceptance matrix, where `next-ticket` runs them on the committed head and after the push. The refinement proof reports a plan with no `Commit:` line, and a `git add`, `git commit`, or `git push` inside a fenced block.
+
 **Plan completeness.** Search the checkout at the plan's base SHA, and give every hit its own `File:` line.
 
 - A step that changes a signature or adds an interface member lists every caller and implementer, production and test, because every step must build clean. Add a `Proxy check:` line for the changed symbol.
@@ -136,7 +138,7 @@ Per step, give the file, the edit (symbol and intent), the test to add or change
 - Every new test case gets exact assertions, and every step states which tests fail before it and which pass after it.
 - The plan settles what a cheap model would otherwise guess: field or property, and the repository's naming rules.
 - When the issue has blockers, read their merged code and check every plan target against it. Never plan against a blocker's issue text, or against a symbol that exists only in an open blocker.
-- A commit or staging step names explicit paths, after a `git status --porcelain` accounting of every `??` line. Never stage with `-A`, `.`, or a glob.
+- A validation that searches or reads files names the Grep, Glob, or Read tool with its pattern, path, and expected result, because `agents/stage-cheap.md` forbids `grep`, `cat`, `head`, `tail`, `sed`, `find`, `ls`, and `rg` in a shell. A plan that pipes through them makes the worker rewrite the check.
 
 Before posting, check every target the plan names with Grep or Glob in the checkout: each file path exists or is marked as created by that step, each test file sits beside the code it covers, and each symbol is found in the file named. Correct a plan whose target is missing or misplaced, and list the targets checked in the final report.
 

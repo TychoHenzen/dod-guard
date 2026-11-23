@@ -6,7 +6,7 @@ import test from "node:test";
 import { fixture, run, withFiles } from "./testing/handoff-proof-harness.mjs";
 
 const RECOVERY = '"evidence":"ev-path-recovery","expected":"recovery behaves as planned"';
-const PLAN = "## Step plan: T1\n\n```text\nFile: lib/a.mjs\n```\n";
+const PLAN = "## Step plan: T1\n\nCommit: fix: plan T1\n\n```text\nFile: lib/a.mjs\n```\n";
 const WINDOWED = "windowed screenshot of the recovered shelf";
 const HEADLESS =
   "scripted input; set GetTree().Root.Size to the window size; no window opens and no screenshot is taken";
