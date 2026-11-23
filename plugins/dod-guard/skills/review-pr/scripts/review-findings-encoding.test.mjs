@@ -71,6 +71,7 @@ test("scan reads a plugin list saved with a UTF-8 byte-order mark or as marked U
         violations: 0,
         ruleFloors: {},
         removedByRepoLimits: {},
+        baseline: null,
       });
     });
   }

@@ -1,5 +1,6 @@
-// A reason meaning pre-existing or unchanged at base is not on this list,
-// because accepting it would settle the open scanner scope policy by fiat.
+// A reason meaning pre-existing or unchanged at base is not on this list: a
+// finding the merge base already had stays, as a minor note that `scan --base`
+// marks, so the review still lists it.
 const DROP_REASONS = ["not-at-head", "excluded-path", "rule-misfire"];
 const CHECKED = ["verified", "repaired"];
 

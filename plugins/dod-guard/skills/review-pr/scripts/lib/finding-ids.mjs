@@ -42,10 +42,15 @@ function byLocation(left, right) {
 }
 
 // Scan entries can carry fields the review never reads; the candidate keeps
-// the five a merge pass and a posted group need.
+// the five a merge pass and a posted group need, plus the mark `scan --base`
+// sets on a finding the merge base already had.
 function candidate(violation) {
   const { file, line, rule, severity, message } = violation;
-  return { file: slashPath(file), line, rule, severity, message: asciiText(message) };
+  const kept = { file: slashPath(file), line, rule, severity, message: asciiText(message) };
+  if (violation.existing === true) {
+    kept.existing = true;
+  }
+  return kept;
 }
 
 // Cross-file rules only hold on a whole-repository scan, so the scan covers
