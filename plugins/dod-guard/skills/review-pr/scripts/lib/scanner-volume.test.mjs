@@ -52,7 +52,9 @@ test("more than 557 kept violations in a few files keep the body postable and th
   assert.ok(result.violations.length > 557, "need more violations than disc-golf PR 42");
   assert.ok(result.review.payload.body.length < LIMIT, `body is ${result.review.payload.body.length} characters`);
   assert.deepEqual(result.review.counts, { BLOCKER: 0, MAJOR: 8, MINOR: 0 });
-  assert.equal(result.review.payload.comments.length, 8);
+  // The five worst get a thread; the other three are listed as deferred.
+  assert.equal(result.review.payload.comments.length, 5);
+  assert.equal(result.review.deferred, 3);
   assert.match(result.review.payload.comments[0].body, /By severity: medium x75, high x25\./);
   assertFullListReachable(result);
 });

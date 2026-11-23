@@ -1,5 +1,6 @@
 import { anchor, firstAnchor, requireAnchored } from "./anchor-findings.mjs";
 import { droppedBlock } from "./dropped-block.mjs";
+import { MAX_FIX_THREADS, splitFixThreads } from "./fix-threads.mjs";
 import { groupBy } from "./group-by.mjs";
 import { mergedFindings } from "./merge-groups.mjs";
 import { requireMergeOutput } from "./merge-output.mjs";
@@ -67,7 +68,13 @@ function fitSections(minor) {
   return { minor: entries.map(({ text }) => text).filter((text) => placed.has(text)), omitted: fitted.omitted };
 }
 
-function reviewBody({ headSha, recommendation, counts, block, sections, listed, hasMinor }) {
+// One line per deferred finding, its location and its headline, so the list stays short however
+// many there are.
+function deferredLines(deferred) {
+  return deferred.map((finding) => `\`${finding.file}:${finding.line}\` ${finding.body.split("\n")[0]}`);
+}
+
+function reviewBody({ headSha, recommendation, counts, block, sections, listed, hasMinor, deferred }) {
   const lines = [
     marker(headSha, recommendation),
     "## dod-guard review",
@@ -80,6 +87,11 @@ function reviewBody({ headSha, recommendation, counts, block, sections, listed, 
   if (listed) {
     lines.push("", "Scanner findings are summarized per file here. The full list is posted as pull request comments");
     lines.push("headed `dod-guard scanner findings`, right after this review.");
+  }
+  if (deferred.length > 0) {
+    lines.push("", "### Deferred findings", "");
+    lines.push(`Only the ${MAX_FIX_THREADS} worst findings get a thread to fix in this pull request. These need no reply.`);
+    lines.push("", ...deferredLines(deferred));
   }
   if (hasMinor) {
     lines.push("", "### Minor notes", "", "These do not block the merge and need no reply.", ...sections.minor);
@@ -116,18 +128,23 @@ function checkedInputs(input) {
 
 // Only kept violations reach the unchanged scannerFinding, so a dropped one
 // never sets a file's severity or shows in the counts.
+function reviewFindings({ judged, kept }, merge) {
+  const groups = [...groupBy(kept, "file")].map(([file, group]) => scannerFinding(file, group));
+  return [...mergedFindings(merge.groups, judged), ...groups];
+}
+
+// Only a finding that gets a thread needs a diff line, so the caller cuts the
+// deferred ones first and a deferred finding never refuses the build.
 //
 // A scanner group describes its own file, so it never takes the cross-file
 // fallback: a file the PR only trims anchors on one of its removed lines.
 // Only a judged finding can cite a file outside the diff by design.
 //
-// A blocking finding that still has no line refuses the build.
-function anchoredFindings({ changedLines, removedLines, judged, kept }, merge) {
+// A thread that still has no line refuses the build.
+function anchoredThreads({ changedLines, removedLines }, threads) {
   const lines = { added: changedLines, removed: removedLines };
   const fallback = firstAnchor(lines);
-  const groups = [...groupBy(kept, "file")].map(([file, group]) => scannerFinding(file, group));
-  const moved = mergedFindings(merge.groups, judged).map((finding) => anchor(finding, lines, fallback));
-  return requireAnchored([...moved, ...groups.map((group) => anchor(group, lines, null))]);
+  return requireAnchored(threads.map((finding) => anchor(finding, lines, finding.scanner ? null : fallback)));
 }
 
 function planBlocks(plan, { slots, dropped }) {
@@ -140,12 +157,13 @@ function inlineComments(blocking) {
 
 function buildReview(input) {
   const checked = checkedInputs(input);
-  const findings = anchoredFindings(checked, input.merge);
-  const recommendation = recommendationFor(findings.map((finding) => finding.severity));
+  const findings = reviewFindings(checked, input.merge);
+  // Only the worst blocking findings become inline threads, so only they get a
+  // GH-<id> that a caller can pass to /fix-pr-review. The counts still name
+  // every finding, deferred ones included.
+  const { threads, deferred } = splitFixThreads(findings);
+  const recommendation = recommendationFor(threads.map((finding) => finding.severity));
   const counts = countSeverities(findings);
-  // Only blocking findings become inline threads, so only they get a GH-<id>
-  // that a caller can pass to /fix-pr-review.
-  const blocking = findings.filter((finding) => finding.severity !== "MINOR");
   const minor = findings.filter((finding) => finding.severity === "MINOR");
   const sections = fitSections(minor);
   const listed = sections.omitted > 0 || findings.some((finding) => finding.truncated);
@@ -157,15 +175,16 @@ function buildReview(input) {
     sections,
     listed,
     hasMinor: minor.length > 0,
+    deferred,
   });
   const payload = {
     commit_id: input.headSha,
     event: "COMMENT",
     body: requirePostableBody(body, checked.slots.length),
-    comments: inlineComments(blocking),
+    comments: inlineComments(anchoredThreads(checked, threads)),
   };
   const scannerComments = listed ? fullListComments(input.headSha, groupBy(checked.kept, "file")) : [];
-  return { recommendation, counts, payload, scannerComments };
+  return { recommendation, counts, deferred: deferred.length, payload, scannerComments };
 }
 
 function existingReview(reviews) {
