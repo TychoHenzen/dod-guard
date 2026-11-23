@@ -96,10 +96,13 @@ function buildReview(input) {
   const recommendation = recommendationFor(threads.map((finding) => finding.severity));
   const counts = countSeverities(findings);
   const parts = { headSha: input.headSha, recommendation, counts, block: planBlocks(input.plan, checked) };
+  // A scanner group is shown short when it has more violations than the body
+  // shows, or when it is deferred to one line. Either way the scanner comments
+  // carry its full list.
   const { body, listed } = fittedBody(parts, {
     deferred,
     minor: findings.filter((finding) => finding.severity === "MINOR"),
-    truncated: findings.some((finding) => finding.truncated),
+    summarized: findings.some((finding) => finding.truncated) || deferred.some((finding) => finding.scanner),
   });
   const payload = {
     commit_id: input.headSha,

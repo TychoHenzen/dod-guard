@@ -24,10 +24,8 @@ test("only the five worst MAJOR findings get a thread; the rest are listed as de
     [1, 2, 3, 4, 5].map((n) => `**MAJOR** Problem ${n}`),
   );
   assert.match(payload.body, /### Deferred findings\n\nOnly the 5 worst findings get a thread to fix/);
-  assert.match(
-    payload.body,
-    /`plugins\/dod-guard\/skills\/fix-pr-review\/scripts\/lib\/fix-support\.mjs:72` \*\*MAJOR\*\* Problem 6/,
-  );
+  // A deferred judged finding keeps its full text, so its evidence is still posted.
+  assert.match(payload.body, /fix-support\.mjs:72`\n\*\*MAJOR\*\* Problem 6\n\nImpact: /);
   assert.match(payload.body, /\*\*MAJOR\*\* Problem 7/);
 });
 
@@ -63,8 +61,10 @@ test("a judged MAJOR outranks a scanner MAJOR, which is deferred past the cap", 
     violations: [{ file: FIX, line: 72, rule: "line-length", severity: "high", message: "line is 132 chars" }],
   };
   const results = [{ reviewer: "review-pr-design", findings: numbered(5, {}) }];
-  const { payload, deferred } = review(results, { scan });
+  const { payload, deferred, scannerComments } = review(results, { scan });
   assert.equal(deferred, 1);
   assert.ok(payload.comments.every((comment) => !comment.body.includes("quality-guard")));
   assert.match(payload.body, /### Deferred findings[\s\S]*\*\*MAJOR\*\* quality-guard structural findings \(1\)/);
+  // The deferred line drops the violation text, so the scanner comments must carry it.
+  assert.match(scannerComments.map(({ body }) => body).join("\n"), /line-length` line 72: line is 132 chars/);
 });
