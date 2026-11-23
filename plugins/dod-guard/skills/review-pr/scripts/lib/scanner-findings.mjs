@@ -16,13 +16,37 @@ function fileSeverity(violations) {
   return "MINOR";
 }
 
+const NEW_TAG = " (new in this PR)";
+
+const isExisting = (violation) => violation.existing === true;
+
+function tagNew(violation) {
+  if (isExisting(violation)) {
+    return violation;
+  }
+  return { ...violation, message: `${violation.message}${NEW_TAG}` };
+}
+
+// In a group that mixes both, each finding the pull request added says so, so
+// a fix can start with those. A group of one kind needs no tags.
+function taggedNew(sorted) {
+  const existing = sorted.filter(isExisting).length;
+  if (existing === 0 || existing === sorted.length) {
+    return sorted;
+  }
+  return sorted.map(tagNew);
+}
+
 function preexistingNote(violations) {
-  const existing = violations.filter((violation) => violation.existing === true).length;
+  const existing = violations.filter(isExisting).length;
   if (existing === 0) {
     return null;
   }
   if (existing < violations.length) {
-    return `${existing} of these ${violations.length} findings were already in the code before this PR.`;
+    return (
+      `${existing} of these ${violations.length} findings were already in the code before this PR; ` +
+      `the ones it added end with "${NEW_TAG.trim()}".`
+    );
   }
   if (existing === 1) {
     return "This finding was already in the code before this PR, so it is a minor note.";
@@ -47,7 +71,7 @@ function scannerFinding(file, violations) {
     severity,
     file,
     line: sorted[0].line,
-    body: withNote(scannerBody(severity, sorted), preexistingNote(sorted)),
+    body: withNote(scannerBody(severity, taggedNew(sorted)), preexistingNote(sorted)),
     scanner: true,
     truncated: sorted.length > SHOWN,
   };

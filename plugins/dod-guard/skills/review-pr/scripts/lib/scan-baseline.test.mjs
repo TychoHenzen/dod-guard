@@ -21,6 +21,9 @@ const SCANNER = fileURLToPath(
 );
 const EXISTING_NOTE = /### Minor notes[\s\S]*src\/Old\.cs:10[\s\S]*already in the code before this PR/;
 const MISSING_GATE = /lacks pr-gate-compare\.mjs.*update quality-guard/;
+const MIXED_NOTE = /1 of these 2 findings were already in the code before this PR; the ones it added end with/;
+const NEW_TAGGED = /new width \(new in this PR\)/;
+const OLD_TAGGED = /old dup \(new in this PR\)/;
 
 const finding = (file, message, extra = {}) => ({
   file,
@@ -76,4 +79,21 @@ test("a high finding the base already had makes a minor note; a new one still ma
     ["src/New.cs"],
   );
   assert.match(review.payload.body, EXISTING_NOTE);
+});
+
+test("a group that mixes old and new findings tags the new ones and stays minor without a new high", () => {
+  const violations = [
+    finding("src/Old.cs", "old dup", { existing: true }),
+    finding("src/Old.cs", "new width", { rule: "line-length", severity: "medium" }),
+  ];
+  const review = scannerReview({
+    files: ["src/Old.cs"],
+    line: 10,
+    violations,
+    rule: (ids) => ({ ids, status: "KEEP" }),
+  });
+  assert.equal(review.counts.MINOR, 1);
+  assert.match(review.payload.body, MIXED_NOTE);
+  assert.match(review.payload.body, NEW_TAGGED);
+  assert.doesNotMatch(review.payload.body, OLD_TAGGED);
 });
