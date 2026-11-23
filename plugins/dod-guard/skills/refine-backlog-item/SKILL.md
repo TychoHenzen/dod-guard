@@ -41,6 +41,25 @@ Run triage again after every interview, research, advisor, or debate round. Neve
 - Genuine tradeoff: debate one concrete decision, only after facts and user constraints are known. Use three to five named real experts whose documented positions match the competing concerns. Run at least two rounds (position, then challenge to the strongest opposing position), then a synthesis. Record the result as `debate-synthesis`, `accepted-option`, and `rejected-option` notes. Record a new tradeoff the debate exposes and continue the same decision. Keep raw scratch files outside the repository. Never turn expert speculation into a requirement.
 - Unresolved items: keep the issue in Backlog when a material requirement cannot be stated without inventing it. Document the exact gap, fallback, impact, and next step. An unresolved item does not block Todo if the PBI is independently deliverable, outcome, scope, and criteria are coherent, and no requirement was invented.
 
+## Close instead of refining
+
+The judge may find that the issue asks for nothing left to do. Close it instead of refining it only when the research cites evidence for one of these cases:
+
+- **Done**: the default branch already does everything the issue asks. Cite the code, and a test or command whose output shows it.
+- **Duplicate**: another open issue in the same repository asks for the same change. First add to that issue, as one comment, any detail this one has that it lacks.
+- **Obsolete**: what the issue describes no longer exists at the default branch (the code, command, file, or feature it names is gone), so no change is left to make.
+
+Never close for a product judgment such as "works as designed", "not worth it", or "out of scope". That is a user constraint and takes the routes above. Close only on a full refinement of an issue with no sub-issues, no linked pull request, and no `codex/<issue>-` branch, never in the step-plan-missing exception. Otherwise record the finding in `discovery-triage` and refine as usual.
+
+This is the one close this skill makes by hand. The hierarchy close in "Effort 13 and splitting" still goes through `closure.mjs`. In order:
+
+1. Post a comment headed `## Closed by refinement`: the case, the default branch and its SHA, and the evidence with file and line citations. For a duplicate, its first line under the heading is `Duplicate of #<number>`.
+2. Close with `gh issue close <issue> --repo <owner>/<repo> --reason "not planned"`.
+3. Read the item's Project Status. Unless it already reads `Done` (a Project automation may set it), set it with `project-status.mjs` as step 6 of "Apply labels and verify" does, with the Status field's `Done` option.
+4. Read back state `CLOSED`, state reason `NOT_PLANNED`, and Status `Done`. The queues read a closed root as complete only when all three hold, and hold one that is closed but not Done. On any mismatch, report the partial state and stop.
+
+Skip labels, body sections, and step plans. The final report names the case, the evidence, and for a duplicate the issue it duplicates.
+
 ## Repository gate preflight
 
 When the issue lists owner files, or the work edits files that the repository's PR gate scans, find the gate the repository itself runs. Read the repository instructions (`AGENTS.md`, `CLAUDE.md`) and the CI workflow that holds its required checks. Run the scanner that gate uses over the owner files, with the exact flags CI uses. A gate that diffs a base against HEAD sees only committed changes, so scan the files themselves rather than waiting for a diff. Never write another repository's command, patch or root into a plan.
