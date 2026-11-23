@@ -6,6 +6,7 @@ import { scannerReview } from "./scanner-review.test-support.mjs";
 
 const LIMIT = 65_536;
 const RULES = ["function-length", "complexity", "duplicate-block", "dead-export"];
+const OMITTED = /\d+ more files have scanner findings, listed only in the scanner findings comments\./;
 const keep = (ids) => ({ ids, status: "KEEP" });
 
 function synthetic({ fileCount, perFile, high = true }) {
@@ -62,10 +63,7 @@ test("more than 557 kept violations in a few files keep the body postable and th
 test("many flagged files stay under the body budget and name the omitted ones", () => {
   const result = build({ fileCount: 200, perFile: 3, high: false });
   assert.ok(result.review.payload.body.length < LIMIT, `body is ${result.review.payload.body.length} characters`);
-  assert.match(
-    result.review.payload.body,
-    /\d+ more files have scanner findings, listed only in the scanner findings comments\./,
-  );
+  assert.match(result.review.payload.body, OMITTED);
   assertFullListReachable(result);
 });
 
@@ -76,18 +74,14 @@ function bigPlanReview(high) {
   const ask = (file) => `Do the scanner violations listed for ${file} show at the reviewed head? ${"x".repeat(200)}`;
   const review = scannerReview({ files, line: 10, violations, rule: keep, ask });
   assert.ok(review.payload.body.length < LIMIT, `body is ${review.payload.body.length} characters`);
-  assert.match(
-    review.payload.body,
-    /\d+ more files have scanner findings, listed only in the scanner findings comments\./,
-  );
+  assert.match(review.payload.body, OMITTED);
   assertFullListReachable({ review, violations });
   return review;
 }
 
 test("a plan with many slots leaves deferred scanner groups only the space that is left", () => {
   const review = bigPlanReview(true);
-  assert.equal(review.payload.comments.length, 5);
-  assert.equal(review.deferred, 145);
+  assert.deepEqual([review.payload.comments.length, review.deferred], [5, 145]);
   assert.match(review.payload.body, /### Deferred findings/);
 });
 

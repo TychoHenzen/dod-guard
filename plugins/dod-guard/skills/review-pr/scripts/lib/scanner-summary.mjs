@@ -48,18 +48,18 @@ function scannerBody(severity, sorted) {
 function fitScanner(entries, room) {
   const budget = Math.min(room, BODY_BUDGET);
   let used = 0;
-  let omitted = 0;
-  const placed = [];
-  for (const entry of entries) {
-    const cost = entry.text.length + 1;
-    if (entry.scanner && used + cost > budget) {
-      omitted += 1;
-    } else {
-      used += entry.scanner ? cost : 0;
-      placed.push(entry);
+  const placed = entries.filter((entry) => {
+    if (!entry.scanner) {
+      return true;
     }
-  }
-  return { placed, omitted };
+    const cost = entry.text.length + 1;
+    const fits = used + cost <= budget;
+    if (fits) {
+      used += cost;
+    }
+    return fits;
+  });
+  return { placed, omitted: entries.length - placed.length };
 }
 
 function fileSection([file, violations]) {

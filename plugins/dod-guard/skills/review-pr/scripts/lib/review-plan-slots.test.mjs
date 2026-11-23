@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { requirePostableBody } from "./review-findings.mjs";
+import { requirePostableBody } from "./review-body.mjs";
 import { findingsFixture } from "./review-pr.test-support.mjs";
 
 const { FIX, UNICODE, SUB_SLOT, PBI, PLAN, scan, question, review } = findingsFixture;
