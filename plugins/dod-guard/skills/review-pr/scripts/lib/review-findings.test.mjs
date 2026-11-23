@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { existingReview, postedFindings } from "./review-findings.mjs";
+import { existingReview, postedFindings } from "./posted-review.mjs";
 import { findingsFixture, judgment } from "./review-pr.test-support.mjs";
 
 const { HEAD, FIX, UNICODE, scan, diff, review } = findingsFixture;

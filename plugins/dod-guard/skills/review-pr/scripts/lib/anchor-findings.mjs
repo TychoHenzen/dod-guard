@@ -70,4 +70,21 @@ function requireAnchored(findings) {
   );
 }
 
-export { anchor, firstAnchor, requireAnchored };
+// Only a finding that gets a thread needs a diff line, so the caller cuts the
+// deferred ones first and a deferred finding never refuses the build.
+//
+// A scanner group describes its own file, so it never takes the cross-file
+// fallback: a file the PR only trims anchors on one of its removed lines.
+// Only a judged finding can cite a file outside the diff by design.
+//
+// A thread that still has no line refuses the build. Scanner groups are never
+// BLOCKER and rank after judged findings, so listing them last keeps the order.
+function anchoredThreads({ changedLines, removedLines }, threads) {
+  const lines = { added: changedLines, removed: removedLines };
+  const fallback = firstAnchor(lines);
+  const judged = threads.filter((finding) => !finding.scanner).map((finding) => anchor(finding, lines, fallback));
+  const groups = threads.filter((finding) => finding.scanner).map((finding) => anchor(finding, lines, null));
+  return requireAnchored([...judged, ...groups]);
+}
+
+export { anchor, anchoredThreads, firstAnchor, requireAnchored };

@@ -9,8 +9,9 @@ import { answers, batches, pending } from "./lib/batch-commands.mjs";
 import { candidates, pbiInputs, violations } from "./lib/candidate-commands.mjs";
 import { validArgs } from "./lib/command-args.mjs";
 import { checkPlan } from "./lib/plan-check.mjs";
+import { existingReview, postedFindings } from "./lib/posted-review.mjs";
 import { requireFreshAnswers } from "./lib/review-batches.mjs";
-import { buildReview, existingReview, postedFindings } from "./lib/review-findings.mjs";
+import { buildReview } from "./lib/review-findings.mjs";
 import { reviewSlots } from "./lib/review-slots.mjs";
 import { scan } from "./lib/scan-command.mjs";
 import { parseChangedLines } from "./lib/unified-diff.mjs";
@@ -83,4 +84,6 @@ if (!(validArgs(command, args) && COMMANDS[command])) {
   process.stderr.write(`${USAGE}\n`);
   process.exit(3);
 }
-process.stdout.write(`${JSON.stringify(COMMANDS[command](args), null, 2)}\n`);
+// scan is async; awaiting a plain value costs the other commands nothing.
+const result = await COMMANDS[command](args);
+process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

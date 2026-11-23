@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { anchor, firstAnchor, requireAnchored } from "./anchor-findings.mjs";
-import { buildReview, postedFindings } from "./review-findings.mjs";
+import { postedFindings } from "./posted-review.mjs";
+import { buildReview } from "./review-findings.mjs";
 import { complete, findingsFixture, judgment } from "./review-pr.test-support.mjs";
 import { slotsByLens } from "./review-slots.mjs";
 

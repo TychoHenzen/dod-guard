@@ -24,24 +24,33 @@ const REQUIRED = {
   label: ["review-id", "comments", "out"],
   report: ["review-id", "comments"],
 };
+// scan without --base marks no finding as pre-existing, so a caller that
+// predates the flag keeps working.
+const OPTIONAL = { scan: ["base"] };
 const FULL_SHA = /^[0-9a-f]{40}$/;
 // The marker reader only accepts a hex head, so a build with anything else would post an undetectable review.
 // The batch commands stamp or compare the head, so they take the same full-SHA check.
 const HEAD_COMMANDS = new Set(["build", "batches", "answers", "pending"]);
 
-// ASSUMPTION: no command takes an optional flag, so refusing every flag outside
-// REQUIRED is safe. A misspelled or retired flag then stops with usage instead
-// of being ignored.
-function hasExactFlags(required, args) {
+// Every flag outside REQUIRED and OPTIONAL is refused, so a misspelled or
+// retired flag stops with usage instead of being ignored.
+function hasExactFlags(command, args) {
+  const required = REQUIRED[command];
+  const allowed = [...required, ...(OPTIONAL[command] ?? [])];
   const valued = required.every((name) => args[name] && args[name] !== "true");
-  return valued && Object.keys(args).every((name) => required.includes(name));
+  return valued && Object.keys(args).every((name) => allowed.includes(name));
+}
+
+// A merge base is compared as a commit, so only a full SHA names it exactly.
+function validBase(args) {
+  return args.base === undefined || FULL_SHA.test(args.base);
 }
 
 function validArgs(command, args) {
   if (!(args && REQUIRED[command])) {
     return false;
   }
-  if (!hasExactFlags(REQUIRED[command], args)) {
+  if (!(hasExactFlags(command, args) && validBase(args))) {
     return false;
   }
   return !HEAD_COMMANDS.has(command) || FULL_SHA.test(args.head);

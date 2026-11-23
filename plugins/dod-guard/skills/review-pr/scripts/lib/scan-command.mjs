@@ -1,54 +1,27 @@
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import { Buffer } from "node:buffer";
-// biome-ignore lint/correctness/noNodejsModules: This skill helper starts the quality-guard scanner.
-import { spawnSync } from "node:child_process";
-// biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import { closeSync, existsSync, fstatSync, ftruncateSync, openSync, readSync, writeSync } from "node:fs";
-// biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import process from "node:process";
+import { closeSync, existsSync, ftruncateSync, openSync, writeSync } from "node:fs";
 import { readJsonFile } from "../../../../lib/read-text.mjs";
-import { ignoredPaths, scanArguments } from "./ignored-paths.mjs";
+import { ignoredPaths } from "./ignored-paths.mjs";
 import { applyRepoLimits, repoLimits } from "./repo-limits.mjs";
+import { baselineMarks } from "./scan-baseline.mjs";
 import { scannerPath } from "./scanner-location.mjs";
-
-// The scanner shares the descriptor, so its position is past the report; read
-// from offset 0 instead.
-function readDescriptor(fd) {
-  const buffer = Buffer.alloc(fstatSync(fd).size);
-  readSync(fd, buffer, 0, buffer.length, 0);
-  return buffer.toString("utf8");
-}
+import { readDescriptor, runScanner } from "./scanner-run.mjs";
 
 // The repository's own limits replace the scanner's defaults before any later
 // command numbers the violations. One descriptor carries the raw report and
 // its rewrite, so nothing can swap the file between the read and the write.
-function limitReport(fd, root) {
+function limitReport(fd, root, raw, baseline) {
   const limits = repoLimits(root);
-  const limited = applyRepoLimits(JSON.parse(readDescriptor(fd)), limits);
-  const report = { ...limited.scan, repoLimits: { floors: limits.floors, removed: limited.removed } };
+  const limited = applyRepoLimits(raw, limits);
+  const report = { ...limited.scan, repoLimits: { floors: limits.floors, removed: limited.removed }, baseline };
   ftruncateSync(fd, 0);
   writeSync(fd, JSON.stringify(report), 0);
   return {
     violations: limited.scan.violations.length,
     ruleFloors: limits.floors,
     removedByRepoLimits: limited.removed,
+    baseline,
   };
-}
-
-// The whole-repository report runs to megabytes, so the scanner writes straight
-// to the descriptor instead of through a pipe.
-function runScanner(scanner, root, fd) {
-  const result = spawnSync(process.execPath, [scanner, ...scanArguments(root, ignoredPaths(root))], {
-    cwd: root,
-    stdio: ["ignore", fd, "pipe"],
-    shell: false,
-  });
-  if (result.error) {
-    throw new Error(`quality-scan failed (${result.status}): ${result.error.message}`);
-  }
-  if (result.status !== 0) {
-    throw new Error(`quality-scan failed (${result.status}): ${result.stderr}`);
-  }
 }
 
 function existingScanner(args) {
@@ -59,14 +32,26 @@ function existingScanner(args) {
   return scanner;
 }
 
+// Without --base every finding counts as the pull request's own, as before.
+// The marks go on the raw report, which is what the CI gate compares, before
+// the repository's limits drop anything.
+function markBaseline(scanner, { root, base }, violations) {
+  if (base === undefined) {
+    return null;
+  }
+  return baselineMarks({ scanner, root, base, violations });
+}
+
 // The repository's limits are read from --root, so the gate's own flags are
 // never passed here.
-function scan(args) {
+async function scan(args) {
   const scanner = existingScanner(args);
   const out = openSync(args.out, "w+");
   try {
-    runScanner(scanner, args.root, out);
-    return { scanner, out: args.out, ...limitReport(out, args.root) };
+    runScanner(scanner, args.root, out, ignoredPaths(args.root));
+    const raw = JSON.parse(readDescriptor(out));
+    const baseline = await markBaseline(scanner, args, raw.violations ?? []);
+    return { scanner, out: args.out, ...limitReport(out, args.root, raw, baseline) };
   } finally {
     closeSync(out);
   }
