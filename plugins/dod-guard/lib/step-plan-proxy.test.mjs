@@ -53,6 +53,28 @@ test("records a fenced git add, commit, or push as a plan error, and ignores pro
   ]);
 });
 
+test("reports git only where a shell fence runs it, after a separator, and reads Commit outside fences", () => {
+  const text = [
+    "## Step plan: T1",
+    "Commit: test: cover the git-write check (#5)",
+    "```js",
+    'assert.match(errors[0], /runs git commit/); // fixture: "git commit -m test"',
+    "Commit: not the subject, a fixture line",
+    "```",
+    "```bash",
+    'echo "Test: the parser reports git commit -m test"',
+    "cd repo && git push origin HEAD",
+    "```",
+  ].join("\n");
+  const [plan] = parseStepPlans(text);
+
+  assert.equal(plan.commit, "test: cover the git-write check (#5)");
+  assert.deepEqual(plan.errors, [
+    "step plan T1 runs git push; the worker never commits, so drop the step and put the message on " +
+      "the plan's Commit line: cd repo && git push origin HEAD",
+  ]);
+});
+
 test("reports a plan with a missing, empty, or repeated Commit line", () => {
   const plans = parseStepPlans(
     "## Step plan: T1\nFile: a.mjs\n## Step plan: T2\nFile: b.mjs\nCommit:\n" +
