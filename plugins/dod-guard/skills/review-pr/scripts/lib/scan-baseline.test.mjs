@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { scannerCandidates } from "./finding-ids.mjs";
 import { gateModules, markPreexisting } from "./scan-baseline.mjs";
 import { scannerReview } from "./scanner-review.test-support.mjs";
+import { SHOWN } from "./scanner-summary.mjs";
 
 // The repository's own quality-guard, laid out as the installed plugin is, so a
 // rename of the gate modules fails this test instead of a live review.
@@ -24,6 +25,8 @@ const MISSING_GATE = /lacks pr-gate-compare\.mjs.*update quality-guard/;
 const MIXED_NOTE = /1 of these 2 findings were already in the code before this PR; the ones it added end with/;
 const NEW_TAGGED = /new width \(new in this PR\)/;
 const OLD_TAGGED = /old dup \(new in this PR\)/;
+const FRESH_TAGGED = /fresh high \(new in this PR\)/;
+const OLD_ONE_TAGGED = /old 1 \(new in this PR\)/;
 
 const finding = (file, message, extra = {}) => ({
   file,
@@ -96,4 +99,21 @@ test("a group that mixes old and new findings tags the new ones and stays minor 
   assert.match(review.payload.body, MIXED_NOTE);
   assert.match(review.payload.body, NEW_TAGGED);
   assert.doesNotMatch(review.payload.body, OLD_TAGGED);
+});
+
+test("a new finding past the shown five keeps its tag in the full scanner list", () => {
+  const old = Array.from({ length: SHOWN }, (_, index) =>
+    finding("src/Old.cs", `old ${index + 1}`, { existing: true }),
+  );
+  const violations = [...old, finding("src/Old.cs", "fresh high")];
+  const review = scannerReview({
+    files: ["src/Old.cs"],
+    line: 10,
+    violations,
+    rule: (ids) => ({ ids, status: "KEEP" }),
+  });
+  assert.equal(review.counts.MAJOR, 1);
+  const lists = review.scannerComments.map(({ body }) => body).join("\n");
+  assert.match(lists, FRESH_TAGGED);
+  assert.doesNotMatch(lists, OLD_ONE_TAGGED);
 });

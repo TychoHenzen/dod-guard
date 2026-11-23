@@ -7,7 +7,7 @@ import { requireMergeOutput } from "./merge-output.mjs";
 import { regenerate } from "./regenerated-inputs.mjs";
 import { fittedBody, requirePostableBody } from "./review-body.mjs";
 import { slotsBlock } from "./review-slots.mjs";
-import { scannerFinding } from "./scanner-findings.mjs";
+import { scannerFinding, taggedGroups } from "./scanner-findings.mjs";
 import { splitRulings } from "./scanner-rulings.mjs";
 import { fullListComments } from "./scanner-summary.mjs";
 
@@ -79,7 +79,7 @@ function buildReview(input) {
     body: requirePostableBody(body, checked.slots.length),
     comments: inlineComments(anchoredThreads(checked, threads)),
   };
-  const scannerComments = listed ? fullListComments(input.headSha, groupBy(checked.kept, "file")) : [];
+  const scannerComments = listed ? fullListComments(input.headSha, taggedGroups(checked.kept)) : [];
   return { recommendation, counts, deferred: deferred.length, payload, scannerComments };
 }
 

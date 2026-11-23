@@ -1,3 +1,4 @@
+import { groupBy } from "./group-by.mjs";
 import { SHOWN, scannerBody } from "./scanner-summary.mjs";
 
 // One file's kept scanner violations become one finding. A violation that
@@ -77,4 +78,10 @@ function scannerFinding(file, violations) {
   };
 }
 
-export { scannerFinding };
+// The full scanner list carries the same tags as the group bodies, so a new
+// finding past the first SHOWN of its group can still be told apart there.
+function taggedGroups(kept) {
+  return new Map([...groupBy(kept, "file")].map(([file, group]) => [file, taggedNew(group)]));
+}
+
+export { scannerFinding, taggedGroups };
