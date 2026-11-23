@@ -52,6 +52,11 @@ triage and summaries in the disposable issue's `## Implementation notes`.
 | Structured parent | A feature parent decomposes into three independently verifiable user flows. | Create one actionable Todo child per functional slice, keep dependent steps in the parent checklist, and assess implementation, wiring/usability, quality, and reliability across the owning slices with observable evidence. |
 | Partial structured parent | A feature parent already has one child that owns one functional slice. | Reuse that child, add only independently deliverable missing slices, and do not create category placeholders, child branches, or PRs. |
 | Repeated variant shape | A feature parent adds three output formats, and each format needs the same parse, validate, and report steps in several callers. | Make the first slice introduce the shared format boundary and move one existing format behind it, then add one slice per remaining format behind that boundary. Each slice keeps the system working and deletes the structure it replaces. |
+| Already done | A Backlog issue asks for a flag that the default branch already parses, and a test covers it. | Post `## Closed by refinement` citing the code, the test, and the default branch SHA. Close as not planned, set Status `Done` unless it already reads `Done`, and read back `CLOSED`, `NOT_PLANNED`, `Done`. Add no labels, sections, or step plans. |
+| Duplicate | A Backlog issue asks for the same change as an older open issue and adds one reproduction step. | Comment the reproduction step on the older issue first. Then post `## Closed by refinement` with `Duplicate of #<older>` as its first line, close as not planned, and set and read back `Done`. |
+| Obsolete | A Backlog issue asks to fix a command that the default branch no longer has. | Cite the commit or file that removed it. Close as not planned with the evidence comment, and set and read back `Done`. |
+| Product judgment is not a close | Research shows the reported behavior is deliberate, but nothing records that the owner chose it. | Do not close. Treat it as a user constraint and take the interview or advisor route. |
+| Close needs a bare issue | An already-done issue has one open sub-issue, or a linked pull request, or a `codex/<issue>-` branch. | Do not close. Record the finding in `discovery-triage` and refine as usual. |
 
 ## Classification cases
 
