@@ -5,6 +5,9 @@ export interface QualityConfig {
   genericBuckets: string[];
   generatedPaths: string[];
   excludePaths: string[];
+  // Read by the scanner script, not the commit gate; parsed here so both
+  // readers accept and reject the same file.
+  registeredAttributes: string[];
   testPaths: string[];
   lowLevelPathGroups: string[];
   fluentMarkers: string[];
@@ -18,6 +21,7 @@ export const DEFAULT_CONFIG: QualityConfig = {
   genericBuckets: ["utils", "common", "helpers", "shared", "misc"],
   generatedPaths: [],
   excludePaths: [],
+  registeredAttributes: [],
   testPaths: [],
   lowLevelPathGroups: [],
   fluentMarkers: ["builder", "fluent", "pipeline", "query"],

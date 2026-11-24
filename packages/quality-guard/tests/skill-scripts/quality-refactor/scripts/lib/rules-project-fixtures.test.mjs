@@ -30,9 +30,10 @@ export function testFile(rel, code, lang = "ts") {
 
 // Full scans, because the same-module rule reads each file's function list
 // and interpolation captures, which scansFor leaves out. rustScansFor is a
-// plain scanFile pass, so it serves every language.
-export function reachabilityRulesFor(name, files) {
-  const config = buildConfig();
+// plain scanFile pass, so it serves every language. `settings` goes to
+// buildConfig, for a repository's registeredAttributes.
+export function reachabilityRulesFor(name, files, settings = {}) {
+  const config = buildConfig(settings);
   const scans = rustScansFor(files, config);
   return checkReachability({ files, scans, config })
     .filter((violation) => violation.message.startsWith(`${name} `))

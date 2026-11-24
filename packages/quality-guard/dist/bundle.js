@@ -25019,6 +25019,7 @@ var DEFAULT_CONFIG = {
   genericBuckets: ["utils", "common", "helpers", "shared", "misc"],
   generatedPaths: [],
   excludePaths: [],
+  registeredAttributes: [],
   testPaths: [],
   lowLevelPathGroups: [],
   fluentMarkers: ["builder", "fluent", "pipeline", "query"],
@@ -25137,6 +25138,18 @@ function parseScalar(value, fallback, location) {
 function parseStrings(value, fallback, location) {
   return value === void 0 ? [...fallback] : pathList(value, location);
 }
+var ATTRIBUTE_NAME = /^[A-Za-z_]\w*$/;
+function parseAttributeNames(value) {
+  if (value === void 0) {
+    return [];
+  }
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !ATTRIBUTE_NAME.test(item))) {
+    throw new ConfigError(
+      "registeredAttributes must be an array of attribute names"
+    );
+  }
+  return [...value];
+}
 
 // src/commit-gate/config-build.ts
 var CONFIG_KEYS = [
@@ -25146,6 +25159,7 @@ var CONFIG_KEYS = [
   "genericBuckets",
   "generatedPaths",
   "excludePaths",
+  "registeredAttributes",
   "testPaths",
   "lowLevelPathGroups",
   "fluentMarkers",
@@ -25202,6 +25216,7 @@ function parseQualityConfig(source) {
       "genericBuckets"
     ),
     ...optional2,
+    registeredAttributes: parseAttributeNames(input.registeredAttributes),
     history: parseHistory(input.history)
   };
 }

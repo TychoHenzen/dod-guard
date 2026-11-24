@@ -4,9 +4,9 @@
 // finding that exists only at HEAD blocks, and the pull request must also
 // remove a few findings that were already there (a quota), so quality improves
 // without one pull request fixing everything. The whole checkout is scanned at
-// the merge base and at HEAD. The excludePaths of the merge-base
-// .quality-guard.json apply to both scans, so a pull request cannot exclude its
-// own findings.
+// the merge base and at HEAD. The excludePaths and registeredAttributes of the
+// merge-base .quality-guard.json apply to both scans, so a pull request cannot
+// exclude its own findings.
 // Usage: node quality-pr-gate.mjs --base=<ref> [--exclude=<fragment>]...
 //          [--block-on=low|medium|high] [--rule-block-on=<rule>:<severity>]...
 //          [--fix-medium-high=<n>] [--fix-low=<n>]
@@ -35,7 +35,7 @@ function runGate(options, cwd, { out, err }) {
     return 0;
   }
   const base = scanMergeBase(options, cwd);
-  const head = scanViolations(cwd, base.excludes);
+  const head = scanViolations(cwd, base);
   if (head.fileCount === 0) {
     err.write(
       "quality-pr-gate: the scan covered no files. Check excludePaths in " +

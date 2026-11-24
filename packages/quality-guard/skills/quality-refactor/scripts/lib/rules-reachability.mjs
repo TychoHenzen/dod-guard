@@ -1,11 +1,8 @@
 import { isEntryPath } from "./config.mjs";
 import { lineAt } from "./offsets.mjs";
 import { referenceCounts } from "./rules-reachability-evidence.mjs";
-import {
-  EXPORT_BLOCK,
-  EXPORT_PATTERNS,
-  hasGlobalClassAttribute,
-} from "./rules-reachability-exports.mjs";
+import { EXPORT_BLOCK, EXPORT_PATTERNS } from "./rules-reachability-exports.mjs";
+import { registeredMatcher } from "./rules-reachability-registered.mjs";
 import { suggestionFor } from "./rule-suggestions.mjs";
 function namesFromBlock(code) {
   const names = [];
@@ -33,14 +30,14 @@ function matchesFor(pattern, code) {
   }
   return matches;
 }
-function directExports(file, scan) {
+function directExports(file, scan, isRegistered) {
   const found = new Map();
   for (const pattern of EXPORT_PATTERNS[file.lang] ?? []) {
     for (const match of matchesFor(pattern, scan.code)) {
       const offset = match.index + match[0].lastIndexOf(match[1]);
       const info = { line: lineAt(scan.starts, match.index), offset };
       if (file.lang === "cs")
-        info.registered = hasGlobalClassAttribute(scan.code, match.index);
+        info.registered = isRegistered(scan.code, match.index);
       found.set(match[1], info);
     }
   }
@@ -52,8 +49,8 @@ function addReexports(found, scan) {
   }
   return found;
 }
-function exportsOf(file, scan) {
-  const found = directExports(file, scan);
+function exportsOf(file, scan, isRegistered) {
+  const found = directExports(file, scan, isRegistered);
   return [...(file.lang === "ts" ? addReexports(found, scan) : found)].map(
     ([name, info]) => ({ name, ...info }),
   );
@@ -83,12 +80,13 @@ function violationForSymbol({ file, corpus, config, symbol }) {
 }
 function violationsForFile(file, corpus, config) {
   if (file.isTest || isEntryPath(file.rel)) return [];
-  return exportsOf(file, corpus.scans.get(file.rel))
+  return exportsOf(file, corpus.scans.get(file.rel), corpus.isRegistered)
     .map((symbol) => violationForSymbol({ file, corpus, config, symbol }))
     .filter((violation) => violation !== null);
 }
 
 export function checkReachability({ files, scans, config, manifests = [] }) {
-  const corpus = { files, scans, manifests };
+  const isRegistered = registeredMatcher(config.registeredAttributes);
+  const corpus = { files, scans, manifests, isRegistered };
   return files.flatMap((file) => violationsForFile(file, corpus, config));
 }

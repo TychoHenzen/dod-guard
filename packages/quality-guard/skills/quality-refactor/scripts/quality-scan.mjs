@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { buildConfig } from "./lib/config.mjs";
 import {
   ExclusionConfigError,
-  loadExcludePaths,
+  loadRepoConfig,
 } from "./lib/exclusion-config.mjs";
 import { USAGE, parseArgs, validate } from "./quality-scan-options.mjs";
 import { run } from "./quality-scan-run.mjs";
@@ -21,14 +21,17 @@ function main(argv) {
   }
   if (!options.noConfig) {
     try {
-      options.excludes.push(...loadExcludePaths(options.root));
+      const repo = loadRepoConfig(options.root);
+      options.excludes.push(...repo.excludePaths);
+      options.registeredAttributes.push(...repo.registeredAttributes);
     } catch (error) {
       if (!(error instanceof ExclusionConfigError)) throw error;
       process.stderr.write(`${error.message}\n`);
       return 3;
     }
   }
-  return run(options, buildConfig());
+  const { registeredAttributes } = options;
+  return run(options, buildConfig({ registeredAttributes }));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url))

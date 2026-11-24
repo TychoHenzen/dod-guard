@@ -8,8 +8,13 @@ export const USAGE = `quality-scan [paths...] [options]
   --exclude=<fragment>       skip paths whose "/" + relative path contains this fragment (repeatable)
   --test-path=<fragment>     treat paths containing this fragment as test code
                              (repeatable)
+  --registered-attribute=<Name>
+                             a C# attribute whose classes something builds by
+                             reflection, so they are never dead exports
+                             (repeatable; GlobalClass is built in)
   --root=<dir>               anchor for relative paths (default: cwd)
-  --no-config                ignore <root>/.quality-guard.json excludePaths (the gate passes its own list)
+  --no-config                ignore <root>/.quality-guard.json (the gate passes
+                             its own --exclude and --registered-attribute lists)
   --top=N                    text mode: show N worst files (default 15)
 
 Rules: ${ALL_RULES.join(", ")}`;

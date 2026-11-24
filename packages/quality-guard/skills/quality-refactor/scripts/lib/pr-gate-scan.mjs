@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-import { loadExcludePaths } from "./exclusion-config.mjs";
+import { loadRepoConfig } from "./exclusion-config.mjs";
 import { exportTree } from "./merge-base-tree.mjs";
 import { parseNameStatus } from "./pr-gate-paths.mjs";
 
@@ -33,7 +33,9 @@ function spawnFailure(result) {
   return result.status === 0 ? undefined : result.stderr.trim();
 }
 
-export function scanViolations(dir, excludes) {
+// settings: the merge base's { excludes, registeredAttributes }, passed as flags
+// because --no-config keeps the scanned tree's own .quality-guard.json out.
+export function scanViolations(dir, { excludes, registeredAttributes = [] }) {
   const args = [
     SCAN,
     ".",
@@ -41,6 +43,7 @@ export function scanViolations(dir, excludes) {
     `--root=${dir}`,
     "--no-config",
     ...excludes.map((x) => `--exclude=${x}`),
+    ...registeredAttributes.map((name) => `--registered-attribute=${name}`),
   ];
   const result = spawnSync(process.execPath, args, {
     cwd: dir,
@@ -61,14 +64,18 @@ function summarizeScan(parsed) {
 
 // The merge base is exported to a private directory, with no git worktree, so
 // the scan sees exactly the upstream files. Its .quality-guard.json is the only
-// setting that counts, so a pull request cannot change its own exclusions.
+// setting that counts, so a pull request cannot change its own exclusions or
+// registered attributes.
 export function scanMergeBase(options, cwd) {
   const mergeBase = git(["merge-base", options.base, "HEAD"], cwd).trim();
   const { dir, cleanup } = exportTree(cwd, mergeBase);
   try {
-    const excludes = [...options.excludes, ...loadExcludePaths(dir)];
-    const { violations } = scanViolations(dir, excludes);
-    return { mergeBase, excludes, violations };
+    const repo = loadRepoConfig(dir);
+    const excludes = [...options.excludes, ...repo.excludePaths];
+    const { registeredAttributes } = repo;
+    const settings = { excludes, registeredAttributes };
+    const { violations } = scanViolations(dir, settings);
+    return { mergeBase, ...settings, violations };
   } finally {
     cleanup();
   }

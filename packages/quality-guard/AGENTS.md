@@ -126,9 +126,16 @@ already applies to rules the repository turned on as errors.
   moved into another `partial` file. Generated `*.g.cs` and designer files
   are not counted.
 - `.quality-guard.json` `excludePaths` (a substring of "/" plus the
-  repository-relative path) lists code that is not the repository's own. The
-  gate reads it from the merge base for both scans, exits 2 on an invalid file
-  or on a HEAD scan of zero files, and lists changed files it skipped.
+  repository-relative path) lists code that is not the repository's own.
+  `registeredAttributes` lists C# attribute names, beyond the built-in
+  `GlobalClass`, whose classes are built by reflection and so are never a
+  `dead-export`. The scanner reads both keys itself. The gate passes
+  `--no-config` and reads both from the merge base for both scans, as
+  `--exclude` and `--registered-attribute` flags, so a pull request cannot
+  loosen its own rules. It exits 2 on an invalid file or on a HEAD scan of
+  zero files, and lists changed files it skipped. The commit gate's
+  TypeScript reader must accept and reject the same file; the parity test
+  holds them together.
 - Point `--root` at the repository, not at the target directory. Manifest
   files such as Godot scenes are collected from the root, and a scene that
   wires a class usually sits above the scanned subdirectory.
