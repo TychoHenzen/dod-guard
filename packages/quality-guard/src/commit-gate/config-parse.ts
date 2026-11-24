@@ -73,3 +73,22 @@ export function parseStrings(
 ): string[] {
   return value === undefined ? [...fallback] : pathList(value, location);
 }
+
+// Same rule as the scanner script's reader (lib/exclusion-config.mjs): a plain
+// C# identifier, so "Service" or "ServiceAttribute", never "Godot.Service".
+const ATTRIBUTE_NAME = /^[A-Za-z_]\w*$/;
+
+export function parseAttributeNames(value: unknown): string[] {
+  if (value === undefined) {
+    return [];
+  }
+  if (
+    !Array.isArray(value) ||
+    value.some((item) => typeof item !== "string" || !ATTRIBUTE_NAME.test(item))
+  ) {
+    throw new ConfigError(
+      "registeredAttributes must be an array of attribute names",
+    );
+  }
+  return [...(value as string[])];
+}

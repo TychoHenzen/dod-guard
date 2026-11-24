@@ -2,6 +2,7 @@ import { DEFAULT_CONFIG, type QualityConfig } from "./config-defaults.js";
 import { ConfigError } from "./config-error.js";
 import {
   keysOnly,
+  parseAttributeNames,
   parseDirections,
   parseGroups,
   parseHistory,
@@ -18,6 +19,7 @@ const CONFIG_KEYS = [
   "genericBuckets",
   "generatedPaths",
   "excludePaths",
+  "registeredAttributes",
   "testPaths",
   "lowLevelPathGroups",
   "fluentMarkers",
@@ -90,6 +92,7 @@ export function parseQualityConfig(source: string): QualityConfig {
       "genericBuckets",
     ),
     ...optional,
+    registeredAttributes: parseAttributeNames(input.registeredAttributes),
     history: parseHistory(input.history),
   };
 }

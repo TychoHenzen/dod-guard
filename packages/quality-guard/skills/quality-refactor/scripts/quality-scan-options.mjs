@@ -1,4 +1,5 @@
 import { ALL_RULES } from "./lib/config.mjs";
+import { isAttributeName } from "./lib/exclusion-config.mjs";
 import { USAGE } from "./quality-scan-usage.mjs";
 import { FLAG_HANDLERS } from "./quality-scan-flags.mjs";
 export { USAGE };
@@ -9,6 +10,7 @@ function defaultOptions() {
     rules: null,
     excludes: [],
     testPaths: [],
+    registeredAttributes: [],
     root: process.cwd(),
     noConfig: false,
     top: 15,
@@ -54,10 +56,20 @@ function validateRules(options) {
   return unknown.length > 0 ? `unknown rules: ${unknown.join(", ")}` : null;
 }
 
+function validateAttributes(options) {
+  const bad = options.registeredAttributes.find(
+    (name) => !isAttributeName(name),
+  );
+  if (bad === undefined) {
+    return null;
+  }
+  return `bad --registered-attribute: ${bad}`;
+}
+
 export function validate(options) {
-  const choiceError = invalidChoice(options);
-  if (choiceError) return choiceError;
-  const ruleError = validateRules(options);
-  if (ruleError) return ruleError;
-  return null;
+  return (
+    invalidChoice(options) ??
+    validateRules(options) ??
+    validateAttributes(options)
+  );
 }

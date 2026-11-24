@@ -44,8 +44,36 @@ function excludeList(value) {
   return value.map((entry) => entry.replaceAll("\\", "/"));
 }
 
-export function loadExcludePaths(root) {
+const ATTRIBUTE_NAME = /^[A-Za-z_]\w*$/;
+
+export function isAttributeName(value) {
+  return typeof value === "string" && ATTRIBUTE_NAME.test(value);
+}
+
+function attributeList(value) {
+  if (value === undefined) {
+    return [];
+  }
+  if (!(Array.isArray(value) && value.every(isAttributeName))) {
+    throw new ExclusionConfigError(
+      `${CONFIG_FILE}: registeredAttributes must be an array of attribute ` +
+        'names such as "Service". Fix the file and rerun.',
+    );
+  }
+  return [...value];
+}
+
+// The repository's settings: code that is not its own (excludePaths), and the
+// C# attributes whose classes something builds by reflection, so no static
+// reference reaches them (registeredAttributes).
+export function loadRepoConfig(root) {
   const text = readConfigText(join(root, CONFIG_FILE));
-  if (text === null) return [];
-  return excludeList(parseObject(text).excludePaths);
+  if (text === null) {
+    return { excludePaths: [], registeredAttributes: [] };
+  }
+  const parsed = parseObject(text);
+  return {
+    excludePaths: excludeList(parsed.excludePaths),
+    registeredAttributes: attributeList(parsed.registeredAttributes),
+  };
 }

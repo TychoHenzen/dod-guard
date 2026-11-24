@@ -112,3 +112,29 @@ test("rejects a malformed excludePaths", () => {
     );
   }
 });
+
+test("keeps registeredAttributes as written, empty by default", () => {
+  assert.deepEqual(
+    parseQualityConfig(
+      JSON.stringify({
+        registeredAttributes: ["Service", "AutoloadAttribute"],
+      }),
+    ).registeredAttributes,
+    ["Service", "AutoloadAttribute"],
+  );
+  assert.deepEqual(parseQualityConfig("{}").registeredAttributes, []);
+});
+
+test("rejects a registeredAttributes entry that is not a plain name", () => {
+  for (const registeredAttributes of [
+    "Service",
+    [1],
+    [""],
+    ["Godot.Service"],
+  ]) {
+    assert.throws(
+      () => parseQualityConfig(JSON.stringify({ registeredAttributes })),
+      ConfigError,
+    );
+  }
+});

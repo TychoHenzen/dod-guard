@@ -26,10 +26,12 @@ export const ALL_RULES = [
   ...Object.keys(PRESENCE_SEVERITY),
 ];
 
-export function buildConfig() {
+// registeredAttributes: C# attribute names, beyond the built-in GlobalClass,
+// whose classes count as reachable (see rules-reachability-exports.mjs).
+export function buildConfig({ registeredAttributes = [] } = {}) {
   const thresholds = structuredClone(DEFAULT_THRESHOLDS);
   const presence = { ...PRESENCE_SEVERITY };
-  return { thresholds, presence };
+  return { thresholds, presence, registeredAttributes: [...registeredAttributes] };
 }
 
 export function severityFor(config, rule, value) {
