@@ -56,7 +56,8 @@ function attributeList(value) {
   }
   if (!(Array.isArray(value) && value.every(isAttributeName))) {
     throw new ExclusionConfigError(
-      `${CONFIG_FILE}: registeredAttributes must be an array of attribute names such as "Service". Fix the file and rerun.`,
+      `${CONFIG_FILE}: registeredAttributes must be an array of attribute ` +
+        'names such as "Service". Fix the file and rerun.',
     );
   }
   return [...value];
