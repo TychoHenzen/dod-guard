@@ -21,12 +21,23 @@ const REGISTERED_FORMS = [
   "[type: Service]",
   "[Tool, Service]",
   "[Service, Tool]",
+  "[Tool(a > b), Service]",
+  "[Handler<A, B>, Service]",
+  // biome-ignore lint/security/noSecrets: C# attribute text, not a secret
+  "[Service<IRegistry>]",
+  // biome-ignore lint/security/noSecrets: C# attribute text, not a secret
+  "[Service]\n[Tool]",
+  // biome-ignore lint/security/noSecrets: C# attribute text, not a secret
+  "[Service]\nstatic",
 ];
 
 const LOOK_ALIKES = [
   "[ServiceX]",
   // biome-ignore lint/security/noSecrets: C# attribute text, not a secret
   "[Tool(typeof(Service))]",
+  "[Tool(1, Service, 3)]",
+  "[assembly: Service]",
+  "[Service]\n;",
 ];
 
 const GLOBAL_CLASS_FORMS = [
@@ -34,6 +45,7 @@ const GLOBAL_CLASS_FORMS = [
   // biome-ignore lint/security/noSecrets: C# attribute text, not a secret
   "[GlobalClassAttribute]",
   "[Godot.GlobalClassAttribute]",
+  "[global::Godot.GlobalClass]",
 ];
 
 function rulesFor(attributes, settings) {
@@ -60,7 +72,7 @@ test("without the setting a [Service] class is dead", () => {
   assert.deepEqual(rulesFor("[Service]", {}), ["dead-export"]);
 });
 
-test("a longer name or a typeof argument is not the attribute", () => {
+test("a look-alike, an argument, another target or a gap is not the attribute", () => {
   for (const attributes of LOOK_ALIKES) {
     assert.deepEqual(
       rulesFor(attributes, SERVICE),

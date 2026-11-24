@@ -72,11 +72,13 @@ A public C# type marked `[GlobalClass]` counts as engine registration, so it is
 not reported. A repository that builds more classes by attribute, such as a
 dependency-injection container that finds every `[Service]` class, lists those
 attribute names under `registeredAttributes` in `.quality-guard.json`
-(`{"registeredAttributes": ["Service"]}`). A name matches its long form
-(`[ServiceAttribute]`), a qualified form (`[Godot.Service]`), a target
-(`[type: Service]`), arguments, and a place in a combined list
-(`[Tool, Service]`). A longer name such as `[ServiceX]` or a mention inside
-arguments such as `typeof(Service)` does not.
+(`{"registeredAttributes": ["Service"]}`). Only the attribute sections directly
+above the declaration count. A name matches its long form
+(`[ServiceAttribute]`), a qualified form (`[Godot.Service]`,
+`[global::Godot.GlobalClass]`), a `type:` target, arguments, generic
+arguments, and a place in a combined list (`[Tool, Service]`). A longer name
+such as `[ServiceX]`, a mention inside arguments such as `typeof(Service)` or
+`[Tool(1, Service)]`, and an `assembly:` or `module:` target do not.
 
 **Uses inside its own module.** In the file that declares the symbol, a whole-word
 occurrence of its name (in code, or in a string interpolation capture) counts
