@@ -56,9 +56,13 @@ shell commands, URLs, flags, variable names, API paths, quoted errors and
 defined terms. Copy each item character for character into the place the claim
 it supports needs it, and write the explanation around it. Rewriting a command
 or a script into an equivalent form removes the original that a reader can run
-and check, so keep the original form. When the surrounding claims no longer
-need a listed item, list it under Not covered and leave the decision to the
-orchestrator.
+and check, so keep the original form.
+
+Every figure in the Verbatim section belongs to a claim. Find that claim and
+write the figure into it. Not knowing what a figure measures is no reason to
+leave it out. A path or URL left unused usually means a fact was dropped, so
+place it too. List an item under Not covered only when no claim in the contract
+explains it, and leave the decision to the orchestrator.
 
 ## Claim strength
 
@@ -90,6 +94,30 @@ Silently keeping what you saw costs the entire workflow.
 Two readings of a claim may both satisfy the contract. When a reader would
 take away something different from each, stop and return AMBIGUOUS. Give the
 options and the consequence of each rather than pick one.
+
+## Length
+
+The rough length the contract records is a limit, not a suggestion. If a reader
+could cut 30 percent of your text and lose no claim, it is too long. Do not
+ship over the limit and only mention it under Concerns.
+
+Fit the limit by cutting words, never claims:
+
+- No filler openers, and no apology longer than a clause.
+- No section labels in a short message.
+- No timestamps or IDs that no claim needs.
+- No prose restating text the reader already has, such as a pasted excerpt.
+- No second hedge on a rule you just stated.
+- No explaining the reader's own tool back to them.
+
+If the text is still too long, cut in this order:
+
+1. Say each point once. A point raised as a flaw does not return as an option.
+2. Give causal history a clause at most.
+3. Give side remarks a clause at most.
+
+Keep one point per sentence. When a trailing clause or a which-clause adds a
+second fact, split it into its own sentence.
 
 ## Writing bounds
 
