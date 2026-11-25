@@ -52,6 +52,41 @@ test("parseArguments rejects an unknown argument and a non-integer --attempts", 
   assert.throws(() => parseArguments([...BASE.slice(0, 2), "--attempts=1.5"]), /--attempts must be a positive integer/);
 });
 
+const CARDCLEANER_UNIT = "Unit tests (.NET, no Godot)";
+const requiredFrom = (...flags) => parseArguments([...BASE, ...flags]).required;
+
+test("--require splits only at commas outside parentheses and brackets", () => {
+  assert.deepEqual(requiredFrom(`--require=build-test,${CARDCLEANER_UNIT},quality-guard`), [
+    "build-test",
+    CARDCLEANER_UNIT,
+    "quality-guard",
+  ]);
+  assert.deepEqual(requiredFrom("--require=test (ubuntu-latest, 18), lint [a, b]"), [
+    "test (ubuntu-latest, 18)",
+    "lint [a, b]",
+  ]);
+  assert.deepEqual(requiredFrom("--require=a (b,c"), ["a (b,c"]);
+  assert.deepEqual(requiredFrom("--require=a),b"), ["a)", "b"]);
+});
+
+test("the publish skill's documented --require list still names five checks", () => {
+  const list = "build-test,plugin-config,static-analysis,package-integrity,quality-guard";
+  assert.deepEqual(requiredFrom(`--require=${list}`), list.split(","));
+});
+
+test("repeated --require flags add up", () => {
+  assert.deepEqual(requiredFrom("--require=a,b", `--require=${CARDCLEANER_UNIT}`), ["a", "b", CARDCLEANER_UNIT]);
+});
+
+test("main passes when a required name with a comma has passed", async () => {
+  const unit = { ...checkRun(2, "completed", "success"), name: CARDCLEANER_UNIT };
+  const argv = [...BASE, `--require=build-test,${CARDCLEANER_UNIT}`];
+  const { code, printed } = await runMain([checks([checkRun(1, "completed", "success"), unit])], argv);
+  assert.equal(code, EXIT.passed);
+  assert.ok(printed.includes(`  ${CARDCLEANER_UNIT}: success`));
+  assert.ok(!printed.some((line) => line.endsWith("not started")));
+});
+
 test("parseArguments reads every flag and rejects a bad interval or repository", () => {
   const options = parseArguments([...BASE, "--interval=0", "--require=a,b,"]);
   assert.deepEqual(options.required, ["a", "b"]);
