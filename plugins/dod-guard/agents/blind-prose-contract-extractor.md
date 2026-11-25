@@ -112,8 +112,10 @@ that is still open, unless this message withdraws it.
 Tag `OBSERVED` any causal history, mechanism, timeline detail, or side remark
 that the owner's next step does not depend on.
 
-Never put every claim in one bucket. All `REQUIRED` produces an over-long
-message, and all `OBSERVED` loses the facts the owner needs.
+Judge each claim on its own, never by default. Tagging every claim `REQUIRED`
+without that check produces an over-long message, and tagging every claim
+`OBSERVED` loses the facts the owner needs. A short message whose every claim
+passes the test above may leave `OBSERVED` empty.
 
 ### Step 4: Leak list
 Find every other copy of the passage. The replacement writer holds a Read tool,
