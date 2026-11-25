@@ -80,4 +80,24 @@ function classify(input) {
   return liveHandoff(input) ?? supersededDesign(input) ?? RESUMABLE;
 }
 
-export { classify };
+// The tip that holds the newest work, as {tip, tipDate, ahead}. `origin` is read from origin/<branch>. `local` is read
+// from the local branch, with `unpushed` (commits only on the local branch) and `behind` (commits only on origin); it
+// is undefined when the caller has no local branch. Unpushed local commits are work too, so a local branch ahead of
+// its origin is the tip to classify.
+// ASSUMPTION: a local branch at or behind its origin holds no newer work, so the origin tip stands; the switch step
+// fetches the rest.
+function pickTip(origin, local) {
+  if (local === undefined || local.unpushed === 0) {
+    return origin;
+  }
+  // ASSUMPTION: a diverged branch has no single tip that holds all the work, so it is a failure to report, not a
+  // state to guess.
+  if (local.behind > 0) {
+    throw new Error(
+      `the local branch and its origin have diverged (${local.unpushed} unpushed, ${local.behind} not pulled)`,
+    );
+  }
+  return { tip: local.tip, tipDate: local.tipDate, ahead: local.ahead };
+}
+
+export { classify, pickTip };
