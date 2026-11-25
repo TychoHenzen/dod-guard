@@ -92,6 +92,32 @@ Tag `OBSERVED` when you cannot cite an external source. A claim that merely
 reads as important stays `OBSERVED` rather than rising to `REQUIRED`. The human
 prunes the `OBSERVED` list, and that pruning is the point. A tie goes to `OBSERVED`.
 
+#### Chat and end-of-turn messages
+
+Some targets are a message an assistant sends its owner, not a passage in a
+document. No document depends on such a message. Use the owner's request and
+the previous message the owner replied to as the census instead, and never
+record the census as empty. If the briefing does not include them, say so
+under Confidence.
+
+For these targets the owner's need is the proof. Tag a claim `REQUIRED`, with
+the proof `owner needs it: {what for}`, when the owner needs it to know the
+current state, to find something, or to act. Current state covers:
+
+- what now exists
+- where it lives on the owner's machine: paths, folders, URLs
+- what was or was not touched
+- what is or is not done yet
+
+Also tag `REQUIRED` each recommendation the previous message made on an item
+that is still open, unless this message withdraws it.
+
+Tag `OBSERVED` any causal history, mechanism, timeline detail, or side remark
+that the owner's next step does not depend on.
+
+Never put every claim in one bucket. All `REQUIRED` produces an over-long
+message, and all `OBSERVED` loses the facts the owner needs.
+
 ### Step 4: Leak list
 Find every other copy of the passage. The replacement writer holds a Read tool,
 so any of these can undo the blindfold.
@@ -130,7 +156,7 @@ The same report continues with the census, the claim split, and the hand-off:
 |---|---|---|
 
 ### REQUIRED
-- {claim in one sentence, with strength and exceptions} - proof: {where at path:line}
+- {claim in one sentence, with strength and exceptions} - proof: {where at path:line, or owner needs it: what for}
 
 ### OBSERVED
 - {claim in one sentence, with strength and exceptions} - only the passage asserts this
@@ -165,7 +191,8 @@ word for word.
 3. **Record strength and exceptions with every claim.** A claim without them is
    not extracted yet.
 4. **Cite or downgrade.** A `REQUIRED` tag without a citation is an `OBSERVED`
-   tag.
+   tag. For a chat or end-of-turn message, the citation is what the owner needs
+   the claim for.
 5. **The census is evidence.** Read every dependent rather than infer it.
 6. **You have no channel to the user.** Report gaps in the Confidence section.
 '''
