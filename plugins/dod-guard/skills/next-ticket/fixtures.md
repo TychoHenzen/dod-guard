@@ -11,7 +11,9 @@ separately from these expectations.
 The issue is open and In Progress. The branch `codex/<issue>-<slug>` exists on
 origin. The author login is the authenticated user. Tip date is the committer
 date of `origin/<branch>`. Ahead is the commit count of
-`origin/<default>..origin/<branch>`.
+`origin/<default>..origin/<branch>`. When the branch also exists locally, the
+skill passes the local tip, its date and ahead count, plus the unpushed count
+`origin/<branch>..<branch>` and the behind count `<branch>..origin/<branch>`.
 
 ## Resume classification
 
@@ -22,6 +24,8 @@ date of `origin/<branch>`. Ahead is the commit count of
 | Superseded | Step plan 5 predates the tip and plan 6 for the same task postdates it. Ahead is 3. | `superseded`, reason names comment 6 | Post one `## Superseded branch` comment with the `Branch:` and `Reason:` lines and read it back. Restore the default branch tree, confirm `git diff --quiet origin/<default>` exits 0, commit the restart, push. Delete, reset, and force-push nothing. |
 | First plan for a missing task | Only one plan exists for a task, dated after the tip. | `resumable` | Continue. A first plan is not a replacement. |
 | No work on the branch | A replacement plan postdates the tip and ahead is 0. | `resumable` | Continue. There is nothing to supersede. |
+| Unpushed superseded work | Origin ahead is 0. The local branch holds 2 unpushed commits, and plan 6 for the same task as plan 5 postdates the local tip. | `superseded`, reason names comment 6 and the local tip | Restart as in the Superseded case. The superseded commits stay in history and are pushed under the restart commit. |
+| Diverged branch | The local branch holds unpushed commits and lacks commits that origin has. | exit 2, `have diverged` | Report the failure. Do not guess a tip. |
 | Replacement by a stranger | The newer plan comes from a login with association NONE. | `resumable` | Continue. Only the author or an OWNER, MEMBER, or COLLABORATOR counts. |
 | Restart rerun | The superseded case, after the restart commit is pushed. | `resumable` | Continue. The restart commit postdates every plan, so the next resume does not restart again. |
 | Dirty restart | The restore leaves a difference from the default branch. | not applicable | Stop `restart-not-clean` and report. Commit nothing. |

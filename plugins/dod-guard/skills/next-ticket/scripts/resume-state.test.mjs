@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { runCli } from "./resume-state.mjs";
-import { classify } from "./resume-state-classify.mjs";
+import { classify, pickTip } from "./resume-state-classify.mjs";
 
 const ME = "TychoHenzen";
 const TIP = "6d6c8aa1b2c3d4e5f60718293a4b5c6d7e8f9012";
@@ -93,4 +93,49 @@ test("the command exits 2 on malformed JSON, a non-array, and a bad --ahead", (t
   const bad = run(t, "[]", ["--ahead=-1"]);
   assert.equal(bad.code, 2);
   assert.match(bad.err, /usage: node resume-state\.mjs/);
+});
+
+const ORIGIN = { tip: TIP, tipDate: TIP_DATE, ahead: 0 };
+const LOCAL_TIP = "90177339aabbccddeeff00112233445566778899";
+const LOCAL_DATE = "2026-11-05T11:00:00Z";
+const local = (unpushed, behind) => ({ tip: LOCAL_TIP, tipDate: LOCAL_DATE, ahead: 2, unpushed, behind });
+
+test("the tip is the local branch only when it holds commits its origin lacks", () => {
+  assert.deepEqual(pickTip(ORIGIN, undefined), ORIGIN);
+  assert.deepEqual(pickTip(ORIGIN, local(0, 0)), ORIGIN);
+  assert.deepEqual(pickTip(ORIGIN, local(0, 4)), ORIGIN);
+  assert.deepEqual(pickTip(ORIGIN, local(2, 0)), { tip: LOCAL_TIP, tipDate: LOCAL_DATE, ahead: 2 });
+  assert.throws(() => pickTip(ORIGIN, local(2, 1)), /diverged \(2 unpushed, 1 not pulled\)/);
+});
+
+const LOCAL_FLAGS = (unpushed, behind) => [
+  `--local-tip=${LOCAL_TIP}`,
+  `--local-tip-date=${LOCAL_DATE}`,
+  "--local-ahead=2",
+  `--unpushed=${unpushed}`,
+  `--behind=${behind}`,
+];
+
+test("unpushed work written before a replaced plan reads superseded although origin holds no work", (t) => {
+  const replaced = JSON.stringify([plan(5, BEFORE), plan(6, AFTER)]);
+  assert.equal(JSON.parse(run(t, replaced, ["--ahead=0"]).out).state, "resumable");
+  const result = run(t, replaced, ["--ahead=0", ...LOCAL_FLAGS(2, 0)]);
+  assert.equal(result.code, 0, result.err);
+  assert.deepEqual(JSON.parse(result.out), {
+    state: "superseded",
+    reason: `step plan comment 6 for task-2 replaced an earlier plan after the branch tip ${LOCAL_TIP}`,
+  });
+});
+
+test("a local branch at its origin keeps the pushed tip, so its handoff stays live", (t) => {
+  const result = run(t, JSON.stringify([handoff(1, "6d6c8aa")]), LOCAL_FLAGS(0, 0));
+  assert.equal(JSON.parse(result.out).state, "live-handoff");
+});
+
+test("the command exits 2 on partial local flags, a bad local count, and a diverged branch", (t) => {
+  assert.equal(run(t, "[]", LOCAL_FLAGS(2, 0).slice(1)).code, 2);
+  assert.equal(run(t, "[]", LOCAL_FLAGS(-1, 0)).code, 2);
+  const diverged = run(t, "[]", LOCAL_FLAGS(2, 1));
+  assert.equal(diverged.code, 2);
+  assert.match(diverged.err, /have diverged/);
 });
