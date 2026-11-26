@@ -28,17 +28,25 @@ references the owner has never seen:
 - **Effort.** A sentence that makes more than one point, runs past about 20
   words, or tucks one clause inside another. A fix described only as new
   behavior, so the owner has to work out what was wrong.
-- **Not needed.** Claude's own process (searches, failed tools, retries, notes
-  for itself or for a hook), counts and file names nobody asked for, a point
-  made twice.
+- **Not needed.** Anything the owner did not ask about and does not need to
+  act on now. Claude's own process (searches, failed tools, retries, notes for
+  itself or for a hook), counts and file names nobody asked for, a point made
+  twice.
 - **Voice.** It sounds like a report, a form or a legal document.
 - **Decisions.** A decision that does not say what each choice does and which
   one Claude recommends.
 - **Padding.** Filler, restating the question, "not X, but Y" frames, summary
   labels, offer menus at the end, bullets used as decoration.
 
-The wanted message keeps every decision and everything the owner must act on
-or asked to see, and uses only facts from the real message. Where the owner
+The wanted message answers what the owner asked, then stops. It says whether
+an instruction is done and what came of it, answers a question directly, gives
+in full anything the owner asked to see, and says what happened if Claude kept
+working on its own. Then it adds only what the owner must do or decide now,
+with Claude's recommendation. It leaves out everything else, even when true:
+other work, decisions raised before the request, caveats about what was not
+tested, background, and how Claude found things. The owner can ask for those.
+
+The wanted message uses only facts from the real message. Where the owner
 needs something the message does not give, such as a recommendation, the
 reader writes a note in square brackets instead of making it up.
 
@@ -58,18 +66,18 @@ Code decides, in `hooks/gate_verdict.py`. A message fails when either is true:
 
 The length rule exists because a reader asked for a holistic verdict passed
 long, report-style messages while listing three or four real problems in
-them. On real messages, the drafts for messages the owner rejected cut 36% to
-70% and over 100 words. The drafts for short messages the owner accepted cut
-under 30 words.
+them. The wanted message is usually a quarter of the real one's length, so
+most messages over about 80 words fail once. Shorter ones fail only on the
+verdict.
 
 ## What happens on a failure
 
 The hook blocks the stop once per turn. The reason holds the reader's notes and
-its wanted message, which Claude uses as the shape and length to aim for.
-Claude checks every fact in the draft, fills in the notes in square brackets,
-and drops any question or recommendation it does not mean. It adds back only
-what the owner needs, and leaves out its own process. The rewrite is not
-checked again, so a turn costs at most one extra wait.
+its wanted message. Claude sends that draft as its message, with three changes
+only: it fixes any fact the draft got wrong, replaces each note in square
+brackets with the fact it asks for, and drops any question or recommendation
+it does not mean. It adds nothing else. The rewrite is not checked again, so a
+turn costs at most one extra wait.
 
 ## At session start
 
@@ -99,6 +107,10 @@ Earlier versions tried other checks. Each one made messages worse:
   more cases. It passed a 293-word report three times out of three. Its
   feedback asked Claude to keep every fact, so rewrites grew instead of
   shrinking.
+- A wanted message that kept every decision and point of the draft in fewer
+  words, with feedback that used it only as a shape and let Claude add back
+  what the owner needed. Rewrites came back at 0.80 of the draft's length. The
+  owner rated all 18 rewrites of six such drafts not good enough to send.
 
 ## Requirements
 
