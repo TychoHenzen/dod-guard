@@ -9,11 +9,12 @@ import { HEAD, MERGE, REPO } from "./closure-legacy.fake-gh.mjs";
 import { recordOrdinaryDelivery } from "./closure-legacy.mjs";
 import { parseCompletionRecord, renderCompletionRecord } from "./closure-records.mjs";
 import { ClosureStop } from "./closure-stop.mjs";
-import { CRITERIA, ordinaryFixture, pullBody } from "./ordinary.test-support.mjs";
+import { CRITERIA, checkedExcept, ordinaryFixture, pullBody } from "./ordinary.test-support.mjs";
 
 const NOT_TARGET_REPOSITORY = () => {
   throw new Error("no read was expected");
 };
+const FIELDS = { pullRequest: 62, mergeCommit: MERGE, trustedHeadSha: HEAD, requiredChecks: "pass", pendingRows: [] };
 
 function recordOf(fx) {
   return recordOrdinaryDelivery({ repository: REPO, pull: 62, issue: 61, runner: fx.runner });
@@ -31,15 +32,7 @@ function refusalOf(fx) {
 test("record-ordinary posts one ordinary completion record for a merged ordinary pull request", () => {
   const fx = ordinaryFixture({ merged: true });
   assert.deepEqual(recordOf(fx), { records: [{ issue: 61, action: "posted" }], ordinary: true });
-  assert.deepEqual(parseCompletionRecord(fx.state.comments).record, {
-    commentId: 100,
-    pullRequest: 62,
-    mergeCommit: MERGE,
-    trustedHeadSha: HEAD,
-    requiredChecks: "pass",
-    pendingRows: [],
-    ordinary: true,
-  });
+  assert.deepEqual(parseCompletionRecord(fx.state.comments).record, { commentId: 100, ...FIELDS, ordinary: true });
 });
 
 test("record-ordinary rerun leaves its own record unchanged", () => {
@@ -49,33 +42,17 @@ test("record-ordinary rerun leaves its own record unchanged", () => {
   assert.equal(fx.state.writes.length, 1);
 });
 
-const LEGACY_RECORD = renderCompletionRecord({
-  pullRequest: 62,
-  mergeCommit: MERGE,
-  trustedHeadSha: HEAD,
-  requiredChecks: "pass",
-  pendingRows: [],
-  legacy: true,
-});
+const LEGACY_RECORD = renderCompletionRecord({ ...FIELDS, legacy: true });
 
 const REFUSALS = [
   {
     name: "an unchecked criterion",
-    change: (state) => {
-      state.pull.body = pullBody({
-        items: [
-          [true, CRITERIA[0]],
-          [false, CRITERIA[1]],
-        ],
-      });
-    },
+    change: (state) => Object.assign(state.pull, { body: pullBody({ items: checkedExcept(CRITERIA[1]) }) }),
     reason: `acceptance criterion unchecked in the pull request body: ${CRITERIA[1]}`,
   },
   {
     name: "a missing ordinary declaration",
-    change: (state) => {
-      state.pull.body = pullBody({ declaration: "- Handoff: none" });
-    },
+    change: (state) => Object.assign(state.pull, { body: pullBody({ declaration: "- Handoff: none" }) }),
     reason: 'pull request #62 ## Convergence does not declare "- Handoff: none, ordinary path"',
   },
   {

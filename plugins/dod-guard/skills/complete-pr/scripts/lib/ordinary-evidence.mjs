@@ -2,17 +2,10 @@
 // it merges or records its delivery. standards/project-workflow.md defines both paths. Every function
 // here is pure: the callers read GitHub and pass the issue, its comments and the pull request in.
 import { acceptanceCriteria, markdownSection, markedLines } from "../../../../lib/acceptance-criteria.mjs";
-import { subsections } from "../../../../lib/record-readers.mjs";
+import { JSON_RECORDS, subsections, TEXT_RECORDS } from "../../../../lib/record-readers.mjs";
 
-const STRUCTURED_RECORDS = [
-  "requirements",
-  "clarifications",
-  "implementation-plan",
-  "task-list",
-  "lens-ownership",
-  "acceptance-evidence",
-  "planned-acceptance-matrix",
-];
+// The same seven records handoff-proof.mjs reads from the issue body.
+const STRUCTURED_RECORDS = [...TEXT_RECORDS, ...JSON_RECORDS];
 const HANDOFF_HEADING = "## Implementation handoff";
 const STEP_PLAN_HEADING = "## Step plan:";
 const ORDINARY_DECLARATION = "- Handoff: none, ordinary path";
@@ -49,12 +42,6 @@ function commentMarkers(live) {
 // a legacy ticket, or one on the ordinary path.
 function structuredMarkers(live) {
   return [...structuredRecordMarkers(live), ...commentMarkers(live)];
-}
-
-function declaresOrdinaryPath(pullBody) {
-  return markedLines(markdownSection(pullBody ?? "", "Convergence")).some(
-    (line) => !line.fenced && line.text.trim().startsWith(ORDINARY_DECLARATION),
-  );
 }
 
 function normalized(text) {
@@ -94,16 +81,15 @@ function subIssueReasons(live) {
   return total > 0 ? [`issue #${live.issueNumber} has ${total} sub-issues`] : [];
 }
 
+// A declaration inside a code block does not count.
 function declarationReasons(live) {
-  if (declaresOrdinaryPath(live.pull?.body)) {
-    return [];
-  }
-  return [`pull request #${live.pullNumber} ## Convergence does not declare "${ORDINARY_DECLARATION}"`];
+  const convergence = markedLines(markdownSection(live.pull?.body ?? "", "Convergence"));
+  const declared = convergence.some((line) => !line.fenced && line.text.trim().startsWith(ORDINARY_DECLARATION));
+  return declared ? [] : [`pull request #${live.pullNumber} ## Convergence does not declare "${ORDINARY_DECLARATION}"`];
 }
 
 // Every reason an unstructured ticket's pull request does not show ordinary-path evidence. An empty list
-// means the pull request declares the ordinary path and carries the issue's whole acceptance checklist,
-// checked.
+// means it declares the ordinary path and checks the issue's whole acceptance checklist.
 function ordinaryEvidenceReasons(live) {
   return [...subIssueReasons(live), ...declarationReasons(live), ...acceptanceGaps(live)];
 }

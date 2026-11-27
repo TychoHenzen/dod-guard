@@ -15,7 +15,12 @@ function issueBody(items = CRITERIA.map((text) => [false, text])) {
   return ["## Problem", "", "A small fix.", "", "## Acceptance criteria", "", ...checklist(items), ""].join("\n");
 }
 
-function pullBody({ items = CRITERIA.map((text) => [true, text]), declaration = DECLARATION } = {}) {
+// The pull request checklist items: every criterion checked except the ones named.
+function checkedExcept(...unchecked) {
+  return CRITERIA.map((text) => [!unchecked.includes(text), text]);
+}
+
+function pullBody({ items = checkedExcept(), declaration = DECLARATION } = {}) {
   return [
     "The fix.",
     "",
@@ -72,4 +77,4 @@ function ordinaryFixture(options) {
   return { state, runner: runnerOf(state) };
 }
 
-export { CRITERIA, DECLARATION, issueBody, ordinaryFixture, pullBody };
+export { CRITERIA, checkedExcept, DECLARATION, issueBody, ordinaryFixture, pullBody };

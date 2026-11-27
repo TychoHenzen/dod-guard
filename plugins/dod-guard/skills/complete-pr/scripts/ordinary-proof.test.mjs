@@ -1,12 +1,12 @@
-// Tests for ordinary-proof.mjs: an ordinary pull request verifies, a structured ticket is sent to the
-// structured sections (whose finalization proof still stops on missing records), and anything else is
-// refused. The fake gh runner answers issue 61 and pull request 62.
+// Tests for ordinary-proof.mjs: an ordinary pull request verifies, a structured ticket goes to the structured
+// sections, and anything else is refused. The fake gh runner answers issue 61 and pull request 62.
 // biome-ignore-all lint/correctness/noNodejsModules: node:test and node:assert are the test harness
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { JSON_RECORDS, TEXT_RECORDS } from "../../../lib/record-readers.mjs";
 import { gate, parseError } from "../../next-ticket/scripts/testing/handoff-proof-harness.mjs";
 import { HEAD } from "./lib/closure-legacy.fake-gh.mjs";
-import { CRITERIA, ordinaryFixture, pullBody } from "./lib/ordinary.test-support.mjs";
+import { CRITERIA, checkedExcept, ordinaryFixture, pullBody } from "./lib/ordinary.test-support.mjs";
 import { runCli } from "./ordinary-proof.mjs";
 
 const ARGS = ["--repository=o/r", "--pull=62", `--head-sha=${HEAD}`];
@@ -24,26 +24,20 @@ function prove(fx, argv = ARGS) {
   return { status, json: out ? JSON.parse(out) : null, stderr: stderr.text() };
 }
 
-function writes(fx) {
-  return fx.state.calls.filter((args) => args.includes("--method"));
-}
-
-test("an ordinary pull request with every criterion checked verifies and exits 0", () => {
+test("an ordinary pull request with every criterion checked verifies, writes nothing and exits 0", () => {
   const fx = ordinaryFixture();
   const result = prove(fx);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(result.json, { outcome: "ordinary", pull: 62, issue: 61, headSha: HEAD });
-  assert.deepEqual(writes(fx), []);
+  assert.deepEqual(
+    fx.state.calls.filter((args) => args.includes("--method")),
+    [],
+  );
 });
 
 test("an unchecked criterion is refused with exit 1", () => {
   const fx = ordinaryFixture();
-  fx.state.pull.body = pullBody({
-    items: [
-      [true, CRITERIA[0]],
-      [false, CRITERIA[1]],
-    ],
-  });
+  fx.state.pull.body = pullBody({ items: checkedExcept(CRITERIA[1]) });
   const result = prove(fx);
   assert.equal(result.status, 1);
   assert.equal(result.json.outcome, "refused");
@@ -69,31 +63,18 @@ test("a pull request at another head, closed, or closing no issue is refused bef
   }
 });
 
-test("an issue with a structured record exits 3, and its finalization proof still stops on the missing records", async () => {
+test("a structured record exits 3, and the finalization proof still stops on the missing records", async () => {
   const fx = ordinaryFixture();
   const body = `${fx.state.issue.body}\n## Implementation notes\n\n### requirements\n\n- R1 It works.\n`;
   fx.state.issue.body = body;
   const result = prove(fx);
   assert.equal(result.status, 3);
-  assert.deepEqual(result.json, {
-    outcome: "structured",
-    pull: 62,
-    issue: 61,
-    headSha: HEAD,
-    markers: ["issue #61 holds structured record requirements"],
-  });
+  assert.equal(result.json.outcome, "structured");
+  assert.deepEqual(result.json.markers, ["issue #61 holds structured record requirements"]);
+  // The body holds requirements, so the proof names each of the other six records as missing.
+  const unwritten = [...TEXT_RECORDS, ...JSON_RECORDS].filter((name) => name !== "requirements");
   const finalization = await gate("finalization", { body, checkpoint: null });
-  assert.deepEqual(
-    finalization,
-    parseError([
-      "missing clarifications record",
-      "missing implementation-plan record",
-      "missing task-list record",
-      "missing lens-ownership record",
-      "missing acceptance-evidence record",
-      "missing planned-acceptance-matrix record",
-    ]),
-  );
+  assert.deepEqual(finalization, parseError(unwritten.map((name) => `missing ${name} record`)));
 });
 
 test("a handoff comment sends the ticket to the structured sections even when the body looks ordinary", () => {
