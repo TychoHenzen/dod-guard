@@ -2,13 +2,11 @@
 // the structured or the ordinary path, and for an ordinary ticket verifies the pull request's evidence.
 // It only reads GitHub. The outcome is "ordinary" (verified), "structured" (the issue carries a structured
 // record or comment, so the structured sections of complete-pr apply unchanged), or "refused".
+import { sameRepository } from "../../../../lib/repository-identity.mjs";
 import { gh, readComments, readIssue } from "./closure-github.mjs";
+import { TARGET_CHECKS } from "./closure-legacy-pull.mjs";
 import { closingReferences } from "./linked-issues.mjs";
 import { ordinaryEvidenceReasons, structuredMarkers } from "./ordinary-evidence.mjs";
-
-function sameRepository(left, right) {
-  return String(left ?? "").toLowerCase() === String(right ?? "").toLowerCase();
-}
 
 // The issues in the target repository that the pull request body closes, each number once.
 function closingIssues(pull, repository) {
@@ -18,29 +16,32 @@ function closingIssues(pull, repository) {
   return [...new Set(references.map((reference) => reference.number))];
 }
 
-// Each row answers null when the pull request passes it, or the text after "pull request #N".
+// Each row is the text after "pull request #N", or a function of the live read that gives it, and the
+// test that makes the row a refusal. The target rows are the ones record-ordinary applies after the merge.
 const PULL_CHECKS = [
-  (live) => (live.pull?.state === "open" ? null : "is not open"),
-  (live) =>
-    live.pull?.head?.sha === live.headSha ? null : `head is ${live.pull?.head?.sha ?? "missing"}, not ${live.headSha}`,
-  (live) =>
-    live.pull?.base?.ref === live.defaultBranch
-      ? null
-      : `base ${live.pull?.base?.ref ?? "missing"} is not the default branch ${live.defaultBranch}`,
-  (live) =>
-    sameRepository(live.pull?.head?.repo?.full_name, live.repository)
-      ? null
-      : `head repository is not ${live.repository}`,
-  (live) =>
-    live.issues.length === 1
-      ? null
-      : `body closes ${live.issues.length} issues in ${live.repository}; the proof needs exactly one`,
+  ["is not open", ({ pull }) => pull.state !== "open"],
+  [
+    ({ pull, headSha }) => `head is ${pull.head?.sha ?? "missing"}, not ${headSha}`,
+    ({ pull, headSha }) => pull.head?.sha !== headSha,
+  ],
+  ...TARGET_CHECKS,
+  [
+    ({ issues, repository }) => `body closes ${issues.length} issues in ${repository}; the proof needs exactly one`,
+    ({ issues }) => issues.length !== 1,
+  ],
 ];
 
+function rowText(tail, live) {
+  if (typeof tail === "function") {
+    return tail(live);
+  }
+  return tail;
+}
+
 function pullReasons(live) {
-  return PULL_CHECKS.map((check) => check(live))
-    .filter(Boolean)
-    .map((tail) => `pull request #${live.pullNumber} ${tail}`);
+  return PULL_CHECKS.filter(([, refused]) => refused(live)).map(
+    ([tail]) => `pull request #${live.pullNumber} ${rowText(tail, live)}`,
+  );
 }
 
 function readPullSide({ runner, repository, pull, headSha }) {
@@ -74,7 +75,10 @@ function judgeTicket(ticket) {
     return verdict("structured", ticket, { markers });
   }
   const reasons = ordinaryEvidenceReasons(ticket);
-  return reasons.length > 0 ? verdict("refused", ticket, { reasons }) : verdict("ordinary", ticket, {});
+  if (reasons.length > 0) {
+    return verdict("refused", ticket, { reasons });
+  }
+  return verdict("ordinary", ticket, {});
 }
 
 function ordinaryProof({ repository, pull, headSha, runner }) {
