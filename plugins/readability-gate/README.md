@@ -117,7 +117,12 @@ Claude answers from the evidence. When the owner is right, it says so plainly
 and gives the reason. When they are wrong, it says so in the first sentence. It
 corrects a false premise before answering, and changes its position only for a
 new fact or argument, which it names. Full agreement is a normal answer, so the
-rules never ask for an objection that does not exist. The ideas come from the
+rules never ask for an objection that does not exist. In test runs with Opus,
+the old and the new guide each ran 6 prompts twice. On the 3 prompts where the
+owner was right, all 12 answers agreed plainly, and none added an objection.
+On the 2 prompts that pushed back with no new evidence, all 8 answers held the
+correct answer. On a false premise, all 4 answers corrected it, and only the
+new guide named the premise first. The ideas come from the
 core rules of [candor](https://github.com/itsryanlenk/candor), rewritten in the
 guide's style. The Stop check changed with the guide, because the reader
 used to cut the reason from a message that agreed with the owner. That left
