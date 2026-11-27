@@ -74,12 +74,14 @@ Code decides, in `hooks/gate_verdict.py`. A message fails when either is true:
 - The reader's verdict is FAIL. The verdict covers only whether the owner can
   act on the message: the answer is missing or buried, it relies on something
   the owner cannot place, it asks for a decision the owner cannot make, or it
-  drops a warning from the message the owner replied to with no reason from
-  Claude or the owner. Without that last case, a message that gave in to
-  pushback passed in 2 of 2 test runs, and the reader's question about the
-  dropped warning never reached the owner. With it, that message failed in 3 of
-  3 runs, while an agreement that gave its reason and a risk the owner accepted
-  in their request each passed in 3 of 3.
+  takes back or contradicts a warning from the message the owner replied to
+  with no reason from Claude or the owner. Without that last case, a message
+  that gave in to pushback passed in 2 of 2 test runs, and the reader's
+  question about the dropped warning never reached the owner. With it, that
+  message failed in 3 of 3 runs. An agreement that gave its reason, a risk the
+  owner accepted, and a turn that moved on to the next task each passed in 3 of
+  3. An earlier wording, "drops a warning", failed that last turn in 2 of 3
+  runs.
 - The wanted message is at least 60 words and at least 30% shorter, and the
   reader listed at least one problem. Words inside code blocks are not
   counted.
