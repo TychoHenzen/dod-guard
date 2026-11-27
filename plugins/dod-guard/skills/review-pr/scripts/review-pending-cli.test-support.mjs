@@ -45,12 +45,13 @@ function place(env, changes) {
   }
 }
 
-function pendingOf(env, answersDir = env.answers) {
+function pendingOf(env, answersDir = env.answers, extra = []) {
   const result = run("pending", [
     `--plan=${env.plan}`,
     `--head=${HEAD}`,
     `--answers-dir=${answersDir}`,
     `--root=${env.root}`,
+    ...extra,
   ]);
   assert.equal(result.status, 0, result.stderr);
   return JSON.parse(result.stdout);

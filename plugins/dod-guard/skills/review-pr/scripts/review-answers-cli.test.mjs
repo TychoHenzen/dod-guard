@@ -7,6 +7,7 @@ import { cli } from "./review-batch-cli.test-support.mjs";
 
 const { HEAD, cut, readJson, run, scratch, succeeds } = cli;
 const { answerFlags, writeAllAnswers } = answerHelpers;
+const USAGE_EXIT = 3;
 
 test("answers merges the files the investigators wrote", () => {
   const dir = scratch();
@@ -80,7 +81,7 @@ test("answers without --root prints usage", () => {
     "answers",
     answerFlags(dir).filter((flag) => !flag.startsWith("--root=")),
   );
-  assert.equal(result.status, 3);
+  assert.equal(result.status, USAGE_EXIT);
   assert.ok(result.stderr.startsWith("Usage:"));
 });
 

@@ -1,22 +1,14 @@
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import { closeSync, fstatSync, openSync, readFileSync, realpathSync } from "node:fs";
+import { closeSync, fstatSync, openSync, readFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import path from "node:path";
+import { exactFile, realPath } from "./real-path.mjs";
 
 const NEWLINE = 10;
 
 function contains(root, file) {
   const relative = path.relative(root, file);
   return !(path.isAbsolute(relative) || relative.split(path.sep)[0] === "..");
-}
-
-// Follows every symlink in the path, or returns null when the path does not exist.
-function realPath(file) {
-  try {
-    return realpathSync(file);
-  } catch {
-    return null;
-  }
 }
 
 // A cited path must stay under the checkout; an absolute path inside it is fine.
@@ -68,13 +60,15 @@ function linesOf(file, cache) {
   return cache.get(file);
 }
 
-// Builds the check for one checkout. It reads each cited file once.
-function citationCheck(root) {
+// Builds the check for one checkout. It reads each cited file once. `facts`,
+// when given, names the one file outside the checkout that may be cited too.
+function citationCheck(root, facts) {
   const cache = new Map();
   const realRoot = realPath(root) ?? root;
+  const factFile = exactFile(facts);
   return (cited, line) => {
     const named = JSON.stringify(cited);
-    const file = insideRoot(root, realRoot, cited);
+    const file = factFile(cited) ?? insideRoot(root, realRoot, cited);
     if (file === null) {
       return `${named} is outside the checkout`;
     }
