@@ -49,11 +49,12 @@ async function waitForGuardedUpdate(client, update) {
 }
 
 function stopForSyncedBranch(previousHead, syncedHead) {
-  const rebind = `Rebind the handoff to ${syncedHead} (fix-pr-review, "Rebind the handoff")`;
+  const structured = `On a structured PR, rebind the handoff to ${syncedHead} (fix-pr-review, "Rebind the handoff") and rerun the finalization proof at it`;
+  const ordinary = `on an ordinary-path PR, rerun ordinary-proof.mjs with --head-sha ${syncedHead}`;
   stop(
     "branch_synced",
     `The branch moved from ${previousHead} to the verified sync head ${syncedHead}; nothing was merged.`,
-    `${rebind}, rerun the finalization proof at it, then rerun the helper with --pushed-head ${syncedHead}.`,
+    `${structured}; ${ordinary}. Then rerun the helper with --pushed-head ${syncedHead}.`,
   );
 }
 

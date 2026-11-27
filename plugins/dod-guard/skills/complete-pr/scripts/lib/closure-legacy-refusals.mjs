@@ -1,21 +1,11 @@
-// Every reason record-legacy refuses a delivery, judged from the live read before any write. An empty
-// list means the delivery may be recorded.
-import { markdownSection } from "../../../../lib/acceptance-criteria.mjs";
+// Every reason record-legacy or record-ordinary refuses a delivery, judged from the live read before any
+// write. Both record a ticket with no structured handoff; `kind` ("legacy" or "ordinary") names which
+// one, and the ordinary kind also needs the pull request's ordinary-path evidence. An empty list means
+// the delivery may be recorded.
 import { requiredChecksComplete } from "../../../../lib/queue-classifier.mjs";
-import { subsections } from "../../../../lib/record-readers.mjs";
 import { pullReasons } from "./closure-legacy-pull.mjs";
 import { parseCompletionRecord } from "./closure-records.mjs";
-
-const STRUCTURED_RECORDS = [
-  "requirements",
-  "clarifications",
-  "implementation-plan",
-  "task-list",
-  "lens-ownership",
-  "acceptance-evidence",
-  "planned-acceptance-matrix",
-];
-const HANDOFF_HEADING = "## Implementation handoff";
+import { ordinaryEvidenceReasons, structuredMarkers } from "./ordinary-evidence.mjs";
 
 function issueReasons(live) {
   if (live.issue?.state === "closed") {
@@ -24,34 +14,14 @@ function issueReasons(live) {
   return [`issue #${live.issueNumber} is not closed`];
 }
 
-function structuredRecordReasons(live) {
-  const notes = markdownSection(live.issue?.body ?? "", "Implementation notes");
-  return STRUCTURED_RECORDS.filter((name) => subsections(notes, name).length > 0).map(
-    (name) => `issue #${live.issueNumber} holds structured record ${name}`,
-  );
-}
-
-// ASSUMPTION: a comment counts as a handoff only when its trimmed body starts with the heading, as the
-// structured path's handoff comment does; a quoted heading mid-body does not count.
-function handoffReasons(live) {
-  const found = live.comments.some((comment) =>
-    String(comment?.body ?? "")
-      .trimStart()
-      .startsWith(HANDOFF_HEADING),
-  );
-  if (!found) {
-    return [];
-  }
-  return [`issue #${live.issueNumber} has an implementation handoff comment`];
-}
-
-function completionReasons(live) {
+// A rerun may update a record of its own kind in place; any other record belongs to another path.
+function completionReasons(live, kind) {
   const parsed = parseCompletionRecord(live.comments);
   if (parsed.error) {
     return [parsed.error];
   }
-  if (parsed.record && parsed.record.legacy !== true) {
-    return [`issue #${live.issueNumber} already has a non-legacy completion record`];
+  if (parsed.record && parsed.record[kind] !== true) {
+    return [`issue #${live.issueNumber} already has a non-${kind} completion record`];
   }
   return [];
 }
@@ -68,17 +38,14 @@ function checkReasons(live) {
   return [verdict.reason];
 }
 
-const REFUSAL_CHECKS = [
-  issueReasons,
-  structuredRecordReasons,
-  handoffReasons,
-  completionReasons,
-  pullReasons,
-  checkReasons,
-];
-
-function legacyRefusals(live) {
-  return REFUSAL_CHECKS.flatMap((check) => check(live));
+function evidenceReasons(live, kind) {
+  return kind === "ordinary" ? ordinaryEvidenceReasons(live) : [];
 }
 
-export { legacyRefusals };
+const REFUSAL_CHECKS = [issueReasons, structuredMarkers, completionReasons, pullReasons, checkReasons, evidenceReasons];
+
+function unstructuredRefusals(live, kind) {
+  return REFUSAL_CHECKS.flatMap((check) => check(live, kind));
+}
+
+export { unstructuredRefusals };

@@ -29,6 +29,10 @@ const ISSUE_REFERENCE = /^([\w.-]+\/[\w.-]+)#\d+$/;
 // The acceptance matrix has no "pending" status, so a row still needs proof
 // after the merge unless it passed or was ruled inapplicable.
 const SETTLED_ROW_STATUSES = new Set(["pass", "inapplicable"]);
+// The flags a record of a ticket with no structured handoff carries: legacy for one delivered before the
+// handoff existed, ordinary for an ordinary-path ticket. Both are informational; the delivery judgement
+// reads the record and the live pull request the same way whichever flag it holds.
+const UNSTRUCTURED_FLAGS = ["legacy", "ordinary"];
 
 function supersedesEntryError(entry, repository) {
   if (Number.isInteger(entry) && entry > 0) return null;
@@ -106,8 +110,10 @@ function parseCompletionRecord(comments) {
     requiredChecks,
     pendingRows,
   };
-  if (block.value.legacy === true) {
-    record.legacy = true;
+  for (const flag of UNSTRUCTURED_FLAGS) {
+    if (block.value[flag] === true) {
+      record[flag] = true;
+    }
   }
   return { record };
 }
@@ -119,10 +125,13 @@ function pendingMatrixRows(matrix) {
     .map((row) => String(row?.id));
 }
 
-function renderCompletionRecord({ pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows, legacy }) {
+function renderCompletionRecord(record) {
+  const { pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows } = record;
   const fields = { pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows };
-  if (legacy === true) {
-    fields.legacy = true;
+  for (const flag of UNSTRUCTURED_FLAGS) {
+    if (record[flag] === true) {
+      fields[flag] = true;
+    }
   }
   return [recordPrefix(kindOf("completion")), "", "```json", JSON.stringify(fields, null, 2), "```"].join("\n");
 }
