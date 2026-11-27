@@ -32,18 +32,18 @@ function hasExactFlags(command, args) {
 }
 
 // A merge base is compared as a commit, so only a full SHA names it exactly.
-function validBase(args) {
+function validBase(_command, args) {
   return args.base === undefined || FULL_SHA.test(args.base);
 }
 
-function validArgs(command, args) {
-  if (!(args && REQUIRED[command])) {
-    return false;
-  }
-  if (!(hasExactFlags(command, args) && validBase(args))) {
-    return false;
-  }
+function validHead(command, args) {
   return !HEAD_COMMANDS.has(command) || FULL_SHA.test(args.head);
+}
+
+const CHECKS = [hasExactFlags, validBase, validHead];
+
+function validArgs(command, args) {
+  return Boolean(args) && Object.hasOwn(REQUIRED, command) && CHECKS.every((check) => check(command, args));
 }
 
 export { validArgs };

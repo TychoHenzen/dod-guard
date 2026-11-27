@@ -1,22 +1,14 @@
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import { closeSync, fstatSync, openSync, readFileSync, realpathSync } from "node:fs";
+import { closeSync, fstatSync, openSync, readFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import path from "node:path";
+import { exactFile, realPath } from "./real-path.mjs";
 
 const NEWLINE = 10;
 
 function contains(root, file) {
   const relative = path.relative(root, file);
   return !(path.isAbsolute(relative) || relative.split(path.sep)[0] === "..");
-}
-
-// Follows every symlink in the path, or returns null when the path does not exist.
-function realPath(file) {
-  try {
-    return realpathSync(file);
-  } catch {
-    return null;
-  }
 }
 
 // A cited path must stay under the checkout; an absolute path inside it is fine.
@@ -68,31 +60,15 @@ function linesOf(file, cache) {
   return cache.get(file);
 }
 
-// Returns the real path of an absolute citation that names one of the allowed
-// facts files, or null for every other citation.
-function factFile(allowed, cited) {
-  if (!path.isAbsolute(cited)) {
-    return null;
-  }
-  const real = realPath(cited);
-  if (real === null || !allowed.has(real)) {
-    return null;
-  }
-  return real;
-}
-
-// Builds the check for one checkout. It reads each cited file once.
-// `facts` lists files outside the checkout that may be cited as well, such as
-// a file of Git facts written for investigators that cannot run Git. Each is
-// matched by its real path, so only those exact files pass, never a file next
-// to one. A facts file that does not exist allows nothing.
-function citationCheck(root, facts = []) {
+// Builds the check for one checkout. It reads each cited file once. `facts`,
+// when given, names the one file outside the checkout that may be cited too.
+function citationCheck(root, facts) {
   const cache = new Map();
   const realRoot = realPath(root) ?? root;
-  const allowed = new Set(facts.map(realPath).filter((real) => real !== null));
+  const factFile = exactFile(facts);
   return (cited, line) => {
     const named = JSON.stringify(cited);
-    const file = factFile(allowed, cited) ?? insideRoot(root, realRoot, cited);
+    const file = factFile(cited) ?? insideRoot(root, realRoot, cited);
     if (file === null) {
       return `${named} is outside the checkout`;
     }

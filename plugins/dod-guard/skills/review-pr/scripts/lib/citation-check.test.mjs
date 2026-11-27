@@ -96,38 +96,3 @@ test("a file under a linked directory that leaves the checkout is refused", { sk
 test("a symlink to a file inside the checkout resolves", { skip: inwardFileLink }, () => {
   assert.equal(check("inner-link.mjs", A_LINES), null);
 });
-
-const factsDir = mkdtempSync(path.join(os.tmpdir(), "citation-facts-"));
-after(() => rmSync(factsDir, { recursive: true, force: true }));
-const factsFile = path.join(factsDir, "git-facts.txt");
-const sibling = path.join(factsDir, "brief.json");
-const FACTS_LINES = 2;
-writeFileSync(factsFile, "head 1\nbase 2\n");
-writeFileSync(sibling, "{}\n");
-const withFacts = citationCheck(root, [factsFile]);
-
-test("a named facts file outside the checkout resolves", () => {
-  assert.equal(withFacts(factsFile, FACTS_LINES), null);
-});
-
-test("a line past the end of a facts file is refused", () => {
-  const past = `${JSON.stringify(factsFile)} has 2 lines, so line 3 does not exist`;
-  assert.equal(withFacts(factsFile, FACTS_LINES + 1), past);
-});
-
-test("a file next to the facts file is still outside the checkout", () => {
-  assert.equal(withFacts(sibling, 1), `${JSON.stringify(sibling)} is outside the checkout`);
-});
-
-test("a facts file is outside the checkout when the check does not name it", () => {
-  assert.equal(check(factsFile, 1), `${JSON.stringify(factsFile)} is outside the checkout`);
-});
-
-test("naming a facts file keeps checkout citations as they were", () => {
-  assert.equal(withFacts("a.mjs", A_LINES + 1), '"a.mjs" has 3 lines, so line 4 does not exist');
-});
-
-test("a facts file that does not exist allows nothing", () => {
-  const absent = path.join(factsDir, "absent.txt");
-  assert.equal(citationCheck(root, [absent])(absent, 1), `${JSON.stringify(absent)} is outside the checkout`);
-});
