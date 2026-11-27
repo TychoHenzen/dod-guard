@@ -23,7 +23,8 @@ const SHOWN = 5;
 const SCANNER = fileURLToPath(
   new URL("../../../../../../packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs", import.meta.url),
 );
-const EXISTING_NOTE = /### Minor notes[\s\S]*src\/Old\.cs:10` 1 quality-guard finding: .* \(all already in the code before this PR\)/;
+const EXISTING_NOTE =
+  /### Minor notes[\s\S]*src\/Old\.cs:10` 1 quality-guard finding: .* \(all already in the code before this PR\)/;
 const MIXED_LINE = /src\/Old\.cs:10` 2 quality-guard findings: .* \(1 already in the code before this PR\)$/;
 const MISSING_GATE = /lacks pr-gate-compare\.mjs.*update quality-guard/;
 const MIXED_NOTE = /1 of these 2 findings were already in the code before this PR; the ones it added end with/;

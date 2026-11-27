@@ -70,15 +70,17 @@ function bodyBound() {
   const widest = Number.MAX_SAFE_INTEGER;
   const longest = { severity: "BLOCKER", file: "f".repeat(400), line: widest, headline: "h".repeat(400) };
   const counts = { BLOCKER: widest, MAJOR: widest, MINOR: widest };
-  const sizes = Array.from({ length: LISTED + 1 }, (_, deferred) =>
-    reviewBody({
-      headSha: "0".repeat(40),
-      recommendation: "REQUEST_CHANGES",
-      counts,
-      threads: widest,
-      deferred: Array.from({ length: deferred }, () => longest),
-      minor: Array.from({ length: LISTED - deferred }, () => longest),
-    }).length,
+  const sizes = Array.from(
+    { length: LISTED + 1 },
+    (_, deferred) =>
+      reviewBody({
+        headSha: "0".repeat(40),
+        recommendation: "REQUEST_CHANGES",
+        counts,
+        threads: widest,
+        deferred: Array.from({ length: deferred }, () => longest),
+        minor: Array.from({ length: LISTED - deferred }, () => longest),
+      }).length,
   );
   return Math.max(...sizes) + overflow(widest).join("\n").length + 1;
 }

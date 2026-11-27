@@ -23,7 +23,13 @@ async function withDirs(use) {
   }
 }
 
-const planFor = (scope, files = []) => ({ task: "T1", files, errors: [], size: 100, proxies: [{ pattern: "alpha", scope }] });
+const planFor = (scope, files = []) => ({
+  task: "T1",
+  files,
+  errors: [],
+  size: 100,
+  proxies: [{ pattern: "alpha", scope }],
+});
 const resultOf = (root, scope) => searchPlans([planFor(scope)], root)[0].proxies[0].result;
 
 test("a trailing slash or dot prefix on the scope still yields hit paths a File line can name", () =>

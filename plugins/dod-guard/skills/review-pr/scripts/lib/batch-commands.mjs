@@ -8,8 +8,8 @@ import { batchProblems } from "./batch-problems.mjs";
 import { citationCheck } from "./citation-check.mjs";
 import { commentBound } from "./comment-bound.mjs";
 import { requireDraftPlan } from "./draft-plan.mjs";
-import { bodyBound } from "./review-body.mjs";
 import { batchDocuments, mergeAnswers, planHash } from "./review-batches.mjs";
+import { bodyBound } from "./review-body.mjs";
 
 function planArray(path) {
   const plan = readJsonFile(path);

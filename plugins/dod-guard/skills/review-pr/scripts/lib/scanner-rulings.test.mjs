@@ -54,7 +54,16 @@ test("a dropped violation stays out of the body", () => {
   );
   const merge = { groups: [], scanner: [KEEP, ...DROPS] };
   const { body } = review([], { scan: { violations }, plan: SCANNER_PLAN, merge }).payload;
-  for (const dropped of ["S1", "S3", "file-length", "line-length", "rule-misfire", "<b>", "Dropped", "Does review-pr"]) {
+  for (const dropped of [
+    "S1",
+    "S3",
+    "file-length",
+    "line-length",
+    "rule-misfire",
+    "<b>",
+    "Dropped",
+    "Does review-pr",
+  ]) {
     assert.ok(!body.includes(dropped), `${dropped} in ${body}`);
   }
 });

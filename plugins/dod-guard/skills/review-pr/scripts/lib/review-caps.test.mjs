@@ -47,7 +47,10 @@ test("the largest inline comment, with its GH-<id>, is under the comment cap", (
 
 const huge = (letter) => letter.repeat(5000);
 // The file is only trimmed, so each comment carries the longest moved-location note.
-const trimmedOnly = (finding) => ({ added: new Map(), removed: new Map([[finding.file, new Set([finding.line + 7])]]) });
+const trimmedOnly = (finding) => ({
+  added: new Map(),
+  removed: new Map([[finding.file, new Set([finding.line + 7])]]),
+});
 
 // The bound is a real upper bound: a finding every lens reported with every
 // field far past its limit, and a scanner thread of many long rules and
@@ -89,7 +92,10 @@ const FILE_SLOTS = 426;
 const LONG = (letter, count) => letter.repeat(count);
 
 function cardCleanerScale() {
-  const files = Array.from({ length: FILE_SLOTS }, (_, index) => `src/CardCleaner/Feature${index}/Component${index}.cs`);
+  const files = Array.from(
+    { length: FILE_SLOTS },
+    (_, index) => `src/CardCleaner/Feature${index}/Component${index}.cs`,
+  );
   const diff = files.flatMap((file) => hunk(file, 10)).join("\n");
   const lensPair = (index) => [REVIEWERS[index % 4], REVIEWERS[(index + 1) % 4]];
   const plan = [
@@ -148,5 +154,8 @@ test("a 427-slot plan with every slot a finding stays within both caps", () => {
     assert.ok(widestLabelled(comment.body).length <= commentBound(), `comment is ${comment.body.length} characters`);
   }
   assert.equal(body.split("\n").filter((line) => line.startsWith("- ")).length, LISTED);
-  assert.match(body, new RegExp(`\\.\\.\\.and ${review.deferred - LISTED} more findings, counted above and not listed\\.$`));
+  assert.match(
+    body,
+    new RegExp(`\\.\\.\\.and ${review.deferred - LISTED} more findings, counted above and not listed\\.$`),
+  );
 });

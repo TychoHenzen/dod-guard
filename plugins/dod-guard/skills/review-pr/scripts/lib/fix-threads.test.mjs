@@ -25,7 +25,10 @@ test("only the five worst MAJOR findings get a thread; the rest are listed as de
   );
   assert.match(payload.body, /### Deferred findings\n\nOnly the 5 worst findings get a thread\. These need no reply\./);
   // A deferred finding is one line: severity, location, and its problem as the headline.
-  assert.match(payload.body, /\n- MAJOR `[^`]*fix-support\.mjs:72` Problem 6\n- MAJOR `[^`]*fix-support\.mjs:72` Problem 7$/);
+  assert.match(
+    payload.body,
+    /\n- MAJOR `[^`]*fix-support\.mjs:72` Problem 6\n- MAJOR `[^`]*fix-support\.mjs:72` Problem 7$/,
+  );
   assert.doesNotMatch(payload.body, /Impact: /);
 });
 
@@ -64,5 +67,8 @@ test("a judged MAJOR outranks a scanner MAJOR, which is deferred past the cap", 
   const { payload, deferred } = review(results, { scan });
   assert.equal(deferred, 1);
   assert.ok(payload.comments.every((comment) => !comment.body.includes("quality-guard")));
-  assert.match(payload.body, /### Deferred findings[\s\S]*\n- MAJOR `[^`]*fix-support\.mjs:72` 1 quality-guard finding: `line-length` x1$/);
+  assert.match(
+    payload.body,
+    /### Deferred findings[\s\S]*\n- MAJOR `[^`]*fix-support\.mjs:72` 1 quality-guard finding: `line-length` x1$/,
+  );
 });

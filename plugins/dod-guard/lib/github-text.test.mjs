@@ -27,7 +27,10 @@ test("a text at its cap fits and one character more does not", () => {
   for (const [kind, cap] of Object.entries(CAPS)) {
     assert.equal(capProblem(kind, "x".repeat(cap)), null);
     const problem = capProblem(kind, "x".repeat(cap + 1), "handoff.md");
-    assert.match(problem, new RegExp(`handoff\\.md is ${cap + 1} characters, over the ${cap}-character cap for ${kind}`));
+    assert.match(
+      problem,
+      new RegExp(`handoff\\.md is ${cap + 1} characters, over the ${cap}-character cap for ${kind}`),
+    );
     assert.match(problem, /Nothing was posted\. Write it again shorter/);
     assert.match(problem, /Do not cut it off/);
   }
