@@ -164,7 +164,8 @@ no local ledger.
 ## After a push
 
 After a verified push, `dod-guard:complete-pr` ends with `conflict-triaged` and does not
-merge. The merge commit holds code no reviewer has seen, and the acceptance
-matrix is not current at the new head. The PBI re-enters `dod-guard:submit-draft-pr`
-convergence on the new head, then `dod-guard:review-pr`, and only then `dod-guard:complete-pr`.
-The triage posts no review request to Codex.
+merge. The acceptance matrix and required checks are not current at the new
+head. The PBI re-enters `dod-guard:submit-draft-pr` convergence on the new head,
+then `dod-guard:complete-pr`. A pull request gets one review: the merge commit
+gets fresh checks, never a second `dod-guard:review-pr`. The triage posts no
+review request to Codex.
