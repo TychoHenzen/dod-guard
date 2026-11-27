@@ -13,10 +13,10 @@ import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: test fixture builds the CLI path
 import { fileURLToPath } from "node:url";
 import { commitFiles, makeRepo } from "./carry-forward-repo.mjs";
-import { BODY_TEXT, HEAD_904, ROWS_904, withFiles } from "./handoff-proof-harness.mjs";
+import { evidenceFor as observedEvidence } from "./handoff-build-harness.mjs";
+import { BODY_TEXT, withFiles } from "./handoff-proof-harness.mjs";
 
 const CLI = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "handoff-build.mjs");
-const TASK_IDS = ["T1", "T2", "T3", "T4"];
 const PATHS = ["src/a.mjs"];
 const TEMPLATE_PATHS = ["src/t.mjs"];
 const SRC_A = "export function a() {\n  return 1;\n}\n";
@@ -39,16 +39,9 @@ async function withRepo(use) {
   }
 }
 
-// Only what was observed; the planned rows own every identity field. R1 takes the carryForward.
+// R1 is the row every carry-forward case moves, so the other rows stay plainly observed.
 function evidenceFor(carryForward) {
-  const rows = ROWS_904.map((row) => [
-    row.id,
-    { observed: row.observed, status: row.status, ...(Object.hasOwn(row, "reason") && { reason: row.reason }) },
-  ]);
-  const evidence = {
-    tasks: TASK_IDS.map((id) => ({ id, commit: HEAD_904, files: [`${id}.mjs`], result: "ok" })),
-    rows: Object.fromEntries(rows),
-  };
+  const evidence = observedEvidence();
   if (carryForward !== undefined) {
     evidence.rows.R1.carryForward = carryForward;
   }

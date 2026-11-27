@@ -1,5 +1,6 @@
 // biome-ignore lint/correctness/noNodejsModules: This adapter invokes the local Git CLI from Node.
 import { spawnSync } from "node:child_process";
+import { TRIAGE_LIMITS } from "../../../../lib/handoff-limits.mjs";
 import { baseFreshnessStop } from "./base-freshness.mjs";
 
 // The rules these mechanics enforce live in standards/conflict-triage.md. This
@@ -29,6 +30,13 @@ const PUSH_REFSPEC = /^[0-9a-f]{40}:refs\/heads\/[^+:\s]+$/;
 // ASSUMPTION: git reports a refused push with one of these phrases; any other
 // push failure is treated as uncertain, read back, and retried once.
 const PUSH_REJECTED = /\[rejected\]|\[remote rejected\]|non-fast-forward|fetch first|stale info/i;
+const PUSH_STOP_REASONS = new Map([
+  ["push_failed", "The push failed, and its one retry failed too."],
+  ["push_rejected", "The remote rejected the push."],
+]);
+const OVERSIZED_DECISION =
+  `Merge the default branch by hand; a triage takes ${TRIAGE_LIMITS.conflicts} paths ` +
+  `of ${TRIAGE_LIMITS.path} characters at most.`;
 const FORBIDDEN_ARGUMENTS = new Set([
   "--force",
   "-f",
@@ -98,7 +106,7 @@ function isAllowedForm(subcommand, rest) {
 export function assertAllowedGitCommand(args) {
   const [subcommand, ...rest] = args;
   if (!isAllowedForm(subcommand, rest)) {
-    throw new TriageStop("forbidden_git_command", `The triage may not run: git ${args.join(" ")}`);
+    throw new TriageStop("forbidden_git_command", "The triage may not run this git command.", { args });
   }
 }
 
@@ -209,10 +217,11 @@ function detectPendingMerge(git, trustedHead) {
     return;
   }
   throw new TriageStop("own_merge_pending", "The checkout holds an unpushed triage merge commit.", {
+    // The record prints this as one line, so it names the merge commit by its
+    // mergeSha field instead of repeating the SHA.
     decisionNeeded:
-      `If the pull request head and base are unchanged and the full validation set passes on ${head}, ` +
-      "run push with the same state file. Otherwise the repository owner returns the branch to the trusted " +
-      `head with \`git reset --keep ${trustedHead}\`; the triage never runs it.`,
+      "Push the merge commit if the head and base are unchanged and validation passes on it; else the owner " +
+      `runs \`git reset --keep ${trustedHead}\`, which the triage never runs.`,
     mergeSha: head,
     parents,
     recordedBase: parents[1],
@@ -371,14 +380,15 @@ export function checkRegeneration(git, { generators = [], expectClean = false })
   const changed = parseStatus(git(["status", "--porcelain=v1", "-z", "--untracked-files=all"]).stdout)
     .filter((entry) => entry.code[1] !== " ")
     .map((entry) => entry.path);
-  const problems = [];
-  for (const path of changed) {
+  const problems = changed.flatMap((path) => {
     if (expectClean) {
-      problems.push({ path, problem: "the generator changed this path again (drift)" });
-    } else if (!findGenerator(path, generators)) {
-      problems.push({ path, problem: "the generator changed a path it does not declare" });
+      return [{ path, problem: "the generator changed this path again (drift)" }];
     }
-  }
+    if (findGenerator(path, generators)) {
+      return [];
+    }
+    return [{ path, problem: "the generator changed a path it does not declare" }];
+  });
   return { generatedPaths: changed, ok: problems.length === 0, problems };
 }
 
@@ -394,6 +404,28 @@ export function abortOwnMerge(git, recordedBase) {
   return "aborted";
 }
 
+// The record lists each conflicted path on one line and holds a fixed number of
+// them (lib/handoff-limits.mjs), so a merge with more paths, or a longer one,
+// stops before any stage. Its paths go to the caller, never to the record.
+function oversizedStop(git, listed, { recordedBase, trustedHead }) {
+  const long = listed.filter((conflict) => conflict.path.length > TRIAGE_LIMITS.path).map((conflict) => conflict.path);
+  if (listed.length <= TRIAGE_LIMITS.conflicts && long.length === 0) {
+    return;
+  }
+  throw new TriageStop(
+    "oversized_conflicts",
+    "The merge has more conflicted paths, or a longer one, than a triage takes.",
+    {
+      count: listed.length,
+      decisionNeeded: OVERSIZED_DECISION,
+      longPaths: long,
+      merge: abortOwnMerge(git, recordedBase),
+      recordedBase,
+      trustedHead,
+    },
+  );
+}
+
 function classifyStartedMerge(git, { generators, recordedBase, trustedHead }) {
   const mergeHead = readMergeHead(git);
   if (mergeHead !== recordedBase) {
@@ -403,7 +435,9 @@ function classifyStartedMerge(git, { generators, recordedBase, trustedHead }) {
       observed: mergeHead,
     });
   }
-  const conflicts = classifyConflicts(git, listConflicts(git), generators);
+  const listed = listConflicts(git);
+  oversizedStop(git, listed, { recordedBase, trustedHead });
+  const conflicts = classifyConflicts(git, listed, generators);
   const blocked = conflicts.filter((conflict) => STOP_CLASSES.includes(conflict.class));
   if (blocked.length > 0) {
     throw new TriageStop("unresolvable_paths", "Some conflicted paths cannot be triaged automatically.", {
@@ -451,10 +485,22 @@ function resolutionSource(git, trustedHead, recordedBase) {
   });
 }
 
-function unbasedConflicts(conflicts, decisionByPath) {
+// The judge states each basis once in bases, as { id, text }, and a decision
+// cites one by id, so the record writes a shared basis once. A decision whose
+// basis names no stated basis with text has no basis.
+function statedBases(bases) {
+  if (!Array.isArray(bases)) {
+    return new Set();
+  }
+  const stated = bases.filter((basis) => typeof basis?.id === "string" && String(basis.text ?? "").trim() !== "");
+  return new Set(stated.map((basis) => basis.id));
+}
+
+function unbasedConflicts(conflicts, decisionByPath, bases) {
+  const stated = statedBases(bases);
   return conflicts.filter((conflict) => {
     const decision = decisionByPath.get(conflict.path);
-    return !(decision && DECISIONS.has(decision.decision) && String(decision.basis ?? "").trim() !== "");
+    return !(decision && DECISIONS.has(decision.decision) && stated.has(decision.basis));
   });
 }
 
@@ -511,19 +557,22 @@ function pathProblems(git, conflict, decision, { generators, recordedBase, sourc
     branch: objectId(git, `${trustedHead}:${path}`),
     resolved,
   };
-  if (!generated && !decisionVisible(decision, ids)) {
+  if (!(generated || decisionVisible(decision, ids))) {
     problems.push({ path, problem: `decision ${decision} is not visible in the resolution` });
   }
   return problems;
 }
 
-export function verifyResolution(git, { trustedHead, recordedBase, conflicts, decisions = [], generators = [] }) {
+export function verifyResolution(
+  git,
+  { trustedHead, recordedBase, conflicts, bases = [], decisions = [], generators = [] },
+) {
   const source = resolutionSource(git, trustedHead, recordedBase);
   const decisionByPath = new Map(decisions.map((decision) => [decision.path, decision]));
-  const unbased = unbasedConflicts(conflicts, decisionByPath);
+  const unbased = unbasedConflicts(conflicts, decisionByPath, bases);
   if (unbased.length > 0) {
     throw new TriageStop("decision_without_basis", "Every conflicted path needs a judged decision with a basis.", {
-      decisionNeeded: "Judge each listed path with a stated basis, or decide it by hand.",
+      decisionNeeded: "Judge each listed path, citing a basis the bases list states, or decide it by hand.",
       paths: unbased.map((conflict) => conflict.path),
     });
   }
@@ -642,7 +691,14 @@ export async function pushMerge(git, { remote = "origin", branch, trustedHead, r
   const readBack = () => readRemoteHead(git, remote, branch);
   const failed = pushWithOneRetry(git, ["push", remote, `${mergeSha}:refs/heads/${branch}`], readBack, mergeSha);
   if (failed) {
-    throw new TriageStop(failed.code, failed.failure, { expected: mergeSha, observed: readBack(), trustedHead });
+    // The record prints the reason as one line, so git's own output goes in
+    // the details for the caller instead.
+    throw new TriageStop(failed.code, PUSH_STOP_REASONS.get(failed.code), {
+      expected: mergeSha,
+      observed: readBack(),
+      output: failed.failure,
+      trustedHead,
+    });
   }
   const remoteHead = readBack();
   if (remoteHead !== mergeSha) {

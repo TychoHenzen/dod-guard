@@ -1,28 +1,25 @@
-// Text of the implementation handoff comment for handoff-comment.mjs: one bullet per task and the
-// acceptance matrix block with its remainder line.
-import { evidenceValues } from "./convergence-core.mjs";
+// Text of the implementation handoff comment for handoff-comment.mjs: one line per task and the
+// acceptance matrix block with its remainder line. Each task line names its task by id and each row
+// names its planned row and criterion by id; the issue body above the comment holds the rest (the
+// task's slice and evidence ids, the row's path, proof, expected and evidence ids), and the commit
+// names the files. Nothing the body or git already holds is copied here.
 
 // A row whose status is one of these needs no remainder entry.
 const SETTLED = new Set(["pass", "inapplicable"]);
 
 function oneLine(text) {
-  return String(text).replace(/\s+/gu, " ");
+  return String(text).replace(/\s+/gu, " ").trim();
 }
 
-// The bullet names the task's functional slice (or its parent-level marker) and its
-// planned evidence ids, all from the task list, so the comment maps each task to its child.
-function taskOwner(task) {
-  if (task.child) {
-    return `slice ${task.child}`;
-  }
-  return `parent-level ${task.parentLevel ?? "none"}`;
+function taskLine(task, entry) {
+  return `- ${task.id}: commit ${entry.commit}. ${oneLine(entry.result)}`;
 }
 
-function taskBullet(task, entry) {
-  const owner = taskOwner(task);
-  const evidence = evidenceValues(task.evidence).join(", ");
-  const done = `commit ${entry.commit}, files ${entry.files.join(", ")}`;
-  return `- ${task.id} (${owner}): ${done}, evidence ${evidence}, result ${oneLine(entry.result)}`;
+// One row per line, so the block is one JSON object that a reader parses whole
+// and a person reads row by row.
+function matrixBlock(rows, headSha) {
+  const body = rows.map((row) => JSON.stringify(row)).join(",\n");
+  return `{"headSha":${JSON.stringify(headSha)},"rows":[\n${body}\n]}`;
 }
 
 function remainderText(rows) {
@@ -33,16 +30,15 @@ function remainderText(rows) {
   return open.join(", ");
 }
 
-function commentText(bullets, rows) {
-  const remainder = remainderText(rows);
+function commentText(lines, rows, headSha) {
   return (
     "## Implementation handoff\n\n" +
-    `${bullets.join("\n")}\n` +
+    `${lines.join("\n")}\n` +
     "\n## Acceptance matrix\n\n```json\n" +
-    `${JSON.stringify(rows, null, 2)}\n` +
+    `${matrixBlock(rows, headSha)}\n` +
     "```\n\n" +
-    `Remainder: ${remainder}\n`
+    `Remainder: ${remainderText(rows)}\n`
   );
 }
 
-export { commentText, taskBullet };
+export { commentText, taskLine };

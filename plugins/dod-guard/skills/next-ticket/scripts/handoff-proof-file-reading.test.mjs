@@ -63,6 +63,7 @@ test("reads only local files: no network, process, or GitHub module is imported"
   ]);
   assert.deepEqual(await importsOf("handoff-proof-runs.mjs"), [
     "../../../lib/godot-window-rows.mjs",
+    "../../../lib/handoff-limits.mjs",
     "../../../lib/handoff-matrix.mjs",
     "../../../lib/issue-body-records.mjs",
     "../../../lib/post-push-input.mjs",

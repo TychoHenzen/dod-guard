@@ -1,11 +1,26 @@
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import assert from "node:assert/strict";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { spawnSync } from "node:child_process";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { tmpdir } from "node:os";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { join } from "node:path";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
+import process from "node:process";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { test } from "node:test";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { fileURLToPath } from "node:url";
 import { CAPS, capProblem, requireCap } from "./github-text.mjs";
+
+// GitHub refuses a comment or body over this many characters.
+const GITHUB_LIMIT = 65_536;
+// A single record stays under an eighth of that; the handoff, three records, under a third.
+const SINGLE_SHARE = 8;
+const HANDOFF_SHARE = 3;
 
 const CLI = fileURLToPath(new URL("./github-text-check.mjs", import.meta.url));
 
@@ -17,10 +32,16 @@ test("every cap sits far below GitHub's 65536-character limit", () => {
     stepPlan: 6000,
     issueBody: 8000,
     prBody: 4000,
+    handoff: 17_000,
   });
-  for (const cap of Object.values(CAPS)) {
-    assert.ok(cap <= 65_536 / 8);
+  // The handoff comment holds three records, and its cap is the largest comment
+  // the limits in handoff-limits.mjs allow (handoff-cap.test.mjs), so it
+  // sits under a third of the limit rather than an eighth.
+  const { handoff, ...single } = CAPS;
+  for (const cap of Object.values(single)) {
+    assert.ok(cap <= GITHUB_LIMIT / SINGLE_SHARE);
   }
+  assert.ok(handoff <= GITHUB_LIMIT / HANDOFF_SHARE);
 });
 
 test("a text at its cap fits and one character more does not", () => {

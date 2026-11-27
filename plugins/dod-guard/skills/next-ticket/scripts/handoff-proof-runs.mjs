@@ -3,12 +3,14 @@
 // Only refinement reads plans, the step plans' proxy checks run over the checkout.
 // finalization requires the handoff's ## Preflight checkpoint and fails on any
 // required context that is not present or skipped at the head; post-push checks
-// the rows only when the record exists.
+// the rows only when the record exists. Both join the handoff's matrix rows to
+// the body's planned rows by id before the matrix is evaluated.
 import { godotWindowRemainder } from "../../../lib/godot-window-rows.mjs";
-import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
+import { bodyLimitProblems, HANDOFF_LIMITS, lineProblem } from "../../../lib/handoff-limits.mjs";
+import { joinPlannedRows, readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
 import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
 import { postPushInput } from "../../../lib/post-push-input.mjs";
-import { checkpointRemainder, readPreflightCheckpoint } from "../../../lib/preflight-checkpoint.mjs";
+import { checkpointRemainder, checkpointSection, readPreflightCheckpoint } from "../../../lib/preflight-checkpoint.mjs";
 import { proxyRemainder } from "../../../lib/step-plan-proxy.mjs";
 import { evaluateStructuredFinalization } from "../../complete-pr/scripts/finalization-gate.mjs";
 import { evaluateConvergence } from "./structured-workflow-proof.mjs";
@@ -18,9 +20,10 @@ function outcomeOf(remainder) {
 }
 
 // Parse errors stop before evaluation, and acceptance-id disagreements join the
-// convergence remainder. Requirement-id disagreements and a head stored in a
-// lens-ownership entry join the remainder in this proof only, and so does a Godot
-// row that asks for a window, so post-push and finalization never see them.
+// convergence remainder. Requirement-id disagreements, a head stored in a
+// lens-ownership entry and a body over the handoff's limits join the remainder in
+// this proof only, and so does a Godot row that asks for a window, so post-push
+// and finalization never see them.
 function refinementProof({ body, children, plans = [], godot = false }) {
   const parsed = parseIssueBodyRecords(body);
   if (parsed.errors.length > 0) return { outcome: "parse error", remainder: parsed.errors };
@@ -29,6 +32,7 @@ function refinementProof({ body, children, plans = [], godot = false }) {
     ...parsed.remainder,
     ...parsed.requirementRemainder,
     ...parsed.lensHeadRemainder,
+    ...bodyLimitProblems(parsed.input),
     ...convergence.remainder,
     ...proxyRemainder(plans),
     ...(godot ? godotWindowRemainder(parsed.input.plannedAcceptanceMatrix) : []),
@@ -41,12 +45,15 @@ function checkpointProblems({ handoff, headSha, required }) {
   const read = readPreflightCheckpoint(handoff);
   if (read.absent) return required ? ["handoff has no ## Preflight checkpoint section"] : [];
   if (read.error) return [read.error];
-  return checkpointRemainder(read.rows, headSha);
+  const { section } = checkpointSection(handoff);
+  const size = lineProblem("the ## Preflight checkpoint section", section, HANDOFF_LIMITS.checkpoint);
+  return [size, ...checkpointRemainder(read.rows, headSha)].filter(Boolean);
 }
 
-// The post-push input: the observed rows and the pushed head replace the
-// planned matrix. A body or handoff that cannot be read stops with a failure
-// result before any evaluation runs.
+// The post-push input: the observed rows, joined to their planned rows, and the
+// pushed head replace the planned matrix. A body or handoff that cannot be read
+// stops with a failure result before any evaluation runs; a row the join cannot
+// place is a remainder entry.
 function assembleInput({ body, handoff, headSha, children }) {
   const parsed = parseIssueBodyRecords(body);
   if (parsed.errors.length > 0) {
@@ -56,8 +63,9 @@ function assembleInput({ body, handoff, headSha, children }) {
   if (matrix.error) {
     return { failure: { outcome: "parse error", remainder: [matrix.error] } };
   }
-  const input = postPushInput({ input: parsed.input, rows: matrix.rows, headSha });
-  return { parsed, input: { ...input, children } };
+  const joined = joinPlannedRows(matrix, parsed.input.plannedAcceptanceMatrix);
+  const input = postPushInput({ input: parsed.input, rows: joined.rows, headSha });
+  return { parsed, input: { ...input, children }, joinRemainder: joined.problems };
 }
 
 function postPushProof(request) {
@@ -68,6 +76,7 @@ function postPushProof(request) {
   const convergence = evaluateConvergence(assembled.input);
   return outcomeOf([
     ...assembled.parsed.remainder,
+    ...assembled.joinRemainder,
     ...convergence.remainder,
     ...checkpointProblems({ handoff: request.handoff, headSha: request.headSha, required: false }),
   ]);
@@ -82,7 +91,7 @@ function finalizationProof(request) {
     return assembled.failure;
   }
   const result = evaluateStructuredFinalization(assembled.input);
-  const remainder = [...assembled.parsed.remainder, ...result.remainder];
+  const remainder = [...assembled.parsed.remainder, ...assembled.joinRemainder, ...result.remainder];
   remainder.push(...checkpointProblems({ handoff: request.handoff, headSha: request.headSha, required: true }));
   if (result.outcome !== "verified" && remainder.length === 0) {
     remainder.push(`finalization gate reported ${result.outcome}`);

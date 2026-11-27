@@ -14,7 +14,7 @@ import {
 } from "./conflict-triage.mjs";
 import { UsageError } from "./conflict-triage-flags.mjs";
 import { GitHubClient } from "./github-client.mjs";
-import { renderTriageRecord } from "./triage-record.mjs";
+import { buildTriageRecord } from "./triage-record.mjs";
 
 function required(flags, name) {
   if (!flags[name]) {
@@ -39,6 +39,18 @@ function outsideRepository(git, path) {
 
 function readJsonIfSet(path) {
   return path ? readJsonFile(path) : undefined;
+}
+
+// The judge's decisions file states each basis once and cites it by id from
+// each decision. An unset file is no judgement yet.
+const JUDGEMENT_SHAPE = "bases [{ id, text }] and decisions [{ path, decision, basis, questionIds }]";
+
+function readJudgement(path) {
+  const judged = readJsonIfSet(path) ?? { bases: [], decisions: [] };
+  if (!(judged && typeof judged === "object" && Array.isArray(judged.bases) && Array.isArray(judged.decisions))) {
+    throw new UsageError(`--decisions must name a JSON object of ${JUDGEMENT_SHAPE}.`);
+  }
+  return { bases: judged.bases, decisions: judged.decisions };
 }
 
 function saveState(path, state) {
@@ -133,22 +145,21 @@ const COMMANDS = {
     const client = createClient(state.repository, state.pullNumber);
     return pushMerge(git, { ...state, readPullRequest: () => client.getPullRequest() });
   },
-  record: (_git, flags, { state }) =>
-    renderTriageRecord({
+  record: (_git, flags, { state }) => {
+    const record = buildTriageRecord({
       ...state,
+      ...readJudgement(flags.decisions),
       answers: readJsonIfSet(flags.answers) ?? [],
-      decisions: readJsonIfSet(flags.decisions) ?? [],
       mergeSha: flags.merge ?? state.mergeSha ?? null,
       stop: readJsonIfSet(flags.stop) ?? state.stop ?? null,
       verification: readJsonIfSet(flags.verification) ?? [],
-    }),
+    });
+    return record.text ?? record;
+  },
   "regen-check": (git, flags, { state }) =>
     checkRegeneration(git, { expectClean: flags["expect-clean"] === true, generators: state.generators ?? [] }),
   verify: (git, flags, { state }) =>
-    verifyResolution(git, {
-      ...state,
-      decisions: readJsonIfSet(outsideRepository(git, required(flags, "decisions"))),
-    }),
+    verifyResolution(git, { ...state, ...readJudgement(outsideRepository(git, required(flags, "decisions"))) }),
 };
 
 function defaultClient(repository, pullNumber) {

@@ -1,14 +1,15 @@
 // Builder-side carry-forward logic for handoff-comment.mjs. A row that declares a
 // carryForward keeps a record of it, and each declaration must pass the carry check
 // (carry-forward-check.mjs) against the new head before anything is built.
-import { DIFF_CHECK } from "../../../lib/carry-forward-record.mjs";
 
 // Without a checkout to read revisions from, every carry-forward is refused.
 const refuseCarry = () => ({ ok: false, reason: "no checkout was given, pass --root" });
 
-function carryRecord(entry, headSha) {
+// The row's carry as the comment holds it. The matrix head is the new head and the diff check passed
+// before anything was built, so lib/handoff-matrix.mjs restores both when it reads the row.
+function carryRecord(entry) {
   const { fromHead, paths } = entry.carryForward;
-  return { baseHead: fromHead, newHead: headSha, paths, diffCheck: DIFF_CHECK };
+  return { fromHead, paths };
 }
 
 // Each row that declares a carryForward must hold at the new head, as carryCheck decides.

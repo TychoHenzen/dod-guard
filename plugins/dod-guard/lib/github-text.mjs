@@ -25,6 +25,10 @@ const CAPS = Object.freeze({
   issueBody: 8000,
   // A pull request body.
   prBody: 4000,
+  // ASSUMPTION: the whole `## Implementation handoff` comment. Compact ones measured 3000 to 7000 on
+  // 2026-11-27; this is the largest comment lib/handoff-limits.mjs allows (16859) rounded up, so a
+  // comment within its limits is never refused as a whole (next-ticket/scripts/handoff-cap.test.mjs).
+  handoff: 17_000,
 });
 
 function capOf(kind) {

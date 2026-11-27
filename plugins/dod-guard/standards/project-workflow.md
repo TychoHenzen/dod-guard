@@ -101,15 +101,35 @@ contract or criterion, risk or path, proof action, expected and observed
 behavior, status, evidence location, and exact pushed head SHA. Missing,
 failed, unverified, blocked, or head-mismatched rows stop the handoff; an
 `inapplicable` row is valid only with an explicit reason. The matrix is one
-fenced `json` array of rows under that heading; it replaces any markdown
-table, and a second matrix heading is refused. Each row holds `id`, `contract`,
-`path`, `proof`, `expected`, `observed`, `status`, `evidence`, and `headSha`,
-plus `reason` on an `inapplicable` row. `handoff-build.mjs` prints the comment
-from the issue body's records and an evidence file, so the matrix JSON is never
-hand-written. The body owns every identity field: a row's `id`, `contract`,
-`path`, `proof`, `expected` and `evidence` id come from the planned matrix, and
-a task bullet's id, functional slice and evidence ids come from the task list.
-The evidence file supplies only `observed`, `status` and `reason` per row, the optional `carryForward` per row, and `commit`, `files` and `result` per task, and the builder rejects any other field. When the handoff already carries a `## Preflight checkpoint`, a rebuild passes the old comment with `--previous-handoff-file=<handoff.md>` and the builder copies that section, rows unchanged, to the end of the new comment; the rows stay bound to their old head until they are rewritten.
+fenced `json` object `{"headSha": "<sha>", "rows": [...]}` under that heading,
+with one row per line; it replaces any markdown table, and a second matrix
+heading is refused. The head is stated once. Each row names its planned row and
+criterion by `id` and `contract` and holds only what the work observed:
+`status`, `observed`, plus `reason` on an `inapplicable` row and
+`carryForward` on a carried row. The issue body owns the rest: the proofs join
+each row back to its planned row by id (`lib/handoff-matrix.mjs`) to read its
+`path`, `proof`, `expected` and `evidence`, and report a row with no planned
+row, a planned row with no row, and a contract that disagrees. Each task line
+is `- <id>: commit <sha>. <result>`; the body holds the task's slice and
+evidence ids, and the commit names its files. `handoff-build.mjs` prints the
+comment from the issue body's records and an evidence file, so the matrix JSON
+is never hand-written. The evidence file supplies only `observed`, `status`
+and `reason` per row, the optional `carryForward` per row, and `commit` and
+`result` per task, and the builder rejects any other field. When the handoff
+already carries a `## Preflight checkpoint`, a rebuild passes the old comment
+with `--previous-handoff-file=<handoff.md>` and the builder copies that section,
+rows unchanged, to the end of the new comment; the rows stay bound to their old
+head until they are rewritten.
+
+The handoff is short by design. `lib/handoff-limits.mjs` limits the task and
+planned-row counts and id lengths (the refinement proof checks them in the
+body), each task line and row line, the checkpoint section, and each count and
+line of the conflict triage record. The builder and the triage `record`
+command refuse a part over its limit and ask for it shorter, never cut. The
+whole comment has the `handoff` cap in `lib/github-text.mjs`, which is the
+largest comment those limits allow. Handoffs posted before 2026-11-27 hold the
+older matrix shape, a JSON array of full rows; the readers still read it as it
+is, unjoined.
 
 A row observed at an earlier head A may be written at the new head B with a carryForward record (baseHead, newHead, paths, diffCheck "whitespace-comment-only"). The evidence entry declares it as carryForward {fromHead, paths}; paths must list the row's complete code footprint. handoff-build.mjs checks the declaration with git when --root=<checkout> is given, and refuses a carry without --root. handoff-proof.mjs only validates the record's shape and never runs git. The allowlisted extensions are .cs .ts .js .mjs .rs (whole-line // comments) and .py .gd (whole-line # comments). Markdown and every other extension always count as code changed. The limitation: a diff is comment-only only when, after trimming whitespace and dropping blank lines, the lines differ only by whole-line // or # comments. Multi-line block comments, trailing comments after code, Markdown, unknown extensions and Python or GDScript re-indentation always count as code changes and force re-observation. Lines inside a multi-line string (a JavaScript or TypeScript template literal, a Python triple-quoted string, a C# `@"` string, a Rust `r#"` string) are compared verbatim, so any edit, re-indentation or trailing-whitespace change there counts as a code change. There is no full lexer: a plain `"` or `'` string that spans lines (Rust, C#, or a backslash continuation) is not tracked, so a comment-looking line inside one can still read as comment-only.
 

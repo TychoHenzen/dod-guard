@@ -1,17 +1,22 @@
 // The checks handoff-build.mjs runs on the evidence file, which supplies only
-// what was observed: tasks[] of { id, commit, files[], result } and rows{} keyed
+// what was observed: tasks[] of { id, commit, result } and rows{} keyed
 // by row id of { observed, status, reason?, carryForward? } where carryForward is
 // { fromHead, paths } (handoff-build.mjs --root checks it). Every planned task and row needs
 // exactly one entry, and no entry may name a task or row the body does not plan
 // or carry another field. Each check returns one message per problem.
 
-import { isPlainObject, isText, isTextList } from "../../../lib/handoff-values.mjs";
+import { isPlainObject, isText } from "../../../lib/handoff-values.mjs";
 import { ACCEPTANCE_MATRIX_STATUSES } from "../../../lib/matrix-observed-status.mjs";
 import { carryEntryProblems } from "./handoff-carry-shape.mjs";
 
 const STATUSES = new Set(ACCEPTANCE_MATRIX_STATUSES);
 const ROW_FIELDS = new Set(["observed", "status", "reason", "carryForward"]);
-const TASK_FIELDS = new Set(["id", "commit", "files", "result"]);
+const TASK_FIELDS = new Set(["id", "commit", "result"]);
+// ASSUMPTION: a task proven by remote state alone has no commit, so it writes
+// "none" and its result names the state; any other commit is a git sha.
+const COMMIT = /^(?:[0-9a-f]{7,40}|none)$/;
+// Fields an older handoff line held that the evidence file no longer takes, with the reason.
+const RETIRED_TASK_FIELDS = Object.freeze({ files: "the commit names its files" });
 
 // ASSUMPTION: an entry that is not a JSON object counts as missing, since the
 // plan names no error for it and reading its fields would throw.
@@ -19,10 +24,15 @@ function hasEntry(rows, id) {
   return Object.hasOwn(rows, id) && isPlainObject(rows[id]);
 }
 
-function foreignFieldProblems(label, entry, allowed) {
+function foreignFieldProblems(label, entry, allowed, retired = {}) {
   return Object.keys(entry)
     .filter((key) => !allowed.has(key))
-    .map((key) => `${label} entry field ${key} comes from the plan, not the evidence file`);
+    .map((key) => {
+      if (Object.hasOwn(retired, key)) {
+        return `${label} entry field ${key} is no longer part of the handoff: ${retired[key]}`;
+      }
+      return `${label} entry field ${key} comes from the plan, not the evidence file`;
+    });
 }
 
 function rowProblems(id, entry) {
@@ -40,17 +50,10 @@ function rowProblems(id, entry) {
   return problems;
 }
 
-function hasFiles(entry) {
-  return isTextList(entry.files);
-}
-
 function taskEntryProblems(entry) {
-  const problems = foreignFieldProblems(`task ${entry.id}`, entry, TASK_FIELDS);
-  if (!isText(entry.commit)) {
-    problems.push(`task ${entry.id} entry needs a commit`);
-  }
-  if (!hasFiles(entry)) {
-    problems.push(`task ${entry.id} entry needs a non-empty files list`);
+  const problems = foreignFieldProblems(`task ${entry.id}`, entry, TASK_FIELDS, RETIRED_TASK_FIELDS);
+  if (!COMMIT.test(String(entry.commit ?? ""))) {
+    problems.push(`task ${entry.id} entry commit must be a git sha of 7 to 40 hex digits, or none`);
   }
   if (!isText(entry.result)) {
     problems.push(`task ${entry.id} entry needs a result`);

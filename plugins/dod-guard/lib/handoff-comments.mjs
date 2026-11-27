@@ -31,9 +31,9 @@ function newestFirst(left, right) {
   return byTime === 0 ? right.id - left.id : byTime;
 }
 
-// The first matrix row's head, shortened, or "unknown" when the matrix has none.
+// The matrix head (the first row's head in the older shape), shortened, or "unknown" when the matrix has none.
 function headOf(body) {
-  const head = readHandoffMatrix(body).rows?.[0]?.headSha;
+  const head = readHandoffMatrix(body).headSha;
   return typeof head === "string" && head !== "" ? head.slice(0, SHORT_SHA_LENGTH) : "unknown";
 }
 
