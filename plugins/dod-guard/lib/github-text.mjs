@@ -3,11 +3,9 @@
 // against it before posting, so text is written short from the start instead
 // of written long and cut. Detail a later step needs stays in run artifacts.
 
-// ASSUMPTION: these caps sit far below GitHub's own 65,536-character limit on a
-// body or comment. They were set on 2026-11-27 after CardCleaner reviews of 34K
-// to 64K characters, step plans with a median of 11K, and issue threads over
-// 100K were measured: the owner reads them on a phone, and every later step
-// re-reads what was posted.
+// ASSUMPTION: set on 2026-11-27, far under GitHub's 65,536, after CardCleaner
+// reviews of 34K to 64K and step plans with an 11K median: the owner reads on a
+// phone, and every later step re-reads what was posted.
 const CAPS = Object.freeze({
   // A pull request review's own body: the recommendation, the counts, and one
   // line per finding that has no thread.
@@ -17,11 +15,9 @@ const CAPS = Object.freeze({
   // Any other issue or pull request comment written as prose: a refinement
   // note, a closing note, a stop report, a question, an answer.
   comment: 3000,
-  // ASSUMPTION: one `## Step plan` comment holds at most five steps for a cheap
-  // worker, each a file, an edit, a test, a command and an expected result, plus
-  // its File, Proxy check and Commit lines. Code appears only as a signature, an
-  // assertion or a short change. Of 111 CardCleaner plans, 17 fit 6000 and most
-  // of the rest was code or file text copied in full.
+  // ASSUMPTION: five steps for a cheap worker, code only as a signature, an
+  // assertion or a short change. 17 of 111 CardCleaner plans fit 6000; most of
+  // the rest copied code or file text in full.
   stepPlan: 6000,
   // ASSUMPTION: a refined issue body, records included. CardCleaner #481 was
   // 25807 characters; a structured PBI needs about a dozen machine-read records,
