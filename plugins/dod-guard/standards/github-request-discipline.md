@@ -168,7 +168,11 @@ start; never write it long and then cut it.
   over its limit, so write each task result and each row observation as one or
   two sentences. Check the whole comment with `--kind=handoff` before every
   PATCH that changes it by hand: the checkpoint write and refresh, the triage
-  record, and a rebind.
+  record, and a rebind. A handoff posted before 2026-11-27 holds the older,
+  longer shape and can be over the cap. When the check refuses one, rebuild it
+  in the compact shape first, as step 1 of "Rebind the handoff" in
+  `skills/fix-pr-review/SKILL.md` says, at the head its rows were observed at,
+  then make the edit on the rebuilt text.
 
 ## Write plan
 
