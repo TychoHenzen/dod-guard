@@ -12,6 +12,20 @@ ordinary path for a small, clear fix with known scope, acceptance, and tests.
 Both paths use the repository's linked GitHub Project, issue, branch, commits,
 and pull request as the source of truth.
 
+An ordinary ticket keeps its evidence in the issue and the pull request. It has
+none of the seven structured records, no `## Implementation handoff` or
+`## Step plan:` comment, no `## Preflight checkpoint`, and no sub-issues. The
+issue's `## Acceptance criteria` checklist is the source of truth. The draft PR
+body repeats every criterion under the same heading in the same words, checked
+only where fresh evidence exists at its head, closes the issue with
+`Closes #<issue>`, and declares the path in its Convergence block with the line
+`- Handoff: none, ordinary path`. Before the merge,
+`skills/complete-pr/scripts/ordinary-proof.mjs` verifies that evidence and sorts
+any issue that carries a structured record or comment onto the structured path,
+whose stops then apply unchanged. The merge helper waits for every required
+check at the exact pushed head. After the merge, `closure.mjs record-ordinary`
+writes the completion record.
+
 ## Principles and source of truth
 
 - Existing repository instructions in `AGENTS.md` and `CLAUDE.md` are the
@@ -265,8 +279,12 @@ their place.
   with `pendingRows` empty and `legacy` set to `true` in the JSON block. The field
   is informational: the delivery judgement reads the record and the live pull
   request exactly as for any record. The command refuses a ticket whose body holds
-  any of the seven records or that carries an `## Implementation handoff` comment,
-  so a structured ticket always keeps the matrix.
+  any of the seven records or that carries an `## Implementation handoff` or
+  `## Step plan:` comment, so a structured ticket always keeps the matrix.
+  `closure.mjs record-ordinary` posts the same record for a closed ordinary-path
+  ticket, with `ordinary` set to `true` in place of `legacy`. It makes the same
+  refusals and also requires the ordinary pull-request evidence that "Choose the
+  path" describes.
 
 Each caller builds one closure snapshot with
 `node <plugin-root>/skills/complete-pr/scripts/closure.mjs snapshot --repository=<owner/name> --output=<file>`.
@@ -482,4 +500,4 @@ actionable remainder, with the next task and owner, to the PBI and stop before
 creating or updating the draft PR. After a failed or ambiguous write, read back
 that resource before retrying, as the shared GitHub standard requires. The
 ordinary small-fix path bypasses these records and uses its direct issue,
-commit, test, and review evidence instead.
+commit, test, and review evidence instead, as "Choose the path" describes.
