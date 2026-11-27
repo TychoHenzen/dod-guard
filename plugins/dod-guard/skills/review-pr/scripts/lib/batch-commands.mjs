@@ -61,6 +61,11 @@ function loadAnswerFile(dir, batch) {
   }
 }
 
+// The facts file `--facts` names, which answers may cite besides the checkout.
+function citesOf(args) {
+  return citationCheck(args.root, [args.facts].filter(Boolean));
+}
+
 // Regenerates the batches from the plan instead of reading the batch files, so
 // a stale batch file on disk cannot make a stale answers file look current.
 function answers(args) {
@@ -68,7 +73,7 @@ function answers(args) {
   const files = new Map(
     batchDocuments(plan, args.head).map(({ batch }) => [batch, loadAnswerFile(args["answers-dir"], batch)]),
   );
-  const merged = mergeAnswers({ plan, headSha: args.head, files, cites: citationCheck(args.root) });
+  const merged = mergeAnswers({ plan, headSha: args.head, files, cites: citesOf(args) });
   writeJson(args.out, merged);
   const count = (status) => merged.answers.filter((answer) => answer.status === status).length;
   return { out: args.out, answered: count("answered"), unanswered: count("unanswered") };
@@ -79,7 +84,7 @@ function answers(args) {
 function pending(args) {
   const plan = planArray(args.plan);
   const hash = planHash(plan);
-  const cites = citationCheck(args.root);
+  const cites = citesOf(args);
   const states = batchDocuments(plan, args.head).map((batch) => {
     const doc = loadAnswerFile(args["answers-dir"], batch.batch);
     return { batch, problems: batchProblems({ batch, doc, hash, headSha: args.head, cites }) };

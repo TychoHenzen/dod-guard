@@ -68,13 +68,31 @@ function linesOf(file, cache) {
   return cache.get(file);
 }
 
+// Returns the real path of an absolute citation that names one of the allowed
+// facts files, or null for every other citation.
+function factFile(allowed, cited) {
+  if (!path.isAbsolute(cited)) {
+    return null;
+  }
+  const real = realPath(cited);
+  if (real === null || !allowed.has(real)) {
+    return null;
+  }
+  return real;
+}
+
 // Builds the check for one checkout. It reads each cited file once.
-function citationCheck(root) {
+// `facts` lists files outside the checkout that may be cited as well, such as
+// a file of Git facts written for investigators that cannot run Git. Each is
+// matched by its real path, so only those exact files pass, never a file next
+// to one. A facts file that does not exist allows nothing.
+function citationCheck(root, facts = []) {
   const cache = new Map();
   const realRoot = realPath(root) ?? root;
+  const allowed = new Set(facts.map(realPath).filter((real) => real !== null));
   return (cited, line) => {
     const named = JSON.stringify(cited);
-    const file = insideRoot(root, realRoot, cited);
+    const file = factFile(allowed, cited) ?? insideRoot(root, realRoot, cited);
     if (file === null) {
       return `${named} is outside the checkout`;
     }

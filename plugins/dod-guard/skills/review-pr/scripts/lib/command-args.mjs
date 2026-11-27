@@ -13,20 +13,22 @@ const REQUIRED = {
   report: ["review-id", "comments"],
 };
 // scan without --base marks no finding as pre-existing, so a caller that
-// predates the flag keeps working.
-const OPTIONAL = { scan: ["base"] };
+// predates the flag keeps working. answers and pending without --facts accept
+// citations into the checkout only, as they did before the flag.
+const OPTIONAL = { scan: ["base"], answers: ["facts"], pending: ["facts"] };
 const FULL_SHA = /^[0-9a-f]{40}$/;
 // The marker reader only accepts a hex head, so a build with anything else would post an undetectable review.
 // The batch commands stamp or compare the head, so they take the same full-SHA check.
 const HEAD_COMMANDS = new Set(["build", "batches", "answers", "pending"]);
 
 // Every flag outside REQUIRED and OPTIONAL is refused, so a misspelled or
-// retired flag stops with usage instead of being ignored.
+// retired flag stops with usage instead of being ignored. Every flag given
+// needs a value, an optional one too.
 function hasExactFlags(command, args) {
   const required = REQUIRED[command];
   const allowed = [...required, ...(OPTIONAL[command] ?? [])];
-  const valued = required.every((name) => args[name] && args[name] !== "true");
-  return valued && Object.keys(args).every((name) => allowed.includes(name));
+  const valued = (name) => Boolean(args[name]) && args[name] !== "true";
+  return required.every(valued) && Object.keys(args).every((name) => allowed.includes(name) && valued(name));
 }
 
 // A merge base is compared as a commit, so only a full SHA names it exactly.
