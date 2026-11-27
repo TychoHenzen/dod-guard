@@ -53,7 +53,7 @@ Never close for a product judgment such as "works as designed", "not worth it", 
 
 This is the one close this skill makes by hand. The hierarchy close in "Effort 13 and splitting" still goes through `closure.mjs`. In order:
 
-1. Post a comment headed `## Closed by refinement`: the case, the default branch and its SHA, and the evidence with file and line citations. For a duplicate, its first line under the heading is `Duplicate of #<number>`.
+1. Post a comment headed `## Closed by refinement`: the case, the default branch and its SHA, and the evidence with file and line citations. For a duplicate, its first line under the heading is `Duplicate of #<number>`. Keep it under 3000 characters and check it with `node <plugin-root>/lib/github-text-check.mjs --kind=comment --file=<path>` before the post.
 2. Close with `gh issue close <issue> --repo <owner>/<repo> --reason "not planned"`.
 3. Read the item's Project Status. Unless it already reads `Done` (a Project automation may set it), set it with `project-status.mjs` as step 6 of "Apply labels and verify" does, with the Status field's `Done` option.
 4. Read back state `CLOSED`, state reason `NOT_PLANNED`, and Status `Done`. The queues read a closed root as complete only when all three hold, and hold one that is closed but not Done. On any mismatch, report the partial state and stop.

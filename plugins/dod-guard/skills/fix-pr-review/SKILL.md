@@ -76,7 +76,7 @@ For a structured parent, rerun post-push at the converged pushed head (`node <pl
 
 Skip a thread that also holds a declined, partial or out-of-slice item. The decline or routing path owns its single reply and resolve.
 
-Reply and resolve through connector operations when available. Otherwise `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments` with `body` and `in_reply_to` (root comment database ID). GitHub ignores `commit_id` on a reply and pins the reply to the root comment's commit, so send none and never key a readback on it. The body gives the head SHA and verification command. A new inline comment uses `body`, `commit_id`, `path` and `position`, with no `line` and no `subject_type`. Never use `POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies`.
+Reply and resolve through connector operations when available. Otherwise `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments` with `body` and `in_reply_to` (root comment database ID). GitHub ignores `commit_id` on a reply and pins the reply to the root comment's commit, so send none and never key a readback on it. The body gives the head SHA and verification command. Keep each reply under 2000 characters: the fix or the decline reason, the head SHA and the verification command, with no log or diff pasted. Check it with `node <plugin-root>/lib/github-text-check.mjs --kind=reviewComment --file=<path>` before the post. A new inline comment uses `body`, `commit_id`, `path` and `position`, with no `line` and no `subject_type`. Never use `POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies`.
 
 Take each `threadId` from the earlier metadata read. For each thread:
 
