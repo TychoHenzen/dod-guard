@@ -34,7 +34,7 @@ Run after the source-branch push and after PR create or update, before trusting 
 
 ## Structured-work convergence
 
-Before creating or updating the PR, apply the Convergence record in `standards/project-workflow.md`. A small, clear fix takes the ordinary path without structured records. This gate never bypasses the stops for credentials, destructive action, authority, unrelated work, provider mismatch, or missing evidence.
+Before creating or updating the PR, apply the Convergence record in `standards/project-workflow.md`. A small, clear fix takes the ordinary path without structured records (see "Choose the path" there): it skips the rest of this section and "Early preflight checkpoint", and its body takes the ordinary form in "Create or update the draft". This gate never bypasses the stops for credentials, destructive action, authority, unrelated work, provider mismatch, or missing evidence.
 
 For a structured PBI:
 
@@ -60,7 +60,7 @@ After the draft exists, before `dod-guard:review-pr` or guarded `complete-pr`, w
 
 Before any write, list the open PRs for the head with `gh api -X GET repos/{owner}/{repo}/pulls -f state=open -f head=<owner>:<branch> -f per_page=100` (the GitHub MCP list operation first), and read `number`, `draft`, `head.ref`, and `head.repo.full_name` of each. Stop and report every PR number with its draft state, and do not convert, close, merge, or edit any of them, when more than one is listed, the one listed is not a draft, or its head repo is not this repository. If none is listed, create one draft PR against the default branch. If one draft is listed, update its title and body, never a second PR. After a failed, timed-out, or ambiguous write, run the lookup again: update the PR if it lists one at the intended branch, and retry one identical creation once only if it lists no PR. Never alter a PR whose head no longer matches the verified branch.
 
-Keep the body short: what changed and why, material verification results, the parent acceptance checklist checked only where evidence exists, `Closes #<issue-number>`, and this block, with the handoff linked and not restated. The body is under 4000 characters: one line per change and per check, with no logs or plans pasted. Save it and run `node <plugin-root>/lib/github-text-check.mjs --kind=prBody --file=<path>` before the write; on exit 1 write it again shorter.
+Keep the body short: what changed and why, material verification results, the parent's acceptance checklist under `## Acceptance criteria` with each criterion copied in the issue's exact words and checked only where evidence exists, `Closes #<issue-number>`, and this block, with the handoff linked and not restated. The body is under 4000 characters: one line per change and per check, with no logs or plans pasted. Save it and run `node <plugin-root>/lib/github-text-check.mjs --kind=prBody --file=<path>` before the write; on exit 1 write it again shorter.
 
 The PR body always names the parent with `Closes #<issue-number>`. Never write "Part of" in its place. If the branch delivers less than the parent's scope, that is an incomplete implementation: write the remainder to the issue and stop, or split the undelivered scope into a new Backlog issue and narrow the parent before the draft is created.
 
@@ -73,6 +73,16 @@ The PR body always names the parent with `Closes #<issue-number>`. Never write "
 
 Replace `none` with each failed context, one per line, when a row did not pass.
 
+On the ordinary path the block declares that path instead, with no link and no head:
+
+```text
+## Convergence
+- Handoff: none, ordinary path
+- Remainder: none
+```
+
+`dod-guard:complete-pr` reads that declaration line as written, and requires the body's `## Acceptance criteria` to hold every criterion of the issue's own checklist, checked.
+
 Leave the Project item `In Progress`. Report the PR URL, head commit, and verification evidence, then stop.
 
 ## Update mode
@@ -82,3 +92,5 @@ Run this skill again on an existing draft whose head moved, for example after co
 1. Run head convergence at the new pushed SHA, then the post-push proof from "Structured-work convergence" at that head. An exit-1 remainder stops and names the stale row ids.
 2. Rewrite the `## Preflight checkpoint` for the new head by following "Early preflight checkpoint", replacing the record in the same comment.
 3. Update the PR title and body as "Create or update the draft" says, with the Convergence block naming the new head. Report the PR URL, the new head, and the checkpoint head, then stop.
+
+On the ordinary path, steps 1 and 2 do not apply. Run head convergence at the new pushed SHA, recheck each checked criterion at that head, uncheck any that no longer holds, then update the body. Report the PR URL and the new head, then stop.

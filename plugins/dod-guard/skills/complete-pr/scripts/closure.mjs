@@ -15,6 +15,7 @@ const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issu
        closure.mjs record --repository=<owner/name> --result=<complete-pr.json>
                           --handoff-file=<handoff-comment.md> [--children=<n,...>]
        closure.mjs record-legacy --repository=<owner/name> --pull=<n> --issue=<n>
+       closure.mjs record-ordinary --repository=<owner/name> --pull=<n> --issue=<n>
        closure.mjs annotate --snapshot=<file.json> [--output=<file.json>]
        closure.mjs snapshot --repository=<owner/name> --output=<file.json>
 
@@ -37,6 +38,10 @@ children.
 record-legacy records PR, head and merge only, for a closed ticket delivered before
 the structured handoff existed. It refuses any ticket that has a structured handoff,
 and any ticket or pull request that does not verify, and it writes nothing on a refusal.
+record-ordinary records the same fields for a closed ordinary-path ticket, under the same
+refusals. It also refuses a pull request whose ## Convergence does not declare the
+ordinary path, or whose ## Acceptance criteria checklist lacks a checked copy of every
+criterion in the issue's own checklist, and an issue that has sub-issues.
 snapshot builds that closure snapshot for one repository from GitHub REST GET
 requests and the one read-only GraphQL read that resolves the explicitly linked
 Project, as linked-project.mjs does. It stops when the items list is shorter or

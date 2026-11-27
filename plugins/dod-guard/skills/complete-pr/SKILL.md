@@ -21,9 +21,24 @@ Apply `standards/working-defaults.md` and `standards/github-request-discipline.m
 6. Read the PR, linked issue, review result, and latest verification evidence. Stop if the PR no longer carries the accepted PBI's work or its head lacks verification evidence. A head that moved after the one review still counts as reviewed (step 7).
 7. If pending changes clearly belong to the accepted PBI, stage only those reviewed paths, commit, push, and reread head and evidence. Then stop unless the new head has fresh verification evidence. A pull request gets one review: a head that moved after it (a review fix, a check repair, a conflict merge, a branch sync) is still the reviewed code and needs fresh checks, never a fresh review.
 
+## Choose the route
+
+Sort the ticket before "Preflight checkpoint", at the verified head. The ordinary path is defined in "Choose the path" of `standards/project-workflow.md`.
+
+```text
+node <skill-dir>/scripts/ordinary-proof.mjs --repository=<owner/repository> --pull=<pull-request-number> --head-sha=<verified-head-sha>
+```
+
+- Exit 0, outcome `ordinary`: the ticket is on the ordinary path. Skip "Structured finalization proof", and of "Preflight checkpoint" keep only its draft-skipped recovery. An ordinary ticket has no handoff, and the helper waits for every required check at the exact pushed head before it merges. Continue at "Review threads".
+- Exit 3, outcome `structured`: the issue carries a structured record or comment, listed under `markers`. Run every other section as written, starting with "Preflight checkpoint".
+- Exit 1, outcome `refused`: stop with the printed `reasons` before any ready, auto-merge, CI dispatch, or merge. Fix a gap in the pull request body, such as an unchecked or missing criterion, only when that criterion has fresh evidence at the verified head, then rerun the proof.
+- Exit 2: a usage error or a failed read. Stop and report it.
+
+Rerun the proof whenever the verified head changes.
+
 ## Preflight checkpoint
 
-Read the `## Preflight checkpoint` from the implementation handoff (format in `standards/project-workflow.md`). Before any ready transition, branch update, merge, or cleanup, require the exact head, base ref and SHA, mergeability, and a complete row for every required provider context. Stop with expected and observed values on missing, pending, failed, unavailable, stale, duplicate, forked, or provider-mismatched evidence, never inferred from a passing aggregate. An exact-head `skipped` context counts as passing. `handoff-proof.mjs finalization` applies this row check to the saved handoff before the helper runs. The helper reads the authoritative list at run time from the base branch's protection. In this repository it is `build-test`, `plugin-config`, `static-analysis`, `package-integrity`, and `quality-guard` (the list in the root `AGENTS.md`), so the handoff needs a row for each, and a context present on only one side is a mismatch.
+Only the draft-skipped recovery below applies to the ordinary route. On the structured route, read the `## Preflight checkpoint` from the implementation handoff (format in `standards/project-workflow.md`). Before any ready transition, branch update, merge, or cleanup, require the exact head, base ref and SHA, mergeability, and a complete row for every required provider context. Stop with expected and observed values on missing, pending, failed, unavailable, stale, duplicate, forked, or provider-mismatched evidence, never inferred from a passing aggregate. An exact-head `skipped` context counts as passing. `handoff-proof.mjs finalization` applies this row check to the saved handoff before the helper runs. The helper reads the authoritative list at run time from the base branch's protection. In this repository it is `build-test`, `plugin-config`, `static-analysis`, `package-integrity`, and `quality-guard` (the list in the root `AGENTS.md`), so the handoff needs a row for each, and a context present on only one side is a mismatch.
 
 A `pending` row bound to the verified head is a snapshot that submit-draft-pr took while CI was still running, not a stop. When every row is bound to the verified head and some are `pending`, refresh them before the row check. Wait until every required context at that head has a terminal state with `gh pr checks <pull-request> --watch --required`: exit 0 and 1 are terminal, 8 is not. Then rewrite the rows at the same head by steps 1 and 2 of "Early preflight checkpoint" in `skills/submit-draft-pr/SKILL.md`, edit the handoff comment in place as that section says, and read it back. Apply the row check to the refreshed record. A refreshed row that is `failed` stops with `required_check_failed` naming its context. A non-terminal or timed-out wait stops with the observed states. Rows bound to another head are never refreshed here.
 
@@ -33,7 +48,7 @@ Compare the merge ref's first parent with the current base branch tip, and recor
 
 ## Bounded branch synchronization
 
-When the pull request is BEHIND its base, the helper runs this once and nothing else may update the branch. It reads the base branch tip, calls update-branch pinned to the trusted head, then waits for the pull request head to become a merge commit whose two parents are exactly the previous head and that base tip. Any other new head stops with `untrusted_base_update`, and a head that does not move in time stops with `base_update_timeout`. The helper then stops with `branch_synced` and merges nothing, because the new head carries no handoff evidence. The stop report names the previous and the synced head. Rebind the handoff to the synced head (`dod-guard:fix-pr-review`, "Rebind the handoff"), rerun the required checks, the review-thread read, and the finalization proof at it, then run the helper again with `--pushed-head <synced head>`. A conflict goes to "Triage a merge conflict". Never rebase, force-push, or update the branch by hand.
+When the pull request is BEHIND its base, the helper runs this once and nothing else may update the branch. It reads the base branch tip, calls update-branch pinned to the trusted head, then waits for the pull request head to become a merge commit whose two parents are exactly the previous head and that base tip. Any other new head stops with `untrusted_base_update`, and a head that does not move in time stops with `base_update_timeout`. The helper then stops with `branch_synced` and merges nothing, because the new head carries no handoff evidence. The stop report names the previous and the synced head. On the structured route, rebind the handoff to the synced head (`dod-guard:fix-pr-review`, "Rebind the handoff") and rerun the required checks, the review-thread read, and the finalization proof at it. On the ordinary route, rerun the required checks, the review-thread read, and the ordinary proof at it. Then run the helper again with `--pushed-head <synced head>`. A conflict goes to "Triage a merge conflict". Never rebase, force-push, or update the branch by hand.
 
 ## Review threads
 
@@ -47,7 +62,7 @@ Reread them before each merge request and stop the same way.
 
 ## Structured finalization proof
 
-Apply this section only when the linked parent PBI holds the seven records. Otherwise skip it.
+Apply this section unless the ordinary proof verified the ticket (exit 0 in "Choose the route"). A ticket the proof sorted structured runs it even when some of the seven records are missing, and the gate then stops and names them.
 
 1. Read the parent body and the issue's comments to UTF-8 files. Get the body with `gh api repos/<owner>/<repo>/issues/<n> --jq .body`, and save the comments from `gh api -X GET --paginate --slurp repos/<owner>/<repo>/issues/<n>/comments` as <comments.json>. Run `node <plugin-root>/skills/next-ticket/scripts/handoff-select.mjs --comments-file=<comments.json> --author=<login> --output-dir=<dir>`, with the login from `gh api user --jq .login`. `PATCH` each listed superseded comment with `gh api --method PATCH repos/<owner>/<repo>/issues/comments/<id> -F body=@<file>`, read the comments back with the same paginated command, `gh api -X GET --paginate --slurp repos/<owner>/<repo>/issues/<n>/comments`, saved as a second UTF-8 file so a long issue is read to its last page, and save the body of the kept comment as the handoff file. Stop unless exactly one comment by that login carries the heading after the readback. Exit status 1 or 2 from the command also stops.
 2. Read the PR head SHA. If the handoff's checkpoint holds `pending` rows at that head, refresh them as "Preflight checkpoint" says and save the read-back comment as the handoff file.
@@ -135,7 +150,7 @@ Never set `Done` on a parent or child whose pushed commit is not in the merged h
 
 After readback shows the delivered issues `Done`, save the helper's JSON result and the `## Implementation handoff` comment text to files as UTF-8: write them from a POSIX shell, or with `Out-File -Encoding utf8` in PowerShell. `closure.mjs` also reads UTF-8 with a BOM and UTF-16 with a BOM, which Windows PowerShell 5.1 `>` and `1>` write, and refuses any other encoding with the file path in its message. Record evidence on each linked closing issue and finalized child, in the `## Completion evidence` format from `standards/project-workflow.md`. Recording is safe to rerun. The acceptance matrix is read from the handoff comment file: its `## Acceptance matrix` section holds one fenced `json` block, a `{headSha, rows}` object whose rows each have at least `id` and `status` (a handoff posted before 2026-11-27 holds a JSON array of rows instead, which is read the same way). The command takes no separate matrix file and rejects `--matrix`; the full row shape is in `standards/project-workflow.md`.
 
-Fetch the handoff from the issue yourself. Save the comments of each closing issue from `gh api --paginate --slurp repos/{owner}/{repo}/issues/{issue}/comments`, with no `--jq`, as a file. Run `node <plugin-root>/skills/next-ticket/scripts/handoff-select.mjs --comments-file=<comments.json> --author=<login> --output-dir=<dir>`, `PATCH` each superseded comment it lists, and save the body of the kept comment as the handoff file. Never wait for the dispatcher to supply a file, and never skip `record` because none arrived. Report the delivery complete only after `record` or `record-legacy` exited 0 for every linked closing issue and finalized child. A structured ticket with no handoff comment stops the run before `snapshot`, `plan` and `apply`: name the issue and report `completion record missing`.
+Fetch the handoff from the issue yourself. Save the comments of each closing issue from `gh api --paginate --slurp repos/{owner}/{repo}/issues/{issue}/comments`, with no `--jq`, as a file. Run `node <plugin-root>/skills/next-ticket/scripts/handoff-select.mjs --comments-file=<comments.json> --author=<login> --output-dir=<dir>`, `PATCH` each superseded comment it lists, and save the body of the kept comment as the handoff file. Never wait for the dispatcher to supply a file, and never skip `record` because none arrived. Report the delivery complete only after `record`, `record-ordinary` or `record-legacy` exited 0 for every linked closing issue and finalized child. A structured ticket with no handoff comment stops the run before `snapshot`, `plan` and `apply`: name the issue and report `completion record missing`.
 
 **Legacy delivery.** A closed ticket that predates the structured handoff (none of the seven records in its body, no `## Implementation handoff` comment) may record its merged pull request, accepted head and merge commit alone with the command below. The owner allowed this evidence in TychoHenzen/dod-guard#1116. The command refuses, naming the reason and writing nothing, for a structured ticket, an open issue, an unmerged or wrong-base pull request, a body with no closing keyword for the issue, incomplete required checks, or an existing non-legacy completion record. It never covers children.
 
@@ -143,7 +158,13 @@ Fetch the handoff from the issue yourself. Save the comments of each closing iss
 node <skill-dir>/scripts/closure.mjs record-legacy --repository=<owner/repository> --pull=<n> --issue=<n>
 ```
 
-After it, run the snapshot, plan and apply commands below; the legacy record is judged by the same live readback as any other.
+**Ordinary delivery.** A ticket the ordinary proof verified has no handoff, so record it with the command below in place of `record`. It applies every record-legacy refusal. It also refuses a merged pull request whose body no longer declares the ordinary path or checks every criterion of the issue's own checklist, and an issue that has sub-issues. It writes the record with `ordinary` set to `true`.
+
+```text
+node <skill-dir>/scripts/closure.mjs record-ordinary --repository=<owner/repository> --pull=<n> --issue=<n>
+```
+
+After either command, run the snapshot, plan and apply commands below; a legacy or ordinary record is judged by the same live readback as any other.
 
 ```text
 node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --result=<helper-result.json> --handoff-file=<handoff-comment.md> --children=<child-number>,...

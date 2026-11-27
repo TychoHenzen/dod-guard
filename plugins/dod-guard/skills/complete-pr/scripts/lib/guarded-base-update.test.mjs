@@ -7,7 +7,7 @@ import { FixtureClient, immediateOptions, passingChecks, pendingChecks, pull } f
 
 const liveBaseMergePattern = /guarded merge of head-1 and base-2/;
 const syncedMessagePattern = /moved from head-1 to the verified sync head head-2; nothing was merged/;
-const rebindRecoveryPattern = /Rebind the handoff to head-2.*--pushed-head head-2/;
+const rebindRecoveryPattern = /handoff to head-2.*ordinary-proof\.mjs with --head-sha head-2.*--pushed-head head-2/;
 
 // The PR read before the update still reports base-1 while the base branch already points at base-2.
 function laggingBaseClient(overrides = {}) {

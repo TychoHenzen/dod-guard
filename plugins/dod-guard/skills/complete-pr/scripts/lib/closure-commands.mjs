@@ -8,7 +8,7 @@ import { REPOSITORY_NAME } from "../../../../lib/repository-identity.mjs";
 import { applyClosures } from "./closure-apply.mjs";
 import { recordCompletion } from "./closure-completion.mjs";
 import { annotateSnapshot } from "./closure-delivery.mjs";
-import { recordLegacy } from "./closure-legacy-command.mjs";
+import { recordLegacy, recordOrdinary } from "./closure-legacy-command.mjs";
 import { childList, given, snapshotOptions } from "./closure-options.mjs";
 import { planClosures } from "./closure-plan.mjs";
 import { buildClosureSnapshot, writeClosureSnapshot } from "./closure-snapshot.mjs";
@@ -77,6 +77,14 @@ function record(args, runner = runGh) {
   });
 }
 
-const COMMANDS = { plan, apply, annotate, snapshot, record, "record-legacy": recordLegacy };
+const COMMANDS = {
+  plan,
+  apply,
+  annotate,
+  snapshot,
+  record,
+  "record-legacy": recordLegacy,
+  "record-ordinary": recordOrdinary,
+};
 
 export { COMMANDS };

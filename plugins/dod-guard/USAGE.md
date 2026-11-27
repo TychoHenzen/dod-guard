@@ -213,7 +213,9 @@ criterion and mandatory user-facing path.
 `/submit-draft-pr` compares that handoff with the issue contract and links it
 from `## Convergence` instead of copying the mapping; missing, contradicted, or
 stale matrix evidence stays an actionable remainder. Small, clear fixes use
-the ordinary path instead.
+the ordinary path instead: the draft PR body declares that path and checks a
+copy of every issue acceptance criterion, and `/complete-pr` verifies both
+before it merges.
 
 The structured path does not create a parallel local plan. It preserves stops
 for material ambiguity, credentials, destructive or authority-bound actions,
