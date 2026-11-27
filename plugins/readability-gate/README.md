@@ -19,7 +19,7 @@ message they last replied to, the names of their installed plugins and skills,
 and the new message. It writes four sections: what it understood, up to six
 problems, the message the owner wanted, and a verdict. The problems it looks
 for come from [talk-normal](https://github.com/hexiecs/talk-normal), plus
-references the owner has never seen:
+references the owner has never seen and agreement given without a reason:
 
 - **Answer.** What the owner asked for is in the first sentence or two, and is
   given rather than pointed at.
@@ -37,6 +37,11 @@ references the owner has never seen:
   one Claude recommends.
 - **Padding.** Filler, restating the question, "not X, but Y" frames, summary
   labels, offer menus at the end, bullets used as decoration.
+- **Easy agreement.** Agreeing with a claim the owner made, or reversing an
+  earlier answer, without the fact or argument that changed Claude's mind.
+  Praise that names nothing specific. This alone does not fail a message,
+  because the reader cannot see the evidence from earlier in the turn. One
+  case does fail: see below.
 
 The wanted message answers what the owner asked, then stops. It says whether
 an instruction is done and what came of it, answers a question directly, gives
@@ -45,6 +50,15 @@ working on its own. Then it adds only what the owner must do or decide now,
 with Claude's recommendation. It leaves out everything else, even when true:
 other work, decisions raised before the request, caveats about what was not
 tested, background, and how Claude found things. The owner can ask for those.
+
+Two things stay even when the owner did not ask for them. One is a
+correction, a disagreement, or a warning that what they asked for will not
+work, with its reason. The other is the reason Claude gives when it agrees
+with the owner's claim or reverses an earlier answer. Before this rule, the
+reader cut that reason as something the owner did not ask about: on a message
+that agreed and said why, all 3 test runs kept only "Done" and the change. A
+bare agreement is the one the owner cannot check. When Claude gives no
+reason, the wanted message has a note asking what changed its mind.
 
 The wanted message uses only facts from the real message. Where the owner
 needs something the message does not give, such as a recommendation, the
@@ -59,7 +73,13 @@ Code decides, in `hooks/gate_verdict.py`. A message fails when either is true:
 
 - The reader's verdict is FAIL. The verdict covers only whether the owner can
   act on the message: the answer is missing or buried, it relies on something
-  the owner cannot place, or it asks for a decision the owner cannot make.
+  the owner cannot place, it asks for a decision the owner cannot make, or it
+  drops a warning from the message the owner replied to with no reason from
+  Claude or the owner. Without that last case, a message that gave in to
+  pushback passed in 2 of 2 test runs, and the reader's question about the
+  dropped warning never reached the owner. With it, that message failed in 3 of
+  3 runs, while an agreement that gave its reason and a risk the owner accepted
+  in their request each passed in 3 of 3.
 - The wanted message is at least 60 words and at least 30% shorter, and the
   reader listed at least one problem. Words inside code blocks are not
   counted.
@@ -87,6 +107,19 @@ a prompt read before writing. With the rules in context, the first draft
 passes more often and the Stop check has less to send back. The guide states
 only what to do, with no examples of what to avoid, because talk-normal found
 that a quoted bad example gets copied.
+
+The guide has a second part, on answering the owner's claims, plans and
+pushback. It covers every reply and decision in the turn, such as whether to
+change the work after the owner pushes back, not only the last message.
+Claude answers from the evidence. When the owner is right, it says so plainly
+and gives the reason. When they are wrong, it says so in the first sentence. It
+corrects a false premise before answering, and changes its position only for a
+new fact or argument, which it names. Full agreement is a normal answer, so the
+rules never ask for an objection that does not exist. The ideas come from the
+core rules of [candor](https://github.com/itsryanlenk/candor), rewritten in the
+guide's style. The Stop check changed with the guide, because the reader
+used to cut the reason from a message that agreed with the owner. That left
+the bare agreement the guide rules out.
 
 ## What it no longer does
 
@@ -150,7 +183,7 @@ block count lives next to it in `<session id>.gate.json`.
 | `hooks/gate_verdict.py` | Splits the reader's reply into its sections and decides pass or fail |
 | `prompts/reader.md` | The reader's instructions |
 | `prompts/feedback.md` | What Claude is told on a failure; `{notes}` and `{wanted}` are replaced by the reader's notes and draft |
-| `prompts/guide.md` | The writing rules added to context at session start |
+| `prompts/guide.md` | The writing rules and the rules for answering claims and pushback, added to context at session start |
 | `tests/` | Tests for transcript reading, the reader input, the verdict, the block path and the guide; no model call |
 | `.claude-plugin/plugin.json` | Plugin manifest; registers the SessionStart and Stop hooks |
 
