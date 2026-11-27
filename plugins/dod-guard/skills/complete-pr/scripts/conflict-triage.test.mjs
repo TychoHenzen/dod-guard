@@ -8,6 +8,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 // biome-ignore lint/correctness/noNodejsModules: The test writes a temporary repository.
 import { join } from "node:path";
+// biome-ignore lint/correctness/noNodejsModules: The test runs the shipped command under this Node.
 import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
@@ -18,6 +19,22 @@ import { BRANCH, createScenario, originHead, sh, writeFiles } from "./lib/confli
 import { runCommand } from "./lib/conflict-triage-command.mjs";
 
 const COMMAND = fileURLToPath(new URL("./conflict-triage.mjs", import.meta.url));
+const SHA_LENGTH = 40;
+const BASE_SHA = "b".repeat(SHA_LENGTH);
+const HEAD_SHA = "c".repeat(SHA_LENGTH);
+// A verification result long enough to put its record line over the line limit.
+const OVERLONG = 300;
+const USAGE = /Usage: node conflict-triage\.mjs <command>/;
+const OUTSIDE = /outside the repository/;
+const RECORD_HEADING = /^## Conflict triage\n/;
+const NO_MERGE = /- Merge: none/;
+const LONG_LINE = /^the record line "- npm test: x+" is 312 characters/;
+const UNKNOWN_COMMAND = /Unknown command: rebase/;
+const LIST_FORM = /bases \[\{ id, text \}\] and decisions/;
+const NO_GENERATORS = /Missing --generators/;
+const DIRTY_STOP = /- Stop: worktree_dirty: The worktree has pending changes\./;
+const NOT_FOUND = /ENOENT/;
+const NOT_A_LIST = /JSON list/;
 
 function createWorkspace() {
   const root = mkdtempSync(join(tmpdir(), "conflict-triage-cli-"));
@@ -37,29 +54,20 @@ test("prints usage and exits 2 without a command", () => {
   try {
     const result = run(workspace.work, []);
     assert.equal(result.status, 2);
-    assert.match(result.stderr, /Usage: node conflict-triage\.mjs <command>/);
+    assert.match(result.stderr, USAGE);
   } finally {
     workspace.cleanup();
   }
 });
 
-test("refuses a state file inside the repository", () => {
+test("refuses a state file inside the repository, even one whose name only starts with two dots", () => {
   const workspace = createWorkspace();
   try {
-    const result = run(workspace.work, ["abort", "--state", join(workspace.work, "triage.json")]);
-    assert.equal(result.status, 2);
-    assert.match(result.stderr, /outside the repository/);
-  } finally {
-    workspace.cleanup();
-  }
-});
-
-test("refuses a state file whose name only starts with two dots", () => {
-  const workspace = createWorkspace();
-  try {
-    const result = run(workspace.work, ["abort", "--state", "..state.json"]);
-    assert.equal(result.status, 2);
-    assert.match(result.stderr, /outside the repository/);
+    for (const state of [join(workspace.work, "triage.json"), "..state.json"]) {
+      const result = run(workspace.work, ["abort", "--state", state]);
+      assert.equal(result.status, 2, state);
+      assert.match(result.stderr, OUTSIDE);
+    }
   } finally {
     workspace.cleanup();
   }
@@ -69,14 +77,14 @@ test("aborts nothing and renders the record from an outside state file", () => {
   const workspace = createWorkspace();
   try {
     const state = join(workspace.scratch, "triage.json");
-    writeFileSync(state, JSON.stringify({ conflicts: [], recordedBase: "b".repeat(40), trustedHead: "c".repeat(40) }));
+    writeFileSync(state, JSON.stringify({ conflicts: [], recordedBase: BASE_SHA, trustedHead: HEAD_SHA }));
     const abort = run(workspace.work, ["abort", "--state", state]);
     assert.equal(abort.status, 0, abort.stderr);
     assert.deepEqual(JSON.parse(abort.stdout), { merge: "none" });
     const record = run(workspace.work, ["record", "--state", state]);
     assert.equal(record.status, 0, record.stderr);
-    assert.match(record.stdout, /^## Conflict triage\n/);
-    assert.match(record.stdout, /- Merge: none/);
+    assert.match(record.stdout, RECORD_HEADING);
+    assert.match(record.stdout, NO_MERGE);
   } finally {
     workspace.cleanup();
   }
@@ -87,13 +95,13 @@ test("refuses to render a record with a line over its limit", () => {
   try {
     const state = join(workspace.scratch, "triage.json");
     const verification = join(workspace.scratch, "verification.json");
-    writeFileSync(state, JSON.stringify({ conflicts: [], recordedBase: "b".repeat(40), trustedHead: "c".repeat(40) }));
-    writeFileSync(verification, JSON.stringify([{ name: "npm test", result: "x".repeat(300) }]));
+    writeFileSync(state, JSON.stringify({ conflicts: [], recordedBase: BASE_SHA, trustedHead: HEAD_SHA }));
+    writeFileSync(verification, JSON.stringify([{ name: "npm test", result: "x".repeat(OVERLONG) }]));
     const record = run(workspace.work, ["record", "--state", state, "--verification", verification]);
     assert.equal(record.status, 1);
     const refused = JSON.parse(record.stdout);
     assert.equal(refused.ok, false);
-    assert.match(refused.problems[0], /^the record line "- npm test: x+" is 312 characters/);
+    assert.match(refused.problems[0], LONG_LINE);
   } finally {
     workspace.cleanup();
   }
@@ -130,7 +138,7 @@ test("rejects an unknown command", () => {
     writeFileSync(state, "{}");
     const result = run(workspace.work, ["rebase", "--state", state]);
     assert.equal(result.status, 2);
-    assert.match(result.stderr, /Unknown command: rebase/);
+    assert.match(result.stderr, UNKNOWN_COMMAND);
   } finally {
     workspace.cleanup();
   }
@@ -169,7 +177,7 @@ test("runs start, verify, commit, and push through the command with an injected 
       decisions,
       JSON.stringify([{ basis: "AC-1 keeps both", decision: "combine", path: "src/value.txt" }]),
     );
-    await assert.rejects(runCommand("verify", git, { decisions, state }), /bases \[\{ id, text \}\] and decisions/);
+    await assert.rejects(runCommand("verify", git, { decisions, state }), LIST_FORM);
     const judged = {
       bases: [{ id: "B1", text: "AC-1 keeps both" }],
       decisions: [{ basis: "B1", decision: "combine", path: "src/value.txt" }],
@@ -195,9 +203,9 @@ test("refuses start without the declared generator list", () => {
   try {
     const state = join(workspace.scratch, "triage.json");
     const args = ["start", "--state", state, "--repository", "owner/repo", "--pull", "1"];
-    const result = run(workspace.work, [...args, "--trusted-head", "a".repeat(40)]);
+    const result = run(workspace.work, [...args, "--trusted-head", "a".repeat(SHA_LENGTH)]);
     assert.equal(result.status, 2);
-    assert.match(result.stderr, /Missing --generators/);
+    assert.match(result.stderr, NO_GENERATORS);
   } finally {
     workspace.cleanup();
   }
@@ -240,7 +248,7 @@ test("records a precondition stop in the state file so record can render it", as
     await assert.rejects(runCommand("start", git, flags(state), { createClient }), { code: "worktree_dirty" });
     assert.equal(JSON.parse(readFileSync(state, "utf8")).stop.stop, "worktree_dirty");
     const record = await runCommand("record", git, { state });
-    assert.match(record, /- Stop: worktree_dirty: The worktree has pending changes\./);
+    assert.match(record, DIRTY_STOP);
     assert.equal(mergeInProgress(scenario.work), false);
   } finally {
     scenario.cleanup();
@@ -251,7 +259,7 @@ test("merges nothing when the state file cannot be written", async () => {
   const { createClient, flags, git, scenario, scratch } = commandScenario();
   try {
     const state = join(scratch, "missing", "state.json");
-    await assert.rejects(runCommand("start", git, flags(state), { createClient }), /ENOENT/);
+    await assert.rejects(runCommand("start", git, flags(state), { createClient }), NOT_FOUND);
     assert.equal(mergeInProgress(scenario.work), false);
     assert.equal(sh(scenario.work, ["rev-parse", "HEAD"]), scenario.trustedHead);
   } finally {
@@ -277,7 +285,7 @@ test("refuses a generator file that is not a JSON list", async () => {
   const { createClient, flags, git, scenario, scratch } = commandScenario();
   try {
     writeFileSync(flags("unused").generators, "null");
-    await assert.rejects(runCommand("start", git, flags(join(scratch, "state.json")), { createClient }), /JSON list/);
+    await assert.rejects(runCommand("start", git, flags(join(scratch, "state.json")), { createClient }), NOT_A_LIST);
     assert.equal(mergeInProgress(scenario.work), false);
   } finally {
     scenario.cleanup();

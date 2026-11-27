@@ -55,7 +55,7 @@ const TRIAGE_LIMITS = Object.freeze({
 
 // Returns null when text fits, else a sentence naming its size and the limit.
 function lineProblem(label, text, limit) {
-  const length = String(text).length;
+  const { length } = String(text);
   if (length <= limit) {
     return null;
   }
@@ -63,15 +63,17 @@ function lineProblem(label, text, limit) {
 }
 
 function countProblem(label, items, limit) {
-  const count = Array.isArray(items) ? items.length : 0;
-  if (count <= limit) {
+  if (!Array.isArray(items) || items.length <= limit) {
     return null;
   }
-  return `${label} has ${count} entries, over the ${limit} the handoff holds; split the PBI`;
+  return `${label} has ${items.length} entries, over the ${limit} the handoff holds; split the PBI`;
 }
 
 function idProblems(label, entries, field) {
-  return (Array.isArray(entries) ? entries : [])
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+  return entries
     .map((entry) => entry?.[field])
     .filter((id) => typeof id === "string" && id.length > HANDOFF_LIMITS.id)
     .map((id) => `${label} ${field} ${id} is longer than ${HANDOFF_LIMITS.id} characters`);

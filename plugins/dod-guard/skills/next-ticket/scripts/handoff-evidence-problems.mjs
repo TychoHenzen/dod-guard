@@ -27,11 +27,12 @@ function hasEntry(rows, id) {
 function foreignFieldProblems(label, entry, allowed, retired = {}) {
   return Object.keys(entry)
     .filter((key) => !allowed.has(key))
-    .map((key) =>
-      Object.hasOwn(retired, key)
-        ? `${label} entry field ${key} is no longer part of the handoff: ${retired[key]}`
-        : `${label} entry field ${key} comes from the plan, not the evidence file`,
-    );
+    .map((key) => {
+      if (Object.hasOwn(retired, key)) {
+        return `${label} entry field ${key} is no longer part of the handoff: ${retired[key]}`;
+      }
+      return `${label} entry field ${key} comes from the plan, not the evidence file`;
+    });
 }
 
 function rowProblems(id, entry) {

@@ -30,9 +30,12 @@ function carriedProblems(carried) {
   if (carried.error) {
     return [carried.error];
   }
-  const size =
-    carried.section && lineProblem("the carried ## Preflight checkpoint", carried.section, HANDOFF_LIMITS.checkpoint);
-  return size ? [size] : [];
+  if (!carried.section) {
+    return [];
+  }
+  return [lineProblem("the carried ## Preflight checkpoint", carried.section, HANDOFF_LIMITS.checkpoint)].filter(
+    Boolean,
+  );
 }
 
 // Carry checks read fields the earlier checks validate, so they run only when those pass.
@@ -80,7 +83,10 @@ function build({ body, evidence, headSha, previousHandoff = "", carryCheck = ref
   const carriedText = (carried.section && `\n${carried.section}`) || "";
   const text = `${commentText(lines, rows, headSha)}${carriedText}`;
   const cap = capProblem("handoff", text, "the handoff comment");
-  return cap === null ? { text } : { errors: [cap] };
+  if (cap !== null) {
+    return { errors: [cap] };
+  }
+  return { text };
 }
 
 export { build };

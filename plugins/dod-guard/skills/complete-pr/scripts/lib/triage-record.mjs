@@ -5,6 +5,9 @@
 // count and line. A record over a limit is refused with the problems, never cut.
 import { lineProblem, TRIAGE_LIMITS } from "../../../../lib/handoff-limits.mjs";
 
+// A problem names a line by its first characters, enough to find it in the record.
+const LINE_NAME_LENGTH = 40;
+
 function oneLine(value) {
   return String(value ?? "")
     .replace(/\s+/gu, " ")
@@ -99,7 +102,9 @@ export function buildTriageRecord({
   const lines = recordLines(input);
   const problems = [
     ...countProblems(input),
-    ...lines.map((line) => lineProblem(`the record line "${line.slice(0, 40)}"`, line, TRIAGE_LIMITS.line)),
+    ...lines.map((line) =>
+      lineProblem(`the record line "${line.slice(0, LINE_NAME_LENGTH)}"`, line, TRIAGE_LIMITS.line),
+    ),
   ].filter(Boolean);
   if (problems.length > 0) {
     return { ok: false, problems };

@@ -30,10 +30,10 @@ const PUSH_REFSPEC = /^[0-9a-f]{40}:refs\/heads\/[^+:\s]+$/;
 // ASSUMPTION: git reports a refused push with one of these phrases; any other
 // push failure is treated as uncertain, read back, and retried once.
 const PUSH_REJECTED = /\[rejected\]|\[remote rejected\]|non-fast-forward|fetch first|stale info/i;
-const PUSH_STOP_REASONS = Object.freeze({
-  push_failed: "The push failed, and its one retry failed too.",
-  push_rejected: "The remote rejected the push.",
-});
+const PUSH_STOP_REASONS = new Map([
+  ["push_failed", "The push failed, and its one retry failed too."],
+  ["push_rejected", "The remote rejected the push."],
+]);
 const FORBIDDEN_ARGUMENTS = new Set([
   "--force",
   "-f",
@@ -485,9 +485,10 @@ function resolutionSource(git, trustedHead, recordedBase) {
 // cites one by id, so the record writes a shared basis once. A decision whose
 // basis names no stated basis with text has no basis.
 function statedBases(bases) {
-  const stated = (Array.isArray(bases) ? bases : []).filter(
-    (basis) => typeof basis?.id === "string" && String(basis.text ?? "").trim() !== "",
-  );
+  if (!Array.isArray(bases)) {
+    return new Set();
+  }
+  const stated = bases.filter((basis) => typeof basis?.id === "string" && String(basis.text ?? "").trim() !== "");
   return new Set(stated.map((basis) => basis.id));
 }
 
@@ -688,7 +689,7 @@ export async function pushMerge(git, { remote = "origin", branch, trustedHead, r
   if (failed) {
     // The record prints the reason as one line, so git's own output goes in
     // the details for the caller instead.
-    throw new TriageStop(failed.code, PUSH_STOP_REASONS[failed.code], {
+    throw new TriageStop(failed.code, PUSH_STOP_REASONS.get(failed.code), {
       expected: mergeSha,
       observed: readBack(),
       output: failed.failure,

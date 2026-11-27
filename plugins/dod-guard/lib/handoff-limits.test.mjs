@@ -1,13 +1,16 @@
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import assert from "node:assert/strict";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { test } from "node:test";
 import { bodyLimitProblems, HANDOFF_LIMITS, lineProblem } from "./handoff-limits.mjs";
 
+const LIMIT = 10;
 const ids = (prefix, count) => Array.from({ length: count }, (_, at) => ({ id: `${prefix}${at}`, contract: "AC-1" }));
 
 test("passes a body at its limits", () => {
   const input = { tasks: ids("T", HANDOFF_LIMITS.tasks), plannedAcceptanceMatrix: ids("R", HANDOFF_LIMITS.rows) };
   assert.deepEqual(bodyLimitProblems(input), []);
-  assert.equal(lineProblem("a line", "x".repeat(10), 10), null);
+  assert.equal(lineProblem("a line", "x".repeat(LIMIT), LIMIT), null);
 });
 
 test("names each count and id over its limit, and asks for a split, not a cut", () => {
@@ -23,7 +26,7 @@ test("names each count and id over its limit, and asks for a split, not a cut", 
     `planned row contract ${long} is longer than 16 characters`,
   ]);
   assert.equal(
-    lineProblem("a line", "x".repeat(11), 10),
+    lineProblem("a line", "x".repeat(LIMIT + 1), LIMIT),
     "a line is 11 characters, over the 10-character limit; write it shorter, do not cut it off",
   );
 });

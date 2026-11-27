@@ -5,9 +5,12 @@ import test from "node:test";
 import { TRIAGE_LIMITS } from "../../../../lib/handoff-limits.mjs";
 import { buildTriageRecord } from "./triage-record.mjs";
 
-const BASE = "b".repeat(40);
-const HEAD = "c".repeat(40);
-const MERGE = "d".repeat(40);
+const SHA_LENGTH = 40;
+// A refused line is named by its first 40 characters.
+const LINE_NAME_LENGTH = 40;
+const BASE = "b".repeat(SHA_LENGTH);
+const HEAD = "c".repeat(SHA_LENGTH);
+const MERGE = "d".repeat(SHA_LENGTH);
 
 test("states each basis once and lists each conflicted path on one line", () => {
   const { text } = buildTriageRecord({
@@ -76,6 +79,7 @@ test("records a stop with its decision and no judgement", () => {
 
 test("refuses a record with a line or a count over its limit, and cuts nothing", () => {
   const long = "x".repeat(TRIAGE_LIMITS.line);
+  const prefix = "- B1: ";
   const record = buildTriageRecord({
     answers: Array.from({ length: TRIAGE_LIMITS.answers + 1 }, (_, at) => ({
       citation: "a:1",
@@ -90,6 +94,6 @@ test("refuses a record with a line or a count over its limit, and cuts nothing",
   assert.equal(record.text, undefined);
   assert.deepEqual(record.problems, [
     `the record has ${TRIAGE_LIMITS.answers + 1} investigator answers, over the ${TRIAGE_LIMITS.answers} it holds; keep only what the decisions rest on`,
-    `the record line "- B1: ${"x".repeat(34)}" is ${TRIAGE_LIMITS.line + 6} characters, over the ${TRIAGE_LIMITS.line}-character limit; write it shorter, do not cut it off`,
+    `the record line "${`${prefix}${long}`.slice(0, LINE_NAME_LENGTH)}" is ${prefix.length + long.length} characters, over the ${TRIAGE_LIMITS.line}-character limit; write it shorter, do not cut it off`,
   ]);
 });

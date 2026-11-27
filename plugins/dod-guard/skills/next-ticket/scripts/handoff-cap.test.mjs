@@ -13,7 +13,10 @@ import { commentText } from "./handoff-comment-text.mjs";
 // refused, every row still open so the remainder names them all, a carried
 // checkpoint at its limit, and the largest conflict triage record.
 
-const HEAD = "f".repeat(40);
+const SHA_LENGTH = 40;
+const HEAD = "f".repeat(SHA_LENGTH);
+// The cap is a round number: the largest comment rounded up to this.
+const CAP_STEP = 1000;
 
 function id(prefix, at) {
   return `${prefix}${at}`.padEnd(HANDOFF_LIMITS.id, "x");
@@ -48,7 +51,7 @@ function many(count, make) {
 }
 
 function largestTriage() {
-  const line = TRIAGE_LIMITS.line;
+  const { line } = TRIAGE_LIMITS;
   const path = (at) => `${at}`.padEnd(TRIAGE_LIMITS.path, "p");
   const conflictLine = (at, questions) => `- \`${path(at)}\` (source): take-branch, basis B1, questions ${questions}`;
   const stop = { stop: "unresolvable_paths" };
@@ -103,5 +106,5 @@ test("the largest handoff comment the limits allow fits the handoff cap", () => 
   );
   // The cap is the largest comment rounded up to the next thousand, so a limit
   // that grows without the cap fails here, and so does a cap left far above it.
-  assert.equal(CAPS.handoff, Math.ceil(largest.length / 1000) * 1000);
+  assert.equal(CAPS.handoff, Math.ceil(largest.length / CAP_STEP) * CAP_STEP);
 });

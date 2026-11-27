@@ -30,7 +30,10 @@ function matrixHeadingCount(text) {
 }
 
 function rowLabel(row, at) {
-  return typeof row?.id === "string" ? `row ${row.id}` : `row ${at + 1}`;
+  if (typeof row?.id === "string") {
+    return `row ${row.id}`;
+  }
+  return `row ${at + 1}`;
 }
 
 function carryProblems(label, carry) {
@@ -55,8 +58,11 @@ function compactRowProblems(row, at) {
   const foreign = Object.keys(row)
     .filter((key) => !ROW_FIELDS.has(key))
     .map((key) => `acceptance matrix ${label} holds ${key}, which the issue body or the matrix head owns`);
-  const unnamed = typeof row.id === "string" && row.id !== "" ? [] : [`acceptance matrix ${label} needs an id`];
-  return [...unnamed, ...foreign, ...carryProblems(label, row.carryForward)];
+  const problems = [...foreign, ...carryProblems(label, row.carryForward)];
+  if (typeof row.id !== "string" || row.id === "") {
+    problems.unshift(`acceptance matrix ${label} needs an id`);
+  }
+  return problems;
 }
 
 function compactProblems(value) {
@@ -159,7 +165,10 @@ function joinPlannedRows(read, plannedRows) {
   if (!read.compact) {
     return { rows: read.rows, problems: [] };
   }
-  const planned = Array.isArray(plannedRows) ? plannedRows : [];
+  const planned = [];
+  if (Array.isArray(plannedRows)) {
+    planned.push(...plannedRows);
+  }
   const byId = new Map(planned.map((row) => [row.id, row]));
   const seen = new Set();
   const problems = read.rows.flatMap((row) => rowProblems(row, byId.get(row.id), seen));
@@ -170,7 +179,10 @@ function joinPlannedRows(read, plannedRows) {
   }
   const rows = read.rows.map((row) => {
     const plannedRow = byId.get(row.id);
-    return plannedRow === undefined ? row : joinedRow(row, plannedRow);
+    if (plannedRow === undefined) {
+      return row;
+    }
+    return joinedRow(row, plannedRow);
   });
   return { rows, problems };
 }

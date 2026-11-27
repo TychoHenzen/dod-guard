@@ -47,7 +47,7 @@ function checkpointProblems({ handoff, headSha, required }) {
   if (read.error) return [read.error];
   const { section } = checkpointSection(handoff);
   const size = lineProblem("the ## Preflight checkpoint section", section, HANDOFF_LIMITS.checkpoint);
-  return [...(size ? [size] : []), ...checkpointRemainder(read.rows, headSha)];
+  return [size, ...checkpointRemainder(read.rows, headSha)].filter(Boolean);
 }
 
 // The post-push input: the observed rows, joined to their planned rows, and the
