@@ -13,8 +13,8 @@ Read `standards/working-defaults.md` and `standards/github-request-discipline.md
 - [next-ticket](../next-ticket/SKILL.md): Todo, or In Progress with no pushed handoff.
 - [submit-draft-pr](../submit-draft-pr/SKILL.md): In Progress, pushed handoff, no converged draft PR.
 - [review-pr](../review-pr/SKILL.md): converged draft PR, no review.
-- [fix-pr-review](../fix-pr-review/SKILL.md): unresolved BLOCKER or MAJOR.
-- [complete-pr](../complete-pr/SKILL.md): reviewed, no unresolved BLOCKER or MAJOR. MINOR never blocks.
+- [fix-pr-review](../fix-pr-review/SKILL.md): reviewed, and any review thread unresolved, whatever its author or severity. Its finding ids are every unresolved thread's `GH-<id>`, the id of the thread's first comment.
+- [complete-pr](../complete-pr/SKILL.md): reviewed, no unresolved review thread. complete-pr refuses to merge while any thread is open.
 - [add-backlog-idea](../add-backlog-idea/SKILL.md): work has no issue, or today's friction log is missing.
 
 ## Tool availability
