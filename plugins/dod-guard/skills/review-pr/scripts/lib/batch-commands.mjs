@@ -68,7 +68,7 @@ function answers(args) {
   const files = new Map(
     batchDocuments(plan, args.head).map(({ batch }) => [batch, loadAnswerFile(args["answers-dir"], batch)]),
   );
-  const merged = mergeAnswers({ plan, headSha: args.head, files, cites: citationCheck(args.root) });
+  const merged = mergeAnswers({ plan, headSha: args.head, files, cites: citationCheck(args.root, args.facts) });
   writeJson(args.out, merged);
   const count = (status) => merged.answers.filter((answer) => answer.status === status).length;
   return { out: args.out, answered: count("answered"), unanswered: count("unanswered") };
@@ -79,7 +79,7 @@ function answers(args) {
 function pending(args) {
   const plan = planArray(args.plan);
   const hash = planHash(plan);
-  const cites = citationCheck(args.root);
+  const cites = citationCheck(args.root, args.facts);
   const states = batchDocuments(plan, args.head).map((batch) => {
     const doc = loadAnswerFile(args["answers-dir"], batch.batch);
     return { batch, problems: batchProblems({ batch, doc, hash, headSha: args.head, cites }) };

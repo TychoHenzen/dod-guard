@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readdirSync } from "node:fs";
+import { readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { pendingCli } from "./review-pending-cli.test-support.mjs";
@@ -14,6 +14,7 @@ const wrongHead = (doc) => ({ ...doc, headSha: "f".repeat(40) });
 const dropFirst = (doc) => ({ ...doc, answers: doc.answers.slice(1) });
 const gone = (doc) => ({ ...doc, answers: doc.answers.map((a, i) => (i === 0 ? { ...a, path: "gone.mjs" } : a)) });
 const missing = /^b01: answers file .* is missing$/;
+const OUTSIDE = /^b01: Q00: .* is outside the checkout$/;
 const CASES = [
   ["lists every batch when no answers exist", {}, [], BOTH, missing],
   ["lists every batch as done when all are answered", { b01: keep, b02: keep }, BOTH, [], /^$/],
@@ -61,4 +62,19 @@ test("pending runs with its flags and refuses a missing flag, a short head and a
     const result = run("pending", bad);
     assert.equal([result.status, result.stderr.startsWith("Usage:")].join(), "3,true", bad.join(" "));
   }
+});
+
+test("pending counts a batch citing the facts file as done only when --facts names it", (t) => {
+  const env = setup(t);
+  const facts = path.join(env.dir, "git-facts.txt");
+  writeFileSync(facts, "head 0a0a\n");
+  const citeFacts = ({ answers: [first, ...rest], ...doc }) => ({
+    ...doc,
+    answers: [{ ...first, path: facts }, ...rest],
+  });
+  place(env, { b01: citeFacts, b02: keep });
+  assert.deepEqual(pendingOf(env, env.answers, [`--facts=${facts}`]).done, BOTH);
+  const without = pendingOf(env);
+  assert.deepEqual([without.done, names(without.pending)], [["b02"], ["b01"]]);
+  assert.match(without.pending[0].problems[0], OUTSIDE);
 });
