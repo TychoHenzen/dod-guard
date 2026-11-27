@@ -41,63 +41,22 @@ test("a file with every violation dropped posts nothing and leaves the counts", 
 test("a file whose only high is dropped and a medium kept posts MINOR", () => {
   const { payload, recommendation } = build([KEEP, ...DROPS]);
   assert.equal(recommendation, "APPROVE");
-  const minor = `\`${FIX}:58\`\n**MINOR** quality-guard structural findings (1)\n\n`;
+  const minor = `\n- \`${FIX}:58\` 1 quality-guard finding: \`complexity\` x1`;
   assert.ok(payload.body.includes(minor), payload.body);
-  assert.ok(!payload.body.includes("line 72: line is 132 chars"), payload.body);
+  assert.ok(!payload.body.includes("line-length"), payload.body);
 });
 
-test("dropped violations are counted by file, rule, and cited answer inside a details block", () => {
-  const { body } = build([KEEP, ...DROPS]).payload;
-  const block = [
-    "<details>",
-    "<summary>Dropped scanner findings (2)</summary>",
-    "",
-    `**${UNICODE}**`,
-    "",
-    "- `file-length` (rule-misfire, R1) x1: S1",
-    "",
-    `**${FIX}**`,
-    "",
-    "- `line-length` (rule-misfire, D1) x1: S3",
-    "",
-    "**Cited questions**",
-    "",
-    "- R1: Does review-pr-reliability hold at the reviewed head?",
-    "- D1: Does review-pr-design hold at the reviewed head?",
-    "</details>",
-  ].join("\n");
-  assert.ok(body.includes(`</details>\n\n${block}`), body);
-});
-
-// Builds with a scan and plan of the caller's own, and the given rulings.
-const buildWith = (scanOverride, plan, rulings) =>
-  review([], { scan: scanOverride, plan, merge: { groups: [], scanner: rulings } }).payload.body;
-
-test("a dropped message stays out of the block, so its HTML cannot close it", () => {
+// A dropped finding is not a finding: the body names no id, rule, message, or
+// cited question of it, so a message holding HTML cannot reach the body either.
+test("a dropped violation stays out of the body", () => {
   const violations = scan.violations.map((violation) =>
     violation.line === 72 ? { ...violation, message: "<b>x</b> 132 chars" } : violation,
   );
-  const body = buildWith({ violations }, SCANNER_PLAN, [KEEP, ...DROPS]);
-  assert.ok(body.includes("(rule-misfire, D1) x1: S3"), body);
-  assert.ok(!body.includes("<b>x</b>"), body);
-});
-
-test("two findings citing one question list that question once", () => {
-  const plan = changeQuestions(SCANNER_PLAN, (question) =>
-    question.id === "D1" ? { ...question, scanner: ["S2", "S3"] } : question,
-  );
-  const rulings = [
-    { ids: ["S1"], status: "KEEP" },
-    { ids: ["S2", "S3"], status: "DROP", reason: "rule-misfire", answer: "D1" },
-  ];
-  const body = buildWith(scan, plan, rulings);
-  assert.ok(body.includes("<summary>Dropped scanner findings (2)</summary>"), body);
-  assert.equal(body.split("- D1: ").length - 1, 1, body);
-});
-
-test("nothing dropped means no dropped block", () => {
-  const { body } = build([{ ids: ["S1", "S2", "S3"], status: "KEEP" }]).payload;
-  assert.ok(!body.includes("Dropped scanner findings"), body);
+  const merge = { groups: [], scanner: [KEEP, ...DROPS] };
+  const { body } = review([], { scan: { violations }, plan: SCANNER_PLAN, merge }).payload;
+  for (const dropped of ["S1", "S3", "file-length", "line-length", "rule-misfire", "<b>", "Dropped", "Does review-pr"]) {
+    assert.ok(!body.includes(dropped), `${dropped} in ${body}`);
+  }
 });
 
 test("an unknown, duplicate, or missing S id is refused by id", () => {

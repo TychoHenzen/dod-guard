@@ -14,14 +14,15 @@ import { pbiJson } from "./lib/review-pr.test-support.mjs";
 
 const ONE_CRITERION = "## Acceptance criteria\n\n- [ ] AC-01 The review posts once\n";
 
-test("build writes a COMMENT payload with the slot block", () => {
+test("build writes a COMMENT payload and prints its body length", () => {
   withDir((dir) => {
     const paths = buildFlags(dir);
     const result = run(["build", ...buildArgs(paths)]);
     assert.equal(result.status, 0, result.stderr);
     const payload = JSON.parse(readFileSync(paths.out, "utf8"));
     assert.equal(payload.event, "COMMENT");
-    assert.ok(payload.body.includes("<summary>Review plan slots (3)</summary>"), payload.body);
+    assert.equal(JSON.parse(result.stdout).bodyLength, payload.body.length);
+    assert.ok(!payload.body.includes("Review plan slots"), payload.body);
   });
 });
 

@@ -7,22 +7,17 @@ import { findingsFixture } from "./review-pr.test-support.mjs";
 
 const { FIX, UNICODE, SUB_SLOT, PBI, PLAN, scan, question, review } = findingsFixture;
 
-test("the review body keeps the marker first and lists every slot in a collapsed block", () => {
+// The plan stays in the run's files: a body that restated it grew with the plan
+// and reached 117442 characters for 427 slots.
+test("the review body keeps the marker first and restates no slot or question", () => {
   const { payload } = review([], { scan });
   const lines = payload.body.split("\n");
   assert.match(lines[0], /^<!-- dod-guard:review-pr head=/);
   assert.equal(payload.event, "COMMENT");
-  assert.ok(lines.includes("<details>"));
-  assert.ok(lines.includes("<summary>Review plan slots (4)</summary>"));
-  assert.ok(lines.includes("</details>"));
-  assert.ok(lines.includes(`**file:${FIX}**`));
-  assert.ok(lines.includes("**file:docs/\u00fc.md**"));
-  assert.ok(lines.includes("**criterion:1**: AC-01 The review posts once"));
-  assert.ok(lines.includes(`**${SUB_SLOT}**: Child`));
-  const f1 = "- F1 review-pr-feature (verified): Does review-pr-feature hold at the reviewed head?";
-  assert.ok(lines.includes(f1));
-  assert.ok(lines.includes("- excluded for review-pr-hygiene: Same work as criterion:1"));
-  assert.ok(lines.indexOf("<details>") > lines.findIndex((line) => line.startsWith("Findings:")));
+  assert.ok(lines.includes("Findings: 0 BLOCKER, 1 MAJOR, 1 MINOR. Threads to fix: 1."));
+  for (const planText of ["<details>", "Review plan slots", "criterion:1", SUB_SLOT, "F1 ", "Does review-pr"]) {
+    assert.ok(!payload.body.includes(planText), planText);
+  }
 });
 
 test("the build regenerates the slots and refuses a plan that misses one", () => {
@@ -63,11 +58,11 @@ test("the build refuses a judge result missing a ruling for an assigned slot", (
   );
 });
 
-// The question caps keep a planned body far below the limit, so the guard is
-// proven on the body check itself.
-test("a body over the GitHub limit stops the build before posting", () => {
-  assert.throws(() => requirePostableBody("x".repeat(65_537), 4), /over the 65536-character limit, with 4 slots/);
-  assert.equal(requirePostableBody("x".repeat(65_536), 4).length, 65_536);
+// The template cannot reach the cap, so the guard is proven on the body check itself.
+test("a body over the review cap stops the build before posting", () => {
+  const over = /The review body is 8001 characters, over the 8000-character cap for reviewBody\. Nothing was posted\./;
+  assert.throws(() => requirePostableBody("x".repeat(8001)), over);
+  assert.equal(requirePostableBody("x".repeat(8000)).length, 8000);
 });
 
 test("an over-long question is refused before the body is built", () => {

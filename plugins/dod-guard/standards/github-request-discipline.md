@@ -145,6 +145,26 @@ from an earlier run.
 - The shared `skills/complete-pr/scripts/project-status.mjs` runner performs
   this resolution and readback without invoking Git or inspecting worktrees.
 
+## Short text
+
+The owner reads GitHub on a phone. Write every posted text short from the
+start; never write it long and then cut it.
+
+- Save each text you post (a comment, a reply, an issue or pull request body)
+  to a file and check it first:
+  `node <plugin-root>/lib/github-text-check.mjs --kind=<kind> --file=<path>`.
+  The kinds and their caps are `comment` 3000, `issueBody` 8000, `stepPlan`
+  6000, `prBody` 4000, `reviewBody` 8000, and `reviewComment` 2000 for a review
+  thread or a reply in one. Post only on exit 0. Exit 1 means nothing was
+  posted: write the text again shorter, never cut it off.
+- State each point once and cite `file:line` instead of quoting code. List
+  findings, decisions, and what changed. Leave out the plan you followed, the
+  checks that passed, and a transcript of the questions asked: a later step
+  that needs that detail reads it from the run's files or a linked file.
+- A script that writes GitHub text checks it with `lib/github-text.mjs`.
+- The `## Implementation handoff` comment is a machine-read record and has no
+  cap yet; keep its prose fields to one or two sentences each.
+
 ## Write plan
 
 - Prefer typed connector mutations. Otherwise use REST `gh api` for REST-capable

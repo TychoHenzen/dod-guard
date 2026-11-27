@@ -19,7 +19,6 @@ const REQUIRED = {
     "merge",
     "answers",
     "out",
-    "scanner-comments-out",
   ],
   label: ["review-id", "comments", "out"],
   report: ["review-id", "comments"],

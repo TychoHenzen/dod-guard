@@ -14,14 +14,13 @@ const FILE = "plugins/dod-guard/skills/next-ticket/scripts/handoff-proof.test.mj
 const HEAD = "0909".repeat(10);
 const SLOT_INPUTS = ["unified0.diff", "pbi.json", "sub-issues.json"];
 const INPUTS = ["scan.json", ...SLOT_INPUTS, "plan.json", "results.json", "answers.json"];
-const OUTPUTS = ["violations.json", "candidates.json", "payload.json", "scanner-comments.json"];
+const OUTPUTS = ["violations.json", "candidates.json", "payload.json"];
 const PLACEHOLDER = /<[^>]+>/;
 const FLAG_START = / (?=--)/;
 const REFUSED = /The merge pass output is refused; do not post: .*missing J id J2/;
 const MERGED_PROBLEM = /^\*\*MAJOR\*\* The parse-error case asserts the whole result/;
 const BOTH_LENSES = /Requirement: AC-1 \(review-pr-feature, review-pr-hygiene\)$/;
-const DROPPED_BLOCK = /Dropped scanner findings \(1\)/;
-const DROPPED_LINE = /\(rule-misfire, D1\) x1: S1/;
+const DROPPED = /Dropped|rule-misfire|S1/;
 
 const dirs = [];
 after(() => {
@@ -90,7 +89,7 @@ test("R9: the documented violations, candidates, and build lines post one #909 f
   assert.match(comments[0].body, BOTH_LENSES);
 });
 
-test("R10: the documented build line posts a review whose block lists a dropped scanner finding", () => {
+test("R10: the documented build line leaves a dropped scanner finding out of the review", () => {
   const { values } = scratch();
   const dropFile = path.join(FIXTURE, "merge-drop.json");
   succeeds(documented("candidates", values));
@@ -98,8 +97,8 @@ test("R10: the documented build line posts a review whose block lists a dropped 
   assert.equal(built.recommendation, "REQUEST_CHANGES");
   assert.deepEqual(built.counts, { BLOCKER: 0, MAJOR: 1, MINOR: 0 });
   const { body } = readJson(values.get("<payload.json>"));
-  assert.match(body, DROPPED_BLOCK);
-  assert.match(body, DROPPED_LINE);
+  assert.equal(built.bodyLength, body.length);
+  assert.doesNotMatch(body, DROPPED);
 });
 
 test("a stale answers file stops the documented candidates line", () => {

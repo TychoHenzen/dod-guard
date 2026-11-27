@@ -26,8 +26,9 @@ test("parses the task id, File lines, and proxy checks of each step plan heading
       proxies: [{ pattern: "alpha|beta", scope: "lib" }],
       commit: "refactor: move a (#1)",
       errors: [],
+      size: 133,
     },
-    { task: "T2", files: ["lib/b.mjs"], proxies: [], commit: "", errors: [] },
+    { task: "T2", files: ["lib/b.mjs"], proxies: [], commit: "", errors: [], size: 33 },
   ]);
   assert.deepEqual(parseStepPlans("File: stray.mjs\nno heading here"), []);
 });
@@ -72,6 +73,27 @@ test("reports git only where a shell fence runs it, after a separator, and reads
   assert.deepEqual(plan.errors, [
     "step plan T1 runs git push; the worker never commits, so drop the step and put the message on " +
       "the plan's Commit line: cd repo && git push origin HEAD",
+  ]);
+});
+
+// A plan that copied a whole file or script in is the 46542-character comment
+// the cap exists for; the proof names the size so the refiner posts a new one.
+test("reports a plan over the step-plan cap and passes one at it", () => {
+  const plan = (task, size) => {
+    const head = `## Step plan: ${task}
+File: a.mjs
+Commit: fix: a (#1)
+`;
+    return head + "x".repeat(size - head.length);
+  };
+  const plans = parseStepPlans(`${plan("T1", 6000)}\n${plan("T2", 6001)}`);
+  assert.deepEqual(
+    plans.map(({ size }) => size),
+    [6000, 6001],
+  );
+  assert.deepEqual(proxyRemainder(plans), [
+    "step plan T2 is 6001 characters, over the 6000-character cap for stepPlan; " +
+      "post a shorter plan that gives code only as a signature, an assertion, or a short change",
   ]);
 });
 

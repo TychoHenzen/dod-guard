@@ -42,7 +42,6 @@ function buildFlags(dir) {
   return {
     ...inputs(dir),
     out: join(dir, "payload.json"),
-    comments: join(dir, "scanner-comments.json"),
     scan: write(dir, "scan.json", { violations: [] }),
     results: write(dir, "results.json", RESULTS),
     plan: write(dir, "plan.json", PLAN),
@@ -63,7 +62,6 @@ function buildArgs(paths) {
     `--merge=${paths.merge}`,
     `--answers=${paths.answers}`,
     `--out=${paths.out}`,
-    `--scanner-comments-out=${paths.comments}`,
   ];
 }
 

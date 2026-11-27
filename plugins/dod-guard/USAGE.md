@@ -358,12 +358,14 @@ to their lens. A standard-tier pass then merges findings that cite the same
 defect in one file and keeps or drops each scanner finding, citing a verified
 answer for every drop, and the build checks its output. The build refuses a
 plan or a set of rulings that leaves a slot empty. It posts one comment-only
-review, with every slot and its questions in a collapsed block. Each `BLOCKER`
-or `MAJOR` finding gets its own inline comment, edited after the post to end with
-its `GH-<id>`; kept scanner findings are grouped into one comment per changed
-file. `MINOR` findings are
-listed under "Minor notes" in the review body, with no `GH-<id>` and no reply
-needed. The recommendation is `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES`
+review that lists findings only, under 8000 characters however large the
+plan is: the plan, the answers, and the checks that passed stay in the run's
+files. Every `BLOCKER` gets an inline comment, and the worst `MAJOR` findings
+fill the rest of five; each comment is at most 2000 characters and is edited
+after the post to end with its `GH-<id>`. Kept scanner findings are grouped
+into one finding per changed file. The other findings get one line each in the body, at most 15,
+and a count of the rest. `MINOR` findings are listed under "Minor notes" in the
+review body, with no `GH-<id>` and no reply needed. The recommendation is `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES`
 for any `MAJOR`, and `APPROVE` when only `MINOR` findings or none remain.
 A file the pull request only trims gets its blocking comment on the
 nearest line the diff removes (side `LEFT`). If no diff line can hold a

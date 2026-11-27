@@ -82,12 +82,17 @@ function readLine(plan, line, fence) {
   }
 }
 
+// `size` counts the plan's characters from its heading on, one per line break,
+// so the refinement proof can hold a posted plan to its cap.
 function readInto(parse, line) {
   const heading = PLAN_HEADING.exec(line);
   if (heading) {
-    parse.plans.push({ task: heading[1], files: [], proxies: [], commit: "", errors: [] });
+    parse.plans.push({ task: heading[1], files: [], proxies: [], commit: "", errors: [], size: line.length });
     parse.fence = null;
     return;
+  }
+  if (parse.plans.length > 0) {
+    parse.plans.at(-1).size += line.length + 1;
   }
   const fence = FENCE.exec(line);
   if (fence) {

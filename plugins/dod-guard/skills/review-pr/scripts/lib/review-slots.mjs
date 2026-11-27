@@ -1,6 +1,6 @@
 import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
 import { API_REPOSITORY_URL, urlRepository } from "../../../../lib/repository-identity.mjs";
-import { canonicalLens, oneLine, requireEntryShape, requireQuestion } from "./plan-entry.mjs";
+import { canonicalLens, requireEntryShape, requireQuestion } from "./plan-entry.mjs";
 import { REVIEWERS } from "./reviewer-results.mjs";
 
 function isObject(value) {
@@ -96,11 +96,6 @@ function reviewSlots({ changedLines, pbi, subIssues }) {
   ];
 }
 
-// Text that contains HTML could close the details block early.
-function escapeHtml(value) {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-}
-
 function entryLenses(entry) {
   const lenses = entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
   return lenses.map(canonicalLens);
@@ -171,35 +166,6 @@ function requirePlan(plan, slots) {
   requireEveryLens(plan);
 }
 
-function slotHeading(item) {
-  const id = escapeHtml(item.slot);
-  return item.kind === "file" ? `**${id}**` : `**${id}**: ${escapeHtml(oneLine(item.text))}`;
-}
-
-function entryLines(entry) {
-  if (entry.excluded) {
-    const { lens, reason } = entry.excluded;
-    return [`- excluded for ${canonicalLens(lens)}: ${escapeHtml(oneLine(reason))}`];
-  }
-  return entry.questions.map((question) => {
-    const id = escapeHtml(oneLine(question.id));
-    const text = escapeHtml(oneLine(question.question));
-    return `- ${id} ${canonicalLens(question.lens)} (${question.status}): ${text}`;
-  });
-}
-
-// Lists every slot, in generated order, with its questions and statuses or its
-// exclusion. Call only after requirePlan.
-function slotsBlock(plan, slots) {
-  const bySlot = new Map(plan.map((entry) => [entry.slot, entry]));
-  const lines = ["<details>", `<summary>Review plan slots (${slots.length})</summary>`];
-  for (const item of slots) {
-    lines.push("", slotHeading(item), "", ...entryLines(bySlot.get(item.slot)));
-  }
-  lines.push("", "</details>");
-  return lines.join("\n");
-}
-
 // Maps each lens to the slots its judge must rule on: a slot with a question of
 // that lens, or an exclusion that names it. Call only after requirePlan.
 function slotsByLens(plan) {
@@ -212,4 +178,4 @@ function slotsByLens(plan) {
   return byLens;
 }
 
-export { pbiIssue, requirePlan, reviewSlots, slotsBlock, slotsByLens, subIssueList };
+export { pbiIssue, requirePlan, reviewSlots, slotsByLens, subIssueList };

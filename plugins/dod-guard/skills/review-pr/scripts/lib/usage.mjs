@@ -20,7 +20,6 @@ const USAGE = [
   "  review-findings.mjs build --head=<sha> --scan=<scan.json> --diff=<unified0.diff>",
   "    --pbi=<issue.json> --sub-issues=<sub-issues.json> --plan=<plan.json>",
   "    --results=<results.json> --merge=<merge.json> --answers=<answers.json> --out=<payload.json>",
-  "    --scanner-comments-out=<scanner-comments.json>",
   "  review-findings.mjs label --review-id=<id> --comments=<review-comments.json> --out=<edits.json>",
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
 ].join("\n");
