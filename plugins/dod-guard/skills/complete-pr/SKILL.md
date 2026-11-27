@@ -18,8 +18,8 @@ Apply `standards/working-defaults.md` and `standards/github-request-discipline.m
 3. Run `gh auth status` and require `repo` access.
 4. Resolve the repository and default branch with the GitHub MCP repository operation, or `gh repo view --json nameWithOwner,defaultBranchRef,url` without MCP.
 5. Resolve the single open PR for the current branch, or use the number given. Accept a draft or ready PR only if its head is in this repository and its base is the default branch.
-6. Read the PR, linked issue, review result, and latest verification evidence. Stop if the PR no longer represents the reviewed and verified code.
-7. If pending changes clearly belong to the accepted PBI, stage only those reviewed paths, commit, push, and reread head and evidence. Then stop unless the new head has fresh review and verification evidence.
+6. Read the PR, linked issue, review result, and latest verification evidence. Stop if the PR no longer carries the accepted PBI's work or its head lacks verification evidence. A head that moved after the one review still counts as reviewed (step 7).
+7. If pending changes clearly belong to the accepted PBI, stage only those reviewed paths, commit, push, and reread head and evidence. Then stop unless the new head has fresh verification evidence. A pull request gets one review: a head that moved after it (a review fix, a check repair, a conflict merge, a branch sync) is still the reviewed code and needs fresh checks, never a fresh review.
 
 ## Preflight checkpoint
 
@@ -100,7 +100,7 @@ A dry run deletes and switches nothing.
 
 When the helper stops with `merge_conflict` on the trusted PBI head, triage per `standards/conflict-triage.md`, which owns the preconditions, stages, stop rules, and record.
 
-- After a verified push, end with `conflict-triaged` and do not merge. The new head needs `dod-guard:submit-draft-pr` convergence and `dod-guard:review-pr` before this skill runs again.
+- After a verified push, end with `conflict-triaged` and do not merge. The new head needs `dod-guard:submit-draft-pr` convergence before this skill runs again, and no second review.
 - If the triage stops, report it and leave the head unchanged.
 - On `base_stale`, fetch the default branch again if the fetch before `start` may be old, then refresh the base with `gh pr edit <number> --base <default branch>` as `standards/conflict-triage.md` says, then start the triage again. On `default_tip_unknown`, fetch the default branch first.
 - A run on the cheap model must not triage. It reports the stop with trusted head and PR number and leaves the head unchanged. Its dispatcher runs the triage.
