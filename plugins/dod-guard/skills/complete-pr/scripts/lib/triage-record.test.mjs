@@ -78,22 +78,22 @@ test("records a stop with its decision and no judgement", () => {
 });
 
 test("refuses a record with a line or a count over its limit, and cuts nothing", () => {
-  const long = "x".repeat(TRIAGE_LIMITS.line);
-  const prefix = "- B1: ";
+  const { answers, line } = TRIAGE_LIMITS;
+  const long = "x".repeat(line);
+  const recordLine = `- B1: ${long}`;
   const record = buildTriageRecord({
-    answers: Array.from({ length: TRIAGE_LIMITS.answers + 1 }, (_, at) => ({
-      citation: "a:1",
-      fact: "f",
-      id: `Q${at}`,
-    })),
+    answers: Array.from({ length: answers + 1 }, (_, at) => ({ citation: "a:1", fact: "f", id: `Q${at}` })),
     bases: [{ id: "B1", text: long }],
     recordedBase: BASE,
     trustedHead: HEAD,
   });
   assert.equal(record.ok, false);
   assert.equal(record.text, undefined);
+  const tooMany = `the record has ${answers + 1} investigator answers, over the ${answers} it holds`;
+  const name = recordLine.slice(0, LINE_NAME_LENGTH);
+  const tooLong = `the record line "${name}" is ${recordLine.length} characters, over the ${line}-character limit`;
   assert.deepEqual(record.problems, [
-    `the record has ${TRIAGE_LIMITS.answers + 1} investigator answers, over the ${TRIAGE_LIMITS.answers} it holds; keep only what the decisions rest on`,
-    `the record line "${`${prefix}${long}`.slice(0, LINE_NAME_LENGTH)}" is ${prefix.length + long.length} characters, over the ${TRIAGE_LIMITS.line}-character limit; write it shorter, do not cut it off`,
+    `${tooMany}; keep only what the decisions rest on`,
+    `${tooLong}; write it shorter, do not cut it off`,
   ]);
 });

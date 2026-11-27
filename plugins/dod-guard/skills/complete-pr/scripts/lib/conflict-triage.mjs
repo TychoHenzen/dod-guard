@@ -34,6 +34,9 @@ const PUSH_STOP_REASONS = new Map([
   ["push_failed", "The push failed, and its one retry failed too."],
   ["push_rejected", "The remote rejected the push."],
 ]);
+const OVERSIZED_DECISION =
+  `Merge the default branch by hand; a triage takes ${TRIAGE_LIMITS.conflicts} paths ` +
+  `of ${TRIAGE_LIMITS.path} characters at most.`;
 const FORBIDDEN_ARGUMENTS = new Set([
   "--force",
   "-f",
@@ -377,14 +380,15 @@ export function checkRegeneration(git, { generators = [], expectClean = false })
   const changed = parseStatus(git(["status", "--porcelain=v1", "-z", "--untracked-files=all"]).stdout)
     .filter((entry) => entry.code[1] !== " ")
     .map((entry) => entry.path);
-  const problems = [];
-  for (const path of changed) {
+  const problems = changed.flatMap((path) => {
     if (expectClean) {
-      problems.push({ path, problem: "the generator changed this path again (drift)" });
-    } else if (!findGenerator(path, generators)) {
-      problems.push({ path, problem: "the generator changed a path it does not declare" });
+      return [{ path, problem: "the generator changed this path again (drift)" }];
     }
-  }
+    if (findGenerator(path, generators)) {
+      return [];
+    }
+    return [{ path, problem: "the generator changed a path it does not declare" }];
+  });
   return { generatedPaths: changed, ok: problems.length === 0, problems };
 }
 
@@ -413,7 +417,7 @@ function oversizedStop(git, listed, { recordedBase, trustedHead }) {
     "The merge has more conflicted paths, or a longer one, than a triage takes.",
     {
       count: listed.length,
-      decisionNeeded: `Merge the default branch by hand; a triage takes ${TRIAGE_LIMITS.conflicts} paths of ${TRIAGE_LIMITS.path} characters at most.`,
+      decisionNeeded: OVERSIZED_DECISION,
       longPaths: long,
       merge: abortOwnMerge(git, recordedBase),
       recordedBase,

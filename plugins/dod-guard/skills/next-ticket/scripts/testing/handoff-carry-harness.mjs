@@ -39,7 +39,7 @@ async function withRepo(use) {
   }
 }
 
-// The shared observed evidence, with the carryForward on R1.
+// R1 is the row every carry-forward case moves, so the other rows stay plainly observed.
 function evidenceFor(carryForward) {
   const evidence = observedEvidence();
   if (carryForward !== undefined) {

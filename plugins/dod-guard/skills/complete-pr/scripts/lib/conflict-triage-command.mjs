@@ -42,14 +42,13 @@ function readJsonIfSet(path) {
 }
 
 // The judge's decisions file states each basis once and cites it by id from
-// each decision: { "bases": [{ id, text }], "decisions": [{ path, decision,
-// basis, questionIds }] }. An unset file is no judgement yet.
+// each decision. An unset file is no judgement yet.
+const JUDGEMENT_SHAPE = "bases [{ id, text }] and decisions [{ path, decision, basis, questionIds }]";
+
 function readJudgement(path) {
   const judged = readJsonIfSet(path) ?? { bases: [], decisions: [] };
   if (!(judged && typeof judged === "object" && Array.isArray(judged.bases) && Array.isArray(judged.decisions))) {
-    throw new UsageError(
-      "--decisions must name a JSON object of bases [{ id, text }] and decisions [{ path, decision, basis, questionIds }].",
-    );
+    throw new UsageError(`--decisions must name a JSON object of ${JUDGEMENT_SHAPE}.`);
   }
   return { bases: judged.bases, decisions: judged.decisions };
 }

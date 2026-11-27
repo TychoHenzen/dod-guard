@@ -25,7 +25,7 @@ test("finalization exits 2 on an ordinary-path body and names every missing reco
   );
 });
 
-test("finalization exits 2 and names a matrix block that is missing, not JSON, or not either matrix shape", async () => {
+test("finalization exits 2 and names a matrix block that is missing, not JSON, or neither matrix shape", async () => {
   const section = (block) => `## Implementation handoff\n\n## Acceptance matrix\n\n${block}\n`;
   const fenced = (json) => section(`${FENCE}json\n${json}\n${FENCE}`);
   const cases = [
