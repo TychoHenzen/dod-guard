@@ -61,12 +61,11 @@ const COMMANDS = {
       ...pbiInputs(args),
     });
     writeFileSync(args.out, JSON.stringify(review.payload));
-    writeFileSync(args["scanner-comments-out"], JSON.stringify(review.scannerComments));
     return {
       recommendation: review.recommendation,
       counts: review.counts,
       inline: review.payload.comments.length,
-      scannerComments: review.scannerComments.length,
+      bodyLength: review.payload.body.length,
       payload: args.out,
     };
   },

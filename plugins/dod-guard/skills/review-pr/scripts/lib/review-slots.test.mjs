@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { pbiJson, QUOTED_PATH_HUNK, REPO_URL } from "./review-pr.test-support.mjs";
-import { pbiIssue, requirePlan, reviewSlots, slotsBlock, slotsByLens, subIssueList } from "./review-slots.mjs";
+import { pbiIssue, requirePlan, reviewSlots, slotsByLens, subIssueList } from "./review-slots.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
 const DIFF = [
@@ -330,31 +330,6 @@ test("a question of 240 characters is accepted", () => {
   const plan = PLAN();
   plan[1].questions[0].question = "x".repeat(240);
   assert.doesNotThrow(() => requirePlan(plan, SLOTS));
-});
-
-test("slotsBlock lists every slot with its questions or exclusion, escaped", () => {
-  const plan = PLAN();
-  plan[1].questions[0].status = "unanswered";
-  plan[1].questions[0].question = "Is <details> text\nescaped?";
-  assert.deepEqual(slotsBlock(plan, SLOTS).split("\n"), [
-    "<details>",
-    "<summary>Review plan slots (3)</summary>",
-    "",
-    "**file:src/a.mjs**",
-    "",
-    "- F1 review-pr-feature (verified): What holds?",
-    "- D1 review-pr-design (verified): What holds?",
-    "",
-    "**criterion:1**: AC-01 &lt;b&gt;bold&lt;/b&gt; wrapped",
-    "",
-    "- R1 review-pr-reliability (unanswered): Is &lt;details&gt; text escaped?",
-    "",
-    "**sub-issue:o/r#5**: Child",
-    "",
-    "- excluded for review-pr-hygiene: Same work as criterion:1",
-    "",
-    "</details>",
-  ]);
 });
 
 test("slotsByLens assigns an excluded slot to its exclusion's lens and a slot to every lens it asks", () => {

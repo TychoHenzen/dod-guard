@@ -73,6 +73,8 @@ Write each issue body with these parts:
 - `## Context`: every mapped fact, rationale, example, constraint, and decision for this feature.
 - `## Open questions`: include this only when decisions are still unresolved.
 
+Keep each body under 8000 characters and state each fact once. Save it and run `node <plugin-root>/lib/github-text-check.mjs --kind=issueBody --file=<path>` before creating the issue; on exit 1 write it again shorter.
+
 ## Ask one batched round when a user is present
 
 Run this round only when a person invoked this skill directly in an interactive session and the supplied text does not let you state a feature's outcome or the split. The unresolved remainder from "Place every detail" joins this round.

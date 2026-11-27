@@ -7,8 +7,14 @@ const HEX16 = /^[0-9a-f]{16}$/;
 
 test("batches writes one stamped file per batch", () => {
   const dir = scratch();
-  const { planHash, batches } = cut(dir);
+  const { planHash, batches, body, comment } = cut(dir);
   assert.match(planHash, HEX16);
+  // The largest body the review can post is known before any investigator runs.
+  assert.equal(body.cap, 8000);
+  assert.ok(body.bound > 0 && body.bound <= body.cap, JSON.stringify(body));
+  // So is the largest inline comment.
+  assert.equal(comment.cap, 2000);
+  assert.ok(comment.bound > 0 && comment.bound <= comment.cap, JSON.stringify(comment));
   assert.ok(batches.length > 0);
   for (const { file, batch } of batches) {
     const doc = readJson(file);

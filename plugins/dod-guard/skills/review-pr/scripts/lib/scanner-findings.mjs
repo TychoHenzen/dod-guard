@@ -1,5 +1,5 @@
-import { groupBy } from "./group-by.mjs";
-import { SHOWN, scannerBody } from "./scanner-summary.mjs";
+import { clip } from "./finding-text.mjs";
+import { MESSAGE_SHOWN, scannerBody, scannerHeadline } from "./scanner-summary.mjs";
 
 // One file's kept scanner violations become one finding. A violation that
 // `scan --base` marked existing was in the code before the pull request, so it
@@ -25,7 +25,8 @@ function tagNew(violation) {
   if (isExisting(violation)) {
     return violation;
   }
-  return { ...violation, message: `${violation.message}${NEW_TAG}` };
+  // The message is clipped first, so the tag survives the body's own clip.
+  return { ...violation, message: `${clip(violation.message, MESSAGE_SHOWN - NEW_TAG.length)}${NEW_TAG}` };
 }
 
 // In a group that mixes both, each finding the pull request added says so, so
@@ -55,14 +56,26 @@ function preexistingNote(violations) {
   return "These findings were already in the code before this PR, so they are minor notes.";
 }
 
-// The note goes under the headline, so a deferred group's one-line form, which
-// keeps only the headline, stays as it was.
+// The note goes under the thread's first line, which names the severity and count.
 function withNote(body, note) {
   if (note === null) {
     return body;
   }
   const [headline, ...rest] = body.split("\n");
   return [headline, "", note, ...rest].join("\n");
+}
+
+// The body line keeps only the headline, so it says why a high finding is a
+// minor note.
+function existingSuffix(violations) {
+  const existing = violations.filter(isExisting).length;
+  if (existing === 0) {
+    return "";
+  }
+  if (existing === violations.length) {
+    return " (all already in the code before this PR)";
+  }
+  return ` (${existing} already in the code before this PR)`;
 }
 
 function scannerFinding(file, violations) {
@@ -72,16 +85,10 @@ function scannerFinding(file, violations) {
     severity,
     file,
     line: sorted[0].line,
+    headline: `${scannerHeadline(sorted)}${existingSuffix(sorted)}`,
     body: withNote(scannerBody(severity, taggedNew(sorted)), preexistingNote(sorted)),
     scanner: true,
-    truncated: sorted.length > SHOWN,
   };
 }
 
-// The full scanner list carries the same tags as the group bodies, so a new
-// finding past the first SHOWN of its group can still be told apart there.
-function taggedGroups(kept) {
-  return new Map([...groupBy(kept, "file")].map(([file, group]) => [file, taggedNew(group)]));
-}
-
-export { scannerFinding, taggedGroups };
+export { scannerFinding };

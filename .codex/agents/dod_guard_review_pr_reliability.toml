@@ -41,6 +41,12 @@ exactly `BLOCKER`, `MAJOR`, or `MINOR`. Each finding must contain `slot`,
 `severity`, `file`, `line`, `problem`, `impact`, `requirement`, `correction`,
 `rootCause`, and `evidence`.
 `slot` is the id of one slot assigned to this lens.
+Write each field short and say each point once: `problem` is one sentence of
+at most 200 characters, `impact`, `correction`, and `rootCause` at most 300
+each, `requirement` at most 200, and `evidence` at most 400, citing
+`file:line` instead of quoting code. The review clips any field past its
+length, so put the point first. A ruling's `evidence` is one or two
+sentences.
 Cite the file and a final-state
 line as an integer. Prefer a line this PR changed. When the defect sits on a
 line the PR did not change, cite that real line anyway; the review posts the

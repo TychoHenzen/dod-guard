@@ -3,6 +3,12 @@
 
 const labelOf = (comment) => `GH-${comment.id}`;
 
+// A comment as it reads after the id edit, with the widest id a comment can
+// have, so a size check made before the post also holds after the edit.
+function widestLabelled(body) {
+  return `${body.trimEnd()}\n\n${labelOf({ id: Number.MAX_SAFE_INTEGER })}`;
+}
+
 function lastLine(body) {
   return body.trimEnd().split("\n").at(-1);
 }
@@ -15,4 +21,4 @@ function visibleIdEdits(reviewId, reviewComments) {
     .map((comment) => ({ id: comment.id, body: `${comment.body.trimEnd()}\n\n${labelOf(comment)}` }));
 }
 
-export { visibleIdEdits };
+export { visibleIdEdits, widestLabelled };

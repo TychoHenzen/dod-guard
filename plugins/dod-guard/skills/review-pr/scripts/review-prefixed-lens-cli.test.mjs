@@ -20,15 +20,19 @@ function withPlan(dir, plan) {
   return { ...base, plan: write(dir, "plan.json", plan), answers };
 }
 
-test("build posts a plan whose lenses carry the dod-guard: prefix and lists the bare lens names", () => {
-  withDir((dir) => {
-    const paths = withPlan(dir, relabel("dod-guard:"));
+function builtBody(plan) {
+  return withDir((dir) => {
+    const paths = withPlan(dir, plan);
     const result = run(["build", ...buildArgs(paths)]);
     assert.equal(result.status, 0, result.stderr);
-    const { body } = JSON.parse(readFileSync(paths.out, "utf8"));
-    assert.ok(body.includes("- F1 review-pr-feature (verified): Does review-pr-feature hold?"), body);
-    assert.equal(body.includes("- F1 dod-guard:"), false);
+    return JSON.parse(readFileSync(paths.out, "utf8")).body;
   });
+}
+
+test("build posts a plan whose lenses carry the dod-guard: prefix as it posts the bare plan", () => {
+  const body = builtBody(relabel("dod-guard:"));
+  assert.equal(body, builtBody(PLAN));
+  assert.equal(body.includes("dod-guard:review-pr-"), false);
 });
 
 test("build still refuses a lens with another prefix and writes no payload", () => {

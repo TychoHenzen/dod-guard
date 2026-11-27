@@ -1,3 +1,4 @@
+import { field } from "./finding-text.mjs";
 import { REVIEWERS, SEVERITY_RANK } from "./reviewer-results.mjs";
 
 function memberProblem(id, byId, seen) {
@@ -64,18 +65,20 @@ function highestSeverity(members) {
 function mergedFinding(members, representative) {
   const severity = highestSeverity(members);
   const reviewers = REVIEWERS.filter((name) => members.some((member) => member.reviewer === name));
+  const problem = field(representative, "problem");
   return {
     severity,
     file: representative.file,
     line: representative.line,
     reviewers,
+    headline: problem,
     body: [
-      `**${severity}** ${representative.problem}`,
+      `**${severity}** ${problem}`,
       "",
-      `Impact: ${representative.impact}`,
-      `Correction: ${representative.correction}`,
-      `Evidence: ${representative.evidence}`,
-      `Requirement: ${representative.requirement} (${reviewers.join(", ")})`,
+      `Impact: ${field(representative, "impact")}`,
+      `Correction: ${field(representative, "correction")}`,
+      `Evidence: ${field(representative, "evidence")}`,
+      `Requirement: ${field(representative, "requirement")} (${reviewers.join(", ")})`,
     ].join("\n"),
   };
 }

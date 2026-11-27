@@ -2,11 +2,14 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import { join } from "node:path";
+import { CAPS } from "../../../../lib/github-text.mjs";
 import { readJsonFile } from "../../../../lib/read-text.mjs";
 import { batchProblems } from "./batch-problems.mjs";
 import { citationCheck } from "./citation-check.mjs";
+import { commentBound } from "./comment-bound.mjs";
 import { requireDraftPlan } from "./draft-plan.mjs";
 import { batchDocuments, mergeAnswers, planHash } from "./review-batches.mjs";
+import { bodyBound } from "./review-body.mjs";
 
 function planArray(path) {
   const plan = readJsonFile(path);
@@ -20,19 +23,30 @@ function writeJson(path, value) {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function sizeBound(what, bound, cap) {
+  if (bound > cap) {
+    throw new Error(`The review's ${what} can reach ${bound} characters, over its ${cap}-character cap`);
+  }
+  return { bound, cap };
+}
+
 // Cuts the saved plan into the batch files the investigators read, after the
 // same shape check the build applies, so a malformed plan fails before any
-// investigator runs.
+// investigator runs. It also reports the largest body and the largest inline
+// comment the review can post, which no plan size changes, so a review that
+// would not fit stops here.
 function batches(args) {
   const plan = planArray(args.plan);
   requireDraftPlan(plan);
+  const body = sizeBound("body", bodyBound(), CAPS.reviewBody);
+  const comment = sizeBound("inline comment", commentBound(), CAPS.reviewComment);
   mkdirSync(args["out-dir"], { recursive: true });
   const written = batchDocuments(plan, args.head).map((doc) => {
     const file = join(args["out-dir"], `${doc.batch}.json`);
     writeJson(file, doc);
     return { batch: doc.batch, file, questions: doc.questions.length };
   });
-  return { planHash: planHash(plan), batches: written };
+  return { planHash: planHash(plan), batches: written, body, comment };
 }
 
 function loadAnswerFile(dir, batch) {

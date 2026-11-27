@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
+import { CAPS } from "../../../../lib/github-text.mjs";
 import { scannerReview } from "./scanner-review.test-support.mjs";
 
 // PR #933: a line the PR added at the reviewed head was 121 characters long.
@@ -63,7 +64,7 @@ function legacyViolations(files) {
   }));
 }
 
-test("370 dropped violations across 14 files build a body under 65536 characters", () => {
+test("370 dropped violations across 14 files are neither counted nor listed", () => {
   const files = legacyFiles();
   const drop = (ids, index) => {
     const reason = REASONS[index % REASONS.length];
@@ -73,13 +74,14 @@ test("370 dropped violations across 14 files build a body under 65536 characters
   const { payload, counts } = scannerReview({ files, line: 10, violations, rule: drop });
   assert.deepEqual(counts, { BLOCKER: 0, MAJOR: 0, MINOR: 0 });
   assert.equal(payload.comments.length, 0);
-  assert.ok(payload.body.includes("<summary>Dropped scanner findings (370)</summary>"));
-  assert.ok(payload.body.length < 65_536, `body is ${payload.body.length} characters`);
+  assert.ok(!payload.body.includes("Dropped"), payload.body);
+  assert.ok(!payload.body.includes("###"), payload.body);
 });
 
 // Past PR 48 scale: there the dropped block alone was 70713 characters and the
-// 98334-character body was refused. Each file's question cites its own S ids.
-test("5000 dropped violations across 200 files still build a postable body", () => {
+// 98334-character body was refused. A dropped finding is not a finding, so the
+// body never names it. Each file's question cites its own S ids.
+test("5000 dropped violations across 200 files leave a body under the review cap", () => {
   const files = Array.from({ length: 200 }, (_, index) => `src/Game/Model/Some/Long/Path/Component-${index}.cs`);
   const violations = Array.from({ length: 5000 }, (_, index) => ({
     file: files[index % files.length],
@@ -90,6 +92,6 @@ test("5000 dropped violations across 200 files still build a postable body", () 
   }));
   const drop = (ids, index) => ({ ids, status: "DROP", reason: "rule-misfire", answer: `Q${index + 1}` });
   const { payload } = scannerReview({ files, line: 10, violations, rule: drop });
-  assert.ok(payload.body.includes("<summary>Dropped scanner findings (5000)</summary>"));
-  assert.ok(payload.body.length < 65_536, `body is ${payload.body.length} characters`);
+  assert.ok(!payload.body.includes("Dropped"), payload.body);
+  assert.ok(payload.body.length <= CAPS.reviewBody, `body is ${payload.body.length} characters`);
 });

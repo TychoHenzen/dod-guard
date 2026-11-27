@@ -12,15 +12,20 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { scannerCandidates } from "./finding-ids.mjs";
 import { gateModules, markPreexisting } from "./scan-baseline.mjs";
+import { scannerFinding } from "./scanner-findings.mjs";
 import { scannerReview } from "./scanner-review.test-support.mjs";
-import { SHOWN } from "./scanner-summary.mjs";
+
+// A thread lists this many violations in full before it counts the rest.
+const SHOWN = 5;
 
 // The repository's own quality-guard, laid out as the installed plugin is, so a
 // rename of the gate modules fails this test instead of a live review.
 const SCANNER = fileURLToPath(
   new URL("../../../../../../packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs", import.meta.url),
 );
-const EXISTING_NOTE = /### Minor notes[\s\S]*src\/Old\.cs:10[\s\S]*already in the code before this PR/;
+const EXISTING_NOTE =
+  /### Minor notes[\s\S]*src\/Old\.cs:10` 1 quality-guard finding: .* \(all already in the code before this PR\)/;
+const MIXED_LINE = /src\/Old\.cs:10` 2 quality-guard findings: .* \(1 already in the code before this PR\)$/;
 const MISSING_GATE = /lacks pr-gate-compare\.mjs.*update quality-guard/;
 const MIXED_NOTE = /1 of these 2 findings were already in the code before this PR; the ones it added end with/;
 const NEW_TAGGED = /new width \(new in this PR\)/;
@@ -96,12 +101,15 @@ test("a group that mixes old and new findings tags the new ones and stays minor 
     rule: (ids) => ({ ids, status: "KEEP" }),
   });
   assert.equal(review.counts.MINOR, 1);
-  assert.match(review.payload.body, MIXED_NOTE);
-  assert.match(review.payload.body, NEW_TAGGED);
-  assert.doesNotMatch(review.payload.body, OLD_TAGGED);
+  assert.match(review.payload.body, MIXED_LINE);
+  // A minor note is one body line, so the tags show in the finding's own text.
+  const { body } = scannerFinding("src/Old.cs", violations);
+  assert.match(body, MIXED_NOTE);
+  assert.match(body, NEW_TAGGED);
+  assert.doesNotMatch(body, OLD_TAGGED);
 });
 
-test("a new finding past the shown five keeps its tag in the full scanner list", () => {
+test("a new finding behind five old ones is shown first in its thread", () => {
   const old = Array.from({ length: SHOWN }, (_, index) =>
     finding("src/Old.cs", `old ${index + 1}`, { existing: true }),
   );
@@ -113,7 +121,9 @@ test("a new finding past the shown five keeps its tag in the full scanner list",
     rule: (ids) => ({ ids, status: "KEEP" }),
   });
   assert.equal(review.counts.MAJOR, 1);
-  const lists = review.scannerComments.map(({ body }) => body).join("\n");
-  assert.match(lists, FRESH_TAGGED);
-  assert.doesNotMatch(lists, OLD_ONE_TAGGED);
+  const [thread] = review.payload.comments;
+  assert.match(thread.body, /the ones this PR added first, then by line:\n- `duplicate-block` line 10: fresh high/);
+  assert.match(thread.body, FRESH_TAGGED);
+  assert.doesNotMatch(thread.body, OLD_ONE_TAGGED);
+  assert.match(thread.body, /\.\.\.and 1 more; run quality-guard on this file to list them\./);
 });

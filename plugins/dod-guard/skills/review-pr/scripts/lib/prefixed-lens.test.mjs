@@ -3,7 +3,7 @@ import test from "node:test";
 import { canonicalLens } from "./plan-entry.mjs";
 import { regenerate } from "./regenerated-inputs.mjs";
 import { complete, findingsFixture, judgment } from "./review-pr.test-support.mjs";
-import { slotsBlock, slotsByLens } from "./review-slots.mjs";
+import { slotsByLens } from "./review-slots.mjs";
 
 const { FIX, PBI, PLAN, scan, diff } = findingsFixture;
 
@@ -30,11 +30,9 @@ test("a plan whose lenses carry the dod-guard: prefix regenerates the same ids a
   assert.deepEqual(out.scanner, bare.scanner);
 });
 
-test("a prefixed lens is assigned to the same slots and listed under its bare name", () => {
+test("a prefixed lens is assigned to the same slots as its bare name", () => {
   const plan = withLensPrefix(PLAN, "dod-guard:");
   assert.deepEqual(slotsByLens(plan), slotsByLens(PLAN));
-  assert.equal(slotsBlock(plan, bare.slots), slotsBlock(PLAN, bare.slots));
-  assert.equal(slotsBlock(plan, bare.slots).includes("dod-guard:"), false);
 });
 
 test("a prefix other than dod-guard: is still refused", () => {

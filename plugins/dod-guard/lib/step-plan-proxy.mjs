@@ -1,3 +1,5 @@
+import { capOf } from "./github-text.mjs";
+
 // Reports every proxy hit that the plan's File lines do not name. A hit outside the File lines is code the
 // planned edit can affect and the plan forgot. The plans come from step-plan-parse.mjs with the caller's
 // search result on each proxy; this module is pure.
@@ -12,8 +14,22 @@ function proxyProblems(plan, proxy) {
   return [...unsearched, ...outside.map((hit) => `${where} hits ${hit}, which no File line names`)];
 }
 
+// The plan is already posted when the proof runs, so the fix is a new, shorter
+// comment; the reader in next-ticket never checks size, so an older long plan
+// still runs.
+function sizeProblems(plan) {
+  const cap = capOf("stepPlan");
+  if (plan.size <= cap) {
+    return [];
+  }
+  return [
+    `step plan ${plan.task} is ${plan.size} characters, over the ${cap}-character cap for stepPlan; ` +
+      "post a shorter plan that gives code only as a signature, an assertion, or a short change",
+  ];
+}
+
 function planProblems(plan) {
-  const problems = [...plan.errors];
+  const problems = [...plan.errors, ...sizeProblems(plan)];
   if (plan.files.length === 0) {
     problems.push(`step plan ${plan.task} has no File line`);
   }

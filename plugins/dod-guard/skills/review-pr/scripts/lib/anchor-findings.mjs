@@ -1,6 +1,7 @@
 // GitHub attaches an inline review comment only to a line the diff shows: a line it adds (side RIGHT) or a
 // line it removes (side LEFT). A finding goes on its own file first, so a file the PR only trims still gets
 // a thread on that file and its GH-<id>.
+import { shownPath } from "./finding-text.mjs";
 
 function nearestLine(lines, wanted) {
   return [...lines].reduce((best, line) => (Math.abs(line - wanted) < Math.abs(best - wanted) ? line : best));
@@ -40,7 +41,7 @@ function relocated(chosen, finding) {
 }
 
 function citedNote(finding, chosen) {
-  const cited = `\n\nCited location: \`${finding.file}:${finding.line}\``;
+  const cited = `\n\nCited location: \`${shownPath(finding.file)}:${finding.line}\``;
   if (chosen.side === "LEFT" && chosen.path === finding.file) {
     return `${cited}. This PR only removes lines from this file, so the comment sits on the nearest removed line.`;
   }
