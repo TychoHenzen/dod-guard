@@ -39,14 +39,19 @@ async function withRepo(use) {
   }
 }
 
-// Only what was observed; the planned rows own every identity field. R1 takes the carryForward.
+// Only what was observed, one short sentence per row; the planned rows own every identity field and
+// the commit names its files. R1 takes the carryForward.
 function evidenceFor(carryForward) {
   const rows = ROWS_904.map((row) => [
     row.id,
-    { observed: row.observed, status: row.status, ...(Object.hasOwn(row, "reason") && { reason: row.reason }) },
+    {
+      observed: `${row.id} was seen at the head.`,
+      status: row.status,
+      ...(Object.hasOwn(row, "reason") && { reason: row.reason }),
+    },
   ]);
   const evidence = {
-    tasks: TASK_IDS.map((id) => ({ id, commit: HEAD_904, files: [`${id}.mjs`], result: "ok" })),
+    tasks: TASK_IDS.map((id) => ({ id, commit: HEAD_904, result: "ok" })),
     rows: Object.fromEntries(rows),
   };
   if (carryForward !== undefined) {

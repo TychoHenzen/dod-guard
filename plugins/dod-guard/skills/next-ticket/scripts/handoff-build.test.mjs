@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { test } from "node:test";
 import { ACCEPTANCE_MATRIX_FIELDS } from "../../../lib/acceptance-matrix.mjs";
-import { readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
+import { HANDOFF_LIMITS } from "../../../lib/handoff-limits.mjs";
+import { joinPlannedRows, readHandoffMatrix } from "../../../lib/handoff-matrix.mjs";
 import { parseIssueBodyRecords } from "../../../lib/issue-body-records.mjs";
 import { checkpointSection, readPreflightCheckpoint } from "../../../lib/preflight-checkpoint.mjs";
 import { runCli } from "./handoff-build.mjs";
@@ -19,15 +20,16 @@ import {
 
 const TASK_IDS = ["T1", "T2", "T3", "T4"];
 
-// Only what was observed: the planned rows own every identity field, evidence ids included.
+// Only what was observed: the planned rows own every identity field, evidence ids included, and the
+// commit names its files. Each observation is one short sentence, as the row line limit asks.
 function evidenceFor(overrides = {}) {
   return {
-    tasks: TASK_IDS.map((id) => ({ id, commit: HEAD_904, files: [`${id}.mjs`], result: "ok" })),
+    tasks: TASK_IDS.map((id) => ({ id, commit: HEAD_904, result: "ok" })),
     rows: Object.fromEntries(
       ROWS_904.map((row) => [
         row.id,
         {
-          observed: row.observed,
+          observed: `${row.id} was seen at the head.`,
           status: row.status,
           ...(Object.hasOwn(row, "reason") && { reason: row.reason }),
         },
@@ -86,12 +88,28 @@ test("output passes post-push", async () => {
   assert.equal(result.json.outcome, "verified");
 });
 
-test("orders the row keys", async () => {
+test("writes each row on one line with only what was observed, and joins back in the full key order", async () => {
   const { out } = await build(evidenceFor());
   const planned = parseIssueBodyRecords(BODY_TEXT).input.plannedAcceptanceMatrix;
-  const { rows } = readHandoffMatrix(out);
-  assert.equal(rows.length, planned.length);
+  const lines = out.split("\n").filter((line) => line.startsWith('{"id":'));
+  assert.equal(lines.length, planned.length);
+  assert.deepEqual(Object.keys(JSON.parse(lines[0].replace(/,$/, ""))), ["id", "contract", "status", "observed"]);
+  assert.ok(out.includes(`{"headSha":"${HEAD_904}","rows":[\n`), out);
+  const { rows, problems } = joinPlannedRows(readHandoffMatrix(out), planned);
+  assert.deepEqual(problems, []);
   assert.deepEqual(Object.keys(rows[0]), ACCEPTANCE_MATRIX_FIELDS);
+});
+
+test("post-push names a planned row the compact matrix lost", async () => {
+  const { out } = await build(evidenceFor());
+  const lost = out
+    .split("\n")
+    .filter((line) => !line.startsWith('{"id":"R2",'))
+    .join("\n");
+  assert.notEqual(lost, out);
+  const result = await gate("post-push", { handoff: lost });
+  assert.equal(result.status, 1);
+  assert.ok(result.json.remainder.includes("planned row R2 has no acceptance matrix row"), JSON.stringify(result.json));
 });
 
 test("names a planned row with no evidence", async () => {
@@ -115,7 +133,8 @@ test("names an evidence entry that matches no row", async () => {
 test("takes every identity field and the evidence id from the planned row", async () => {
   const planned = parseIssueBodyRecords(BODY_TEXT).input.plannedAcceptanceMatrix;
   const { out } = await build(evidenceFor());
-  for (const [at, row] of readHandoffMatrix(out).rows.entries()) {
+  assert.equal(out.includes(planned[0].expected), false, "the handoff does not copy the planned row");
+  for (const [at, row] of joinPlannedRows(readHandoffMatrix(out), planned).rows.entries()) {
     const { id, contract, path, proof, expected, evidence } = planned[at];
     assert.deepEqual({ id: row.id, contract: row.contract, path: row.path }, { id, contract, path });
     assert.deepEqual([row.proof, row.expected, row.evidence], [proof, expected, evidence]);
@@ -138,15 +157,17 @@ test("names a malformed row or task entry", async () => {
   const evidence = evidenceFor();
   evidence.rows.R1.observed = " ";
   evidence.rows.R2.status = "done";
-  evidence.tasks[1].files = [];
+  evidence.tasks[1].files = ["a.mjs"];
+  evidence.tasks[2].commit = "c";
   evidence.tasks.pop();
-  evidence.tasks.push({ id: "T9", commit: "c", files: ["a"], result: "r" });
+  evidence.tasks.push({ id: "T9", commit: "none", result: "r" });
   const { code, err } = await build(evidence);
   assert.equal(code, 1);
   for (const message of [
     "row R1 entry needs a non-empty observed",
     "row R2 entry status must be one of",
-    "task T2 entry needs a non-empty files list",
+    "task T2 entry field files is no longer part of the handoff: the commit names its files",
+    "task T3 entry commit must be a git sha of 7 to 40 hex digits, or none",
     "task T4 has no evidence entry",
     "task entry T9 matches no planned task",
   ]) {
@@ -163,17 +184,42 @@ test("refuses two evidence entries for one task and builds nothing", async () =>
   assert.equal(out, "");
 });
 
-test("names the functional slice and planned evidence ids in each task bullet", async () => {
-  const title = '"title": "Print ASCII OK and FAILED lines from validate-plugins"';
-  const body = BODY_TEXT.replace(`${title}, "parentLevel": "convergence"`, `${title}, "child": "ascii-lines"`);
-  assert.notEqual(body, BODY_TEXT);
-  const { code, out } = await build(evidenceFor(), body);
+test("writes each task as its id, commit and result, and copies nothing the issue body holds", async () => {
+  const evidence = evidenceFor();
+  evidence.tasks[0].result = "Tests\npass.";
+  const { code, out } = await build(evidence);
   assert.equal(code, 0);
   const bullets = out.split("\n").filter((line) => line.startsWith("- T"));
-  assert.equal(bullets.length, TASK_IDS.length);
-  assert.ok(bullets[0].startsWith("- T1 (slice ascii-lines): commit "), bullets[0]);
-  assert.ok(bullets[0].includes("evidence ev-t1-change, ev-lens-implementation"), bullets[0]);
-  assert.ok(bullets[1].startsWith("- T2 (parent-level convergence): commit "), bullets[1]);
+  assert.deepEqual(bullets, [
+    `- T1: commit ${HEAD_904}. Tests pass.`,
+    ...TASK_IDS.slice(1).map((id) => `- ${id}: commit ${HEAD_904}. ok`),
+  ]);
+  assert.equal(out.includes("ev-t1-change"), false);
+});
+
+test("refuses a task line or a row over its limit and cuts nothing", async () => {
+  const evidence = evidenceFor();
+  evidence.tasks[0].result = "r".repeat(HANDOFF_LIMITS.taskLine);
+  evidence.rows.R1.observed = "o".repeat(HANDOFF_LIMITS.rowLine);
+  const { code, out, err } = await build(evidence);
+  assert.equal(code, 1);
+  assert.equal(out, "");
+  assert.match(
+    err,
+    /task T1 line is \d+ characters, over the 280-character limit; write it shorter, do not cut it off/,
+  );
+  assert.match(err, /matrix row R1 is \d+ characters, over the 280-character limit/);
+});
+
+test("refuses a body with an id longer than the handoff takes", async () => {
+  const body = BODY_TEXT.replace('{"id": "R10",', '{"id": "R10-gates-and-more",');
+  assert.notEqual(body, BODY_TEXT);
+  const evidence = evidenceFor();
+  evidence.rows["R10-gates-and-more"] = evidence.rows.R10;
+  delete evidence.rows.R10;
+  const { code, err } = await build(evidence, body);
+  assert.equal(code, 1);
+  assert.ok(err.includes("planned row id R10-gates-and-more is longer than 16 characters"), err);
 });
 
 test("lists the failed ids in Remainder", async () => {
@@ -241,6 +287,17 @@ test("without a previous checkpoint the output is unchanged", async () => {
   const none = await build(evidenceFor(), BODY_TEXT, "## Implementation handoff\n\n- old bullet\n");
   assert.equal(none.code, 0);
   assert.equal(none.out, plain.out);
+});
+
+test("refuses a carried checkpoint over its limit and builds nothing", async () => {
+  const long = previousHandoff().replace(
+    "## Preflight checkpoint\n",
+    `## Preflight checkpoint\n\n${"z".repeat(HANDOFF_LIMITS.checkpoint)}\n`,
+  );
+  const { code, out, err } = await build(evidenceFor(), BODY_TEXT, long);
+  assert.equal(code, 1);
+  assert.equal(out, "");
+  assert.match(err, /the carried ## Preflight checkpoint is \d+ characters, over the 3000-character limit/);
 });
 
 test("refuses a previous handoff with two checkpoint sections and builds nothing", async () => {

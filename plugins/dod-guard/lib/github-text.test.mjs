@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import process from "node:process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { CAPS, capProblem, requireCap } from "./github-text.mjs";
@@ -17,10 +18,16 @@ test("every cap sits far below GitHub's 65536-character limit", () => {
     stepPlan: 6000,
     issueBody: 8000,
     prBody: 4000,
+    handoff: 17_000,
   });
-  for (const cap of Object.values(CAPS)) {
+  // The handoff comment holds three records, and its cap is the largest comment
+  // the limits in handoff-limits.mjs allow (handoff-cap.test.mjs), so it
+  // sits under a quarter of the limit rather than an eighth.
+  const { handoff, ...single } = CAPS;
+  for (const cap of Object.values(single)) {
     assert.ok(cap <= 65_536 / 8);
   }
+  assert.ok(handoff <= 65_536 / 3);
 });
 
 test("a text at its cap fits and one character more does not", () => {

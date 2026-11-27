@@ -29,7 +29,6 @@ import {
   textScenario,
   writeFiles,
 } from "./conflict-triage.test-support.mjs";
-import { renderTriageRecord } from "./triage-record.mjs";
 
 function mergeHead(scenario) {
   return spawnSync("git", ["rev-parse", "-q", "--verify", "MERGE_HEAD"], {
@@ -48,9 +47,13 @@ async function asyncStopOf(action) {
   assert.fail("expected a TriageStop");
 }
 
+const BASES = [
+  { id: "B1", text: "AC-1 keeps both values" },
+  { id: "B2", text: "master's test pins the new contract" },
+];
 const COMBINED = [
-  { basis: "AC-1 keeps both values", decision: "combine", path: "src/value.txt", questionIds: ["Q1"] },
-  { basis: "master's test pins the new contract", decision: "take-base", path: "test/value.test.js", questionIds: [] },
+  { basis: "B1", decision: "combine", path: "src/value.txt", questionIds: ["Q1"] },
+  { basis: "B2", decision: "take-base", path: "test/value.test.js", questionIds: [] },
 ];
 
 function resolveCombined(scenario) {
@@ -68,7 +71,7 @@ test("merges the recorded base and pushes a judged conflict as one two-parent co
       { class: "test", code: "UU", path: "test/value.test.js" },
     ]);
     resolveCombined(scenario);
-    const state = { ...started, decisions: COMBINED };
+    const state = { ...started, bases: BASES, decisions: COMBINED };
     assert.deepEqual(verifyResolution(scenario.git, state), { ok: true, problems: [] });
     const mergeSha = commitMerge(scenario.git, { ...state, message: "Merge master into the PBI branch" });
     assert.deepEqual(verifyResolution(scenario.git, state), { ok: true, problems: [] });
@@ -135,6 +138,27 @@ test("stops on a binary conflict and aborts only its own merge", () => {
     assert.equal(originHead(scenario), scenario.trustedHead);
   } finally {
     scenario.cleanup();
+  }
+});
+
+// The record holds one line per conflicted path and a fixed number of them, so
+// a merge too large for it stops before any stage and leaves no merge behind.
+test("stops a merge with more conflicted paths, or a longer path, than one record holds", () => {
+  const sides = (paths) => (label) => Object.fromEntries(paths.map((path) => [path, `${label}\n`]));
+  const many = sides(Array.from({ length: 9 }, (_, at) => `src/file-${at}.txt`));
+  const long = sides([`src/${"a".repeat(153)}.txt`]);
+  for (const side of [many, long]) {
+    const scenario = createScenario({ base: side("base"), branch: side("branch"), master: side("master") });
+    try {
+      const stop = stopOf(() => startTriage(scenario.git, scenario.input));
+      assert.equal(stop.code, "oversized_conflicts");
+      assert.equal(stop.details.merge, "aborted");
+      assert.equal(stop.details.conflicts, undefined);
+      assert.equal(mergeHead(scenario), "");
+      assert.equal(sh(scenario.work, ["status", "--porcelain"]), "");
+    } finally {
+      scenario.cleanup();
+    }
   }
 });
 
@@ -236,21 +260,26 @@ test("regenerates a declared generated path and accepts only its declared output
     ]);
     writeFiles(scenario.work, { "dist/out.js": rebuilt });
 
-    const decisions = [
-      { basis: "the declared generator rebuilt it", decision: "regenerate", path: "dist/out.js" },
-      { basis: "AC-1 keeps both values", decision: "combine", path: "src/value.txt" },
+    const bases = [
+      { id: "B1", text: "the declared generator rebuilt it" },
+      { id: "B2", text: "AC-1 keeps both values" },
     ];
+    const decisions = [
+      { basis: "B1", decision: "regenerate", path: "dist/out.js" },
+      { basis: "B2", decision: "combine", path: "src/value.txt" },
+    ];
+    const judged = { ...started, bases, generators };
     const misjudged = [decisions[0], { ...decisions[1], decision: "regenerate" }];
-    assert.deepEqual(verifyResolution(scenario.git, { ...started, decisions: misjudged, generators }).problems, [
+    assert.deepEqual(verifyResolution(scenario.git, { ...judged, decisions: misjudged }).problems, [
       { path: "src/value.txt", problem: "only a declared generated path can be regenerated" },
     ]);
     // The rebuilt bundle differs from both sides, so a combine decision would
     // look visible; only the generated-path rule catches it.
     const handPicked = [{ ...decisions[0], decision: "combine" }, decisions[1]];
-    assert.deepEqual(verifyResolution(scenario.git, { ...started, decisions: handPicked, generators }).problems, [
+    assert.deepEqual(verifyResolution(scenario.git, { ...judged, decisions: handPicked }).problems, [
       { path: "dist/out.js", problem: "a declared generated path must be regenerated" },
     ]);
-    assert.deepEqual(verifyResolution(scenario.git, { ...started, decisions, generators }), { ok: true, problems: [] });
+    assert.deepEqual(verifyResolution(scenario.git, { ...judged, decisions }), { ok: true, problems: [] });
     const mergeSha = commitMerge(scenario.git, { ...started, message: "merge" });
     assert.equal(
       sh(scenario.work, ["rev-list", "--parents", "-n", "1", mergeSha]),
@@ -294,13 +323,19 @@ test("reports markers, whitespace, unstaged edits, and decisions the resolution 
   const scenario = textScenario();
   try {
     const started = startTriage(scenario.git, scenario.input);
-    const unbased = stopOf(() =>
-      verifyResolution(scenario.git, { ...started, decisions: [{ ...COMBINED[0], basis: " " }, COMBINED[1]] }),
+    const judged = { ...started, bases: BASES };
+    // A basis id the bases list does not state, and a stated basis with no
+    // text, are both no basis.
+    const unstated = stopOf(() =>
+      verifyResolution(scenario.git, { ...judged, decisions: [{ ...COMBINED[0], basis: "B9" }, COMBINED[1]] }),
     );
-    assert.equal(unbased.code, "decision_without_basis");
+    assert.equal(unstated.code, "decision_without_basis");
+    assert.deepEqual(unstated.details.paths, ["src/value.txt"]);
+    const blank = [{ ...BASES[0], text: " " }, BASES[1]];
+    const unbased = stopOf(() => verifyResolution(scenario.git, { ...started, bases: blank, decisions: COMBINED }));
     assert.deepEqual(unbased.details.paths, ["src/value.txt"]);
     const judgedStop = stopOf(() =>
-      verifyResolution(scenario.git, { ...started, decisions: [{ ...COMBINED[0], decision: "stop" }, COMBINED[1]] }),
+      verifyResolution(scenario.git, { ...judged, decisions: [{ ...COMBINED[0], decision: "stop" }, COMBINED[1]] }),
     );
     assert.equal(judgedStop.code, "decision_without_basis");
 
@@ -308,7 +343,7 @@ test("reports markers, whitespace, unstaged edits, and decisions the resolution 
     sh(scenario.work, ["add", "src/value.txt"]);
     writeFiles(scenario.work, { "test/value.test.js": "expect(3);\n" });
     const decisions = [{ ...COMBINED[0] }, { ...COMBINED[1], decision: "take-branch" }];
-    const result = verifyResolution(scenario.git, { ...started, decisions });
+    const result = verifyResolution(scenario.git, { ...judged, decisions });
     const problems = result.problems.map((entry) => `${entry.path}: ${entry.problem.split("\n")[0]}`);
     assert.equal(result.ok, false);
     assert.ok(problems.includes("test/value.test.js: still unmerged"), problems.join("; "));
@@ -527,7 +562,7 @@ test("runs only allowlisted git commands and refuses destructive ones", async ()
   try {
     const started = startTriage(recording, scenario.input);
     resolveCombined(scenario);
-    const state = { ...started, decisions: COMBINED };
+    const state = { ...started, bases: BASES, decisions: COMBINED };
     verifyResolution(recording, state);
     commitMerge(recording, { ...state, message: "merge" });
     commitMerge(recording, { ...state, amend: true });
@@ -560,47 +595,4 @@ test("runs only allowlisted git commands and refuses destructive ones", async ()
   assert.equal(source.match(/spawnSync\(/g).length, 1);
   assert.ok(source.includes('spawnSync("git", args'));
   assert.ok(!/execFile|execSync|exec\(|"gh"/.test(source));
-});
-
-test("renders the Conflict triage record for a push and for a stop", () => {
-  const base = "b".repeat(40);
-  const head = "c".repeat(40);
-  const merge = "d".repeat(40);
-  const pushed = renderTriageRecord({
-    answers: [{ citation: "src/value.txt:1", fact: "master renamed the value", id: "Q1" }],
-    conflicts: [{ class: "source", code: "UU", path: "src/value.txt" }],
-    decisions: [COMBINED[0]],
-    mergeSha: merge,
-    recordedBase: base,
-    trustedHead: head,
-    verification: [{ name: "npm test", result: "pass" }],
-  });
-  for (const expected of [
-    "## Conflict triage",
-    `- Base: \`${base}\``,
-    `- Trusted head: \`${head}\``,
-    `- Merge: \`${merge}\``,
-    "- Stop: none",
-    "| `src/value.txt` | source | combine | AC-1 keeps both values | Q1 |",
-    "- Q1: master renamed the value (src/value.txt:1)",
-    "- npm test: pass",
-  ]) {
-    assert.ok(pushed.includes(expected), expected);
-  }
-  const stopped = renderTriageRecord({
-    conflicts: [{ class: "binary", code: "UU", path: "a|b.bin" }],
-    recordedBase: base,
-    stop: { decisionNeeded: "Decide by hand.", reason: "Binary path.", stop: "unresolvable_paths" },
-    trustedHead: head,
-  });
-  for (const expected of [
-    "- Merge: none",
-    "- Stop: unresolvable_paths: Binary path.",
-    "- Decision needed: Decide by hand.",
-    "| `a\\|b.bin` | binary | none | none | none |",
-    "Investigator answers used:\n- none",
-    "Verification:\n- none",
-  ]) {
-    assert.ok(stopped.includes(expected), expected);
-  }
 });

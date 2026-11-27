@@ -40,7 +40,7 @@ function latest(comments) {
 }
 
 function namesTip(handoff, tip) {
-  const head = readHandoffMatrix(handoff.body).rows?.[0]?.headSha;
+  const head = readHandoffMatrix(handoff.body).headSha;
   const sha = typeof head === "string" ? head.toLowerCase() : "";
   return sha.length >= MIN_SHA_LENGTH && tip.toLowerCase().startsWith(sha);
 }

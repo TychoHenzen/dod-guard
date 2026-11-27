@@ -1,10 +1,14 @@
 // Renders the "## Conflict triage" record the command posts for a run. It reads
-// only the values the run already holds and runs no git.
+// only the values the run already holds and runs no git. The record is short by
+// design: the judge states each basis once and every decision cites it by id,
+// each conflicted path is one line, and lib/handoff-limits.mjs bounds every
+// count and line. A record over a limit is refused with the problems, never cut.
+import { lineProblem, TRIAGE_LIMITS } from "../../../../lib/handoff-limits.mjs";
 
-function cell(value) {
+function oneLine(value) {
   return String(value ?? "")
-    .replaceAll("|", "\\|")
-    .replaceAll("\n", " ");
+    .replace(/\s+/gu, " ")
+    .trim();
 }
 
 function listOrNone(items, render) {
@@ -18,57 +22,57 @@ function summaryLines({ trustedHead, recordedBase, mergeSha, stop }) {
     `- Base: \`${recordedBase}\``,
     `- Trusted head: \`${trustedHead}\``,
     `- Merge: ${mergeSha ? `\`${mergeSha}\`` : "none"}`,
-    `- Stop: ${stop ? `${stop.stop}: ${cell(stop.reason)}` : "none"}`,
+    `- Stop: ${stop ? `${stop.stop}: ${oneLine(stop.reason)}` : "none"}`,
   ];
   if (stop?.decisionNeeded) {
-    lines.push(`- Decision needed: ${cell(stop.decisionNeeded)}`);
+    lines.push(`- Decision needed: ${oneLine(stop.decisionNeeded)}`);
   }
   return lines;
 }
 
-function conflictRow(conflict, decision = {}) {
-  const questions = (decision.questionIds ?? []).join(", ") || "none";
-  const cells = [
-    `\`${cell(conflict.path)}\``,
-    cell(conflict.class),
-    cell(decision.decision ?? "none"),
-    cell(decision.basis ?? "none"),
-    cell(questions),
-  ];
-  return `| ${cells.join(" | ")} |`;
+function basisLine(basis) {
+  return `- ${oneLine(basis.id)}: ${oneLine(basis.text)}`;
 }
 
-function conflictTable(conflicts, decisions) {
-  const decisionByPath = new Map(decisions.map((decision) => [decision.path, decision]));
-  return [
-    "| Path | Class | Decision | Basis | Questions |",
-    "|---|---|---|---|---|",
-    ...conflicts.map((conflict) => conflictRow(conflict, decisionByPath.get(conflict.path))),
-  ];
+function conflictLine(conflict, decision = {}) {
+  const questions = (decision.questionIds ?? []).map(oneLine).join(", ") || "none";
+  const judged = `${oneLine(decision.decision ?? "none")}, basis ${oneLine(decision.basis ?? "none")}`;
+  return `- \`${oneLine(conflict.path)}\` (${oneLine(conflict.class)}): ${judged}, questions ${questions}`;
 }
 
 function answerLine(answer) {
-  return `- ${answer.id}: ${cell(answer.fact)} (${cell(answer.citation)})`;
+  return `- ${oneLine(answer.id)}: ${oneLine(answer.fact)} (${oneLine(answer.citation)})`;
 }
 
 function verificationLine(entry) {
-  return `- ${cell(entry.name)}: ${cell(entry.result)}`;
+  return `- ${oneLine(entry.name)}: ${oneLine(entry.result)}`;
 }
 
-export function renderTriageRecord({
-  trustedHead,
-  recordedBase,
-  mergeSha = null,
-  conflicts = [],
-  decisions = [],
-  answers = [],
-  verification = [],
-  stop = null,
-}) {
-  const lines = [
-    ...summaryLines({ trustedHead, recordedBase, mergeSha, stop }),
+function countProblems({ conflicts, bases, answers, verification }) {
+  return [
+    ["conflicted paths", conflicts, TRIAGE_LIMITS.conflicts],
+    ["bases", bases, TRIAGE_LIMITS.bases],
+    ["investigator answers", answers, TRIAGE_LIMITS.answers],
+    ["verification results", verification, TRIAGE_LIMITS.verification],
+  ]
+    .filter(([, items, limit]) => items.length > limit)
+    .map(
+      ([label, items, limit]) =>
+        `the record has ${items.length} ${label}, over the ${limit} it holds; keep only what the decisions rest on`,
+    );
+}
+
+function recordLines(input) {
+  const { conflicts, bases, decisions, answers, verification } = input;
+  const decisionByPath = new Map(decisions.map((decision) => [decision.path, decision]));
+  return [
+    ...summaryLines(input),
     "",
-    ...conflictTable(conflicts, decisions),
+    "Bases:",
+    ...listOrNone(bases, basisLine),
+    "",
+    "Conflicts:",
+    ...listOrNone(conflicts, (conflict) => conflictLine(conflict, decisionByPath.get(conflict.path))),
     "",
     "Investigator answers used:",
     ...listOrNone(answers, answerLine),
@@ -76,5 +80,29 @@ export function renderTriageRecord({
     "Verification:",
     ...listOrNone(verification, verificationLine),
   ];
-  return `${lines.join("\n")}\n`;
+}
+
+// Returns { text } with the record, else { ok: false, problems } naming each
+// count and line over its limit, so the caller writes those parts shorter.
+export function buildTriageRecord({
+  trustedHead,
+  recordedBase,
+  mergeSha = null,
+  conflicts = [],
+  bases = [],
+  decisions = [],
+  answers = [],
+  verification = [],
+  stop = null,
+}) {
+  const input = { trustedHead, recordedBase, mergeSha, conflicts, bases, decisions, answers, verification, stop };
+  const lines = recordLines(input);
+  const problems = [
+    ...countProblems(input),
+    ...lines.map((line) => lineProblem(`the record line "${line.slice(0, 40)}"`, line, TRIAGE_LIMITS.line)),
+  ].filter(Boolean);
+  if (problems.length > 0) {
+    return { ok: false, problems };
+  }
+  return { text: `${lines.join("\n")}\n` };
 }

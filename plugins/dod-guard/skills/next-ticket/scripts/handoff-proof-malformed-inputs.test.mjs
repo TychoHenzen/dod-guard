@@ -21,12 +21,17 @@ test("finalization exits 2 on an ordinary-path body and names every missing reco
   );
 });
 
-test("finalization exits 2 and names a matrix block that is missing, not JSON, or not an array", async () => {
+test("finalization exits 2 and names a matrix block that is missing, not JSON, or not either matrix shape", async () => {
   const section = (block) => `## Implementation handoff\n\n## Acceptance matrix\n\n${block}\n`;
   const cases = [
     [section("| id | status |\n| --- | --- |\n| R1 | pass |"), "acceptance matrix has no JSON block"],
     [section('```json\n[{"id": "R1",,}]\n```'), "acceptance matrix is not valid JSON"],
-    [section('```json\n{"id": "R1"}\n```'), "acceptance matrix is not a JSON array"],
+    [section('```json\n"R1"\n```'), "acceptance matrix is not a JSON object of headSha and rows"],
+    [
+      section('```json\n{"id": "R1"}\n```'),
+      "acceptance matrix holds id, which is not headSha or rows; acceptance matrix needs a headSha; " +
+        "acceptance matrix rows is not a JSON array",
+    ],
     ["## Implementation handoff\n", "handoff has no ## Acceptance matrix section"],
   ];
 

@@ -154,16 +154,21 @@ start; never write it long and then cut it.
   to a file and check it first:
   `node <plugin-root>/lib/github-text-check.mjs --kind=<kind> --file=<path>`.
   The kinds and their caps are `comment` 3000, `issueBody` 8000, `stepPlan`
-  6000, `prBody` 4000, `reviewBody` 8000, and `reviewComment` 2000 for a review
-  thread or a reply in one. Post only on exit 0. Exit 1 means nothing was
-  posted: write the text again shorter, never cut it off.
+  6000, `prBody` 4000, `reviewBody` 8000, `reviewComment` 2000 for a review
+  thread or a reply in one, and `handoff` 17000 for the whole
+  `## Implementation handoff` comment. Post only on exit 0. Exit 1 means
+  nothing was posted: write the text again shorter, never cut it off.
 - State each point once and cite `file:line` instead of quoting code. List
   findings, decisions, and what changed. Leave out the plan you followed, the
   checks that passed, and a transcript of the questions asked: a later step
   that needs that detail reads it from the run's files or a linked file.
 - A script that writes GitHub text checks it with `lib/github-text.mjs`.
-- The `## Implementation handoff` comment is a machine-read record and has no
-  cap yet; keep its prose fields to one or two sentences each.
+- The `## Implementation handoff` comment is a machine-read record. Every part
+  of it has a limit in `lib/handoff-limits.mjs`, and the writers refuse a part
+  over its limit, so write each task result and each row observation as one or
+  two sentences. Check the whole comment with `--kind=handoff` before every
+  PATCH that changes it by hand: the checkpoint write and refresh, the triage
+  record, and a rebind.
 
 ## Write plan
 

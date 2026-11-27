@@ -92,9 +92,14 @@ holds no text to merge.
    `standards/model-routing.md` says before the judge reads them.
 3. **Judge** (standard tier, `dod-guard:read-standard`). Return one decision per
    path: `take-branch`, `take-base`, `combine`, `regenerate`, or `stop`, each
-   with its basis and question ids. A decision with no basis is `stop`. The
-   owning thread writes the decisions to the decisions file that `verify`
-   reads.
+   with its basis and question ids. State each basis once and cite it by id,
+   because several paths usually rest on the same contract. A decision with no
+   basis is `stop`. The owning thread writes the judgement to the decisions
+   file that `verify` and `record` read, as one JSON object:
+   `{"bases": [{"id": "B1", "text": "..."}], "decisions": [{"path": "...",
+   "decision": "combine", "basis": "B1", "questionIds": ["Q1"]}]}`. A
+   decision whose basis names no stated basis, or a basis with empty text,
+   counts as no basis.
 4. **Apply** (cheap tier, `dod-guard:stage-cheap`). Edit only the judged
    source, test, and documentation paths, then stage them. A test expectation
    changes only when the decision cites a clear contract that shows it is
@@ -125,6 +130,9 @@ Stop without a push when:
 - a path is modified on one side and deleted on the other;
 - a binary path conflicts;
 - a generated path has no declared generator;
+- more paths conflict than one record holds (8), or a conflicted path is
+  longer than 160 characters (`oversized_conflicts`, which `start` reports
+  after it aborts its own merge);
 - a judged decision has no basis, or is `stop`;
 - verification fails a second time;
 - the pull request base SHA differs from the default branch tip (`base_stale`), or the clone has no tracking ref for it (`default_tip_unknown`);
@@ -157,9 +165,15 @@ the expected and observed SHAs.
 
 Add one `## Conflict triage` section to the PBI's single `## Implementation
 handoff` comment, rendered by `record`. It lists the base SHA, the merge SHA,
-each path's decision and basis, the question ids, the investigator answers
-used, the verification results, and the stop reason when there is one. Write
-no local ledger.
+the stop reason when there is one, each basis once, one line per conflicted
+path with its class, decision, basis id and question ids, the investigator
+answers used, and the verification results. Each count and line has a limit in
+`TRIAGE_LIMITS` (`lib/handoff-limits.mjs`): 3 bases, 4 answers, 5 verification
+results, and 240 characters per line. `record` refuses a record over any limit
+with exit 1 and prints the problems: write the named parts shorter and rerun
+it, never cut them. Append the section, check the whole comment with
+`github-text-check --kind=handoff` as `standards/github-request-discipline.md`
+says, and only then update the comment. Write no local ledger.
 
 ## After a push
 

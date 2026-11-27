@@ -8,6 +8,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 // biome-ignore lint/correctness/noNodejsModules: The test writes a temporary repository.
 import { join } from "node:path";
+import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 // biome-ignore lint/correctness/noNodejsModules: The test resolves the shipped command.
@@ -81,6 +82,23 @@ test("aborts nothing and renders the record from an outside state file", () => {
   }
 });
 
+test("refuses to render a record with a line over its limit", () => {
+  const workspace = createWorkspace();
+  try {
+    const state = join(workspace.scratch, "triage.json");
+    const verification = join(workspace.scratch, "verification.json");
+    writeFileSync(state, JSON.stringify({ conflicts: [], recordedBase: "b".repeat(40), trustedHead: "c".repeat(40) }));
+    writeFileSync(verification, JSON.stringify([{ name: "npm test", result: "x".repeat(300) }]));
+    const record = run(workspace.work, ["record", "--state", state, "--verification", verification]);
+    assert.equal(record.status, 1);
+    const refused = JSON.parse(record.stdout);
+    assert.equal(refused.ok, false);
+    assert.match(refused.problems[0], /^the record line "- npm test: x+" is 312 characters/);
+  } finally {
+    workspace.cleanup();
+  }
+});
+
 test("checks regeneration against the declared generators in the state file", () => {
   const workspace = createWorkspace();
   try {
@@ -146,10 +164,17 @@ test("runs start, verify, commit, and push through the command with an injected 
 
     writeFiles(scenario.work, { "src/value.txt": "branch\nmaster\n" });
     sh(scenario.work, ["add", "src/value.txt"]);
+    // The older list form, with the basis text on each decision, is refused.
     writeFileSync(
       decisions,
       JSON.stringify([{ basis: "AC-1 keeps both", decision: "combine", path: "src/value.txt" }]),
     );
+    await assert.rejects(runCommand("verify", git, { decisions, state }), /bases \[\{ id, text \}\] and decisions/);
+    const judged = {
+      bases: [{ id: "B1", text: "AC-1 keeps both" }],
+      decisions: [{ basis: "B1", decision: "combine", path: "src/value.txt" }],
+    };
+    writeFileSync(decisions, JSON.stringify(judged));
     assert.deepEqual(await runCommand("verify", git, { decisions, state }), { ok: true, problems: [] });
     const { mergeSha } = await runCommand("commit", git, { message: "Merge master", state });
     assert.equal(JSON.parse(readFileSync(state, "utf8")).mergeSha, mergeSha);

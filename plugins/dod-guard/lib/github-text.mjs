@@ -25,6 +25,16 @@ const CAPS = Object.freeze({
   issueBody: 8000,
   // A pull request body.
   prBody: 4000,
+  // ASSUMPTION: the one `## Implementation handoff` comment with all three of
+  // its records: the task lines and acceptance matrix, the preflight
+  // checkpoint, and the conflict triage. On 2026-11-27, 137 real handoffs had a
+  // median of 2317 characters and a maximum of 29100, because they copied the
+  // issue body's rows and the commit's file list. Without those copies the same
+  // records measure 3000 to 7000. lib/handoff-limits.mjs bounds every part,
+  // and the largest comment those limits allow is 16859 characters; this is
+  // that rounded up, which skills/next-ticket/scripts/handoff-cap.test.mjs
+  // checks, so a comment within its limits is never refused as a whole.
+  handoff: 17_000,
 });
 
 function capOf(kind) {
