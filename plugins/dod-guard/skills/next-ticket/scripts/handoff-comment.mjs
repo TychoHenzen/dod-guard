@@ -23,6 +23,9 @@ function matrixRow(row, entry) {
   if (Object.hasOwn(entry, "carryForward")) {
     out.carryForward = carryRecord(entry);
   }
+  if (Object.hasOwn(entry, "deferredTo")) {
+    out.deferredTo = entry.deferredTo;
+  }
   return out;
 }
 
