@@ -31,3 +31,6 @@ docs/plans/
 *.audit.json
 .claude/test-verification/
 coverage/
+
+# claude plugin eval run output (written by every `claude plugin eval` run)
+evals/results/

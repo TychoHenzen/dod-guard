@@ -69,3 +69,9 @@ npm run test:dod-guard-skills
 Keep manifest skill and agent counts aligned with the directories that ship.
 Every shipped skill reads `standards/working-defaults.md`. Skills and standards
 are prose, so no test checks their wording.
+
+A skill's `description` decides whether a request reaches it. `evals/` holds
+`claude plugin eval` trigger suites with a no-plugin baseline. After changing a
+description, rerun that skill's cases and the overlap cases that name it, and
+record the result. `evals/README.md` has the commands and the safety rules.
+These runs cost money and need a signed-in CLI, so CI does not run them.

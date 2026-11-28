@@ -7,7 +7,8 @@
 #
 # Gates, in the order they can stop a release:
 #   build-test        compile + unit tests
-#   plugin-config     plugin.json / .mcp.json / marketplace.json / skills / agents consistency
+#   plugin-config     plugin.json / .mcp.json / marketplace.json / skills / agents consistency,
+#                     then `claude plugin validate` on the marketplace and every plugin
 #   static-analysis   advisory quality diagnostics plus Biome, then rejects generated-file drift
 #   package-integrity whether the built bundle actually speaks MCP
 #
@@ -112,6 +113,20 @@ jobs:
       # Names, sources, hook targets, skill/agent frontmatter, encoding, git-tracked shipping.
       - name: Plugin configuration is consistent
         run: node scripts/ci/validate-plugins.mjs
+      # The same version the skill trigger evals in plugins/dod-guard/evals were recorded with.
+      - name: Install the Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@2.1.331
+      # Claude Code's own manifest, skill, agent, and hook checks, for the marketplace and
+      # every plugin it lists. Not --strict: that also fails on "CLAUDE.md at the plugin root
+      # is not loaded", and those files are there for contributors, not for the plugin.
+      - name: Claude Code validates every plugin
+        run: |
+          FAILED=""
+          mapfile -t targets < <(jq -r '.plugins[].source' .claude-plugin/marketplace.json)
+          for target in . "${targets[@]}"; do
+            claude plugin validate "$target" || FAILED="$FAILED $target"
+          done
+          [ -z "$FAILED" ] || { echo "claude plugin validate failed for:$FAILED"; exit 1; }
   static-analysis:
     needs: build-test
     runs-on: ubuntu-latest
