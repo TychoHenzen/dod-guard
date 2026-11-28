@@ -30,7 +30,7 @@ For a user-supplied issue number run `node <plugin-root>/skills/complete-pr/scri
 
 ## Readiness
 
-A small clear fix may take the ordinary path. A feature or materially ambiguous PBI uses the seven records in project-workflow as its handoff (`requirements` through `planned-acceptance-matrix`, including `lens-ownership`).
+"Choose the path" in project-workflow sorts an issue by its content, not its size. A ready ticket below has step plan comments, so it is on the structured path and uses the seven records in project-workflow as its handoff (`requirements` through `planned-acceptance-matrix`, including `lens-ownership`).
 
 A ready ticket has a change description, implementation notes, checkbox acceptance criteria with observable outcomes, and one `## Step plan: <task-id>` comment per task (`task-1` for a PBI with no task list). Linked sub-issues are open, or closed with pushed implementation evidence; a parent with none is valid as one coherent slice. In a structured PBI each child is actionable, `Todo`, owned by a task, and maps to exactly one independently deliverable slice, and `lens-ownership` maps `implementation`, `wiring/usability`, `quality`, and `reliability` to a task or slice with observable acceptance or verification evidence. A task owning cross-cutting parent work with no child carries `parentLevel: "convergence"`.
 

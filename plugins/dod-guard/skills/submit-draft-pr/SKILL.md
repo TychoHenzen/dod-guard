@@ -34,7 +34,7 @@ Run after the source-branch push and after PR create or update, before trusting 
 
 ## Structured-work convergence
 
-Before creating or updating the PR, apply the Convergence record in `standards/project-workflow.md`. A small, clear fix takes the ordinary path without structured records (see "Choose the path" there): it skips the rest of this section and "Early preflight checkpoint", and its body takes the ordinary form in "Create or update the draft". This gate never bypasses the stops for credentials, destructive action, authority, unrelated work, provider mismatch, or missing evidence.
+Before creating or updating the PR, apply the Convergence record in `standards/project-workflow.md`. An issue on the ordinary path, as "Choose the path" there defines it (no structured record and no step plan or handoff comment, so never a refined PBI), skips the rest of this section and "Early preflight checkpoint", and its body takes the ordinary form in "Create or update the draft". This gate never bypasses the stops for credentials, destructive action, authority, unrelated work, provider mismatch, or missing evidence.
 
 For a structured PBI:
 
