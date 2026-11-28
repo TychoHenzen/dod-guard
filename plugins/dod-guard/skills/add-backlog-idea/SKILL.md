@@ -93,13 +93,13 @@ After the reply, keep each answer word for word under `## Context` of the featur
 
 ## Create and file each issue
 
-Before step 1 for each feature, look for a duplicate left by an earlier partial run. Run once per feature, using the resolved repository and leaving any double quote out of the title inside the search text:
+Before step 1, look for a duplicate left by an earlier partial run. Search can miss an issue created minutes ago, so list the open issues you created through REST instead, once per run, with the login from `gh api user --jq .login`:
 
 ```text
-gh issue list --repo <owner/name> --search "<title> in:title" --state open --limit 100 --json number,title,url
+gh api -X GET --paginate --slurp repos/<owner/name>/issues -f state=open -f creator=<login> -f per_page=100
 ```
 
-A match is an open issue whose title equals the intended title after trimming and lowercasing. Ignore every other hit and never judge similarity. On a match, create no second issue and do not edit it. Report it as `existing issue #N` and run steps 2 and 3 for it.
+Skip every entry that has a `pull_request` key. For each feature, a match is an open issue whose title equals the intended title after trimming and lowercasing. Ignore every other entry and never judge similarity. On a match, create no second issue and do not edit it. Report it as `existing issue #N` and run steps 2 and 3 for it.
 
 For each feature, work in this order:
 
