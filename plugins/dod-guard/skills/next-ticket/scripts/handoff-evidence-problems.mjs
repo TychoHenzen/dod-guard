@@ -1,20 +1,22 @@
 // The checks handoff-build.mjs runs on the evidence file, which supplies only
 // what was observed: tasks[] of { id, commit, result } and rows{} keyed
-// by row id of { observed, status, reason?, carryForward? } where carryForward is
-// { fromHead, paths } (handoff-build.mjs --root checks it). Every planned task and row needs
+// by row id of { observed, status, reason?, carryForward?, deferredTo? } where carryForward is
+// { fromHead, paths } (handoff-build.mjs --root checks it) and deferredTo is a list of issue
+// numbers. Every planned task and row needs
 // exactly one entry, and no entry may name a task or row the body does not plan
 // or carry another field. Each check returns one message per problem.
 
+import { observedResidualErrors } from "../../../lib/accepted-residual.mjs";
 import { isPlainObject, isText } from "../../../lib/handoff-values.mjs";
 import { ACCEPTANCE_MATRIX_STATUSES } from "../../../lib/matrix-observed-status.mjs";
 import { carryEntryProblems } from "./handoff-carry-shape.mjs";
 
 const STATUSES = new Set(ACCEPTANCE_MATRIX_STATUSES);
-const ROW_FIELDS = new Set(["observed", "status", "reason", "carryForward"]);
+const ROW_FIELDS = new Set(["observed", "status", "reason", "carryForward", "deferredTo"]);
 const TASK_FIELDS = new Set(["id", "commit", "result"]);
 // ASSUMPTION: a task proven by remote state alone has no commit, so it writes
 // "none" and its result names the state; any other commit is a git sha.
-const COMMIT = /^(?:[0-9a-f]{7,40}|none)$/;
+const COMMIT = /^(?:[0-9a-f]{7,40}|none)$/u;
 // Fields an older handoff line held that the evidence file no longer takes, with the reason.
 const RETIRED_TASK_FIELDS = Object.freeze({ files: "the commit names its files" });
 
@@ -24,7 +26,7 @@ function hasEntry(rows, id) {
   return Object.hasOwn(rows, id) && isPlainObject(rows[id]);
 }
 
-function foreignFieldProblems(label, entry, allowed, retired = {}) {
+function foreignFieldProblems(label, entry, { allowed, retired = {} }) {
   return Object.keys(entry)
     .filter((key) => !allowed.has(key))
     .map((key) => {
@@ -36,7 +38,7 @@ function foreignFieldProblems(label, entry, allowed, retired = {}) {
 }
 
 function rowProblems(id, entry) {
-  const problems = foreignFieldProblems(`row ${id}`, entry, ROW_FIELDS);
+  const problems = foreignFieldProblems(`row ${id}`, entry, { allowed: ROW_FIELDS });
   if (!isText(entry.observed)) {
     problems.push(`row ${id} entry needs a non-empty observed`);
   }
@@ -51,7 +53,10 @@ function rowProblems(id, entry) {
 }
 
 function taskEntryProblems(entry) {
-  const problems = foreignFieldProblems(`task ${entry.id}`, entry, TASK_FIELDS, RETIRED_TASK_FIELDS);
+  const problems = foreignFieldProblems(`task ${entry.id}`, entry, {
+    allowed: TASK_FIELDS,
+    retired: RETIRED_TASK_FIELDS,
+  });
   if (!COMMIT.test(String(entry.commit ?? ""))) {
     problems.push(`task ${entry.id} entry commit must be a git sha of 7 to 40 hex digits, or none`);
   }
@@ -85,6 +90,13 @@ function taskProblems(planned, entries) {
   ];
 }
 
+// The builder applies the proofs' own residual rule to the entry with its planned
+// row's opt-in, so a handoff it prints never fails post-push on that rule.
+function entryProblems(row, entry) {
+  const residual = observedResidualErrors({ ...entry, acceptsResiduals: row.acceptsResiduals }, `row ${row.id} entry`);
+  return [...rowProblems(row.id, entry), ...residual];
+}
+
 function rowSetProblems(planned, rows) {
   const plannedIds = new Set(planned.map((row) => row.id));
   return [
@@ -92,7 +104,7 @@ function rowSetProblems(planned, rows) {
     ...Object.keys(rows)
       .filter((key) => !plannedIds.has(key))
       .map((key) => `evidence entry ${key} matches no planned row`),
-    ...planned.filter((row) => hasEntry(rows, row.id)).flatMap((row) => rowProblems(row.id, rows[row.id])),
+    ...planned.filter((row) => hasEntry(rows, row.id)).flatMap((row) => entryProblems(row, rows[row.id])),
   ];
 }
 

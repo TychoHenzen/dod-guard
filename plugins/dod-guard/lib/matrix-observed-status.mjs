@@ -1,3 +1,4 @@
+import { observedResidualErrors } from "./accepted-residual.mjs";
 import { carryForwardErrors } from "./carry-forward-record.mjs";
 
 const ACCEPTANCE_MATRIX_STATUSES = Object.freeze(["pass", "unverified", "failed", "blocked", "inapplicable"]);
@@ -37,6 +38,7 @@ function observedStatusErrors(row, label, expectedHeadSha) {
     ...staleHeadErrors(row, label, expectedHeadSha),
     ...carryForwardErrors(row, label),
     ...inapplicableReasonErrors(row, label),
+    ...observedResidualErrors(row, label),
     ...nonPassingStatusErrors(row, label),
   ];
 }
