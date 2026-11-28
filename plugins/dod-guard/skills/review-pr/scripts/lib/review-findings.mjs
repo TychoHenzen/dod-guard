@@ -72,6 +72,7 @@ function buildReview(input) {
     threads: threads.length,
     deferred,
     minor: findings.filter((finding) => finding.severity === "MINOR"),
+    unchanged: checked.unchanged,
   });
   const payload = {
     commit_id: input.headSha,

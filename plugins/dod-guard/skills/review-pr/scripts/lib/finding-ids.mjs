@@ -11,6 +11,8 @@ function inScope(violation, changedLines) {
   return ruleScope(violation.rule) === "file" || lines.has(violation.line);
 }
 
+const isExisting = (violation) => violation.existing === true;
+
 const SCANNER_SEVERITIES = new Set(["high", "medium", "low"]);
 
 function requireScannerSeverity(violation) {
@@ -42,30 +44,49 @@ function byLocation(left, right) {
 }
 
 // Scan entries can carry fields the review never reads; the candidate keeps
-// the five a merge pass and a posted group need, plus the mark `scan --base`
-// sets on a finding the merge base already had.
+// the five a merge pass and a posted group need.
 function candidate(violation) {
   const { file, line, rule, severity, message } = violation;
-  const kept = { file: slashPath(file), line, rule, severity, message: asciiText(message) };
-  if (violation.existing === true) {
-    kept.existing = true;
-  }
-  return kept;
+  return { file: slashPath(file), line, rule, severity, message: asciiText(message) };
 }
 
 // Cross-file rules only hold on a whole-repository scan, so the scan covers
 // everything and this keeps the PR's share. The ids exist before planning, so
-// the planner can name them in scanner check questions.
+// the planner can name them in scanner check questions. A finding `scan --base`
+// marked existing gets no id, and the body lists it as info.
 function scannerCandidates(scan, changedLines) {
   const violations = scan.violations ?? [];
   for (const violation of violations) {
     requireScannerSeverity(violation);
   }
   return violations
-    .filter((violation) => inScope(violation, changedLines))
+    .filter((violation) => !isExisting(violation) && inScope(violation, changedLines))
     .map(candidate)
     .sort(byLocation)
     .map((violation, index) => ({ id: `S${index + 1}`, ...violation }));
+}
+
+// One Map entry, `[key, count]`, back to the review's { file, rule, count }.
+function infoEntry([key, count]) {
+  const [file, rule] = JSON.parse(key);
+  return { file, rule, count };
+}
+
+function byFileAndRule(left, right) {
+  return compareText(left.file, right.file) || compareText(left.rule, right.rule);
+}
+
+// The in-scope findings `scan --base` marked existing, counted per file and
+// rule. They get no id, so the review lists these counts as info, not threads.
+function unchangedAtBase(scan, changedLines) {
+  const counts = new Map();
+  for (const violation of scan.violations ?? []) {
+    if (isExisting(violation) && inScope(violation, changedLines)) {
+      const key = JSON.stringify([slashPath(violation.file), violation.rule]);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  return [...counts].map(infoEntry).sort(byFileAndRule);
 }
 
 // The build numbers the findings itself, so a merge output can only refer to
@@ -76,4 +97,4 @@ function judgedCandidates(results, assigned) {
   return findings.map((finding, index) => ({ ...finding, id: `J${index + 1}` }));
 }
 
-export { judgedCandidates, scannerCandidates };
+export { judgedCandidates, scannerCandidates, unchangedAtBase };
