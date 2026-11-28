@@ -6,7 +6,8 @@
 //
 // Two shapes are read. handoff-build.mjs writes an object { headSha, rows }:
 // the head is stated once, and each row holds only what the work observed (id,
-// contract, status, observed, and reason or carryForward when they apply).
+// contract, status, observed, and reason, carryForward or deferredTo when they
+// apply).
 // The issue body's planned matrix owns the rest of each row, and
 // joinPlannedRows puts it back by row id. Handoffs posted before 2026-11-27
 // hold the older shape, a JSON array of full rows that each copied the planned
@@ -14,14 +15,18 @@
 // Every function is pure; fetching the handoff comment belongs to the callers.
 import { lines, markdownSection, markedLines } from "./acceptance-criteria.mjs";
 import { DIFF_CHECK } from "./carry-forward-record.mjs";
-import { isPlainObject } from "./handoff-values.mjs";
+import { isPlainObject, presentFields } from "./handoff-values.mjs";
 import { jsonBlock } from "./record-readers.mjs";
 
 const MATRIX_HEADING = "## Acceptance matrix";
-const ROW_FIELDS = new Set(["id", "contract", "status", "observed", "reason", "carryForward"]);
+const ROW_FIELDS = new Set(["id", "contract", "status", "observed", "reason", "carryForward", "deferredTo"]);
 const CARRY_FIELDS = new Set(["fromHead", "paths"]);
 // The fields a full row takes from its planned row, in the order a full row lists them.
 const PLANNED_FIELDS = ["path", "proof", "expected"];
+// The optional fields a full row keeps only when its observed or planned row
+// supplies them, in the order a full row lists them.
+const OBSERVED_OPTIONAL = ["carryForward", "reason", "deferredTo"];
+const PLANNED_OPTIONAL = ["acceptsResiduals"];
 
 // A second heading would be a second matrix, and the proof would read only the
 // first, so two headings are refused instead of one being silently ignored.
@@ -132,12 +137,7 @@ function joinedRow(row, planned) {
   }
   Object.assign(joined, { observed: row.observed, status: row.status, evidence: planned.evidence });
   joined.headSha = row.headSha;
-  if (Object.hasOwn(row, "carryForward")) {
-    joined.carryForward = row.carryForward;
-  }
-  if (Object.hasOwn(row, "reason")) {
-    joined.reason = row.reason;
-  }
+  Object.assign(joined, presentFields(row, OBSERVED_OPTIONAL), presentFields(planned, PLANNED_OPTIONAL));
   return joined;
 }
 

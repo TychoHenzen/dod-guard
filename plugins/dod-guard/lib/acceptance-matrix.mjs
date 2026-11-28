@@ -1,3 +1,4 @@
+import { plannedResidualErrors, residualFields } from "./accepted-residual.mjs";
 import { ACCEPTANCE_MATRIX_STATUSES, observedStatusErrors } from "./matrix-observed-status.mjs";
 
 // Refinement plans each row before any proof runs, so a planned row has no
@@ -111,7 +112,7 @@ function normalizeRow(row, index) {
   const normalized = Object.fromEntries(ACCEPTANCE_MATRIX_FIELDS.map((field) => [field, fieldValue(row, field)]));
   normalized.index = index;
   normalized.reason = textValue(row?.reason) ?? textValue(row?.inapplicableReason);
-  Object.assign(normalized, carryForwardField(row));
+  Object.assign(normalized, carryForwardField(row), residualFields(row));
   if (normalized.status !== null) {
     normalized.status = normalizeStatus(normalized.status);
   }
@@ -137,7 +138,7 @@ function plannedStatusErrors(row, label) {
   if (row.status === "inapplicable" && row.reason === null) {
     return [`${label} marked inapplicable without an explicit reason`];
   }
-  return [];
+  return plannedResidualErrors(row, label);
 }
 
 // Observed rows carry proof results bound to a pushed head. Planned rows come
