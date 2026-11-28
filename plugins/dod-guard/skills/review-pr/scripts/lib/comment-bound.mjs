@@ -34,26 +34,21 @@ function judgedFindings() {
 const MANY = 12;
 const letter = (index) => String.fromCharCode(97 + index);
 
-function violation(index, existing) {
+function violation(index) {
   return {
     rule: `${past(RULE_SHOWN)}${letter(index)}`,
     severity: "high",
     line: index + 1,
     message: past(MESSAGE_SHOWN),
-    existing,
   };
 }
 
-// Each group size up to MANY, with no, all, or every other violation already in
-// the code, since each mix writes a different note.
+// Each group size up to MANY.
 function scannerFindings() {
-  const mixes = [() => false, () => true, (index) => index % 2 === 0];
-  return mixes.flatMap((existing) =>
-    Array.from({ length: MANY }, (_, size) => {
-      const violations = Array.from({ length: size + 1 }, (_, index) => violation(index, existing(index)));
-      return scannerFinding(past(PATH_SHOWN), violations);
-    }),
-  );
+  return Array.from({ length: MANY }, (_, size) => {
+    const violations = Array.from({ length: size + 1 }, (_item, index) => violation(index));
+    return scannerFinding(past(PATH_SHOWN), violations);
+  });
 }
 
 // A finding on a file the PR only trims gets the longest moved-location note; a

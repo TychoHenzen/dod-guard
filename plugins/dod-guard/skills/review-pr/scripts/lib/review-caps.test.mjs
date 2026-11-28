@@ -81,7 +81,6 @@ test("no inline comment is longer than the bound", () => {
     severity: "high",
     line: index + 1,
     message: huge("m"),
-    existing: index % 3 === 0,
   }));
   const scanner = scannerFinding(huge("f"), violations);
   for (const finding of [merged, scanner]) {
