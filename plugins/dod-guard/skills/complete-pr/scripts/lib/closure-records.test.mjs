@@ -1,34 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { completionComment, DELIVERIES, quotingComment, REPOSITORY, supersedesBody } from "./closure.test-support.mjs";
+import { completionComment, DELIVERIES, quotingComment } from "./closure.test-support.mjs";
 import {
   isRecord,
   parseCompletionRecord,
-  parseSupersedes,
   pendingMatrixRows,
   recordComments,
   renderClosureEvidence,
   renderCompletionRecord,
 } from "./closure-records.mjs";
-
-test("parses the supersedes record under Implementation notes", () => {
-  assert.deepEqual(parseSupersedes(supersedesBody([777]), REPOSITORY), { numbers: [777] });
-  assert.deepEqual(parseSupersedes("## Outcome\n\nNo record.\n", REPOSITORY), { numbers: [] });
-  const outsideNotes = "## Acceptance criteria\n\n### supersedes\n\n```json\n[777]\n```\n";
-  assert.deepEqual(parseSupersedes(outsideNotes, REPOSITORY), { numbers: [] });
-});
-
-test("holds a malformed, cross-repository, or duplicate supersedes record with a named reason", () => {
-  const cases = [
-    [supersedesBody(["#777"]), 'supersedes record has malformed entry "#777"'],
-    [supersedesBody(["Other/repo#777"]), "supersedes record names cross-repository issue Other/repo#777"],
-    [supersedesBody([777, 777]), "supersedes record repeats an issue number"],
-    [supersedesBody([]), "supersedes record is not a non-empty array"],
-    [supersedesBody([777]).replace("[777]", "[777,"), "supersedes record is not valid JSON"],
-    [`${supersedesBody([777])}\n### supersedes\n\n\`\`\`json\n[778]\n\`\`\`\n`, "duplicate supersedes record"],
-  ];
-  for (const [body, error] of cases) assert.deepEqual(parseSupersedes(body, REPOSITORY), { error });
-});
 
 test("renders and parses one completion evidence record", () => {
   const comment = completionComment(840, { pendingRows: ["AC-11"] });
