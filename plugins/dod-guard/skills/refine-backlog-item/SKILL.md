@@ -84,8 +84,8 @@ Ask only if the missing choice alters the wording of an acceptance checkbox. Oth
 
 **Children.** Children are checklist work on the parent's one branch and one PR, never child branches or PRs. Reuse an existing child that owns a unit. Never duplicate one. Each new child gets minimal parent context, scope, criteria, and verification.
 
-- Ordinary parent: create linked sub-issues only for criteria that can be completed, committed, and closed independently. Dependent steps stay in the parent. Add no administrative subtasks.
-- Structured parent: decompose by user action into at most 5 coherent slices, only down to what can be implemented, tested, and verified alone. A count above 5 means the scope is not one PR, so split it as "One parent, one closing PR" says. A cohesive feature may stay one checklist. Never add a child to fill a category list.
+- Create a linked sub-issue only for a slice that can be completed, committed, and closed independently. Dependent steps stay in the parent. Add no administrative subtasks.
+- Decompose by user action into at most 5 coherent slices, only down to what can be implemented, tested, and verified alone. A count above 5 means the scope is not one PR, so split it as "One parent, one closing PR" says. A cohesive feature may stay one checklist. Never add a child to fill a category list.
 - Each slice leaves the system working with tests green. The first is the thinnest end-to-end path through the supported surface. Name a slice by the behavior it adds. One nameable only by position or layer is mis-cut.
 - For repeated variants, the first slice introduces the shared boundary and converts one variant. The rest are local slices behind it.
 - Keep a concept's validation and error behavior in its slice. A slice that replaces old structure also migrates callers and deletes obsolete parts. Add nothing for speculative variants.
@@ -108,7 +108,7 @@ Every structured PBI assesses four lenses: implementation; wiring and end-to-end
 
 **Re-refinement.** Compare existing discovery notes to current code, tests, sources, and decisions. Reuse current evidence, repeat only stale or newly triggered phases, and update summaries in place, and replace the prior priority and effort rationale rather than appending. Create no duplicate sub-issues or scale labels.
 
-**Created issues.** Read back every issue this skill creates, a child or a split issue, with `node <plugin-root>/skills/complete-pr/scripts/ticket-preconditions.mjs --repository=<owner/name> --issue=<n> --expect-status=<status>`, where `<status>` is the Status this skill gave it. Exit 1 or 2 stops the refinement before any Status change: report the issue, the failed check and its detail, and never report that issue as a Project item.
+**Created issues.** Every issue this skill creates, a child or a split issue, has a target Status: `Todo` for a linked child, as step 4 of "Apply labels and verify" expects, and `Backlog` for a split issue. Add it to the Project by the add-item rules under "Write plan" in `standards/github-request-discipline.md`, where an item that already exists counts as success. Read its Status, and when it differs from the target, set the target with `project-status.mjs` as step 6 of "Apply labels and verify" does, passing that Status's option and the item id. Then read it back with `node <plugin-root>/skills/complete-pr/scripts/ticket-preconditions.mjs --repository=<owner/name> --issue=<n> --expect-status=<target>`. Exit 1 or 2 stops the refinement before the parent's Status change: report the issue, the failed check and its detail, and never report that issue as a Project item.
 
 ## Effort 13 and splitting
 
