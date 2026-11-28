@@ -10,17 +10,17 @@ import { readDescriptor, runScanner } from "./scanner-run.mjs";
 // The repository's own limits replace the scanner's defaults before any later
 // command numbers the violations. One descriptor carries the raw report and
 // its rewrite, so nothing can swap the file between the read and the write.
-function limitReport(fd, root, raw, baseline) {
+function limitReport(fd, root, raw) {
   const limits = repoLimits(root);
   const limited = applyRepoLimits(raw, limits);
-  const report = { ...limited.scan, repoLimits: { floors: limits.floors, removed: limited.removed }, baseline };
+  const report = { ...limited.scan, repoLimits: { floors: limits.floors, removed: limited.removed } };
   ftruncateSync(fd, 0);
   writeSync(fd, JSON.stringify(report), 0);
   return {
     violations: limited.scan.violations.length,
     ruleFloors: limits.floors,
     removedByRepoLimits: limited.removed,
-    baseline,
+    baseline: raw.baseline,
   };
 }
 
@@ -32,16 +32,8 @@ function existingScanner(args) {
   return scanner;
 }
 
-// Without --base every finding counts as the pull request's own, as before.
 // The marks go on the raw report, which is what the CI gate compares, before
 // the repository's limits drop anything.
-function markBaseline(scanner, { root, base }, violations) {
-  if (base === undefined) {
-    return null;
-  }
-  return baselineMarks({ scanner, root, base, violations });
-}
-
 // The repository's limits are read from --root, so the gate's own flags are
 // never passed here.
 async function scan(args) {
@@ -50,8 +42,9 @@ async function scan(args) {
   try {
     runScanner(scanner, args.root, out, ignoredPaths(args.root));
     const raw = JSON.parse(readDescriptor(out));
-    const baseline = await markBaseline(scanner, args, raw.violations ?? []);
-    return { scanner, out: args.out, ...limitReport(out, args.root, raw, baseline) };
+    const violations = raw.violations ?? [];
+    const baseline = await baselineMarks({ scanner, root: args.root, base: args.base, violations });
+    return { scanner, out: args.out, ...limitReport(out, args.root, { ...raw, baseline }) };
   } finally {
     closeSync(out);
   }

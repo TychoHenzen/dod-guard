@@ -1,4 +1,4 @@
-import { judgedCandidates, scannerCandidates } from "./finding-ids.mjs";
+import { judgedCandidates, scannerCandidates, unchangedAtBase } from "./finding-ids.mjs";
 import { requirePlan, reviewSlots, slotsByLens } from "./review-slots.mjs";
 import { requireScannerQuestions } from "./scanner-plan.mjs";
 import { parseDiffLines } from "./unified-diff.mjs";
@@ -12,7 +12,7 @@ function regenerate({ scan, diff, pbi, subIssues, plan, results }) {
   const judged = judgedCandidates(results, slotsByLens(plan));
   const scanner = scannerCandidates(scan, changedLines);
   requireScannerQuestions(plan, scanner);
-  return { changedLines, removedLines, slots, judged, scanner };
+  return { changedLines, removedLines, slots, judged, scanner, unchanged: unchangedAtBase(scan, changedLines) };
 }
 
 export { regenerate };

@@ -45,25 +45,15 @@ function scannerHeadline(violations) {
   return `${violations.length} quality-guard ${findings}: ${ruleTally(violations)}`;
 }
 
-const isExisting = (violation) => violation.existing === true;
-
-// The ones the pull request added come first, so a fix starts with them even
-// when the code already held more of the same.
-function newFirst(sorted) {
-  return [...sorted.filter((violation) => !isExisting(violation)), ...sorted.filter(isExisting)];
-}
-
 // A file with SHOWN violations or fewer renders its bullets in full.
 function scannerBody(severity, sorted) {
   const header = `**${severity}** quality-guard structural findings (${sorted.length})`;
   if (sorted.length <= SHOWN) {
     return [header, "", ...sorted.map(item)].join("\n");
   }
-  const mixed = sorted.some(isExisting) && !sorted.every(isExisting);
-  const label = mixed ? `First ${SHOWN}, the ones this PR added first, then by line:` : `First ${SHOWN} by line:`;
   const rest = `...and ${sorted.length - SHOWN} more; run quality-guard on this file to list them.`;
-  const items = newFirst(sorted).slice(0, SHOWN).map(item);
-  return [header, "", `By rule: ${ruleTally(sorted)}.`, "", label, ...items, rest].join("\n");
+  const items = sorted.slice(0, SHOWN).map(item);
+  return [header, "", `By rule: ${ruleTally(sorted)}.`, "", `First ${SHOWN} by line:`, ...items, rest].join("\n");
 }
 
 export { MESSAGE_SHOWN, RULE_SHOWN, scannerBody, scannerHeadline };

@@ -39,16 +39,19 @@ function git(cwd, args) {
   return succeeded(result, `git ${args[0]}`).trim();
 }
 
-// Two commits: the base already has a long src/old.mjs; the head edits one of
-// its lines and adds a long src/added.mjs.
+// Two commits: the base already has a long src/old.mjs and src/grown.mjs. The
+// head edits old.mjs without changing its length, grows grown.mjs by a line,
+// and adds a long src/added.mjs.
 function twoCommits(repo) {
   mkdirSync(join(repo, "src"), { recursive: true });
   git(repo, ["init", "--quiet"]);
   writeFileSync(join(repo, "src", "old.mjs"), lines(OLD_LINES));
+  writeFileSync(join(repo, "src", "grown.mjs"), lines(OLD_LINES));
   git(repo, ["add", "-A"]);
   git(repo, ["commit", "--quiet", "-m", "base"]);
   const base = git(repo, ["rev-parse", "HEAD"]);
-  writeFileSync(join(repo, "src", "old.mjs"), `// edited\n${lines(OLD_LINES)}`);
+  writeFileSync(join(repo, "src", "old.mjs"), lines(OLD_LINES).replace("v0 = 0;", "v0 = 1;"));
+  writeFileSync(join(repo, "src", "grown.mjs"), lines(OLD_LINES + 1));
   writeFileSync(join(repo, "src", "added.mjs"), lines(NEW_LINES));
   git(repo, ["add", "-A"]);
   git(repo, ["commit", "--quiet", "-m", "head"]);
@@ -66,7 +69,7 @@ function scanWith(dir, extra) {
   const printed = JSON.parse(succeeded(spawnSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8" }), "scan"));
   const report = JSON.parse(readFileSync(out, "utf8"));
   const length = (name) => report.violations.find((item) => item.rule === "file-length" && item.file.endsWith(name));
-  return { printed, report, old: length("old.mjs"), added: length("added.mjs") };
+  return { printed, report, old: length("old.mjs"), added: length("added.mjs"), grown: length("grown.mjs") };
 }
 
 function inTempDir(body) {
@@ -78,19 +81,21 @@ function inTempDir(body) {
   }
 }
 
-test("scan --base marks the findings the merge base already had", () => {
+test("scan --base marks the findings the merge base already had, and not one that grew", () => {
   inTempDir((dir) => {
-    const { printed, report, old, added } = scanWith(dir, (base) => [`--base=${base}`]);
+    const { printed, report, old, added, grown } = scanWith(dir, (base) => [`--base=${base}`]);
     assert.equal(old.existing, true);
     assert.equal(added.existing, undefined);
+    assert.equal(grown.existing, undefined);
     assert.equal(report.baseline.existing > 0, true);
     assert.equal(printed.baseline.base, report.baseline.base);
   });
 });
 
-test("a --base that is not a full SHA, or --base on another command, stops with usage", () => {
+test("scan without a full-SHA --base, or --base on another command, stops with usage", () => {
   const scanFlags = ["--client=claude", "--registry=r.json", "--root=.", "--out=o.json"];
   const refused = [
+    ["scan", ...scanFlags],
     ["scan", ...scanFlags, "--base=abc1234"],
     ["scan", ...scanFlags, "--base"],
     ["existing", "--reviews=r.json", `--base=${"a".repeat(SHA_LENGTH)}`],
@@ -99,12 +104,4 @@ test("a --base that is not a full SHA, or --base on another command, stops with 
     const result = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8" });
     assert.equal(result.status, USAGE_EXIT, args.join(" "));
   }
-});
-
-test("scan without --base marks nothing, as before", () => {
-  inTempDir((dir) => {
-    const { report, old } = scanWith(dir, () => []);
-    assert.equal(old.existing, undefined);
-    assert.equal(report.baseline, null);
-  });
 });

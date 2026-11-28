@@ -1,5 +1,5 @@
 const REQUIRED = {
-  scan: ["client", "registry", "root", "out"],
+  scan: ["client", "registry", "root", "out", "base"],
   existing: ["reviews"],
   slots: ["diff", "pbi", "sub-issues", "out"],
   violations: ["scan", "diff", "out"],
@@ -12,10 +12,9 @@ const REQUIRED = {
   label: ["review-id", "comments", "out"],
   report: ["review-id", "comments"],
 };
-// scan without --base marks no finding as pre-existing, so a caller that
-// predates the flag keeps working. answers and pending without --facts accept
-// citations into the checkout only, as they did before the flag.
-const OPTIONAL = { scan: ["base"], answers: ["facts"], pending: ["facts"] };
+// answers and pending without --facts accept citations into the checkout only,
+// as they did before the flag.
+const OPTIONAL = { answers: ["facts"], pending: ["facts"] };
 const FULL_SHA = /^[0-9a-f]{40}$/;
 // The marker reader only accepts a hex head, so a build with anything else would post an undetectable review.
 // The batch commands stamp or compare the head, so they take the same full-SHA check.

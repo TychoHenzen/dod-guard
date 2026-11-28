@@ -348,7 +348,10 @@ Review a GitHub pull request's changed files:
 ```
 
 The PR head must be checked out. The skill scans the whole repository with the
-installed quality-guard scanner and keeps the findings in changed files. Its
+installed quality-guard scanner and keeps the findings in changed files. It
+scans the merge base too, and a finding the base already had, unless it got
+worse, is listed as info in a collapsed "Unchanged at base (info)" section,
+with no `GH-<id>`, no count and no effect on the recommendation. Its
 script then generates fixed review slots from the diff and the PBI: one per
 changed file with added lines, one per acceptance criterion, and one per
 linked sub-issue. A standard planner fills every slot with questions for the

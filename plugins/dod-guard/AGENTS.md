@@ -20,7 +20,8 @@ agent definitions. It has no package workspace, MCP server, or bundle.
   criterion to fresh evidence before commit and push. Use `/submit-draft-pr`
   after verification.
 - Use `/review-pr` as the one independent review: it scans the changed files
-  with quality-guard, runs four reviewer agents, and posts one comment-only
+  with quality-guard, shows findings the merge base already had as info only,
+  runs four reviewer agents, and posts one comment-only
   GitHub review with a recommendation. It never changes the reviewed branch.
 - Use `/fix-pr-review` to revalidate selected review findings, fix the
   actionable ones, and decline the rest with an evidence reply. It resolves

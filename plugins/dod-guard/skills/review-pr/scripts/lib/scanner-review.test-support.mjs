@@ -48,7 +48,8 @@ function scannerReview({ files, line, violations, rule, removed = [], ask = null
   const withLines = files.filter((file) => !removed.includes(file));
   const plan = [...withLines.map(slot), { slot: "criterion:1", questions: criterion }];
   const results = complete([], slotsByLens(plan));
-  const scanner = files.map((file, index) => rule(idsOf(file), index));
+  // A file whose findings the base already had has no S id, so it gets no ruling.
+  const scanner = files.map((file, index) => rule(idsOf(file), index)).filter(({ ids }) => ids.length > 0);
   const inputs = { headSha: HEAD, scan: { violations }, diff, plan, pbi: PBI, subIssues: [] };
   return buildReview({ ...inputs, results, merge: { groups: [], scanner } });
 }

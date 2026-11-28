@@ -28,6 +28,11 @@ test("no body is longer than the bound", () => {
   const huge = { severity: "BLOCKER", file: "f".repeat(5000), line: widest, headline: "h".repeat(5000) };
   const counts = { BLOCKER: widest, MAJOR: widest, MINOR: widest };
   const many = (count) => Array.from({ length: count }, () => huge);
+  const unchanged = Array.from({ length: 500 }, () => ({
+    file: "f".repeat(5000),
+    rule: "r".repeat(5000),
+    count: widest,
+  }));
   for (const deferred of [0, 1, LISTED - 1, LISTED, LISTED + 50]) {
     const body = reviewBody({
       headSha: HEAD,
@@ -36,6 +41,7 @@ test("no body is longer than the bound", () => {
       threads: widest,
       deferred: many(deferred),
       minor: many(500),
+      unchanged,
     });
     assert.ok(body.length <= bodyBound(), `${deferred} deferred: ${body.length} > ${bodyBound()}`);
   }
@@ -75,7 +81,6 @@ test("no inline comment is longer than the bound", () => {
     severity: "high",
     line: index + 1,
     message: huge("m"),
-    existing: index % 3 === 0,
   }));
   const scanner = scannerFinding(huge("f"), violations);
   for (const finding of [merged, scanner]) {
