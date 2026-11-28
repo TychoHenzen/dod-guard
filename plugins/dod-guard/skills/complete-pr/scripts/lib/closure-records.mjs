@@ -1,10 +1,10 @@
 // Parses and renders the closure records that standards/project-workflow.md
-// defines: the `## Completion evidence` comment, plus the evidence comment a
-// close posts. Every function is pure; reading and writing GitHub belongs to
-// the callers.
-import { lines } from "../../../../lib/acceptance-criteria.mjs";
+// defines: a replacement root's `supersedes` record and the
+// `## Completion evidence` comment, plus the evidence comment a close posts.
+// Every function is pure; reading and writing GitHub belongs to the callers.
+import { lines, markdownSection } from "../../../../lib/acceptance-criteria.mjs";
 import { isRecordComment, recordPrefix } from "../../../../lib/comment-record.mjs";
-import { jsonBlock } from "../../../../lib/record-readers.mjs";
+import { jsonBlock, subsections } from "../../../../lib/record-readers.mjs";
 
 const COMPLETION_HEADING = "## Completion evidence";
 const COMPLETION_MARKER = "<!-- dod-guard-completion-evidence -->";
@@ -25,6 +25,7 @@ function kindOf(kind) {
 
 const FULL_SHA = /^[0-9a-f]{40}$/;
 const CHECK_OUTCOMES = new Set(["pass", "fail", "pending"]);
+const ISSUE_REFERENCE = /^([\w.-]+\/[\w.-]+)#\d+$/;
 // The acceptance matrix has no "pending" status, so a row still needs proof
 // after the merge unless it passed or was ruled inapplicable.
 const SETTLED_ROW_STATUSES = new Set(["pass", "inapplicable"]);
@@ -32,6 +33,33 @@ const SETTLED_ROW_STATUSES = new Set(["pass", "inapplicable"]);
 // handoff existed, ordinary for an ordinary-path ticket. Both are informational; the delivery judgement
 // reads the record and the live pull request the same way whichever flag it holds.
 const UNSTRUCTURED_FLAGS = ["legacy", "ordinary"];
+
+function supersedesEntryError(entry, repository) {
+  if (Number.isInteger(entry) && entry > 0) return null;
+  const reference = typeof entry === "string" ? ISSUE_REFERENCE.exec(entry) : null;
+  if (reference && reference[1].toLowerCase() !== String(repository).toLowerCase()) {
+    return `names cross-repository issue ${entry}`;
+  }
+  return `has malformed entry ${JSON.stringify(entry)}`;
+}
+
+function supersedesValueError(value, repository) {
+  if (!Array.isArray(value) || value.length === 0) return "is not a non-empty array";
+  const problem = value.map((entry) => supersedesEntryError(entry, repository)).find(Boolean);
+  if (problem) return problem;
+  return new Set(value).size === value.length ? null : "repeats an issue number";
+}
+
+// Returns { numbers: [] } when the body has no record, { numbers } for a valid
+// record, and { error } naming why the record cannot be used.
+function parseSupersedes(body, repository) {
+  const records = subsections(markdownSection(body, "Implementation notes"), "supersedes");
+  if (records.length === 0) return { numbers: [] };
+  if (records.length > 1) return { error: "duplicate supersedes record" };
+  const block = jsonBlock(records[0]);
+  const problem = block.error || supersedesValueError(block.value, repository);
+  return problem ? { error: `supersedes record ${problem}` } : { numbers: block.value };
+}
 
 function isRecord(comment, kind) {
   return isRecordComment(comment, kindOf(kind));
@@ -109,6 +137,7 @@ function renderClosureEvidence({ issue, stateReason, evidence }) {
 export {
   isRecord,
   parseCompletionRecord,
+  parseSupersedes,
   pendingMatrixRows,
   RECORD_KINDS,
   recordComments,
