@@ -15,6 +15,8 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT = fileURLToPath(new URL("review-findings.mjs", import.meta.url));
+const SHA_LENGTH = 40;
+const BASE = "a".repeat(SHA_LENGTH);
 const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
 const UTF16_BOM = Buffer.from([0xff, 0xfe]);
 const DIFF =
@@ -32,12 +34,36 @@ function withDir(body) {
   }
 }
 
-// A stand-in quality-guard plugin whose scanner prints an empty report, in a
-// repository the scan can list ignored paths from.
+// Stand-ins for the gate modules a scan with --base loads. They report no
+// changed files and no findings, so the test checks only the scan's output.
+const GATE_STUBS = {
+  "pr-gate-compare.mjs": [
+    "export const classifyChanges = () =>",
+    "  ({ fresh: [], existing: [], moved: [], worsened: [] });",
+  ].join("\n"),
+  "pr-gate-scan.mjs": "export const changedFiles = () => [];",
+  "merge-base-tree.mjs": [
+    'import { mkdirSync } from "node:fs";',
+    'import { join } from "node:path";',
+    "export function exportTree(root) {",
+    '  const dir = join(root, "base", "tree");',
+    "  mkdirSync(dir, { recursive: true });",
+    "  return { dir, cleanup() {} };",
+    "}",
+  ].join("\n"),
+};
+
+// A stand-in quality-guard plugin whose scanner prints an empty report, with
+// the gate stubs in its lib folder, in a repository the scan can list ignored
+// paths from.
 function stubPlugin(dir) {
   const scripts = join(dir, "skills", "quality-refactor", "scripts");
-  mkdirSync(scripts, { recursive: true });
+  const lib = join(scripts, "lib");
+  mkdirSync(lib, { recursive: true });
   writeFileSync(join(scripts, "quality-scan.mjs"), "console.log(JSON.stringify({ violations: [] }));\n");
+  for (const [name, text] of Object.entries(GATE_STUBS)) {
+    writeFileSync(join(lib, name), `${text}\n`);
+  }
   const init = spawnSync("git", ["init", "--quiet", dir], { encoding: "utf8", shell: false });
   assert.equal(init.status, 0, init.stderr);
   return [{ id: "quality-guard@stub", enabled: true, installPath: dir }];
@@ -63,7 +89,14 @@ test("scan reads a plugin list saved with a UTF-8 byte-order mark or as marked U
       const registry = join(dir, "plugins.json");
       const out = join(dir, "scan.json");
       writeFileSync(registry, encode(JSON.stringify(stubPlugin(dir))));
-      const result = run(["scan", "--client=claude", `--registry=${registry}`, `--root=${dir}`, `--out=${out}`]);
+      const result = run([
+        "scan",
+        "--client=claude",
+        `--registry=${registry}`,
+        `--root=${dir}`,
+        `--out=${out}`,
+        `--base=${BASE}`,
+      ]);
       assert.equal(result.status, 0, `${label}: ${result.stderr}`);
       assert.deepEqual(JSON.parse(result.stdout), {
         scanner: `${dir.replaceAll("\\", "/")}/skills/quality-refactor/scripts/quality-scan.mjs`,
@@ -71,7 +104,7 @@ test("scan reads a plugin list saved with a UTF-8 byte-order mark or as marked U
         violations: 0,
         ruleFloors: {},
         removedByRepoLimits: {},
-        baseline: null,
+        baseline: { base: BASE, existing: 0, fresh: 0 },
       });
     });
   }
@@ -87,6 +120,7 @@ test("scan refuses a plugin list saved as UTF-16 without a byte-order mark and n
       `--registry=${registry}`,
       `--root=${dir}`,
       `--out=${join(dir, "o.json")}`,
+      `--base=${BASE}`,
     ]);
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /is not UTF-8 text; save it as UTF-8/);

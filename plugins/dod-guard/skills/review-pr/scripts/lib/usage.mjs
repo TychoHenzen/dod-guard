@@ -2,7 +2,7 @@
 const USAGE = [
   "Usage:",
   "  review-findings.mjs scan --client=claude|codex --registry=<plugin-list.json>",
-  "    --root=<repo> --out=<scan.json> [--base=<merge-base sha>]",
+  "    --root=<repo> --out=<scan.json> --base=<merge-base sha>",
   "  review-findings.mjs existing --reviews=<reviews.json>",
   "  review-findings.mjs slots --diff=<unified0.diff> --pbi=<issue.json>",
   "    --sub-issues=<sub-issues.json> --out=<slots.json>",

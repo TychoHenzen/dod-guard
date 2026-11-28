@@ -8,8 +8,10 @@ import { scanToFile } from "./scanner-run.mjs";
 
 // Which scanner findings a pull request did not introduce. The answer comes
 // from the installed quality-guard's own PR gate code, so a review and the CI
-// gate never disagree about what is new: same changed-file list with renames,
-// same finding identity, same matching by count, same moved-code rule.
+// gate agree about what is new: same changed-file list with renames, same
+// finding identity, same matching by count, same moved-code rule. One
+// deliberate difference: a finding that grew since the base is new here, while
+// the gate lists it as pre-existing and does not block on it.
 
 function gateModule(lib, name) {
   const path = join(lib, name);
@@ -27,12 +29,18 @@ async function gateModules(scanner) {
   return { classifyChanges: compare.classifyChanges, changedFiles: scan.changedFiles, exportTree: tree.exportTree };
 }
 
-// The gate blocks only on `fresh`. A finding it matched at the base, or one
-// that moved from another changed file, is marked existing.
-// ASSUMPTION: a matched finding that grew since the base stays existing,
-// because the gate itself never blocks on growth.
+// The gate blocks only on `fresh`. A finding it matched at the base is marked
+// existing, unless it got worse: then the pull request made it worse, so this
+// review counts it as new. A finding that moved from another changed file is
+// marked existing too.
+// classifyChanges returns each worsened finding as a copy with `was` added, so
+// it is found again by the fields that place it.
+const place = (finding) => JSON.stringify([finding.file, finding.line, finding.rule, finding.message]);
+
 function markPreexisting(violations, classified) {
-  const preexisting = new Set([...classified.existing, ...classified.moved]);
+  const worse = new Set(classified.worsened.map(place));
+  const kept = classified.existing.filter((finding) => !worse.has(place(finding)));
+  const preexisting = new Set([...kept, ...classified.moved]);
   let marked = 0;
   for (const violation of violations) {
     if (preexisting.has(violation)) {

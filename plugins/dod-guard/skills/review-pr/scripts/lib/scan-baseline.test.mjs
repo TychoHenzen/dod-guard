@@ -54,6 +54,20 @@ test("the gate's comparison marks a finding the base already had, and not one th
   assert.equal(added.existing, undefined);
 });
 
+test("a matched finding that got worse since the base stays unmarked", async () => {
+  const gate = await gateModules(SCANNER);
+  const medium = { rule: "function-length", severity: "medium" };
+  const grown = finding("src/a.mjs", "run is 40 lines", { ...medium, symbol: "run", metric: 40 });
+  const same = finding("src/a.mjs", "keep is 20 lines", { ...medium, symbol: "keep", metric: 20 });
+  const baseGrown = finding("src/a.mjs", "run is 35 lines", { ...medium, symbol: "run", metric: 35 });
+  const baseSame = finding("src/a.mjs", "keep is 20 lines", { ...medium, symbol: "keep", metric: 20 });
+  const files = [{ path: "src/a.mjs", basePath: "src/a.mjs" }];
+  const classified = gate.classifyChanges({ files, head: [grown, same], base: [baseGrown, baseSame] });
+  assert.equal(markPreexisting([grown, same], classified), 1);
+  assert.equal(grown.existing, undefined);
+  assert.equal(same.existing, true);
+});
+
 test("an installed quality-guard without the gate modules stops with the file it lacks", async () => {
   const dir = mkdtempSync(join(tmpdir(), "scan-baseline-"));
   try {
