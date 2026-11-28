@@ -162,10 +162,13 @@ maps exactly once to an owner; duplicate, ownerless, stale, or contradictory
 evidence remains an actionable remainder.
 `/submit-draft-pr` checks that same matrix against the issue contract, then
 links it from `## Convergence` instead of restating it; missing,
-contradicted, or stale evidence remains an actionable remainder. Small, clear
-fixes bypass these records.
+contradicted, or stale evidence remains an actionable remainder. Only an
+ordinary-path issue bypasses these records.
 
-Use the ordinary path for a small, clear fix. Neither path bypasses stops for
+An issue's content sets its path, not the size of the change. An issue with
+none of the seven records and no step plan or handoff comment takes the
+ordinary path. Every refined PBI carries all seven, so it takes the structured
+path however small it is. Neither path bypasses stops for
 material ambiguity, credentials, destructive or authority-bound actions,
 unrelated work, provider or head mismatch, or missing high-risk evidence.
 OpenSpec references remain historical only.

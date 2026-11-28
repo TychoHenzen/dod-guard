@@ -6,11 +6,14 @@ artifacts, not a per-ticket planning file.
 
 ## Choose the path
 
-Use the structured path for a feature, material ambiguity, several dependent
-decisions, or work that needs an explicit plan and convergence check. Use the
-ordinary path for a small, clear fix with known scope, acceptance, and tests.
-Both paths use the repository's linked GitHub Project, issue, branch, commits,
-and pull request as the source of truth.
+The issue's content sets the path, not the size of the change. An issue is on
+the ordinary path only when it carries none of the seven structured records
+and no `## Step plan:` or `## Implementation handoff` comment, which is what
+`skills/complete-pr/scripts/ordinary-proof.mjs` checks. Any other issue is on
+the structured path. Refinement never produces an ordinary issue: every refined
+PBI carries all seven records and a step plan per task, so it is structured
+however small it is. Both paths use the repository's linked GitHub Project,
+issue, branch, commits, and pull request as the source of truth.
 
 An ordinary ticket keeps its evidence in the issue and the pull request. It has
 none of the seven structured records, no `## Implementation handoff` or
@@ -499,5 +502,5 @@ An incomplete or contradicted result is not reported as complete. Write the
 actionable remainder, with the next task and owner, to the PBI and stop before
 creating or updating the draft PR. After a failed or ambiguous write, read back
 that resource before retrying, as the shared GitHub standard requires. The
-ordinary small-fix path bypasses these records and uses its direct issue,
+ordinary path bypasses these records and uses its direct issue,
 commit, test, and review evidence instead, as "Choose the path" describes.

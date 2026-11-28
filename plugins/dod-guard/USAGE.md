@@ -183,8 +183,10 @@ users cannot plant or redirect it.
 
 ## Structured work
 
-Use the ordinary path for a small, clear fix. Use the structured path when a
-feature or material ambiguity needs explicit decisions, a plan, tasks, and a
+An issue's content sets its path, not the size of the change. An issue with
+none of the seven structured records and no step plan or handoff comment takes
+the ordinary path. Every other issue, including every PBI `/refine-backlog-item`
+refines, takes the structured path, with its decisions, plan, tasks, and
 convergence check. The canonical records and handoffs are in
 [`standards/project-workflow.md`](standards/project-workflow.md).
 
@@ -212,8 +214,8 @@ followed by one `## Acceptance matrix` with exact-head rows for each acceptance
 criterion and mandatory user-facing path.
 `/submit-draft-pr` compares that handoff with the issue contract and links it
 from `## Convergence` instead of copying the mapping; missing, contradicted, or
-stale matrix evidence stays an actionable remainder. Small, clear fixes use
-the ordinary path instead: the draft PR body declares that path and checks a
+stale matrix evidence stays an actionable remainder. An ordinary-path issue
+has no handoff instead: the draft PR body declares that path and checks a
 copy of every issue acceptance criterion, and `/complete-pr` verifies both
 before it merges.
 
