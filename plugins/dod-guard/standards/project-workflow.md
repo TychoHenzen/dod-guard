@@ -122,8 +122,8 @@ fenced `json` object `{"headSha": "<sha>", "rows": [...]}` under that heading,
 with one row per line; it replaces any markdown table, and a second matrix
 heading is refused. The head is stated once. Each row names its planned row and
 criterion by `id` and `contract` and holds only what the work observed:
-`status`, `observed`, plus `reason` on an `inapplicable` row and
-`carryForward` on a carried row. The issue body owns the rest: the proofs join
+`status`, `observed`, plus `reason` on an `inapplicable` row,
+`carryForward` on a carried row, and `deferredTo` on a row with accepted residuals. The issue body owns the rest: the proofs join
 each row back to its planned row by id (`lib/handoff-matrix.mjs`) to read its
 `path`, `proof`, `expected` and `evidence`, and report a row with no planned
 row, a planned row with no row, and a contract that disagrees. Each task line
@@ -131,7 +131,7 @@ is `- <id>: commit <sha>. <result>`; the body holds the task's slice and
 evidence ids, and the commit names its files. `handoff-build.mjs` prints the
 comment from the issue body's records and an evidence file, so the matrix JSON
 is never hand-written. The evidence file supplies only `observed`, `status`
-and `reason` per row, the optional `carryForward` per row, and `commit` and
+and `reason` per row, the optional `carryForward` and `deferredTo` per row, and `commit` and
 `result` per task, and the builder rejects any other field. When the handoff
 already carries a `## Preflight checkpoint`, a rebuild passes the old comment
 with `--previous-handoff-file=<handoff.md>` and the builder copies that section,
@@ -149,6 +149,8 @@ older matrix shape, a JSON array of full rows; the readers still read it as it
 is, unjoined.
 
 A row observed at an earlier head A may be written at the new head B with a carryForward record (baseHead, newHead, paths, diffCheck "whitespace-comment-only"). The evidence entry declares it as carryForward {fromHead, paths}; paths must list the row's complete code footprint. handoff-build.mjs checks the declaration with git when --root=<checkout> is given, and refuses a carry without --root. handoff-proof.mjs only validates the record's shape and never runs git. The allowlisted extensions are .cs .ts .js .mjs .rs (whole-line // comments) and .py .gd (whole-line # comments). Markdown and every other extension always count as code changed. The limitation: a diff is comment-only only when, after trimming whitespace and dropping blank lines, the lines differ only by whole-line // or # comments. Multi-line block comments, trailing comments after code, Markdown, unknown extensions and Python or GDScript re-indentation always count as code changes and force re-observation. Lines inside a multi-line string (a JavaScript or TypeScript template literal, a Python triple-quoted string, a C# `@"` string, a Rust `r#"` string) are compared verbatim, so any edit, re-indentation or trailing-whitespace change there counts as a code change. There is no full lexer: a plain `"` or `'` string that spans lines (Rust, C#, or a backslash continuation) is not tracked, so a comment-looking line inside one can still read as comment-only.
+
+An accepted residual is a finding that an acceptance criterion's own text excepts, such as "no scanner finding except accepted residuals", and that another open issue in the same repository takes over and lists. Refinement allows residuals on a row by writing `"acceptsResiduals": true` on its planned row; the owner overrules that by replying, and no later stage adds it. The implementing session puts the issue numbers in the row's `deferredTo`, a non-empty list of positive integers, and the row stays `pass`. So a residual never needs an edit of the issue body, and `pendingRows` in the closure record is unchanged. `handoff-build.mjs` and the proofs (`lib/accepted-residual.mjs`) refuse `deferredTo` on a row whose planned row does not accept residuals, on a row that is not `pass`, and when it is not such a list. They read saved files only, so they do not check that each issue is open.
 
 The same handoff also carries one `## Preflight checkpoint` record for the
 selected pull request. `submit-draft-pr` writes it once the draft exists and
@@ -200,7 +202,7 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
 - `planned-acceptance-matrix`: a JSON array of the acceptance-matrix rows that
   refinement plans before any proof runs. Each row has every matrix field except
   `observed` and `headSha`, and a status of `pending`, or `inapplicable` with a
-  `reason`. The rows cover every mandatory user path and give each criterion a
+  `reason`. A row whose criterion excepts accepted residuals also carries `"acceptsResiduals": true`, and the refinement proof reports any other value. The rows cover every mandatory user path and give each criterion a
   `pending` row. `next-ticket` fills them into the `## Acceptance matrix` with
   the observed result, status, and pushed head.
 
