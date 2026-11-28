@@ -20,8 +20,15 @@ const SCANNER = fileURLToPath(
   new URL("../../../../../../packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs", import.meta.url),
 );
 const MISSING_GATE = /lacks pr-gate-compare\.mjs.*update quality-guard/;
-const INFO_SECTION =
-  /<details>\n<summary>Unchanged at base \(info\)<\/summary>\n\n[^\n]+\n\n- `src\/Old\.cs` `duplicate-block` x1\n\n<\/details>$/;
+// Two halves of one pattern, so each line stays inside the 120-column width.
+const INFO_SECTION = new RegExp(
+  [
+    /<details>\n<summary>Unchanged at base \(info\)<\/summary>\n\n[^\n]+\n\n/,
+    /- `src\/Old\.cs` `duplicate-block` x1\n\n<\/details>$/,
+  ]
+    .map((part) => part.source)
+    .join(""),
+);
 const NO_MINOR_NOTES = /### Minor notes/;
 const MINOR_LINE = /`src\/Old\.cs:10` 1 quality-guard finding: `line-length` x1$/m;
 

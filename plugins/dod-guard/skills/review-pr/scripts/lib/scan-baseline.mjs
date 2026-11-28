@@ -29,12 +29,8 @@ async function gateModules(scanner) {
   return { classifyChanges: compare.classifyChanges, changedFiles: scan.changedFiles, exportTree: tree.exportTree };
 }
 
-// The gate blocks only on `fresh`. A finding it matched at the base is marked
-// existing, unless it got worse: then the pull request made it worse, so this
-// review counts it as new. A finding that moved from another changed file is
-// marked existing too.
-// classifyChanges returns each worsened finding as a copy with `was` added, so
-// it is found again by the fields that place it.
+// A finding that got worse since the base counts as new: this pull request worsened it.
+// classifyChanges returns those findings as copies, so `place` finds them again by position.
 const place = (finding) => JSON.stringify([finding.file, finding.line, finding.rule, finding.message]);
 
 function markPreexisting(violations, classified) {
